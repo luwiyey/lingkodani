@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -90,23 +92,28 @@ export function HighRiskKeywordChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang salitang "{topKeyword.word}" ang pinakamadalas na dahilan ng alerto, na nagpapakita ng kahalagahan nito sa mga magsasaka.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Mga Salitang Nagti-trigger ng Alerto ({timeframe})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng ulat na ito ang dalas ng mga partikular na salita na awtomatikong nag-trigger ng high-risk na alerto sa sistema. Ang pag-unawa sa mga ito ay nakakatulong na i-validate ang escalation logic ng AI.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang salitang '{topKeyword.word}' ang pinakamadalas na nag-trigger ng alerto. Ito ay nagpapatunay na ang sistema ay sensitibo sa mga pinaka-karaniwang problema na kinakaharap ng mga magsasaka. Ang mga salitang tulad ng "namamatay" at "lason" ay mas bihira ngunit kumakatawan sa mga napaka-kritikal na sitwasyon, na nagpapakita na ang sistema ay epektibong nakakakuha ng iba't ibang antas ng panganib.</p>
                 <p><strong>Rekomendasyon:</strong> Regular na suriin ang listahan ng mga high-risk na keyword. Magdagdag ng mga bagong termino kung kinakailangan (hal., mga partikular na pangalan ng kemikal o sakit). Kung may salita na nagdudulot ng masyadong maraming "false positive" na alerto, isaalang-alang ang pag-adjust sa sensitivity ng trigger para sa salitang iyon.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

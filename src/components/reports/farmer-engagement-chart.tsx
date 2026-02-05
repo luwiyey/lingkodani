@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -83,23 +85,28 @@ export function FarmerEngagementChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga magsasaka ay "Repeat" reporters, na nagpapakita ng tuluy-tuloy na paggamit ng sistema.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Antas ng Pakikilahok ng Magsasaka ({timeframe})</DialogTitle>
             <DialogDescription>
               Kinakategorya nito ang mga magsasaka batay sa kung gaano sila kadalas nakikipag-ugnayan sa sistema. Ang pag-unawa sa engagement ay tumutulong na sukatin ang pagiging kapaki-pakinabang at pag-ampon ng platform.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang pagkakaroon ng malaking bilang ng "Repeat" (150) at "Frequent" (80) na mga taga-ulat ay isang magandang senyales ng kalusugan ng sistema. Ipinapakita nito na nakikita ng mga magsasaka ang halaga sa regular na paggamit nito. Ang bilang ng "First-time" (50) na gumagamit ay nagpapakita ng patuloy na pag-abot at pag-ampon ng mga bagong user.</p>
                 <p><strong>Rekomendasyon:</strong> Mag-isip ng mga paraan upang hikayatin ang mga "First-time" na gumagamit na maging "Repeat" reporters. Maaaring ito ay sa pamamagitan ng mga follow-up na mensahe na nagtatanong kung naging kapaki-pakinabang ang payo o pagpapadala ng mga pangkalahatang tip. Kilalanin o bigyan ng insentibo ang mga "Frequent" reporters para sa kanilang patuloy na kontribusyon sa data ng komunidad.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -86,23 +88,28 @@ export function FollowUpRateChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {noFollowUpRate}% ng mga magsasaka ay hindi nagtatanong muli, na nagpapahiwatig na sapat na ang unang payo.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Rate ng Follow-up ({timeframe})</DialogTitle>
             <DialogDescription>
                 Sinusukat ng ulat na ito ang porsyento ng mga magsasaka na nagpapadala ng isa pang mensahe (isang follow-up na tanong) pagkatapos makatanggap ng payo mula sa sistema.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang mataas na porsyento ng "Walang Follow-up" ({noFollowUpRate}%) ay maaaring bigyang-kahulugan sa dalawang paraan: alinman sa (1) ang paunang payo ay napakalinaw at sapat na, kaya hindi na kailangan ng karagdagang tanong, o (2) ang magsasaka ay hindi nakikipag-ugnayan muli. Dahil mataas ang pangkalahatang engagement, malamang na ang unang interpretasyon ang tama.</p>
                 <p><strong>Rekomendasyon:</strong> Para makasiguro, mag-sample ng ilang mga "Walang Follow-up" na kaso at magpadala ng proaktibong mensahe, tulad ng, "Kumusta po, naging epektibo po ba ang payo namin para sa inyong [isyu]? Mayroon pa po ba kaming maitutulong?" Makakatulong ito na kumpirmahin ang kasiyahan ng magsasaka at magpakita ng mahusay na serbisyo.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

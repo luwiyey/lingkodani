@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -89,23 +91,28 @@ export function CropStageChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga bukid ay nasa yugto ng "Pagtatanim" at "Paglago", na nagpapahiwatig ng peak season.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Pamamahagi ng Yugto ng Pananim ({timeframe})</DialogTitle>
             <DialogDescription>
               Nagbibigay ang ulat na ito ng pangkalahatang-ideya ng kasalukuyang estado ng agrikultura sa barangay. Ang pag-alam kung anong yugto ang karamihan sa mga magsasaka ay nakakatulong sa pag-prioritize ng mga mapagkukunan at payo.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Sa kasalukuyan, {plantingStage} na bukid ang nasa yugto ng pagtatanim at {growingStage} ang nasa paglago. Ipinapahiwatig nito na ang pangangailangan para sa mga binhi, pataba, at payo sa maagang yugto ng paglago ay mataas. Ang mas maliit na bilang sa "Pamumulaklak" at "Pag-aani" ay nagmumungkahi na ang panahon ng pag-aani ay malapit nang matapos para sa ilang pananim.</p>
                 <p><strong>Rekomendasyon:</strong> Tiyaking may sapat na imbentaryo ng mga binhi at pataba. I-prioritize ang pag-broadcast ng mga advisory na may kaugnayan sa paghahanda ng lupa at maagang pamamahala ng peste. Magplano ng mga seminar o field visit na nakatuon sa mga magsasakang nagsisimula pa lang sa kanilang crop cycle.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

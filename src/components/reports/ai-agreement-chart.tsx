@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -86,23 +88,28 @@ export function AIAgreementChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {approvedAsIsPercentage}% ng mga output ng AI ay inaprubahan nang walang pag-edit, na nagpapakita ng malakas na pagkakasundo.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Pagkakatugma ng AI at Expert ({timeframe})</DialogTitle>
             <DialogDescription>
               Sinusukat nito kung gaano kadalas sumasang-ayon ang mga Agricultural Extension Worker (AEW) sa mga payo ng AI. Ito ay isang mahalagang sukatan para sa pagtitiwala at pagiging epektibo ng sistema.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang {approvedAsIsPercentage}% na rate ng pagsang-ayon ay nagpapahiwatig na ang AI model ay mahusay na naka-align sa kaalaman ng mga lokal na eksperto. Ibig sabihin, sa karamihan ng mga kaso, ang paunang payo ng AI ay tama na at hindi na kailangan ng pagbabago. Ito ay nakakatipid ng oras para sa mga AEW.</p>
                 <p><strong>Rekomendasyon:</strong> Upang mapabuti pa ito, regular na suriin ang mga "Binago" at "Tinanggihan" na mga payo. Gamitin ang mga ito bilang data para sa fine-tuning ng AI model upang mas maunawaan nito ang mga partikular na sitwasyon sa barangay.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -83,23 +85,28 @@ export function GeographicHotspotChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang {topHotspot.zone} ang may pinakamaraming isyu, na ginagawa itong priority area.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Mga Hotspot ng Suliranin ({timeframe})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng mapang ito kung saan sa barangay nagkukumpol ang mga isyu. Ang pagtukoy sa mga "hotspot" na ito ay nagbibigay-daan para sa naka-target na interbensyon at mahusay na paglalaan ng mga mapagkukunan.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Malinaw na ipinapakita ng data na ang {topHotspot.zone} ang kasalukuyang hotspot na may {topHotspot.issues} na iniulat na isyu. Ito ay maaaring sanhi ng iba't ibang mga kadahilanan tulad ng uri ng lupa, mga partikular na pananim na itinanim doon, o mga lokal na kondisyon ng panahon. Ang ibang mga zone tulad ng Zone 1 ay may mas kaunting mga isyu.</p>
                 <p><strong>Rekomendasyon:</strong> I-prioritize ang {topHotspot.zone} para sa susunod na field visit ng Agricultural Extension Worker (AEW). Suriin ang mga partikular na ulat mula sa zone na ito upang maunawaan ang kalikasan ng mga isyu (hal., ito ba ay isang partikular na peste? Isang problema sa patubig?). Magplano ng isang seminar o focus group discussion para sa mga magsasaka sa zone na iyon.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

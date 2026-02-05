@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -85,23 +87,28 @@ export function ValidationQueueChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: May {pendingCount} na mensahe na kasalukuyang naghihintay ng pagsusuri mula sa isang admin.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Katayuan ng Validation Queue ({timeframe})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng ulat na ito ang real-time na katayuan ng validation queue. Sinusukat nito ang bilang ng mga mensahe na nangangailangan ng manu-manong pagsusuri mula sa isang AEW kumpara sa mga nalutas na.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang isang malaking bilang ng mga "Nalutas" na mga item ay nagpapakita ng isang mahusay na daloy ng trabaho. Ang bilang ng mga "Nakabinbin" na item ay kumakatawan sa kasalukuyang workload ng mga AEW. Ang layunin ay panatilihing mababa ang bilang ng mga nakabinbin hangga't maaari.</p>
                 <p><strong>Rekomendasyon:</strong> Subaybayan ang bilang ng mga nakabinbin. Kung ito ay patuloy na tumataas, maaaring ito ay isang senyales na kulang ang mga tauhan upang mapangasiwaan ang dami ng mga mensahe. Gamitin ang data na ito upang matukoy ang mga oras na may pinakamataas na pila at mag-iskedyul ng mga tauhan nang naaayon.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

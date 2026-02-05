@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 const chartConfig = {
   Tagumpay: { label: "Tagumpay", color: "hsl(var(--chart-1))" },
@@ -84,23 +86,28 @@ export function AdvisoryDeliveryChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang {successPercentage}% delivery rate ay nagpapakita ng maaasahang channel ng komunikasyon.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Success Rate ng Pagpapadala ng Advisory ({timeframe})</DialogTitle>
             <DialogDescription>
                 Sinusukat ng chart na ito ang pagiging maaasahan ng SMS gateway sa paghahatid ng mga mensahe sa mga magsasaka. Ang mataas na rate ay mahalaga para sa epektibong komunikasyon.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Isang delivery rate na {successPercentage}% ay napakahusay at nagpapahiwatig na halos lahat ng mga payo ay nakakarating sa mga magsasaka. Ang maliit na porsyento ng mga pagkabigo ay maaaring sanhi ng mga isyu sa network, hindi aktibong numero, o puno na inbox.</p>
                 <p><strong>Rekomendasyon:</strong> Imbestigahan ang mga nabigong paghahatid. Kung ang isang numero ay palaging nabibigo, i-flag ito para sa manu-manong pag-verify. Maaari mong ipaalam sa AEW na kumpirmahin ang numero ng telepono sa susunod na pagbisita sa bukid.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

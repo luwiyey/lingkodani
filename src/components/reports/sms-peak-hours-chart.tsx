@@ -16,7 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -98,23 +100,28 @@ export function SmsPeakHoursChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Pinaka-aktibo ang mga magsasaka sa pagitan ng {peakHour.hour}, na isang magandang oras para tiyakin ang pagkakaroon ng staff.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
             <DialogTitle>Mga Oras na may Pinakamaraming Mensahe ({timeframe})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng ulat na ito kung anong mga oras sa isang araw pinaka-aktibo ang mga magsasaka sa pagpapadala ng SMS. Ang impormasyong ito ay mahalaga para sa pag-iskedyul ng mga tauhan at pagtiyak na may sapat na suporta sa mga oras ng mataas na demand.
             </DialogDescription>
         </DialogHeader>
-        <div className="h-[400px] w-full">
-            <ChartContainer config={chartConfig}>
-                {renderChart()}
-            </ChartContainer>
-        </div>
-        <DialogFooter className="mt-4 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2">
+        <ScrollArea className="h-[70vh] pr-4">
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    {renderChart()}
+                </ChartContainer>
+            </div>
+            <div className="mt-6 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Mayroong malinaw na peak ng aktibidad sa hapon, partikular sa pagitan ng {peakHour.hour}. Ito ay malamang na pagkatapos ng trabaho sa bukid, kung kailan may oras na ang mga magsasaka na mag-ulat ng mga isyu o magtanong. Ang aktibidad ay mas mababa sa umaga at hatinggabi.</p>
                 <p><strong>Rekomendasyon:</strong> Tiyaking may sapat na bilang ng mga AEW o admin na naka-duty sa mga peak hours upang mabilis na ma-validate at matugunan ang mga papasok na mensahe. Sa mga oras na mababa ang aktibidad, maaaring mag-focus ang mga tauhan sa ibang mga gawain tulad ng paglikha ng nilalaman para sa knowledge base o pagpaplano ng mga field visit.</p>
             </div>
+        </ScrollArea>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
