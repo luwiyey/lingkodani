@@ -58,6 +58,8 @@ export default function SmsFeedPage() {
         return <div className="flex items-center justify-center h-full"><p>Mangyaring pumili ng mensahe.</p></div>
     }
 
+    const SelectedMessageIcon = typeInfo[selectedMessage.type]?.icon;
+
   return (
     <div className="h-[calc(100vh-5rem)] grid md:grid-cols-3 lg:grid-cols-4 gap-4">
       <Card className="md:col-span-1 lg:col-span-1 h-full overflow-y-auto">
@@ -118,9 +120,9 @@ export default function SmsFeedPage() {
                         <User className="w-4 h-4"/>
                         <h3 className="font-semibold">Ulat mula kay {selectedMessage.farmerName}</h3>
                     </div>
-                    {typeInfo[selectedMessage.type] && (
+                    {SelectedMessageIcon && (
                     <Badge variant="outline" className={cn("text-xs", typeInfo[selectedMessage.type].color, "border-transparent text-white")}>
-                        <typeInfo[selectedMessage.type].icon className="w-3 h-3 mr-1" />
+                        <SelectedMessageIcon className="w-3 h-3 mr-1" />
                         {typeInfo[selectedMessage.type].label}
                     </Badge>
                     )}
