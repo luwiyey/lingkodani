@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -293,7 +293,7 @@ export default function FarmersPage() {
                     <TableHead className="w-[250px] cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
                         <div className="flex items-center">
                             Pangalan
-                             <div className="w-8 flex justify-center">
+                             <div className="w-8 flex-shrink-0 flex justify-center">
                                 {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                             </div>
                         </div>
@@ -301,7 +301,7 @@ export default function FarmersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('location')}>
                         <div className="flex items-center">
                             Lokasyon
-                            <div className="w-8 flex justify-center">
+                            <div className="w-8 flex-shrink-0 flex justify-center">
                                 {sortConfig?.key === 'location' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                             </div>
                         </div>
@@ -309,15 +309,15 @@ export default function FarmersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('crops')}>
                         <div className="flex items-center">
                             Mga Pananim
-                            <div className="w-8 flex justify-center">
-                                {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-4 w-4" />)}
+                            <div className="w-8 flex-shrink-0 flex justify-center">
+                                {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                             </div>
                         </div>
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('status')}>
                         <div className="flex items-center">
                             Katayuan
-                            <div className="w-8 flex justify-center">
+                            <div className="w-8 flex-shrink-0 flex justify-center">
                                 {sortConfig?.key === 'status' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                             </div>
                         </div>
@@ -428,8 +428,14 @@ export default function FarmersPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
-                  <Button type="submit">I-save ang Pagbabago</Button>
+                    <Button variant="outline" asChild className="mr-auto">
+                        <Link href={`/dashboard/farmers/${editingFarmer.id}`}>
+                            Buong Profile
+                            <ArrowUpRight className="ml-2 h-4 w-4"/>
+                        </Link>
+                    </Button>
+                    <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
+                    <Button type="submit">I-save ang Pagbabago</Button>
                 </DialogFooter>
               </form>
             </DialogContent>

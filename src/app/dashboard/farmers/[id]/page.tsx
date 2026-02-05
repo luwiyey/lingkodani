@@ -7,7 +7,7 @@ import { farmers as initialFarmers, farmerLogbookEntries as initialLogbook } fro
 import type { LogbookEntry, Farmer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FilePen, PlusCircle, Camera, Mic, Edit } from 'lucide-react';
+import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
@@ -64,6 +64,8 @@ export default function FarmerLogbookPage() {
         sitio: formData.get('sitio') as string,
         crops: (formData.get('crops') as string).split(',').map(c => c.trim()),
         farmSize: Number(formData.get('farm-size') as string),
+        age: Number(formData.get('age') as string),
+        gender: formData.get('gender') as string,
         };
         
         setFarmer(updatedFarmer);
@@ -105,10 +107,24 @@ export default function FarmerLogbookPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
                     <p><strong>Telepono:</strong> {farmer.phone}</p>
+                    <p><strong>Edad:</strong> {farmer.age}</p>
+                    <p><strong>Kasarian:</strong> {farmer.gender}</p>
                     <p><strong>Lokasyon:</strong> {farmer.sitio}, {farmer.barangay}</p>
                     <p><strong>Sukat ng Bukid:</strong> {farmer.farmSize} ha</p>
                     <p><strong>Mga Pananim:</strong> {farmer.crops.join(', ')}</p>
                     <p><strong>Petsa ng Pagpaparehistro:</strong> {new Date(farmer.registrationDate).toLocaleDateString()}</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Archive /> Vault ng Dokumento</CardTitle>
+                    <CardDescription>Mga mahalagang dokumento tulad ng mga sertipiko.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center text-muted-foreground p-4 border-2 border-dashed rounded-lg">
+                        <p>Wala pang na-upload na dokumento.</p>
+                    </div>
+                    <Button variant="outline" className="w-full mt-4"><Upload className="mr-2"/> Mag-upload</Button>
                 </CardContent>
             </Card>
             <Card>
@@ -162,6 +178,14 @@ export default function FarmerLogbookPage() {
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-phone" className="text-right">Telepono</Label>
                     <Input id="edit-phone" name="phone" defaultValue={editingFarmer.phone} required className="col-span-3" />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="edit-age" className="text-right">Edad</Label>
+                    <Input id="edit-age" name="age" type="number" defaultValue={editingFarmer.age} className="col-span-3" />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="edit-gender" className="text-right">Kasarian</Label>
+                    <Input id="edit-gender" name="gender" defaultValue={editingFarmer.gender} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-barangay" className="text-right">Barangay</Label>
