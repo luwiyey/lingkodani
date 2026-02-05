@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -100,25 +99,25 @@ export function IssueTrendsChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang mga ulat tungkol sa "Mga Peste" ay patuloy na tumataas, na nagpapahiwatig ng isang lumalalang problema.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Graph ng Trend ng Isyu ({timeframe})</DialogTitle>
             <DialogDescription>
                 Ipinapakita ng chart na ito ang pagbabago sa dami ng mga ulat para sa mga pangunahing kategorya ng isyu sa paglipas ng panahon. Nakakatulong ito na matukoy ang mga umuusbong na problema at mga seasonal na pattern.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Mayroong isang kapansin-pansing pataas na trend sa mga ulat na may kaugnayan sa "Mga Peste" sa nakalipas na buwan, na nagpapahiwatig ng posibleng outbreak. Ang mga ulat tungkol sa "Sakit" at "Patubig" ay medyo matatag, bagaman may bahagyang pagtaas din. Ang trend na ito ay nagmumungkahi na ang pamamahala sa peste ang pangunahing alalahanin sa kasalukuyan.</p>
                 <p><strong>Rekomendasyon:</strong> Maglabas ng isang advisory broadcast tungkol sa pagmamanman ng peste. I-cross-reference ang data na ito sa "Geographic Hotspot" chart upang matukoy kung ang pagtaas ng ulat ng peste ay puro sa isang partikular na zone. Maghanda ng mga mapagkukunan (hal., mga artikulo sa knowledge base, mga contact ng AEW) na may kaugnayan sa pagkontrol ng peste.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

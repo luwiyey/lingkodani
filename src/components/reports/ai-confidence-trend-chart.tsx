@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -89,25 +88,25 @@ export function AIConfidenceTrendChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Tumaas ang kumpiyansa ng AI, na nagpapakita ng pag-aaral at pag-unlad nito.</p>
         </CardFooter>
       </Card>
-       <DialogContent className="sm:max-w-4xl">
+       <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Trend ng Kumpiyansa ng AI ({timeframe})</DialogTitle>
             <DialogDescription>
                 Sinusubaybayan ng chart na ito ang average na confidence score ng AI sa pag-interpret ng mga SMS sa paglipas ng panahon. Ang isang pataas na trend ay nagpapahiwatig na ang AI ay natututo at gumagaling mula sa mga feedback at pagwawasto.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Makikita ang isang malinaw na pataas na trend sa kumpiyansa ng AI, na tumaas mula {aiConfidenceTrendData[0].confidence}% hanggang {latestConfidence}% sa loob ng apat na linggo. Ito ay isang malakas na indikasyon na ang "human-in-the-loop" na sistema ng feedback ay epektibo. Ang bawat pagwawasto na ginawa ng isang AEW ay nagsisilbing aral para sa AI.</p>
                 <p><strong>Rekomendasyon:</strong> Ipagpatuloy ang regular na pagbibigay ng feedback at pagwawasto sa mga mungkahi ng AI. Bigyang-pansin ang mga mensahe kung saan biglang bumababa ang kumpiyansa; maaaring ito ay nagpapahiwatig ng isang bagong uri ng tanong o isang kumplikadong isyu na kailangang pag-aralan.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

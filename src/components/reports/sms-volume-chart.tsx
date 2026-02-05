@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -88,25 +87,25 @@ export function SmsVolumeChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamataas ang dami ng SMS noong {peakDay.name} ({peakDay.total} mensahe).</p>
         </CardFooter>
       </Card>
-       <DialogContent className="sm:max-w-4xl">
+       <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Chart ng Dami ng SMS ({timeframe})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng ulat na ito ang dami ng mga papasok na mensahe ng SMS sa isang tinukoy na panahon. Nakakatulong ito sa mga admin na maunawaan ang mga pattern ng komunikasyon at mga panahon ng mataas na aktibidad.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang data ay nagpapakita ng isang malinaw na pattern ng aktibidad sa buong linggo, na may pinakamataas na dami ng mensahe tuwing {peakDay.name}. Ito ay maaaring magpahiwatig na ang mga magsasaka ay mas malamang na mag-ulat ng mga isyu bago ang katapusan ng linggo. Ang kabuuang {totalSms} na mensahe sa loob ng linggo ay nagpapakita ng malusog na antas ng pakikilahok.</p>
                 <p><strong>Rekomendasyon:</strong> Pag-aralan kung bakit ang {peakDay.name} ay isang araw na may mataas na aktibidad. Maaaring ito ay nauugnay sa mga iskedyul ng merkado o mga gawain sa bukid. Tiyakin na may sapat na suporta mula sa admin sa mga araw na ito upang pamahalaan ang pagdagsa ng mga mensahe. Isaalang-alang ang pagpapadala ng mga paalala o pangkalahatang payo sa mga araw na mas mababa ang aktibidad upang mapanatili ang pakikipag-ugnayan.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

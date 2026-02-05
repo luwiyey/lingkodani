@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -88,25 +87,25 @@ export function AdviceSuccessChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Mataas na pagiging maaasahan ng AI, na may {approvedPercentage}% ng payo na inaprubahan nang walang pag-edit.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
             <DialogHeader>
                 <DialogTitle>Mga Rate ng Pagpapatunay ng Payo ({timeframe})</DialogTitle>
                 <DialogDescription>
                     Isang detalyadong pagtingin sa kung paano pinangangasiwaan ng mga admin ang mga mungkahi ng AI. Ang mataas na rate ng pag-apruba ay nagpapahiwatig ng malakas na pagganap at pagkakahanay ng AI sa kaalaman ng eksperto.
                 </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="h-[70vh] pr-4">
+            <div className="flex-1 overflow-y-auto pr-4">
                 <div className="h-[400px] w-full mt-4">
                     <ChartContainer config={chartConfig}>
                         {renderChart()}
                     </ChartContainer>
                 </div>
-                <div className="mt-6 text-sm text-muted-foreground space-y-2">
+                <div className="mt-8 text-sm text-muted-foreground space-y-2">
                     <p><strong>Detalyadong Pagsusuri:</strong> Ang kasalukuyang rate ng pag-apruba na {approvedPercentage}% ay nagpapakita na ang AI ay karaniwang nagbibigay ng tumpak at naaangkop na payo. Ang {adviceSuccessData.find(d => d.status === 'In-edit')?.value}% ng mga pag-edit ay nagmumungkahi na may mga pagkakataon pa para sa AI na matuto ng mas tiyak na mga lokal na konteksto. Ang {adviceSuccessData.find(d => d.status === 'Tinanggihan')?.value}% na rejection rate ay mababa, na nagpapahiwatig na bihirang magbigay ng maling payo ang AI.</p>
                     <p><strong>Rekomendasyon:</strong> Suriin ang mga "In-edit" na kaso. Tukuyin ang mga karaniwang tema sa mga pagwawasto (hal., mga lokal na pangalan ng peste, partikular na dosis ng pataba) at gamitin ang mga ito bilang data para sa susunod na pagsasanay sa AI upang mapabuti pa ang katumpakan nito.</p>
                 </div>
-            </ScrollArea>
-             <DialogFooter>
+            </div>
+             <DialogFooter className="pt-4">
                 <DialogClose asChild>
                     <Button type="button" variant="secondary">Isara</Button>
                 </DialogClose>

@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -92,25 +91,25 @@ export function TopInquiriesChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang tanong tungkol sa "{topInquiry.question}" ang pinakamadalas, na nagpapakita ng pangangailangan para sa solusyon sa peste.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Pinakakaraniwang Uri ng Tanong ({timeframe})</DialogTitle>
             <DialogDescription>
               Kinakategorya ng ulat na ito ang mga pinakamadalas na katanungan na ipinapadala ng mga magsasaka. Ang pag-unawa sa mga pangunahing alalahanin na ito ay mahalaga para sa paglikha ng may-katuturang nilalaman sa knowledge base at pagpaplano ng mga aktibidad ng extension.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang mga tanong tungkol sa pamamahala ng peste ("Gamot sa peste?") at kalusugan ng pananim ("Bakit dilaw ang dahon?") ang nangingibabaw. Ito ay nagpapatunay na ang pag-diagnose at paggamot sa mga isyu sa bukid ang pangunahing dahilan kung bakit ginagamit ng mga magsasaka ang sistema.</p>
                 <p><strong>Rekomendasyon:</strong> Gumawa o i-highlight ang mga artikulo sa knowledge base na direktang tumutugon sa mga nangungunang tanong na ito. Maaari ring maging kapaki-pakinabang na lumikha ng mga "Quick Reply" na template para sa mga karaniwang tanong na ito upang mas mapabilis pa ang oras ng pagtugon.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

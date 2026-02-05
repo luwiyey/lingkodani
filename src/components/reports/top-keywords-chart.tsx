@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -92,25 +91,25 @@ export function TopKeywordsChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: "Peste," "pataba," at "sakit" ang mga pangunahing salita, na tumutukoy sa mga pangunahing alalahanin.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Mga Karaniwang Salita ({timeframe})</DialogTitle>
             <DialogDescription>
               Tinutukoy ng ulat na ito ang mga pinakamadalas na salitang ginagamit ng mga magsasaka sa kanilang mga mensahe. Ito ay isang direktang bintana sa kanilang mga alalahanin at prayoridad.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang mga salitang "Peste," "Pataba," at "Sakit" ang nangunguna sa listahan, na malinaw na nagpapahiwatig na ang mga ito ang tatlong pangunahing kategorya ng mga alalahanin para sa mga magsasaka. Ang pagkakaroon ng mga pangalan ng pananim tulad ng "Kamatis" at "Palay" ay nagpapakita kung aling mga pananim ang pinagtutuunan ng pansin.</p>
                 <p><strong>Rekomendasyon:</strong> Gamitin ang mga keyword na ito para i-tag at i-kategorya ang nilalaman sa knowledge base upang mas madali itong mahanap. Ang mga nangungunang keyword na ito ay dapat ding maging priyoridad sa pagsasanay ng AI model upang matiyak na nauunawaan nito ang mga ito nang may mataas na katumpakan.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

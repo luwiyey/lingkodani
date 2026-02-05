@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { aiAgreementData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -88,25 +87,25 @@ export function AIAgreementChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {approvedAsIsPercentage}% ng mga output ng AI ay inaprubahan nang walang pag-edit, na nagpapakita ng malakas na pagkakasundo.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Pagkakatugma ng AI at Expert ({timeframe})</DialogTitle>
             <DialogDescription>
               Sinusukat nito kung gaano kadalas sumasang-ayon ang mga Agricultural Extension Worker (AEW) sa mga payo ng AI. Ito ay isang mahalagang sukatan para sa pagtitiwala at pagiging epektibo ng sistema.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang {approvedAsIsPercentage}% na rate ng pagsang-ayon ay nagpapahiwatig na ang AI model ay mahusay na naka-align sa kaalaman ng mga lokal na eksperto. Ibig sabihin, sa karamihan ng mga kaso, ang paunang payo ng AI ay tama na at hindi na kailangan ng pagbabago. Ito ay nakakatipid ng oras para sa mga AEW.</p>
                 <p><strong>Rekomendasyon:</strong> Upang mapabuti pa ito, regular na suriin ang mga "Binago" at "Tinanggihan" na mga payo. Gamitin ang mga ito bilang data para sa fine-tuning ng AI model upang mas maunawaan nito ang mga partikular na sitwasyon sa barangay.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

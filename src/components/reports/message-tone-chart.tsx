@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -90,25 +89,25 @@ export function MessageToneChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan ay "Neutral," ngunit ang {totalUrgent} na mensaheng nag-aalala ay nangangailangan ng pansin.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Tono ng Mensahe ({timeframe})</DialogTitle>
             <DialogDescription>
               Awtomatikong sinusuri ng AI ang emosyonal na tono ng bawat mensahe. Ang pag-unawa sa tono (hal., neutral, nag-aalala, kritikal) ay tumutulong sa mga admin na i-prioritize ang mga pinaka-urgent na kaso.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Habang ang karamihan ng mga mensahe ay "Neutral" (impormatibo), mayroong isang malaking bilang ng mga "Nag-aalala" at "Kritikal" na mga mensahe. Ito ang mga ulat kung saan ang mga magsasaka ay nagpapahayag ng pagkabahala o takot tungkol sa kanilang mga pananim, na nangangailangan ng mas mabilis at mas sensitibong pagtugon.</p>
                 <p><strong>Rekomendasyon:</strong> Gamitin ang pagsusuri ng tono bilang isang filter sa SMS Feed upang unahin ang mga "Kritikal" at "Nag-aalala" na mga mensahe. Tiyaking ang mga template ng tugon para sa mga ganitong kaso ay nagpapakita ng empatiya at pag-unawa, bilang karagdagan sa pagbibigay ng teknikal na payo.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

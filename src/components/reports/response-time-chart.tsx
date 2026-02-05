@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -85,25 +84,25 @@ export function ResponseTimeChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang average na oras ng pagtugon ay {averageTime} minuto, na nagpapakita ng mabilis na sistema.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Oras ng Pagtugon ({timeframe})</DialogTitle>
             <DialogDescription>
               Sinusukat ng ulat na ito ang average na oras na lumipas mula sa pagtanggap ng isang SMS hanggang sa pagpapadala ng tugon (alinman sa awtomatikong payo o manu-manong tugon). Ang mabilis na oras ng pagtugon ay mahalaga para sa kasiyahan ng magsasaka.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang isang average na oras ng pagtugon na {averageTime} minuto ay napakahusay. Ipinapakita nito na ang sistema, kasama ang human-in-the-loop na proseso, ay mahusay at tumutugon nang mabilis sa mga pangangailangan ng magsasaka. Ang 90th percentile na oras ay nagpapahiwatig na kahit ang mga mas kumplikadong kaso ay karaniwang natutugunan sa loob ng humigit-kumulang 15 minuto.</p>
                 <p><strong>Rekomendasyon:</strong> Panatilihin ang kahusayan na ito. Kung mapapansin na tumataas ang average na oras ng pagtugon, maaaring ito ay isang senyales na ang mga AEW ay overloaded o may bottleneck sa proseso ng pagpapatunay. Gamitin ang data na ito upang bigyang-katwiran ang pangangailangan para sa karagdagang tauhan kung kinakailangan.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

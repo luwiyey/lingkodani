@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -88,25 +87,25 @@ export function LanguageUsageChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {topLanguage.value}% ng mga mensahe ay nasa purong {topLanguage.language}, na ginagawa itong pangunahing wika.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Paggamit ng Wika ({timeframe})</DialogTitle>
             <DialogDescription>
                 Ipinapakita ng ulat na ito ang distribusyon ng mga wika at diyalekto na ginagamit ng mga magsasaka sa kanilang mga mensahe. Ito ay kritikal na impormasyon para sa pag-optimize ng AI's Natural Language Understanding (NLU) model.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang {topLanguage.language} ang nangingibabaw na wika, na bumubuo sa {topLanguage.value}% ng lahat ng komunikasyon. Ang "Taglish" o code-switching ay mayroon ding malaking bahagi, na nagpapahiwatig na ang AI ay dapat maging sanay sa pag-unawa ng halo-halong wika. Ang pagkakaroon ng Ilocano at English, kahit na mas maliit ang porsyento, ay nagpapakita ng linggwistikong pagkakaiba-iba sa loob ng komunidad.</p>
                 <p><strong>Rekomendasyon:</strong> Tiyaking ang AI model ay patuloy na sinasanay sa lahat ng mga wikang ito, lalo na sa Taglish. Kolektahin ang mas maraming data ng pagsasanay para sa mga hindi gaanong karaniwang wika tulad ng Ilocano upang mapabuti ang pagganap ng AI para sa mga nagsasalita nito. Maaari ring maging kapaki-pakinabang na magkaroon ng mga template ng tugon sa iba't ibang wika.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

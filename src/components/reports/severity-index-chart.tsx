@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -87,25 +86,25 @@ export function SeverityIndexChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang "{mostSevereCategory.name}" ang may pinakamataas na bahagdan ng "malubhang" ulat.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Antas ng Kalubhaan ng Isyu ({timeframe})</DialogTitle>
             <DialogDescription>
               Kinakategorya ng chart na ito ang bawat uri ng isyu (Peste, Sakit, Panahon) batay sa kalubhaan ng mga iniulat na sintomas. Nakakatulong ito na i-prioritize ang mga isyu na may pinakamalaking epekto.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ipinapakita ng data na habang ang "Peste" ay maaaring ang pinakamadalas na iulat, ang kategorya ng "{mostSevereCategory.name}" ay may pinakamataas na porsyento ng mga ulat na "moderate" at "severe". Ibig sabihin, kapag nag-ulat ang isang magsasaka tungkol sa sakit, ito ay malamang na isang malubhang problema na.</p>
                 <p><strong>Rekomendasyon:</strong> Bigyan ng mas mataas na prayoridad ang mga ulat na may kaugnayan sa "{mostSevereCategory.name}". Tiyaking ang mga AEW ay may sapat na kaalaman at kagamitan para sa pag-diagnose at paggamot ng mga sakit ng halaman. Isaalang-alang ang paglikha ng mas maraming nilalaman sa knowledge base tungkol sa pag-iwas sa mga sakit.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

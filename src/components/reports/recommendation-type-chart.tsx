@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -85,25 +84,25 @@ export function RecommendationTypeChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: "{mostCommonType.name}" ang pinakamadalas na uri ng payo, na nagpapakita ng pokus sa proaktibong pagsasaka.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Uri ng Mga Inirekomendang Payo ({timeframe})</DialogTitle>
             <DialogDescription>
               Kinakategorya ng ulat na ito ang mga payo na ibinibigay ng sistema. Ang pag-unawa kung anong uri ng tulong ang pinakamadalas na ibinibigay ay nakakatulong na matukoy ang mga pangunahing tungkulin ng sistema.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang "Pag-iwas" ay ang pinakamadalas na uri ng rekomendasyon, na nagpapahiwatig na ang sistema ay epektibong nagbibigay ng proaktibong payo bago pa man lumala ang mga problema. Ang "Paggamot" ay pangalawa, na nagpapakita ng kakayahan ng sistema na magbigay ng mga solusyon sa mga umiiral na isyu. Ang "Referral" ay nagpapahiwatig ng mga kumplikadong kaso na nangangailangan ng atensyon ng tao.</p>
                 <p><strong>Rekomendasyon:</strong> Palakasin ang mga payo sa "Pag-iwas" sa pamamagitan ng pag-broadcast ng mga seasonal na tip. Para sa mga "Referral", pag-aralan ang mga kasong ito upang makita kung may mga umuulit na tema na maaaring matutunan ng AI, upang mabawasan ang bilang ng mga referral sa hinaharap.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

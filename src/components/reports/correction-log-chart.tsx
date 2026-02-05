@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -85,25 +84,25 @@ export function CorrectionLogChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang pinakamadalas itama ay ang 'Entity', na nagpapahiwatig ng mga hamon sa pagkilala ng AI sa mga partikular na pangngalan.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Log ng Mga Pagtutuwid ({timeframe})</DialogTitle>
             <DialogDescription>
                 Sinusuri ng ulat na ito ang mga uri ng pagwawasto na ginawa ng mga AEW sa interpretasyon ng AI. Ang pag-unawa kung aling mga kategorya ang madalas na nangangailangan ng pag-edit ay mahalaga para sa naka-target na pagpapabuti ng modelo.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang "Entity" (pagkilala sa mga partikular na pangngalan tulad ng pangalan ng peste, gamot, o lugar) ang may pinakamaraming pagwawasto. Ito ay karaniwan sa mga AI model na nahihirapang unawain ang mga lokal at tiyak na termino. Ang "Intent" (ang layunin ng mensahe) ay mas madalang na i-correct, na nagpapakita na ang AI ay karaniwang nakukuha ang pangkalahatang layunin ng magsasaka.</p>
                 <p><strong>Rekomendasyon:</strong> Mag-focus sa pagpapabuti ng 'Entity Recognition'. Magtipon ng listahan ng mga lokal na termino para sa mga pananim, peste, at pataba at idagdag ang mga ito sa dataset ng pagsasanay ng AI. Ang bawat pagwawasto sa 'Entity' ay isang mahalagang data point.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

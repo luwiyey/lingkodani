@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -85,25 +84,25 @@ export function InterventionSupportChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamarami ang kinakailangang pagbisita noong Mayo, posibleng dahil sa pagsisimula ng panahon ng pagtatanim.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Mga Pagbisita sa Bukid ({timeframe})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng ulat na ito ang bilang ng mga kaso na minarkahan bilang nangangailangan ng direktang interbensyon mula sa isang Agricultural Extension Worker (AEW).
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang bilang ng mga pagbisita sa bukid ay nagbibigay ng sukatan para sa workload ng mga AEW. Ang pinakamataas na bilang ay naitala noong Mayo, na karaniwang kasabay ng pagsisimula ng panahon ng pagtatanim para sa maraming pananim, kung kailan mas maraming isyu ang lumalabas. Ito ay nagpapakita ng seasonal na katangian ng pangangailangan para sa suporta.</p>
                 <p><strong>Rekomendasyon:</strong> Gamitin ang data na ito para sa pagpaplano ng workforce. Sa mga buwan na may mataas na bilang ng kinakailangang pagbisita, tiyaking may sapat na tauhan at mapagkukunan ang mga AEW. Maaari ring mag-iskedyul ng mga proyektong pagsasanay o administratibo sa mga buwan na may mas mababang demand.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

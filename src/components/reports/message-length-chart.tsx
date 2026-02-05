@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const chartConfig = {
@@ -85,25 +84,25 @@ export function MessageLengthChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga mensahe ay may haba na 21-80 characters, na mainam para sa SMS.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Haba ng Mensahe ({timeframe})</DialogTitle>
             <DialogDescription>
               Sinusuri ng ulat na ito ang haba ng mga papasok na mensahe ng SMS. Ang pag-unawa kung gaano kahaba o kaikli ang mga mensahe ng magsasaka ay makakatulong sa pag-optimize ng pag-unawa ng AI at sa pag-disenyo ng mga epektibong tugon.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     {renderChart()}
                 </ChartContainer>
             </div>
-            <div className="mt-6 text-sm text-muted-foreground space-y-2">
+            <div className="mt-8 text-sm text-muted-foreground space-y-2">
                 <p><strong>Detalyadong Pagsusuri:</strong> Ang pinakamalaking bilang ng mga mensahe ay nasa "Medium" na haba (21-80 characters). Ito ang perpektong haba para sa SMS, na sapat na detalyado ngunit hindi masyadong mahaba. Ang mga "Long" na mensahe (81-160) ay maaari namang maglaman ng mas kumplikadong mga isyu, habang ang mga "Short" (1-20) ay maaaring mga simpleng katanungan o kumpirmasyon.</p>
                 <p><strong>Rekomendasyon:</strong> Para sa mga "Long" na mensahe, tiyaking kaya ng AI na i-parse ang maraming pangungusap at mga ideya. Para sa mga "Short" na mensahe, ang AI ay dapat na mahusay sa pag-unawa ng mga keyword kahit na limitado ang konteksto. Ang pag-alam sa mga haba na ito ay nakakatulong din na matiyak na ang mga awtomatikong tugon ay angkop din sa haba.</p>
             </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>
