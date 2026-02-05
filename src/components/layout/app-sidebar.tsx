@@ -16,10 +16,6 @@ import {
   ChevronRight,
   LayoutGrid,
   GraduationCap,
-  Building,
-  ShieldAlert,
-  DollarSign,
-  Truck
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,13 +58,6 @@ const barangayNavItems: NavItem[] = [
   { title: "Mga Setting ng Brgy.", href: "/dashboard/settings", icon: Settings },
 ];
 
-const municipalNavItems: NavItem[] = [
-    { title: "Pangkalahatang-ideya", href: "/dashboard/municipal/oversight", icon: Building },
-    { title: "Desk ng Insidente", href: "/dashboard/municipal/incidents", icon: ShieldAlert },
-    { title: "Awtoridad sa Presyo", href: "/dashboard/municipal/prices", icon: DollarSign },
-    { title: "Mga Kahilingan ng Rekurso", href: "/dashboard/municipal/vouchers", icon: Truck },
-];
-
 function NavMenu({ items }: { items: NavItem[] }) {
     const pathname = usePathname();
     const isParentActive = (item: NavItem) => {
@@ -101,7 +90,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                     <SidebarMenuSub>
                       {item.subItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                           <Link href={subItem.href} passHref>
+                           <Link href={subItem.href}>
                             <SidebarMenuSubButton isActive={pathname === subItem.href}>
                               <span>{subItem.title}</span>
                               {subItem.label && (
@@ -147,10 +136,6 @@ export function AppSidebar() {
         <div>
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
             <NavMenu items={barangayNavItems} />
-        </div>
-        <div className="mt-auto">
-            <SidebarGroupLabel>Portal ng Munisipyo</SidebarGroupLabel>
-            <NavMenu items={municipalNavItems} />
         </div>
       </SidebarContent>
     </Sidebar>
