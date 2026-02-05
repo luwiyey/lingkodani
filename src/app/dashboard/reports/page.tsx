@@ -1,4 +1,5 @@
 
+
 import { File, Filter, Upload, Download, ArrowDownToLine } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,9 @@ import { IssueTrendsChart } from '@/components/reports/issue-trends-chart';
 import { SmsVolumeChart } from '@/components/reports/sms-volume-chart';
 import { AdviceSuccessChart } from '@/components/reports/advice-success-chart';
 import { CropStageChart } from '@/components/reports/crop-stage-chart';
+import { TopKeywordsChart } from '@/components/reports/top-keywords-chart';
+import { LanguageUsageChart } from '@/components/reports/language-usage-chart';
+import { SmsPeakHoursChart } from '@/components/reports/sms-peak-hours-chart';
 
 export default function ReportsPage() {
   return (
@@ -33,6 +37,13 @@ export default function ReportsPage() {
           <AdviceSuccessChart />
           <CropStageChart />
       </div>
+      
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <TopKeywordsChart />
+        <LanguageUsageChart />
+        <SmsPeakHoursChart />
+      </div>
+
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <IssueTrendsChart />
         <Card>

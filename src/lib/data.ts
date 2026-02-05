@@ -331,3 +331,33 @@ export const auditLogs: AuditLog[] = [
     { id: 'AUD004', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'UPDATE_FARMER', details: 'In-update ang mga pananim para kay Maria Clara (FARM002).'},
     { id: 'AUD005', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), user: 'system', action: 'AUTO_ALERT_GENERATED', details: 'Bumuo ng alerto sa panganib ng baha batay sa data ng panahon.'},
 ];
+
+export const topKeywordsData = [
+  { word: 'Peste', count: 45 },
+  { word: 'Pataba', count: 38 },
+  { word: 'Sakit', count: 32 },
+  { word: 'Ani', count: 28 },
+  { word: 'Tubig', count: 25 },
+  { word: 'Tulong', count: 22 },
+  { word: 'Presyo', count: 19 },
+  { word: 'Kamatis', count: 18 },
+  { word: 'Palay', count: 15 },
+  { word: 'Salamat', count: 12 },
+];
+
+export const languageUsageData = [
+    { language: 'Tagalog', value: 65, fill: 'hsl(var(--chart-1))' },
+    { language: 'Taglish', value: 20, fill: 'hsl(var(--chart-2))' },
+    { language: 'Ilocano', value: 10, fill: 'hsl(var(--chart-3))' },
+    { language: 'English', value: 5, fill: 'hsl(var(--chart-4))' },
+];
+
+export const smsPeakHoursData = [
+  { hour: '6-8am', messages: 15 },
+  { hour: '8-10am', messages: 28 },
+  { hour: '10-12pm', messages: 22 },
+  { hour: '12-2pm', messages: 18 },
+  { hour: '2-4pm', messages: 25 },
+  { hour: '4-6pm', messages: 35 },
+  { hour: '6-8pm', messages: 20 },
+];
