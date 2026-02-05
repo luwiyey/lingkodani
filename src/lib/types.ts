@@ -6,17 +6,17 @@ export type NavItem = {
   href: string;
   icon: LucideIcon;
   label?: string;
-  role?: 'barangay' | 'municipal';
+  role?: 'barangay';
 };
 
-export type UserRole = 'barangay' | 'municipal';
+export type UserRole = 'barangay';
 
 export type UserProfile = {
   uid: string;
   email: string;
   displayName: string;
   role: UserRole;
-  barangayId?: string;
+  barangayId: string;
   municipalityId: string;
 };
 
@@ -52,7 +52,7 @@ export type SmsIntent =
 
 export type SafetyFlag = 'Low' | 'Medium' | 'High';
 
-export type SmsMessageStatus = 'pending_approval' | 'approved' | 'escalated' | 'replied' | 'rejected';
+export type SmsMessageStatus = 'pending_approval' | 'approved' | 'replied' | 'rejected';
 
 export type SmsMessage = {
   id: string;

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -31,7 +30,6 @@ const statusColors = {
     approved: 'bg-green-500',
     rejected: 'bg-red-500',
     replied: 'bg-blue-500',
-    escalated: 'bg-purple-500',
 }
 
 const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType, color: string}> = {
@@ -220,15 +218,6 @@ export default function SmsFeedPage() {
                             <TooltipContent><p>Baguhin ang payo bago ipadala.</p></TooltipContent>
                         </Tooltip>
                         
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="secondary" className="bg-purple-600 hover:bg-purple-700 text-white">
-                                    <ArrowUpCircle className="mr-2" />I-escalate sa Munisipyo
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>I-flag ang mensaheng ito para sa pagsusuri ng Municipal Admin.</p></TooltipContent>
-                        </Tooltip>
-
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="destructive">
@@ -246,5 +235,3 @@ export default function SmsFeedPage() {
     </div>
   );
 }
-
-    

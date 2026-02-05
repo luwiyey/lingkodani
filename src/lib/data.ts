@@ -160,7 +160,7 @@ export const smsMessages: SmsMessage[] = [
     timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'EMERGENCY',
     urgency: 'high',
-    status: 'escalated',
+    status: 'pending_approval',
     aiAdvice: 'Nakalulungkot marinig iyan. I-dokumento ang pinsala. Maaari kang mag-apply para sa tulong-pinansyal sa ilalim ng programa ng DA para sa mga nasalanta ng kalamidad. Makipag-ugnayan sa iyong lokal na tanggapan ng agrikultura.',
     aiConfidence: 0.92,
     safetyFlag: 'Medium',

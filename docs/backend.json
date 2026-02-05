@@ -2,17 +2,17 @@
   "entities": {
     "UserProfile": {
       "title": "User Profile",
-      "description": "Represents an app user, either a Barangay or Municipal admin.",
+      "description": "Represents a Barangay admin app user.",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "Firebase Auth User ID." },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["barangay", "municipal"] },
-        "barangayId": { "type": "string", "description": "ID of the barangay they belong to. Optional for municipal users." },
+        "role": { "type": "string", "enum": ["barangay"] },
+        "barangayId": { "type": "string", "description": "ID of the barangay they belong to." },
         "municipalityId": { "type": "string", "description": "ID of the municipality they belong to." }
       },
-      "required": ["uid", "email", "role", "municipalityId"]
+      "required": ["uid", "email", "role", "barangayId", "municipalityId"]
     },
     "Barangay": {
         "title": "Barangay",
@@ -23,15 +23,6 @@
             "municipalityId": { "type": "string" }
         },
         "required": ["name", "municipalityId"]
-    },
-    "Municipality": {
-        "title": "Municipality",
-        "description": "Represents a single municipality.",
-        "type": "object",
-        "properties": {
-            "name": { "type": "string" }
-        },
-        "required": ["name"]
     },
     "Farmer": {
       "title": "Farmer",
@@ -65,7 +56,7 @@
             "parsedIntent": {"type": "string", "enum": ["REGISTER", "CROP_UPDATE", "HARVEST", "REQUEST", "PEST_DISEASE", "WEATHER_HELP", "PRICE_CHECK", "EMERGENCY", "UNKNOWN"]},
             "aiConfidence": {"type": "number"},
             "safetyFlag": {"type": "string", "enum": ["Low", "Medium", "High"]},
-            "status": {"type": "string", "enum": ["pending_approval", "approved", "escalated", "replied"]}
+            "status": {"type": "string", "enum": ["pending_approval", "approved", "replied", "rejected"]}
         },
         "required": ["farmerId", "message", "timestamp"]
     },
@@ -177,21 +168,6 @@
         },
         "required": ["title", "content", "type"]
     },
-    "Incident": {
-        "title": "Incident",
-        "description": "An issue escalated by a barangay to the municipal level.",
-        "type": "object",
-        "properties": {
-            "barangayId": {"type": "string"},
-            "farmerId": {"type": "string"},
-            "title": {"type": "string"},
-            "description": {"type": "string"},
-            "status": {"type": "string", "enum": ["open", "under_review", "resolved"]},
-            "timestamp": {"type": "string", "format": "date-time"},
-            "notes": {"type": "array", "items": {"type": "string"}}
-        },
-        "required": ["barangayId", "title", "description", "timestamp"]
-    },
      "AuditLog": {
       "title": "Audit Log",
       "description": "Tracks important actions taken by users in the system.",
@@ -218,10 +194,6 @@
       "schema": { "$ref": "#/entities/Barangay" },
       "description": "List of all barangays."
     },
-    "/municipalities/{municipalityId}": {
-      "schema": { "$ref": "#/entities/Municipality" },
-      "description": "List of all municipalities."
-    },
     "/farmers/{farmerId}": {
       "schema": { "$ref": "#/entities/Farmer" },
       "description": "Stores all registered farmer profiles."
@@ -239,8 +211,7 @@
             "oneOf": [
                 { "$ref": "#/entities/SmsLog" },
                 { "$ref": "#/entities/AiResponse" },
-                { "$ref": "#/entities/FieldNote" },
-                { "$ref": "#/entities/Incident" }
+                { "$ref": "#/entities/FieldNote" }
             ]
         },
         "description": "Timeline of all interactions for a single farmer."
@@ -269,15 +240,9 @@
         "schema": { "$ref": "#/entities/KnowledgePost" },
         "description": "Content for the knowledge hub."
     },
-    "/incidents/{incidentId}": {
-      "schema": { "$ref": "#/entities/Incident" },
-      "description": "Issues escalated from barangay to municipal level."
-    },
     "/audit_logs/{auditLogId}": {
         "schema": { "$ref": "#/entities/AuditLog"},
         "description": "Tracks all critical user actions for accountability."
     }
   }
 }
-
-    
