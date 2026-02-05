@@ -40,7 +40,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isDisasterModeActive = pathname === '/dashboard/disaster-mode';
+  const isDisasterModeActive = pathname.startsWith('/dashboard/disaster');
   const [showDialog, setShowDialog] = useState(false);
 
   const handleSwitchChange = () => {
