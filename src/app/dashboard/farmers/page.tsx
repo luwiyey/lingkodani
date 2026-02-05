@@ -310,7 +310,7 @@ export default function FarmersPage() {
                         <div className="flex items-center">
                             Mga Pananim
                             <div className="w-8 flex justify-center">
-                                {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-4 w-4" />)}
                             </div>
                         </div>
                     </TableHead>
@@ -337,24 +337,26 @@ export default function FarmersPage() {
                     <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
                     <TableCell>{farmer.crops.join(', ')}</TableCell>
                     <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
-                    <TableCell className="text-right space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
-                        <Button variant="outline" size="sm" onClick={() => generateQr(farmer.id)}><QrCode /></Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                    <TableCell className="text-right">
+                        <div className="flex flex-wrap justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
+                            <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                            <Button variant="outline" size="sm" onClick={() => generateQr(farmer.id)}><QrCode /></Button>
+                        </div>
                     </TableCell>
                   </TableRow>
                 ))}
