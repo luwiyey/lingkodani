@@ -7,6 +7,11 @@ export type NavItem = {
   icon: LucideIcon;
   label?: string;
   role?: 'barangay';
+  subItems?: {
+    title: string;
+    href: string;
+    label?: string;
+  }[];
 };
 
 export type UserRole = 'barangay';
