@@ -77,12 +77,12 @@ export function AppSidebar() {
                      <SidebarMenuButton
                         isActive={isParentActive(item)}
                         tooltip={{ children: item.title, side: "right" }}
-                        className="w-full justify-start"
+                        className="w-full justify-start group"
                       >
                         <item.icon />
                         <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
                           <span className="truncate">{item.title}</span>
-                          <ChevronRight className="ml-auto h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+                          <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
                         </div>
                       </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -90,7 +90,7 @@ export function AppSidebar() {
                     <SidebarMenuSub>
                       {item.subItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <Link href={subItem.href} passHref legacyBehavior>
+                          <Link href={subItem.href} asChild>
                             <SidebarMenuSubButton isActive={pathname === subItem.href}>
                               <span>{subItem.title}</span>
                               {subItem.label && (
