@@ -34,12 +34,12 @@ const statusColors = {
 }
 
 const typeInfo: Record<SmsMessageType, {label: string, icon: React.ElementType, color: string}> = {
-    registration: { label: 'Pagpaparehistro', icon: User, color: 'bg-blue-500'},
-    'crop-update': { label: 'Update sa Pananim', icon: FilePen, color: 'bg-green-500' },
-    request: { label: 'Kahilingan', icon: Tractor, color: 'bg-orange-500' },
-    'pest-report': { label: 'Ulat ng Peste', icon: ShieldAlert, color: 'bg-red-500' },
-    weather: { label: 'Panahon', icon: CloudCog, color: 'bg-sky-500'},
-    general: { label: 'Pangkalahatan', icon: MessageCircle, color: 'bg-gray-500' },
+    pagpaparehistro: { label: 'Pagpaparehistro', icon: User, color: 'bg-blue-500'},
+    'update-sa-pananim': { label: 'Update sa Pananim', icon: FilePen, color: 'bg-green-500' },
+    kahilingan: { label: 'Kahilingan', icon: Tractor, color: 'bg-orange-500' },
+    'ulat-ng-peste': { label: 'Ulat ng Peste', icon: ShieldAlert, color: 'bg-red-500' },
+    'ulat-panahon': { label: 'Ulat sa Panahon', icon: CloudCog, color: 'bg-sky-500'},
+    pangkalahatan: { label: 'Pangkalahatan', icon: MessageCircle, color: 'bg-gray-500' },
 }
 
 export default function SmsFeedPage() {
@@ -62,13 +62,13 @@ export default function SmsFeedPage() {
     <div className="h-[calc(100vh-5rem)] grid md:grid-cols-3 lg:grid-cols-4 gap-4">
       <Card className="md:col-span-1 lg:col-span-1 h-full overflow-y-auto">
         <CardHeader>
-          <CardTitle>Mga Papasok na SMS</CardTitle>
+          <CardTitle>Sentro ng Komunikasyon sa SMS</CardTitle>
           <CardDescription>Pumili ng mensahe upang suriin at aksyunan.</CardDescription>
         </CardHeader>
         <CardContent className="p-2">
             <div className="flex flex-col gap-2">
             {smsMessages.map(message => {
-                const TypeIcon = typeInfo[message.type].icon;
+                const TypeIcon = typeInfo[message.type]?.icon || MessageCircle;
                 return (
                     <button
                         key={message.id}
@@ -118,10 +118,12 @@ export default function SmsFeedPage() {
                         <User className="w-4 h-4"/>
                         <h3 className="font-semibold">Ulat mula kay {selectedMessage.farmerName}</h3>
                     </div>
+                    {typeInfo[selectedMessage.type] && (
                     <Badge variant="outline" className={cn("text-xs", typeInfo[selectedMessage.type].color, "border-transparent text-white")}>
                         <typeInfo[selectedMessage.type].icon className="w-3 h-3 mr-1" />
                         {typeInfo[selectedMessage.type].label}
                     </Badge>
+                    )}
                 </div>
                 <div className="p-4 bg-muted rounded-lg">
                     <p className="text-muted-foreground">{selectedMessage.message}</p>

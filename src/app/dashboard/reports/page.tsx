@@ -13,8 +13,8 @@ export default function ReportsPage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Mga Ulat at Analitika</h1>
-          <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Mga Ulat at Pagsusuri</h1>
+          <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight para sa paggawa ng desisyon.</p>
         </div>
         <div className="flex gap-2">
             <Button variant="outline">

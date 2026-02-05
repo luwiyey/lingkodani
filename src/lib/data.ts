@@ -5,6 +5,8 @@ export const farmers: Farmer[] = [
   {
     id: 'FARM001',
     name: 'Juan dela Cruz',
+    age: 45,
+    gender: 'Lalaki',
     phone: '+639171234567',
     location: 'San Isidro',
     municipality: 'Nueva Ecija',
@@ -17,6 +19,8 @@ export const farmers: Farmer[] = [
   {
     id: 'FARM002',
     name: 'Maria Clara',
+    age: 38,
+    gender: 'Babae',
     phone: '+639182345678',
     location: 'Santa Cruz',
     municipality: 'Isabela',
@@ -29,6 +33,8 @@ export const farmers: Farmer[] = [
   {
     id: 'FARM003',
     name: 'Jose Rizal',
+    age: 52,
+    gender: 'Lalaki',
     phone: '+639193456789',
     location: 'Mabini',
     municipality: 'Batangas',
@@ -41,6 +47,8 @@ export const farmers: Farmer[] = [
   {
     id: 'FARM004',
     name: 'Gabriela Silang',
+    age: 41,
+    gender: 'Babae',
     phone: '+639204567890',
     location: 'Lapu-Lapu',
     municipality: 'Ilocos Sur',
@@ -53,6 +61,8 @@ export const farmers: Farmer[] = [
   {
     id: 'FARM005',
     name: 'Andres Bonifacio',
+    age: 35,
+    gender: 'Lalaki',
     phone: '+639215678901',
     location: 'Tondo',
     municipality: 'Maynila',
@@ -71,7 +81,7 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Maria Clara',
     message: 'PEST TOMATO LEAFMINER. May dilaw na batik ang dahon ng kamatis ko. Paano ito masusugpo?',
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    type: 'pest-report',
+    type: 'ulat-ng-peste',
     urgency: 'high',
     status: 'pending',
     aiAdvice: 'Maaaring senyales ng leafminer ang mga dilaw na batik. Isaalang-alang ang paggamit ng neem oil spray. Alisin at sirain ang mga apektadong dahon. Tingnan ang KB012 para sa karagdagang detalye.',
@@ -84,7 +94,7 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Juan dela Cruz',
     message: 'HARVEST PALAY 120kg. Malapit na ang anihan ng palay ko. May mga tip ba para pagkatapos ng ani?',
     timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    type: 'crop-update',
+    type: 'update-sa-pananim',
     urgency: 'medium',
     status: 'approved',
     aiAdvice: 'Para sa post-harvest, tiyaking maayos ang pagpapatuyo ng mga butil sa 14% na moisture content bago itago. Gumamit ng malinis na sako at mga pasilidad ng imbakan upang maiwasan ang mga peste.',
@@ -96,7 +106,7 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Jose Rizal',
     message: 'PEST SUGARCANE BORER. Kinakain ng peste ang mga tubo ko. Mukha silang mga borer.',
     timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-    type: 'pest-report',
+    type: 'ulat-ng-peste',
     urgency: 'high',
     status: 'rejected',
     aiAdvice: 'Maaaring ito ay isang stem borer infestation. Ang paggamit ng mga pheromone trap o pagpapakilala ng mga natural na mandaragit tulad ng Trichogramma wasps ay maaaring maging epektibo.',
@@ -108,7 +118,7 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Gabriela Silang',
     message: 'REQUEST SEED MAIS 10kg. Kailan ang pinakamainam na oras para magtanim ng mais para sa susunod na season?',
     timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    type: 'request',
+    type: 'kahilingan',
     urgency: 'low',
     status: 'edited',
     aiAdvice: 'Ang pinakamahusay na oras para magtanim ng mais ay sa simula ng tag-ulan, karaniwang Mayo o Hunyo. Tiyaking mahusay na inihanda ang iyong lupa. Naitala na namin ang iyong kahilingan para sa binhi.',
@@ -120,7 +130,7 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Andres Bonifacio',
     message: 'REGISTER Andres Bonifacio Tondo Gulay 1ha',
     timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    type: 'registration',
+    type: 'pagpaparehistro',
     status: 'actioned',
     urgency: 'medium',
     aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Tondo, Maynila.',
@@ -132,7 +142,7 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Juan dela Cruz',
     message: 'WEATHER TYPHOON DAMAGE. Nasira ng malakas na hangin ang bahagi ng aking taniman ng mais.',
     timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    type: 'weather',
+    type: 'ulat-panahon',
     urgency: 'high',
     status: 'pending',
     aiAdvice: 'Nakalulungkot marinig iyan. I-dokumento ang pinsala. Maaari kang mag-apply para sa tulong-pinansyal sa ilalim ng programa ng DA para sa mga nasalanta ng kalamidad. Makipag-ugnayan sa iyong lokal na tanggapan ng agrikultura.',
@@ -142,11 +152,11 @@ export const smsMessages: SmsMessage[] = [
 
 
 export const resources: Resource[] = [
-    { id: 'RES001', name: 'Patabang Urea', category: 'Mga Pataba', stock: 500, unit: 'sako (50kg)', lastUpdated: '2023-10-26' },
-    { id: 'RES002', name: 'Binhi ng Hybrid na Palay (SL-8H)', category: 'Mga Binhi', stock: 200, unit: 'sako (20kg)', lastUpdated: '2023-10-25' },
-    { id: 'RES003', name: 'Hand Tractor', category: 'Mga Kasangkapan', stock: 5, unit: 'yunit', lastUpdated: '2023-10-20' },
+    { id: 'RES001', name: 'Patabang Urea', category: 'Pataba', stock: 500, unit: 'sako (50kg)', lastUpdated: '2023-10-26' },
+    { id: 'RES002', name: 'Binhi ng Hybrid na Palay (SL-8H)', category: 'Binhi', stock: 200, unit: 'sako (20kg)', lastUpdated: '2023-10-25' },
+    { id: 'RES003', name: 'Hand Tractor', category: 'Kagamitan', stock: 5, unit: 'yunit', lastUpdated: '2023-10-20' },
     { id: 'RES004', name: 'Pangkat ng Manggagawa sa Komunidad', category: 'Paggawa', stock: 25, unit: 'tao', lastUpdated: '2023-10-27' },
-    { id: 'RES005', name: 'Neem Oil (Organic Pesticide)', category: 'Mga Pataba', stock: 150, unit: 'bote (1L)', lastUpdated: '2023-10-28' },
+    { id: 'RES005', name: 'Neem Oil (Organic Pesticide)', category: 'Pataba', stock: 150, unit: 'bote (1L)', lastUpdated: '2023-10-28' },
 ];
 
 export const knowledgeArticles: KnowledgeArticle[] = [

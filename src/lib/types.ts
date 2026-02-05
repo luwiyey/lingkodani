@@ -11,6 +11,8 @@ export type NavItem = {
 export type Farmer = {
   id: string;
   name: string;
+  age: number;
+  gender: 'Lalaki' | 'Babae';
   phone: string;
   location: string; // Barangay
   municipality: string;
@@ -22,12 +24,12 @@ export type Farmer = {
 };
 
 export type SmsMessageType = 
-  | 'registration' 
-  | 'crop-update' 
-  | 'request' 
-  | 'pest-report' 
-  | 'weather'
-  | 'general';
+  | 'pagpaparehistro' 
+  | 'update-sa-pananim' 
+  | 'kahilingan' 
+  | 'ulat-ng-peste' 
+  | 'ulat-panahon'
+  | 'pangkalahatan';
 
 export type SmsMessage = {
   id: string;
@@ -43,7 +45,7 @@ export type SmsMessage = {
   knowledgeBaseId?: string;
 };
 
-export type ResourceCategory = 'Mga Pataba' | 'Mga Binhi' | 'Mga Kasangkapan' | 'Paggawa';
+export type ResourceCategory = 'Pataba' | 'Binhi' | 'Kagamitan' | 'Paggawa';
 
 export type Resource = {
   id: string;

@@ -17,13 +17,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function FarmersPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Talaan ng Magsasaka</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng Magsasaka</h1>
           <p className="text-muted-foreground">Tingnan at pamahalaan ang lahat ng nakarehistrong magsasaka.</p>
         </div>
         <div className="flex gap-2">
@@ -49,6 +50,22 @@ export default function FarmersPage() {
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="name" className="text-right">Pangalan</Label>
                             <Input id="name" defaultValue="Pedro Penduko" className="col-span-3" />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="age" className="text-right">Edad</Label>
+                            <Input id="age" type="number" defaultValue="42" className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="gender" className="text-right">Kasarian</Label>
+                             <Select>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Pumili ng kasarian" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Lalaki">Lalaki</SelectItem>
+                                    <SelectItem value="Babae">Babae</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="phone" className="text-right">Telepono</Label>
@@ -94,10 +111,11 @@ export default function FarmersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[250px]">Pangalan</TableHead>
+                <TableHead className="text-center">Edad</TableHead>
+                <TableHead>Kasarian</TableHead>
                 <TableHead>Lokasyon</TableHead>
                 <TableHead>Mga Pananim</TableHead>
                 <TableHead className="text-center">Sukat (ha)</TableHead>
-                <TableHead className="text-center">Puntos ng Panganib</TableHead>
                 <TableHead>Petsa ng Pagpaparehistro</TableHead>
               </TableRow>
             </TableHeader>
@@ -116,6 +134,8 @@ export default function FarmersPage() {
                         {farmer.name}
                     </div>
                   </TableCell>
+                  <TableCell className="text-center">{farmer.age}</TableCell>
+                  <TableCell>{farmer.gender}</TableCell>
                   <TableCell>{farmer.location}, {farmer.municipality}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -123,9 +143,6 @@ export default function FarmersPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">{farmer.farmSize}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={farmer.riskScore > 50 ? 'destructive' : 'secondary'}>{farmer.riskScore}</Badge>
-                  </TableCell>
                   <TableCell>{new Date(farmer.registrationDate).toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}

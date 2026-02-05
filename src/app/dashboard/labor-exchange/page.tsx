@@ -1,53 +1,121 @@
 
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, HandCoins, Tractor, Seedling } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
-const seekingHelp = [
+const inputRequests = [
+    { farmer: 'Maria Clara', request: 'Binhi ng Kamatis (5 sako)', date: 'Aug 28, 2024', status: 'Nakabinbin' },
+    { farmer: 'Juan dela Cruz', request: 'Urea na Pataba (2 sako)', date: 'Aug 27, 2024', status: 'Aprubado' },
+];
+
+const distributionLog = [
+    { farmer: 'Gabriela Silang', item: 'Binhi ng Mais (10kg)', date: 'Aug 26, 2024', distributedBy: 'Admin' },
+    { farmer: 'Jose Rizal', item: 'Pesticide (1L)', date: 'Aug 25, 2024', distributedBy: 'Admin' },
+]
+
+const laborExchange = [
     { name: 'Ricardo Dalisay', task: 'Pag-aani ng Palay (1ha)', date: 'Aug 20, 2024', location: 'San Isidro' },
     { name: 'Lito Batumbakal', task: 'Pagtatanim ng Mais (0.5ha)', date: 'Aug 25, 2024', location: 'Santa Cruz' },
 ];
 
-const offeringHelp = [
-    { name: 'Emilio Aguinaldo', skills: 'Pag-aani, Pagtatanim', availability: 'Weekends', location: 'Mabini' },
-    { name: 'Apolinario Mabini', skills: 'Pagmamaneho ng Tractor', availability: 'Martes, Huwebes', location: 'Tondo' },
-];
 
-const activityLog = [
-    { seeker: 'Ricardo Dalisay', offerer: 'Apolinario Mabini', task: 'Pag-aani ng Palay', completedDate: 'Aug 21, 2024' },
-    { seeker: 'Lito Batumbakal', offerer: 'Emilio Aguinaldo', task: 'Pagtatanim ng Mais', completedDate: 'Aug 26, 2024' },
-]
-
-export default function LaborExchangePage() {
+export default function AssistancePage() {
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight">Palitan ng Trabaho (Turnohan)</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng Tulong</h1>
                     <p className="text-muted-foreground max-w-2xl">
-                        I-coordinate ang pagbabahaginan ng paggawa sa komunidad para sa mga gawain tulad ng pagtatanim at pag-aani.
+                        Pamahalaan ang mga kahilingan sa input, subaybayan ang pamamahagi, at i-coordinate ang pagpapalitan ng paggawa.
                     </p>
                 </div>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Mag-post ng Kahilingan
+                    Mag-log ng Tulong
                 </Button>
             </div>
-            <Tabs defaultValue="seeking">
+            <Tabs defaultValue="requests">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="seeking">Naghahanap ng Tulong</TabsTrigger>
-                    <TabsTrigger value="offering">Nag-aalok ng Tulong</TabsTrigger>
-                    <TabsTrigger value="log">Log ng Aktibidad</TabsTrigger>
+                    <TabsTrigger value="requests"><Seedling className="mr-2"/>Mga Kahilingan sa Input</TabsTrigger>
+                    <TabsTrigger value="distribution"><HandCoins className="mr-2"/>Log ng Pamamahagi</TabsTrigger>
+                    <TabsTrigger value="labor"><Tractor className="mr-2"/>Palitan ng Paggawa</TabsTrigger>
                 </TabsList>
-                <TabsContent value="seeking">
+                <TabsContent value="requests">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Mga Magsasakang Nangangailangan ng Tulong</CardTitle>
-                            <CardDescription>Mga miyembro ng komunidad na kasalukuyang humihiling ng tulong sa paggawa.</CardDescription>
+                            <CardTitle>Mga Nakabinbing Kahilingan sa Input</CardTitle>
+                            <CardDescription>Mga kahilingan ng magsasaka para sa mga binhi, pataba, at kagamitan.</CardDescription>
                         </CardHeader>
                         <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Magsasaka</TableHead>
+                                        <TableHead>Kahilingan</TableHead>
+                                        <TableHead>Petsa</TableHead>
+                                        <TableHead>Katayuan</TableHead>
+                                        <TableHead className="text-right">Aksyon</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {inputRequests.map((request) => (
+                                        <TableRow key={request.farmer}>
+                                            <TableCell className="font-medium">{request.farmer}</TableCell>
+                                            <TableCell>{request.request}</TableCell>
+                                            <TableCell>{request.date}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={request.status === 'Nakabinbin' ? 'secondary' : 'default'}>{request.status}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="outline">Aprubahan</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="distribution">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Log ng Pamamahagi ng Tulong</CardTitle>
+                             <CardDescription>Kasaysayan ng lahat ng tulong na ipinamahagi sa mga magsasaka.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Magsasaka</TableHead>
+                                        <TableHead>Bagay na Ipinamahagi</TableHead>
+                                        <TableHead>Ibinigay ni</TableHead>
+                                        <TableHead>Petsa</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {distributionLog.map((log) => (
+                                        <TableRow key={log.farmer}>
+                                            <TableCell className="font-medium">{log.farmer}</TableCell>
+                                            <TableCell>{log.item}</TableCell>
+                                            <TableCell>{log.distributedBy}</TableCell>
+                                            <TableCell>{log.date}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="labor">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Palitan ng Paggawa (Turnohan)</CardTitle>
+                            <CardDescription>I-coordinate ang pagbabahaginan ng paggawa sa komunidad para sa mga gawain sa bukid.</CardDescription>
+                        </CardHeader>
+                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -59,7 +127,7 @@ export default function LaborExchangePage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {seekingHelp.map((request) => (
+                                    {laborExchange.map((request) => (
                                         <TableRow key={request.name}>
                                             <TableCell className="font-medium">{request.name}</TableCell>
                                             <TableCell>{request.task}</TableCell>
@@ -68,70 +136,6 @@ export default function LaborExchangePage() {
                                             <TableCell className="text-right">
                                                 <Button variant="outline">Mag-alok ng Tulong</Button>
                                             </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                 <TabsContent value="offering">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Mga Miyembrong Nag-aalok ng Tulong</CardTitle>
-                             <CardDescription>Mga miyembro ng komunidad na handang magbigay ng kanilang paggawa.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Pangalan</TableHead>
-                                        <TableHead>Mga Kasanayan</TableHead>
-                                        <TableHead>Lokasyon</TableHead>
-                                        <TableHead>Availability</TableHead>
-                                        <TableHead className="text-right">Aksyon</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {offeringHelp.map((offer) => (
-                                        <TableRow key={offer.name}>
-                                            <TableCell className="font-medium">{offer.name}</TableCell>
-                                            <TableCell>{offer.skills}</TableCell>
-                                            <TableCell>{offer.location}</TableCell>
-                                            <TableCell>{offer.availability}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="outline">Makipag-ugnayan</Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                 <TabsContent value="log">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Log ng Aktibidad ng Turnohan</CardTitle>
-                            <CardDescription>Kasaysayan ng mga nakumpletong palitan ng trabaho sa komunidad.</CardDescription>
-                        </CardHeader>
-                         <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Humiling</TableHead>
-                                        <TableHead>Nag-alok</TableHead>
-                                        <TableHead>Gawain</TableHead>
-                                        <TableHead>Petsa ng Pagtatapos</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {activityLog.map((log, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell className="font-medium">{log.seeker}</TableCell>
-                                            <TableCell>{log.offerer}</TableCell>
-                                            <TableCell>{log.task}</TableCell>
-                                            <TableCell>{log.completedDate}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

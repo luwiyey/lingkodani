@@ -12,12 +12,12 @@ export default function InventoryPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Imbentaryo ng mga Mapagkukunan</h1>
-          <p className="text-muted-foreground">Pamahalaan ang mga pataba, binhi, kasangkapan, at iba pang yaman ng barangay.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Imbentaryo ng Rekurso</h1>
+          <p className="text-muted-foreground">Pamahalaan ang mga pataba, binhi, kasangkapan, at iba pang rekurso ng barangay.</p>
         </div>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Magdagdag ng Yaman
+          Magdagdag ng Rekurso
         </Button>
       </div>
 
@@ -25,7 +25,7 @@ export default function InventoryPage() {
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
             type="search"
-            placeholder="Maghanap ng yaman..."
+            placeholder="Maghanap ng rekurso..."
             className="w-full rounded-lg bg-background pl-8 md:w-full"
         />
       </div>
@@ -35,7 +35,7 @@ export default function InventoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Pangalan ng Yaman</TableHead>
+                <TableHead>Pangalan ng Rekurso</TableHead>
                 <TableHead>Kategorya</TableHead>
                 <TableHead>Kasalukuyang Stak</TableHead>
                 <TableHead>Yunit</TableHead>

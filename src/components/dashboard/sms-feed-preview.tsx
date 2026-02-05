@@ -15,12 +15,12 @@ const urgencyVariant = {
 } as const;
 
 const typeInfo: Record<SmsMessageType, {icon: React.ElementType }> = {
-    registration: { icon: User },
-    'crop-update': { icon: FilePen },
-    request: { icon: Tractor },
-    'pest-report': { icon: ShieldAlert },
-    weather: { icon: CloudCog },
-    general: { icon: MessageCircle },
+    pagpaparehistro: { icon: User },
+    'update-sa-pananim': { icon: FilePen },
+    kahilingan: { icon: Tractor },
+    'ulat-ng-peste': { icon: ShieldAlert },
+    'ulat-panahon': { icon: CloudCog },
+    pangkalahatan: { icon: MessageCircle },
 }
 
 export function SmsFeedPreview() {
@@ -45,7 +45,7 @@ export function SmsFeedPreview() {
             <CardContent>
                 <div className="space-y-4">
                 {recentMessages.map((message) => {
-                    const TypeIcon = typeInfo[message.type].icon;
+                    const TypeIcon = typeInfo[message.type]?.icon || MessageCircle;
                     return (
                     <div key={message.id} className="flex items-start gap-4">
                         <TypeIcon className="h-5 w-5 text-muted-foreground mt-1" />

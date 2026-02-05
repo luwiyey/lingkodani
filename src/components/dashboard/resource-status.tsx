@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { ArrowUpRight, Tractor, Wheat, Droplets } from 'lucide-react';
 
@@ -8,9 +9,9 @@ import { resources } from '@/lib/data';
 import type { ResourceCategory } from '@/lib/types';
 
 const iconMap: Record<ResourceCategory, React.ElementType> = {
-    'Mga Binhi': Wheat,
-    'Mga Pataba': Droplets,
-    'Mga Kasangkapan': Tractor,
+    'Binhi': Wheat,
+    'Pataba': Droplets,
+    'Kagamitan': Tractor,
     'Paggawa': Tractor,
 };
 
@@ -21,9 +22,9 @@ export function ResourceStatus() {
         <Card>
             <CardHeader className="flex flex-row items-center">
               <div className="grid gap-2">
-                <CardTitle>Katayuan ng Yaman</CardTitle>
+                <CardTitle>Katayuan ng Rekurso</CardTitle>
                 <CardDescription>
-                  Kasalukuyang antas ng imbentaryo para sa mga pangunahing yaman.
+                  Kasalukuyang antas ng imbentaryo para sa mga pangunahing rekurso.
                 </CardDescription>
               </div>
               <Button asChild size="sm" className="ml-auto gap-1">
@@ -36,7 +37,7 @@ export function ResourceStatus() {
             <CardContent className="grid gap-6">
                 {keyResources.map(resource => {
                     const Icon = iconMap[resource.category] || Droplets;
-                    const stockPercentage = resource.category === 'Mga Kasangkapan' ? resource.stock * 20 : resource.stock / 10;
+                    const stockPercentage = resource.category === 'Kagamitan' ? resource.stock * 20 : resource.stock / 10;
                     return (
                         <div key={resource.id} className="flex items-center gap-4">
                             <Icon className="h-6 w-6 text-muted-foreground" />
