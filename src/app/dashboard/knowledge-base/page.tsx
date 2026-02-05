@@ -43,7 +43,7 @@ export default function KnowledgeBasePage() {
             Batay sa mga kamakailang uso sa SMS, narito ang ilang mga iminungkahing paksa para sa mga bagong artikulo.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
+        <CardContent className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           {suggestedArticles.map(article => (
             <Card key={article.title} className="bg-primary/5">
                 <CardHeader>
@@ -112,7 +112,7 @@ export default function KnowledgeBasePage() {
       )}
 
       {activeTab === 'audio' && (
-         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {audioStories.map(story => (
             <Card key={story.id}>
               <CardHeader>

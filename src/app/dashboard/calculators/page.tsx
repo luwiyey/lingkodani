@@ -53,7 +53,7 @@ export default function AiToolkitPage() {
             <CardTitle className="flex items-center gap-2"><Calculator /> Mga Calculator sa Bukid</CardTitle>
             <CardDescription>Mga calculator para tulungan sa paggawa ng desisyon sa bukid.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             <form onSubmit={calculateFertilizer}>
             <Card>
             <CardHeader>
@@ -130,7 +130,7 @@ export default function AiToolkitPage() {
             <CardTitle className="flex items-center gap-2"><Sparkles /> Pagsasanay para sa AEW</CardTitle>
             <CardDescription>Mga mapagkukunan para sa pagpapabuti ng kasanayan ng mga Agricultural Extension Worker.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {trainingModules.map((module) => (
                 <Card key={module.title}>
                     <CardHeader>
@@ -147,5 +147,3 @@ export default function AiToolkitPage() {
     </div>
   );
 }
-
-    

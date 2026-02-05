@@ -88,8 +88,8 @@ export default function FarmerLogbookPage() {
 
   return (
     <>
-    <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 flex flex-col gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 flex flex-col gap-6">
             <Card>
                 <CardHeader className="flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -132,7 +132,7 @@ export default function FarmerLogbookPage() {
                 </CardFooter>
             </Card>
         </div>
-        <div className="md:col-span-2">
+        <div className="lg:col-span-2">
             <Card>
                 <CardHeader>
                     <CardTitle>Logbook ng Magsasaka</CardTitle>

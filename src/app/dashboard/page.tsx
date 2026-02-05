@@ -50,7 +50,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
         <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           title="Kabuuang Magsasaka"
           value="347"
@@ -93,7 +93,7 @@ export default function DashboardPage() {
           <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>
           <CardDescription>Mga awtomatikong nabuong alerto batay sa data ng panahon at mga ulat sa bukid.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
             {alerts.map(alert => {
                 const Icon = alert.icon;
                 return (
@@ -120,7 +120,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
         <div className="lg:col-span-4">
             <SmsFeedPreview />
         </div>
