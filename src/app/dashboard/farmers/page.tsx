@@ -293,25 +293,25 @@ export default function FarmersPage() {
                     <TableHead className="w-[250px] cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
                         <div className="flex items-center">
                             Pangalan
-                            {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                            {sortConfig?.key === 'name' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />) : <div className="ml-2 h-4 w-4" />}
                         </div>
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('location')}>
                         <div className="flex items-center">
                             Lokasyon
-                            {sortConfig?.key === 'location' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                            {sortConfig?.key === 'location' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />) : <div className="ml-2 h-4 w-4" />}
                         </div>
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('crops')}>
                         <div className="flex items-center">
                             Mga Pananim
-                            {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                            {sortConfig?.key === 'crops' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />) : <div className="ml-2 h-4 w-4" />}
                         </div>
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('status')}>
                         <div className="flex items-center">
                             Katayuan
-                            {sortConfig?.key === 'status' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                            {sortConfig?.key === 'status' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />) : <div className="ml-2 h-4 w-4" />}
                         </div>
                     </TableHead>
                     <TableHead className="text-right w-[240px]">Mga Aksyon</TableHead>
