@@ -227,7 +227,7 @@ export default function FarmerLogbookPage() {
                     </div>
                     <DialogFooter>
                       <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
-                      <Button type="submit">I-save ang Pagbabago</Button>
+                      <Button type="submit">I-save</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
