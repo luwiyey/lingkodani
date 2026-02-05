@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from '@/components/ui/separator';
 
 export default function BarangaySettingsPage() {
     const { toast } = useToast();
@@ -83,7 +84,9 @@ export default function BarangaySettingsPage() {
               </AccordionItem>
             </Accordion>
             
-            <div className="space-y-6 pt-4 border-t">
+            <Separator />
+            
+            <div className="space-y-4">
                  <div className="space-y-2">
                     <Label>Oras ng Serbisyo ng Auto-Reply</Label>
                      <div className="flex items-center gap-2">
