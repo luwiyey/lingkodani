@@ -12,16 +12,16 @@ import { issueTrendsData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "../ui/chart"
 
 const chartConfig = {
-  Pests: {
-    label: "Pests",
+  MgaPeste: {
+    label: "Mga Peste",
     color: "hsl(var(--chart-1))",
   },
-  Disease: {
-    label: "Disease",
+  Sakit: {
+    label: "Sakit",
     color: "hsl(var(--chart-2))",
   },
-  Irrigation: {
-    label: "Irrigation",
+  Patubig: {
+    label: "Patubig",
     color: "hsl(var(--chart-3))",
   },
 } satisfies ChartConfig
@@ -30,8 +30,8 @@ export function IssueTrendsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Issue Trend Graph</CardTitle>
-        <CardDescription>Weekly trends of top issues reported by farmers.</CardDescription>
+        <CardTitle>Graph ng Trend ng Isyu</CardTitle>
+        <CardDescription>Lingguhang mga uso ng mga pangunahing isyu na iniulat ng mga magsasaka.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -42,9 +42,9 @@ export function IssueTrendsChart() {
                     <YAxis tickLine={false} axisLine={false} tickMargin={8} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend content={<ChartLegendContent />} />
-                    <Line type="monotone" dataKey="Pests" stroke="var(--color-Pests)" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="Disease" stroke="var(--color-Disease)" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="Irrigation" stroke="var(--color-Irrigation)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="MgaPeste" stroke="var(--color-MgaPeste)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="Sakit" stroke="var(--color-Sakit)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="Patubig" stroke="var(--color-Patubig)" strokeWidth={2} dot={false} />
                 </LineChart>
             </ResponsiveContainer>
         </ChartContainer>

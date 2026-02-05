@@ -19,14 +19,14 @@ export function SmsFeedPreview() {
         <Card>
             <CardHeader className="flex flex-row items-center">
               <div className="grid gap-2">
-                <CardTitle>Live SMS Mission Feed</CardTitle>
+                <CardTitle>Live na Feed ng Misyon ng SMS</CardTitle>
                 <CardDescription>
-                  Incoming reports from farmers needing validation.
+                  Mga papasok na ulat mula sa mga magsasaka na nangangailangan ng pagpapatunay.
                 </CardDescription>
               </div>
               <Button asChild size="sm" className="ml-auto gap-1">
                 <Link href="/dashboard/sms-feed">
-                  View All
+                  Tingnan Lahat
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </Button>

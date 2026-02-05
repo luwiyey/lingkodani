@@ -23,8 +23,8 @@ export function DailySmsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Daily SMS Reports</CardTitle>
-        <CardDescription>Volume of incoming SMS for the last 7 days.</CardDescription>
+        <CardTitle>Pang-araw-araw na Ulat sa SMS</CardTitle>
+        <CardDescription>Dami ng mga papasok na SMS sa nakalipas na 7 araw.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">

@@ -7,8 +7,8 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Lingkod-Ani: Smart Farming Platform',
-  description: 'AI-powered agriculture advisory and barangay decision-support platform.',
+  title: 'Lingkod-Ani: Plataporma para sa Matalinong Pagsasaka',
+  description: 'Platform ng payo sa agrikultura na pinapagana ng AI at suporta sa pagpapasya ng barangay.',
 };
 
 export default function RootLayout({

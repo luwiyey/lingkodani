@@ -44,9 +44,9 @@ export default function LoginPage() {
                 <Leaf className="w-8 h-8 text-primary" />
                 <h1 className="text-3xl font-bold text-primary">Lingkod-Ani</h1>
             </div>
-            <CardTitle className="text-2xl">Administrator Login</CardTitle>
+            <CardTitle className="text-2xl">Pag-login ng Administrator</CardTitle>
             <CardDescription>
-              Enter your credentials to access the dashboard.
+              Ilagay ang iyong mga kredensyal upang ma-access ang dashboard.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -67,11 +67,11 @@ export default function LoginPage() {
               </div>
             </div>
             <Button onClick={handleLogin} className="w-full mt-6">
-              Sign In
+              Mag-sign In
             </Button>
             <div className="mt-4 text-center text-sm">
               <a href="#" className="underline text-muted-foreground">
-                Forgot your password?
+                Nakalimutan ang iyong password?
               </a>
             </div>
           </CardContent>

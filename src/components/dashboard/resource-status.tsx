@@ -5,36 +5,38 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { resources } from '@/lib/data';
+import type { ResourceCategory } from '@/lib/types';
 
-const iconMap = {
-    Seeds: Wheat,
-    Fertilizers: Droplets,
-    Tools: Tractor,
-} as const;
+const iconMap: Record<ResourceCategory, React.ElementType> = {
+    'Mga Binhi': Wheat,
+    'Mga Pataba': Droplets,
+    'Mga Kasangkapan': Tractor,
+    'Paggawa': Tractor,
+};
 
 export function ResourceStatus() {
-    const keyResources = resources.filter(r => r.category !== 'Labor').slice(0, 3);
+    const keyResources = resources.filter(r => r.category !== 'Paggawa').slice(0, 3);
 
     return (
         <Card>
             <CardHeader className="flex flex-row items-center">
               <div className="grid gap-2">
-                <CardTitle>Resource Status</CardTitle>
+                <CardTitle>Katayuan ng Yaman</CardTitle>
                 <CardDescription>
-                  Current inventory levels for key resources.
+                  Kasalukuyang antas ng imbentaryo para sa mga pangunahing yaman.
                 </CardDescription>
               </div>
               <Button asChild size="sm" className="ml-auto gap-1">
                 <Link href="/dashboard/inventory">
-                  Manage
+                  Pamahalaan
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </Button>
             </CardHeader>
             <CardContent className="grid gap-6">
                 {keyResources.map(resource => {
-                    const Icon = iconMap[resource.category as keyof typeof iconMap] || Droplets;
-                    const stockPercentage = resource.category === 'Tools' ? resource.stock * 20 : resource.stock / 10;
+                    const Icon = iconMap[resource.category] || Droplets;
+                    const stockPercentage = resource.category === 'Mga Kasangkapan' ? resource.stock * 20 : resource.stock / 10;
                     return (
                         <div key={resource.id} className="flex items-center gap-4">
                             <Icon className="h-6 w-6 text-muted-foreground" />

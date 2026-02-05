@@ -12,17 +12,17 @@ import { adviceSuccessData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "../ui/chart"
 
 const chartConfig = {
-    Approved: { label: "Approved", color: "hsl(var(--chart-1))" },
-    Edited: { label: "Edited", color: "hsl(var(--chart-2))" },
-    Rejected: { label: "Rejected", color: "hsl(var(--destructive))" },
+    Inaprubahan: { label: "Inaprubahan", color: "hsl(var(--chart-1))" },
+    "In-edit": { label: "In-edit", color: "hsl(var(--chart-2))" },
+    Tinanggihan: { label: "Tinanggihan", color: "hsl(var(--destructive))" },
 } satisfies ChartConfig
 
 export function AdviceSuccessChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Advice Validation Rates</CardTitle>
-        <CardDescription>Distribution of admin actions on AI advice.</CardDescription>
+        <CardTitle>Mga Rate ng Pagpapatunay ng Payo</CardTitle>
+        <CardDescription>Pamamahagi ng mga aksyon ng admin sa payo ng AI.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">

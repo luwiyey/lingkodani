@@ -14,7 +14,7 @@ import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTool
 
 const chartConfig = {
   total: {
-    label: "SMS Volume",
+    label: "Dami ng SMS",
     color: "hsl(var(--chart-1))",
   },
 } satisfies ChartConfig
@@ -24,8 +24,8 @@ export function SmsVolumeChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>SMS Volume Chart</CardTitle>
-        <CardDescription>Total incoming SMS per day for the last week.</CardDescription>
+        <CardTitle>Chart ng Dami ng SMS</CardTitle>
+        <CardDescription>Kabuuang papasok na SMS bawat araw sa nakalipas na linggo.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">

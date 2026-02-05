@@ -33,10 +33,12 @@ export type SmsMessage = {
   knowledgeBaseId?: string;
 };
 
+export type ResourceCategory = 'Mga Pataba' | 'Mga Binhi' | 'Mga Kasangkapan' | 'Paggawa';
+
 export type Resource = {
   id: string;
   name: string;
-  category: 'Fertilizers' | 'Seeds' | 'Tools' | 'Labor';
+  category: ResourceCategory;
   stock: number;
   unit: string;
   lastUpdated: string;

@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const seekingHelp = [
-    { name: 'Ricardo Dalisay', task: 'Harvesting Rice (1ha)', date: 'Aug 20, 2024' },
-    { name: 'Lito Batumbakal', task: 'Planting Corn (0.5ha)', date: 'Aug 25, 2024' },
+    { name: 'Ricardo Dalisay', task: 'Pag-aani ng Palay (1ha)', date: 'Aug 20, 2024' },
+    { name: 'Lito Batumbakal', task: 'Pagtatanim ng Mais (0.5ha)', date: 'Aug 25, 2024' },
 ];
 
 export default function LaborExchangePage() {
@@ -66,10 +66,10 @@ export default function LaborExchangePage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Mga Miyembrong Nag-aalok ng Tulong</CardTitle>
-                             <CardDescription>Mga miyembro ng komunidad na available para tumulong.</CardDescription>
+                             <CardDescription>Mga miyembro ng komunidad na handang tumulong.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-muted-foreground">Coming soon.</p>
+                            <p className="text-muted-foreground">Malapit na.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -80,7 +80,7 @@ export default function LaborExchangePage() {
                             <CardDescription>Kasaysayan ng mga nakumpletong palitan ng trabaho.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-muted-foreground">Coming soon.</p>
+                            <p className="text-muted-foreground">Malapit na.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>

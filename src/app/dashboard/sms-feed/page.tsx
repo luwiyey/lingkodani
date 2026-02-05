@@ -52,8 +52,8 @@ export default function SmsFeedPage() {
     <div className="h-[calc(100vh-5rem)] grid md:grid-cols-3 lg:grid-cols-4 gap-4">
       <Card className="md:col-span-1 lg:col-span-1 h-full overflow-y-auto">
         <CardHeader>
-          <CardTitle>Incoming SMS</CardTitle>
-          <CardDescription>Select a message to validate.</CardDescription>
+          <CardTitle>Mga Papasok na SMS</CardTitle>
+          <CardDescription>Pumili ng mensahe upang mapatunayan.</CardDescription>
         </CardHeader>
         <CardContent className="p-2">
             <div className="flex flex-col gap-2">
@@ -85,17 +85,17 @@ export default function SmsFeedPage() {
         <CardHeader>
             <div className="flex justify-between items-start">
                 <div>
-                    <CardTitle className="text-2xl">AI Validation Workflow</CardTitle>
-                    <CardDescription>Review and take action on AI-generated advice.</CardDescription>
+                    <CardTitle className="text-2xl">Proseso ng Pagpapatunay ng AI</CardTitle>
+                    <CardDescription>Suriin at gumawa ng aksyon sa payo na binuo ng AI.</CardDescription>
                 </div>
                 <Badge variant={selectedMessage.status === 'pending' ? 'default' : selectedMessage.status === 'approved' ? 'secondary' : 'destructive'}>
-                    Status: {selectedMessage.status}
+                    Katayuan: {selectedMessage.status}
                 </Badge>
             </div>
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="space-y-2">
-                <h3 className="font-semibold flex items-center gap-2"><User className="w-4 h-4"/> Farmer's Report</h3>
+                <h3 className="font-semibold flex items-center gap-2"><User className="w-4 h-4"/> Ulat ng Magsasaka</h3>
                 <div className="p-4 bg-muted rounded-lg">
                     <p className="text-muted-foreground">{selectedMessage.message}</p>
                 </div>
@@ -104,16 +104,16 @@ export default function SmsFeedPage() {
             <Separator />
             
             <div className="space-y-2">
-                <h3 className="font-semibold">AI Generated Advisory</h3>
+                <h3 className="font-semibold">Payo na Binuo ng AI</h3>
                 <div className="flex items-center gap-4">
-                    <span>Confidence Score:</span>
+                    <span>Marka ng Kumpiyansa:</span>
                     <Progress value={selectedMessage.aiConfidence * 100} className="w-1/3 h-3" />
                     <span className="font-bold text-primary">{ (selectedMessage.aiConfidence * 100).toFixed(1) }%</span>
                 </div>
                 {selectedMessage.knowledgeBaseId && (
                      <p className="text-sm text-muted-foreground flex items-center gap-2">
                         <Info className="w-4 h-4" />
-                        References Knowledge Base Article: <Link href="/dashboard/knowledge-base" className="text-primary underline">{selectedMessage.knowledgeBaseId}</Link>
+                        Sumasangguni sa Artikulo sa Knowledge Base: <Link href="/dashboard/knowledge-base" className="text-primary underline">{selectedMessage.knowledgeBaseId}</Link>
                     </p>
                 )}
                 <div className="p-4 bg-primary/5 rounded-lg">
@@ -135,36 +135,36 @@ export default function SmsFeedPage() {
                 <div className="flex flex-wrap gap-2">
                     {isEditing ? (
                         <>
-                        <Button onClick={() => setIsEditing(false)} variant="outline"><X className="mr-2"/>Cancel</Button>
-                        <Button><Check className="mr-2"/>Save & Approve</Button>
+                        <Button onClick={() => setIsEditing(false)} variant="outline"><X className="mr-2"/>Kanselahin</Button>
+                        <Button><Check className="mr-2"/>I-save at Aprubahan</Button>
                         </>
                     ) : (
                         <>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button className="bg-green-600 hover:bg-green-700">
-                                    <Send className="mr-2" />Approve & Send
+                                    <Send className="mr-2" />Aprubahan at Ipadala
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Send advice to farmer as is.</p></TooltipContent>
+                            <TooltipContent><p>Ipadala ang payo sa magsasaka kung ano ito.</p></TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="outline" onClick={() => setIsEditing(true)}>
-                                    <Edit className="mr-2" />Edit Advice
+                                    <Edit className="mr-2" />I-edit ang Payo
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Modify the advice before sending.</p></TooltipContent>
+                            <TooltipContent><p>Baguhin ang payo bago ipadala.</p></TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="destructive">
-                                    <ThumbsDown className="mr-2" />Reject
+                                    <ThumbsDown className="mr-2" />Tanggihan
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Reject advice and flag for manual review.</p></TooltipContent>
+                            <TooltipContent><p>Tanggihan ang payo at i-flag para sa manu-manong pagsusuri.</p></TooltipContent>
                         </Tooltip>
                         </>
                     )}

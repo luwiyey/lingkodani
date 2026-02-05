@@ -25,12 +25,12 @@ import type { NavItem } from "@/lib/types";
 
 const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "SMS Mission Feed", href: "/dashboard/sms-feed", icon: MessageSquare },
-  { title: "Farmer Registry", href: "/dashboard/farmers", icon: Users },
-  { title: "Reports & Analytics", href: "/dashboard/reports", icon: BarChart },
-  { title: "Knowledge Base", href: "/dashboard/knowledge-base", icon: Book },
-  { title: "Inventory", href: "/dashboard/inventory", icon: Archive },
-  { title: "Labor Exchange", href: "/dashboard/labor-exchange", icon: Replace },
+  { title: "Feed ng Misyon ng SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
+  { title: "Talaan ng Magsasaka", href: "/dashboard/farmers", icon: Users },
+  { title: "Mga Ulat at Analitika", href: "/dashboard/reports", icon: BarChart },
+  { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book },
+  { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
+  { title: "Palitan ng Paggawa", href: "/dashboard/labor-exchange", icon: Replace },
 ];
 
 export function AppSidebar() {
@@ -61,10 +61,10 @@ export function AppSidebar() {
              <Link href="/dashboard/settings" passHref>
                 <SidebarMenuButton
                   isActive={pathname === "/dashboard/settings"}
-                  tooltip={{ children: "Settings", side: "right" }}
+                  tooltip={{ children: "Mga Setting", side: "right" }}
                 >
                   <Settings />
-                  <span>Settings</span>
+                  <span>Mga Setting</span>
                 </SidebarMenuButton>
               </Link>
           </SidebarMenuItem>

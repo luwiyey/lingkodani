@@ -10,12 +10,12 @@ export default function InventoryPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Resource & Inventory</h1>
-          <p className="text-muted-foreground">Manage fertilizers, seeds, tools, and other barangay resources.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Imbentaryo ng mga Mapagkukunan</h1>
+          <p className="text-muted-foreground">Pamahalaan ang mga pataba, binhi, kasangkapan, at iba pang yaman ng barangay.</p>
         </div>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Resource
+          Magdagdag ng Yaman
         </Button>
       </div>
       <Card>
@@ -23,11 +23,11 @@ export default function InventoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Last Updated</TableHead>
+                <TableHead>Pangalan</TableHead>
+                <TableHead>Kategorya</TableHead>
+                <TableHead>Stak</TableHead>
+                <TableHead>Yunit</TableHead>
+                <TableHead>Huling Na-update</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

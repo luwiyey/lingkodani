@@ -40,7 +40,7 @@ export function Header() {
       <div className="flex items-center gap-2">
         <Label htmlFor="disaster-mode" className="flex items-center gap-2 text-sm font-medium">
           <Flame className="w-4 h-4 text-destructive" />
-          <span className="hidden sm:inline">Disaster Mode</span>
+          <span className="hidden sm:inline">Modo ng Sakuna</span>
         </Label>
         <Switch id="disaster-mode" />
       </div>
@@ -58,28 +58,28 @@ export function Header() {
             <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
               3
             </span>
-            <span className="sr-only">Toggle notifications</span>
+            <span className="sr-only">I-toggle ang mga notipikasyon</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
-          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuLabel>Mga Notipikasyon</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <div className="flex flex-col">
-              <span className="font-semibold">New SMS from Maria Clara</span>
-              <span className="text-xs text-muted-foreground">Urgency: High. Needs approval.</span>
+              <span className="font-semibold">Bagong SMS mula kay Maria Clara</span>
+              <span className="text-xs text-muted-foreground">Kapurpuran: Mataas. Kailangan ng pag-apruba.</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuItem>
           <div className="flex flex-col">
-              <span className="font-semibold">Weekly Report Ready</span>
-              <span className="text-xs text-muted-foreground">Analytics for Oct 22-29 is available.</span>
+              <span className="font-semibold">Handa na ang Lingguhang Ulat</span>
+              <span className="text-xs text-muted-foreground">Available na ang analytics para sa Okt 22-29.</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuItem>
           <div className="flex flex-col">
-              <span className="font-semibold">Inventory Alert</span>
-              <span className="text-xs text-muted-foreground">Urea Fertilizer stock is low.</span>
+              <span className="font-semibold">Alerto sa Imbentaryo</span>
+              <span className="text-xs text-muted-foreground">Mababa na ang stock ng Urea Fertilizer.</span>
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -92,11 +92,11 @@ export function Header() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuLabel>Aking Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild><Link href="/dashboard/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href="/dashboard/settings"><Settings className="mr-2" />Mga Setting</Link></DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Logout</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Mag-logout</Link></DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

@@ -12,12 +12,12 @@ export default function FarmersPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Farmer Registry</h1>
-          <p className="text-muted-foreground">View and manage all registered farmers.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Talaan ng Magsasaka</h1>
+          <p className="text-muted-foreground">Tingnan at pamahalaan ang lahat ng nakarehistrong magsasaka.</p>
         </div>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Farmer
+          Magdagdag ng Magsasaka
         </Button>
       </div>
 
@@ -25,7 +25,7 @@ export default function FarmersPage() {
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
             type="search"
-            placeholder="Search farmers..."
+            placeholder="Maghanap ng magsasaka..."
             className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
         />
       </div>
@@ -35,11 +35,11 @@ export default function FarmersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Crops</TableHead>
-                <TableHead>Risk Score</TableHead>
-                <TableHead>Registered On</TableHead>
+                <TableHead>Pangalan</TableHead>
+                <TableHead>Lokasyon</TableHead>
+                <TableHead>Mga Pananim</TableHead>
+                <TableHead>Puntos ng Panganib</TableHead>
+                <TableHead>Petsa ng Pagpaparehistro</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -9,31 +9,31 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-4 md:gap-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Farmers"
+          title="Kabuuang Magsasaka"
           value="342"
           icon={Users}
-          description="+20 since last month"
+          description="+20 mula noong nakaraang buwan"
           iconBgClass="bg-primary/10"
         />
         <StatCard
-          title="AI Trust Score"
+          title="Marka ng Tiwala sa AI"
           value="92.5%"
           icon={ShieldCheck}
-          description="Avg. confidence of approved advice"
+          description="Katamtamang kumpiyansa ng naaprubahang payo"
           iconBgClass="bg-green-500/10"
         />
         <StatCard
-          title="Flagged High-Risk"
+          title="Minarkahang Mataas ang Panganib"
           value="3"
           icon={ShieldAlert}
-          description="Advice with <60% confidence"
+          description="Payo na may <60% kumpiyansa"
           iconBgClass="bg-destructive/10"
         />
         <StatCard
-          title="Pending Actions"
+          title="Mga Nakabinbing Aksyon"
           value="8"
           icon={Bot}
-          description="SMS reports needing validation"
+          description="Mga ulat sa SMS na nangangailangan ng pagpapatunay"
           iconBgClass="bg-amber-500/10"
         />
       </div>

@@ -11,17 +11,17 @@ export default function ReportsPage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Reports & Analytics</h1>
-          <p className="text-muted-foreground">Visualize trends, analyze data, and gain insights.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Mga Ulat at Analitika</h1>
+          <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight.</p>
         </div>
         <div className="flex gap-2">
             <Button variant="outline">
                 <Filter className="mr-2 h-4 w-4" />
-                Filter Date
+                Salain ayon sa Petsa
             </Button>
             <Button>
                 <File className="mr-2 h-4 w-4" />
-                Export
+                I-export
             </Button>
         </div>
       </div>
@@ -31,14 +31,14 @@ export default function ReportsPage() {
           <AdviceSuccessChart />
           <Card>
             <CardHeader>
-                <CardTitle>AI Weekly Summary</CardTitle>
-                <CardDescription>AI-generated insights from this week's data.</CardDescription>
+                <CardTitle>Lingguhang Buod ng AI</CardTitle>
+                <CardDescription>Mga insight na binuo ng AI mula sa data ngayong linggo.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-2 text-sm text-muted-foreground">
-                    <p>This week saw a <strong>25% increase</strong> in reports related to <strong className="text-foreground">pests</strong>, particularly stem borers in sugarcane and yellow spots on tomatoes.</p>
-                    <p>Irrigation concerns remain steady, while requests for post-harvest advice for rice have decreased, indicating the end of the harvest season for many.</p>
-                    <p><strong>Recommendation:</strong> Consider releasing a knowledge base article on organic pest control for common vegetables.</p>
+                    <p>Nakita ngayong linggo ang <strong>25% pagtaas</strong> sa mga ulat na may kaugnayan sa <strong className="text-foreground">mga peste</strong>, partikular na ang mga stem borer sa tubo at dilaw na batik sa kamatis.</p>
+                    <p>Nanatiling matatag ang mga alalahanin sa patubig, habang bumaba ang mga kahilingan para sa payo pagkatapos ng ani para sa palay, na nagpapahiwatig ng pagtatapos ng panahon ng pag-aani para sa marami.</p>
+                    <p><strong>Rekomendasyon:</strong> Isaalang-alang ang paglabas ng isang artikulo sa knowledge base tungkol sa organikong pagkontrol ng peste para sa mga karaniwang gulay.</p>
                 </div>
             </CardContent>
           </Card>

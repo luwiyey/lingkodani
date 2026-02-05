@@ -4,18 +4,18 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and application settings.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Mga Setting</h1>
+        <p className="text-muted-foreground">Pamahalaan ang iyong account at mga setting ng application.</p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Coming Soon</CardTitle>
+          <CardTitle>Malapit na</CardTitle>
           <CardDescription>
-            This section is under development.
+            Ang seksyon na ito ay kasalukuyang ginagawa.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p>User profile management, notification preferences, and other application settings will be available here in a future update.</p>
+          <p>Ang pamamahala ng profile ng gumagamit, mga kagustuhan sa notification, at iba pang mga setting ng application ay magiging available dito sa isang update sa hinaharap.</p>
         </CardContent>
       </Card>
     </div>

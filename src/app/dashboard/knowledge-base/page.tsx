@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Bot } from 'lucide-react';
 
 const suggestedArticles = [
-    { title: 'Best Practices for Corn Fertilization', summary: 'Covers timing and types of fertilizer for corn crops based on recent inquiries about nutrient deficiencies.', keywords: ['corn', 'fertilizer', 'nutrients'] },
-    { title: 'Identifying Common Sugarcane Pests', summary: 'A visual guide to identifying sugarcane borers and other pests, with organic control methods.', keywords: ['sugarcane', 'pest', 'borer', 'organic'] },
+    { title: 'Pinakamahusay na Kasanayan para sa Pagpapataba ng Mais', summary: 'Sinasaklaw ang tiyempo at mga uri ng pataba para sa mga pananim na mais batay sa mga kamakailang katanungan tungkol sa mga kakulangan sa sustansya.', keywords: ['mais', 'pataba', 'sustansya'] },
+    { title: 'Pagkilala sa mga Karaniwang Peste ng Tubo', summary: 'Isang biswal na gabay sa pagkilala sa mga sugarcane borer at iba pang peste, na may mga organikong paraan ng pagkontrol.', keywords: ['tubo', 'peste', 'borer', 'organiko'] },
 ]
 
 export default function KnowledgeBasePage() {
@@ -15,12 +15,12 @@ export default function KnowledgeBasePage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Knowledge Base</h1>
-          <p className="text-muted-foreground">Manage farming guidance articles and AI-driven content suggestions.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
+          <p className="text-muted-foreground">Pamahalaan ang mga artikulo ng gabay sa pagsasaka at mga mungkahi ng nilalaman na mula sa AI.</p>
         </div>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          New Article
+          Bagong Artikulo
         </Button>
       </div>
 
@@ -28,10 +28,10 @@ export default function KnowledgeBasePage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
-            <CardTitle>AI-Suggested Articles</CardTitle>
+            <CardTitle>Mga Mungkahing Artikulo ng AI</CardTitle>
           </div>
           <CardDescription>
-            Based on recent SMS trends, here are some suggested topics for new articles.
+            Batay sa mga kamakailang uso sa SMS, narito ang ilang mga iminungkahing paksa para sa mga bagong artikulo.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -53,16 +53,16 @@ export default function KnowledgeBasePage() {
       
       <Card>
         <CardHeader>
-            <CardTitle>Published Articles</CardTitle>
+            <CardTitle>Mga Inilathalang Artikulo</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Keywords</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead>Author</TableHead>
+                <TableHead>Pamagat</TableHead>
+                <TableHead>Mga Keyword</TableHead>
+                <TableHead>Huling Na-update</TableHead>
+                <TableHead>May-akda</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
