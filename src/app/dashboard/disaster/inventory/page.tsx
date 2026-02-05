@@ -177,23 +177,25 @@ function DisasterInventory() {
                     <TableCell>{resource.stock}</TableCell>
                     <TableCell>{resource.unit}</TableCell>
                     <TableCell>{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                       <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
-                       <AlertDialog>
-                          <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang rekurso.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                    <TableCell className="text-right">
+                        <div className="flex flex-wrap justify-end gap-1">
+                           <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang rekurso.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -241,7 +243,7 @@ function DisasterInventory() {
                   </div>
                   <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
-                    <Button type="submit">I-save ang Pagbabago</Button>
+                    <Button type="submit">I-save</Button>
                   </DialogFooter>
                 </form>
             </DialogContent>
