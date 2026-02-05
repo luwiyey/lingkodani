@@ -1,5 +1,5 @@
 
-import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry } from '@/lib/types';
+import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog } from '@/lib/types';
 import { MessageSquare, Scan, Tractor, Shield, Wind, Flame, Sprout } from 'lucide-react';
 
 export const farmers: Farmer[] = [
@@ -10,7 +10,6 @@ export const farmers: Farmer[] = [
     gender: 'Lalaki',
     phone: '+639171234567',
     barangay: 'San Isidro',
-    municipality: 'Nueva Ecija',
     sitio: 'Purok 1',
     farmSize: 2.5,
     crops: ['Palay', 'Mais'],
@@ -26,7 +25,6 @@ export const farmers: Farmer[] = [
     gender: 'Babae',
     phone: '+639182345678',
     barangay: 'Santa Cruz',
-    municipality: 'Isabela',
     sitio: 'Purok 3',
     farmSize: 1.8,
     crops: ['Kamatis'],
@@ -42,7 +40,6 @@ export const farmers: Farmer[] = [
     gender: 'Lalaki',
     phone: '+639193456789',
     barangay: 'Mabini',
-    municipality: 'Batangas',
     sitio: 'Purok 2',
     farmSize: 5.0,
     crops: ['Tubo'],
@@ -58,7 +55,6 @@ export const farmers: Farmer[] = [
     gender: 'Lalaki',
     phone: '+639204567890',
     barangay: 'Lapu-Lapu',
-    municipality: 'Ilocos Sur',
     sitio: 'Purok 7',
     farmSize: 3.2,
     crops: ['Tabako', 'Mais'],
@@ -74,7 +70,6 @@ export const farmers: Farmer[] = [
     gender: 'Lalaki',
     phone: '+639215678901',
     barangay: 'Tondo',
-    municipality: 'Maynila',
     sitio: 'Purok 5',
     farmSize: 1.0,
     crops: ['Gulay'],
@@ -83,6 +78,36 @@ export const farmers: Farmer[] = [
     avatarUrl: 'https://picsum.photos/seed/105/200/200',
     status: 'pending_approval'
   },
+   {
+    id: 'FARM006',
+    name: 'Gabriela Silang',
+    age: 35,
+    gender: 'Babae',
+    phone: '+639226789012',
+    barangay: 'San Isidro',
+    sitio: 'Purok 4',
+    farmSize: 2.0,
+    crops: ['Okra'],
+    registrationDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    lastSmsActivity: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    avatarUrl: 'https://picsum.photos/seed/107/200/200',
+    status: 'pending_approval'
+  },
+  {
+    id: 'FARM007',
+    name: 'Emilio Aguinaldo',
+    age: 48,
+    gender: 'Lalaki',
+    phone: '+639237890123',
+    barangay: 'Mabini',
+    sitio: 'Purok 1',
+    farmSize: 4.5,
+    crops: ['Palay'],
+    registrationDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    lastSmsActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    avatarUrl: 'https://picsum.photos/seed/108/200/200',
+    status: 'pending_approval'
+  }
 ];
 
 export const smsMessages: SmsMessage[] = [
@@ -90,6 +115,7 @@ export const smsMessages: SmsMessage[] = [
     id: 'SMS001',
     farmerId: 'FARM002',
     farmerName: 'Maria Clara',
+    phone: '+639182345678',
     message: 'PEST TOMATO LEAFMINER. May dilaw na batik ang dahon ng kamatis ko. Paano ito masusugpo?',
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'PEST_DISEASE',
@@ -105,6 +131,7 @@ export const smsMessages: SmsMessage[] = [
     id: 'SMS002',
     farmerId: 'FARM001',
     farmerName: 'Juan dela Cruz',
+    phone: '+639171234567',
     message: 'HARVEST PALAY 120kg. Malapit na ang anihan ng palay ko. May mga tip ba para pagkatapos ng ani?',
     timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'HARVEST',
@@ -119,6 +146,7 @@ export const smsMessages: SmsMessage[] = [
     id: 'SMS003',
     farmerId: 'FARM003',
     farmerName: 'Jose Rizal',
+    phone: '+639193456789',
     message: 'PEST SUGARCANE BORER. Kinakain ng peste ang mga tubo ko. Mukha silang mga borer.',
     timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'PEST_DISEASE',
@@ -133,6 +161,7 @@ export const smsMessages: SmsMessage[] = [
     id: 'SMS004',
     farmerId: 'FARM004',
     farmerName: 'Lito Batumbakal',
+    phone: '+639204567890',
     message: 'Sira po ang sprayer ko, may mahihiraman po ba sa barangay?',
     timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'REQUEST',
@@ -147,12 +176,13 @@ export const smsMessages: SmsMessage[] = [
     id: 'SMS005',
     farmerId: 'FARM005',
     farmerName: 'Andres Bonifacio',
+    phone: '+639215678901',
     message: 'REGISTER Andres Bonifacio 29 Lalaki Tondo Gulay 1ha',
     timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'REGISTER',
     status: 'pending_approval',
     urgency: 'medium',
-    aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Tondo, Maynila. Mangyaring kumpirmahin ang pagpaparehistro.',
+    aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Tondo. Mangyaring kumpirmahin ang pagpaparehistro.',
     aiConfidence: 0.99,
     safetyFlag: 'Low',
     tone: 'Neutral',
@@ -161,6 +191,7 @@ export const smsMessages: SmsMessage[] = [
     id: 'SMS006',
     farmerId: 'FARM001',
     farmerName: 'Juan dela Cruz',
+    phone: '+639171234567',
     message: 'EMERGENCY TYPHOON DAMAGE. Nasira ng malakas na hangin ang bahagi ng aking taniman ng mais.',
     timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'EMERGENCY',
@@ -293,4 +324,10 @@ export const farmerLogbookEntries: LogbookEntry[] = [
     }
 ];
 
-    
+export const auditLogs: AuditLog[] = [
+    { id: 'AUD001', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'APPROVE_AI_REPLY', details: 'Inaprubahan ang tugon para sa SMS002 mula kay Juan dela Cruz.'},
+    { id: 'AUD002', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'REJECT_AI_REPLY', details: 'Tinanggihan ang tugon para sa SMS003 mula kay Jose Rizal.'},
+    { id: 'AUD003', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'SEND_BROADCAST', details: 'Nagpadala ng alerto sa baha sa 24 na magsasaka.'},
+    { id: 'AUD004', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'UPDATE_FARMER', details: 'In-update ang mga pananim para kay Maria Clara (FARM002).'},
+    { id: 'AUD005', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), user: 'system', action: 'AUTO_ALERT_GENERATED', details: 'Bumuo ng alerto sa panganib ng baha batay sa data ng panahon.'},
+];

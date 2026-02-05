@@ -20,7 +20,7 @@ export type UserProfile = {
   municipalityId: string;
 };
 
-export type FarmerStatus = 'pending_approval' | 'active' | 'inactive';
+export type FarmerStatus = 'pending_approval' | 'active' | 'inactive' | 'rejected';
 
 export type Farmer = {
   id: string; // Corresponds to farmerId
@@ -29,7 +29,6 @@ export type Farmer = {
   gender: string;
   phone: string;
   barangay: string;
-  municipality: string;
   sitio: string;
   farmSize: number; // in hectares
   crops: string[];
@@ -58,6 +57,7 @@ export type SmsMessage = {
   id: string;
   farmerId: string;
   farmerName: string;
+  phone: string;
   message: string;
   timestamp: string;
   parsedIntent: SmsIntent;
@@ -107,4 +107,10 @@ export type LogbookEntry = {
     data?: any;
 };
 
-    
+export type AuditLog = {
+    id: string;
+    timestamp: string;
+    user: string;
+    action: string;
+    details: string;
+}

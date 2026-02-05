@@ -1,8 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QRCodeCanvas } from 'qrcode.react';
+import { useRouter } from 'next/navigation';
 
 import { farmers as initialFarmers } from '@/lib/data';
 import type { Farmer } from '@/lib/types';
@@ -34,42 +35,19 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from '@/components/ui/badge';
 
 export default function FarmersPage() {
-  const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers);
+  const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status !== 'pending_approval'));
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const generateQr = (farmerId: string) => {
     const url = `${window.location.origin}/dashboard/farmers/${farmerId}`;
     setQrCodeValue(url);
-  };
-  
-  const handleAddFarmer = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const newFarmer: Farmer = {
-      id: `FARM${String(farmers.length + 1).padStart(3, '0')}`,
-      name: formData.get('name') as string,
-      phone: formData.get('phone') as string,
-      municipality: formData.get('municipality') as string,
-      barangay: formData.get('barangay') as string,
-      sitio: formData.get('sitio') as string,
-      crops: (formData.get('crops') as string).split(',').map(c => c.trim()),
-      farmSize: Number(formData.get('farm-size') as string),
-      age: 40, // default
-      gender: 'Lalaki', // default
-      registrationDate: new Date().toISOString(),
-      lastSmsActivity: new Date().toISOString(),
-      avatarUrl: `https://picsum.photos/seed/${Math.random()}/40/40`,
-      status: 'active',
-    };
-    setFarmers([newFarmer, ...farmers]);
-    setAddDialogOpen(false);
-    toast({ title: "Tagumpay!", description: "Matagumpay na naidagdag ang magsasaka." });
   };
   
   const handleEditFarmer = (event: React.FormEvent<HTMLFormElement>) => {
@@ -81,7 +59,6 @@ export default function FarmersPage() {
       ...editingFarmer,
       name: formData.get('name') as string,
       phone: formData.get('phone') as string,
-      municipality: formData.get('municipality') as string,
       barangay: formData.get('barangay') as string,
       sitio: formData.get('sitio') as string,
       crops: (formData.get('crops') as string).split(',').map(c => c.trim()),
@@ -110,58 +87,12 @@ export default function FarmersPage() {
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight">Database ng Magsasaka</h1>
-            <p className="text-muted-foreground">Tingnan, pamahalaan, at i-update ang mga profile ng lahat ng nakarehistrong magsasaka.</p>
+            <p className="text-muted-foreground">Tingnan, pamahalaan, at i-update ang mga profile ng lahat ng aprubadong magsasaka.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline"><Upload /> Mag-import</Button>
             <Button variant="outline"><Download /> I-export</Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button><PlusCircle /> Magdagdag ng Magsasaka</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Magrehistro ng Bagong Magsasaka</DialogTitle>
-                  <DialogDescription>Manu-manong magdagdag ng bagong magsasaka sa sistema.</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleAddFarmer}>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">Pangalan</Label>
-                      <Input id="name" name="name" required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="phone" className="text-right">Telepono</Label>
-                      <Input id="phone" name="phone" required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="municipality" className="text-right">Munisipalidad</Label>
-                      <Input id="municipality" name="municipality" required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="barangay" className="text-right">Barangay</Label>
-                      <Input id="barangay" name="barangay" required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="sitio" className="text-right">Sitio/Purok</Label>
-                      <Input id="sitio" name="sitio" required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="crops" className="text-right">Mga Pananim</Label>
-                      <Input id="crops" name="crops" placeholder="Palay, Mais" className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="farm-size" className="text-right">Sukat (ha)</Label>
-                      <Input id="farm-size" name="farm-size" type="number" step="0.1" className="col-span-3" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
-                    <Button type="submit">I-save ang Magsasaka</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => router.push('/dashboard/farmers/register')}><PlusCircle /> Magrehistro ng Magsasaka</Button>
           </div>
         </div>
 
@@ -189,7 +120,7 @@ export default function FarmersPage() {
                   <TableHead className="w-[250px]">Pangalan</TableHead>
                   <TableHead>Lokasyon</TableHead>
                   <TableHead>Mga Pananim</TableHead>
-                  <TableHead>Huling Aktibidad</TableHead>
+                  <TableHead>Katayuan</TableHead>
                   <TableHead className="text-right w-[240px]">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
@@ -204,7 +135,7 @@ export default function FarmersPage() {
                     </TableCell>
                     <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
                     <TableCell>{farmer.crops.join(', ')}</TableCell>
-                    <TableCell>{new Date(farmer.lastSmsActivity).toLocaleDateString()}</TableCell>
+                    <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
                     <TableCell className="text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
                         <Button variant="outline" size="sm" onClick={() => generateQr(farmer.id)}><QrCode /></Button>
@@ -266,14 +197,10 @@ export default function FarmersPage() {
                     <Input id="edit-phone" name="phone" defaultValue={editingFarmer.phone} required className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="edit-municipality" className="text-right">Munisipalidad</Label>
-                    <Input id="edit-municipality" name="municipality" defaultValue={editingFarmer.municipality} required className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-barangay" className="text-right">Barangay</Label>
                     <Input id="edit-barangay" name="barangay" defaultValue={editingFarmer.barangay} required className="col-span-3" />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
+                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-sitio" className="text-right">Sitio/Purok</Label>
                     <Input id="edit-sitio" name="sitio" defaultValue={editingFarmer.sitio} required className="col-span-3" />
                   </div>
