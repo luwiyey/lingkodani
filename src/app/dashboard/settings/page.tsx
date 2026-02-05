@@ -83,7 +83,7 @@ export default function BarangaySettingsPage() {
               </AccordionItem>
             </Accordion>
             
-            <div className="grid md:grid-cols-2 gap-6 pt-4 border-t">
+            <div className="space-y-6 pt-4 border-t">
                  <div className="space-y-2">
                     <Label>Oras ng Serbisyo ng Auto-Reply</Label>
                      <div className="flex items-center gap-2">
