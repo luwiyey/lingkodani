@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -10,9 +11,7 @@ import {
   MessageSquare,
   Settings,
   Users,
-  Handshake,
-  Calculator,
-  FileCheck,
+  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,14 +26,12 @@ import type { NavItem } from "@/lib/types";
 
 const barangayNavItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, role: 'barangay' },
-  { title: "SMS Command Monitor", href: "/dashboard/sms-feed", icon: MessageSquare, role: 'barangay' },
-  { title: "Pamamahala ng Magsasaka", href: "/dashboard/farmers", icon: Users, role: 'barangay' },
-  { title: "Bayanihan Hub", href: "/dashboard/bayanihan", icon: Handshake, role: 'barangay' },
+  { title: "Live SMS", href: "/dashboard/sms-feed", icon: MessageSquare, role: 'barangay' },
+  { title: "Database ng Magsasaka", href: "/dashboard/farmers", icon: Users, role: 'barangay' },
   { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive, role: 'barangay' },
   { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book, role: 'barangay' },
-  { title: "Mga Calculator", href: "/dashboard/calculators", icon: Calculator, role: 'barangay' },
+  { title: "AI Toolkit", href: "/dashboard/ai-toolkit", icon: Sparkles, role: 'barangay' },
   { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart, role: 'barangay' },
-  { title: "Log ng Pagsusuri", href: "/dashboard/audit-log", icon: FileCheck, role: 'barangay' },
 ];
 
 export function AppSidebar() {
@@ -78,3 +75,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    
