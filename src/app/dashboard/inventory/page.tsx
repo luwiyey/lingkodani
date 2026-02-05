@@ -303,13 +303,13 @@ export default function InventoryPage() {
                 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onSelect={() => setStockDialogOpen(true)}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setStockDialogOpen(true); }}>
                   Salain ayon sa Stak
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setUnitDialogOpen(true)}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setUnitDialogOpen(true); }}>
                   Salain ayon sa Yunit
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setDateDialogOpen(true)}>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setDateDialogOpen(true); }}>
                   Salain ayon sa Petsa
                 </DropdownMenuItem>
                 
