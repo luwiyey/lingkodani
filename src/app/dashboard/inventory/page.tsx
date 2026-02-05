@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo } from 'react';
 import { resources as initialResources } from '@/lib/data';
@@ -13,6 +12,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -45,6 +45,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
+import { Calendar } from "@/components/ui/calendar";
 
 type SortableKeys = keyof Omit<Resource, 'id' | 'category'>;
 
@@ -60,7 +61,16 @@ export default function InventoryPage() {
     categories: [],
   });
 
-  const allCategories: ResourceCategory[] = [...new Set(initialResources.map(r => r.category))];
+  const [stockFilter, setStockFilter] = useState<number | null>(null);
+  const [unitFilter, setUnitFilter] = useState<string>('');
+  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  const [tempStock, setTempStock] = useState<string>("");
+  const [tempUnit, setTempUnit] = useState<string>("");
+
+  const [isStockDialogOpen, setStockDialogOpen] = useState(false);
+  const [isUnitDialogOpen, setUnitDialogOpen] = useState(false);
+  const [isDateDialogOpen, setDateDialogOpen] = useState(false);
+
 
   const handleFilterChange = (category: ResourceCategory) => {
     setFilters(prev => {
@@ -119,12 +129,15 @@ export default function InventoryPage() {
 
   const filteredResources = useMemo(() => {
     return resources.filter(resource => {
-        const searchMatch = resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            resource.category.toLowerCase().includes(searchTerm.toLowerCase());
+        const searchMatch = resource.name.toLowerCase().includes(searchTerm.toLowerCase());
         const categoryMatch = filters.categories.length === 0 || filters.categories.includes(resource.category);
-        return searchMatch && categoryMatch;
+        const stockMatch = stockFilter === null || resource.stock >= stockFilter;
+        const unitMatch = unitFilter === '' || resource.unit.toLowerCase().includes(unitFilter.toLowerCase());
+        const dateMatch = !dateFilter || new Date(resource.lastUpdated) >= dateFilter;
+
+        return searchMatch && categoryMatch && stockMatch && unitMatch && dateMatch;
     });
-  }, [resources, searchTerm, filters]);
+  }, [resources, searchTerm, filters, stockFilter, unitFilter, dateFilter]);
 
 
   const sortedResources = useMemo(() => {
@@ -216,35 +229,51 @@ export default function InventoryPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-           <DropdownMenu>
+          <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+                <DropdownMenuLabel>Mga Opsyon sa Filter</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
-                    <Archive className="mr-2 h-4 w-4" />
-                    <span>Kategorya</span>
+                    <span>Para sa Pananim</span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent>
-                      <DropdownMenuLabel>Pumili ng Kategorya</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {allCategories.map((category) => (
-                        <DropdownMenuCheckboxItem
-                          key={category}
-                          checked={filters.categories.includes(category)}
-                          onCheckedChange={() => handleFilterChange(category)}
-                        >
-                          {category}
-                        </DropdownMenuCheckboxItem>
-                      ))}
+                      <DropdownMenuCheckboxItem checked={filters.categories.includes('Pataba')} onCheckedChange={() => handleFilterChange('Pataba')}>
+                        Pataba
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem checked={filters.categories.includes('Binhi')} onCheckedChange={() => handleFilterChange('Binhi')}>
+                        Binhi
+                      </DropdownMenuCheckboxItem>
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
                 </DropdownMenuSub>
+
+                <DropdownMenuItem onSelect={() => handleFilterChange('Kagamitan')}>
+                    <DropdownMenuCheckboxItem checked={filters.categories.includes('Kagamitan')} onCheckedChange={() => {}} className="p-0 mr-2" />
+                    <span>Kagamitan</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onSelect={() => handleFilterChange('Paggawa')}>
+                     <DropdownMenuCheckboxItem checked={filters.categories.includes('Paggawa')} onCheckedChange={() => {}} className="p-0 mr-2" />
+                    <span>Paggawa</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onSelect={() => setStockDialogOpen(true)}>
+                  Salain ayon sa Stak
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setUnitDialogOpen(true)}>
+                  Salain ayon sa Yunit
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setDateDialogOpen(true)}>
+                  Salain ayon sa Petsa
+                </DropdownMenuItem>
                 
               </DropdownMenuContent>
             </DropdownMenu>
@@ -301,7 +330,7 @@ export default function InventoryPage() {
                     <TableCell>{resource.unit}</TableCell>
                     <TableCell>{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                        <div className="flex flex-wrap justify-end gap-1">
+                        <div className="flex flex-wrap justify-end gap-2">
                            <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
                            <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
@@ -372,6 +401,52 @@ export default function InventoryPage() {
             </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={isStockDialogOpen} onOpenChange={setStockDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Salain ayon sa Minimum na Stak</DialogTitle>
+            </DialogHeader>
+            <Input type="number" placeholder="Ilagay ang minimum na stak" value={tempStock} onChange={(e) => setTempStock(e.target.value)} />
+            <DialogFooter>
+                <Button variant="secondary" onClick={() => { setStockFilter(null); setTempStock(""); setStockDialogOpen(false); }}>Alisin</Button>
+                <Button onClick={() => { setStockFilter(Number(tempStock)); setStockDialogOpen(false); }}>Itakda ang Filter</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isUnitDialogOpen} onOpenChange={setUnitDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Salain ayon sa Yunit</DialogTitle>
+            </DialogHeader>
+            <Input placeholder="Ilagay ang yunit" value={tempUnit} onChange={(e) => setTempUnit(e.target.value)} />
+            <DialogFooter>
+                <Button variant="secondary" onClick={() => { setUnitFilter(""); setTempUnit(""); setUnitDialogOpen(false); }}>Alisin</Button>
+                <Button onClick={() => { setUnitFilter(tempUnit); setUnitDialogOpen(false); }}>Itakda ang Filter</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDateDialogOpen} onOpenChange={setDateDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Salain ayon sa Petsa</DialogTitle>
+                <DialogDescription>Ipakita ang mga rekurso na na-update sa o pagkatapos ng petsang ito.</DialogDescription>
+            </DialogHeader>
+            <Calendar
+                mode="single"
+                selected={dateFilter}
+                onSelect={setDateFilter}
+                defaultMonth={new Date(2026, 0)}
+                className="rounded-md border"
+            />
+            <DialogFooter>
+                <Button variant="secondary" onClick={() => { setDateFilter(undefined); setDateDialogOpen(false); }}>Alisin</Button>
+                <Button onClick={() => setDateDialogOpen(false)}>Itakda ang Filter</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
