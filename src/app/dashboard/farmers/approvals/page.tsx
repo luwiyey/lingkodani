@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
-import { Check, X } from 'lucide-react';
+import { Check, X, Upload } from 'lucide-react';
 
 export default function ApprovalsPage() {
   const [pendingFarmers, setPendingFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status === 'pending_approval'));
@@ -28,11 +28,34 @@ export default function ApprovalsPage() {
     });
   };
 
+  const handleApproveAll = () => {
+    if (pendingFarmers.length === 0) {
+      toast({
+        title: "Walang Nakabinbing Pag-apruba",
+        description: "Wala nang magsasaka na kailangang aprubahan.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const count = pendingFarmers.length;
+    setPendingFarmers([]);
+    toast({
+      title: "Lahat ay Inaprubahan",
+      description: `${count} na magsasaka ang matagumpay na naaprubahan at naidagdag sa database.`,
+    });
+  };
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Pag-apruba ng Magsasaka</h1>
-        <p className="text-muted-foreground">Suriin at aprubahan ang mga bagong magsasaka na nagparehistro sa pamamagitan ng SMS o manu-manong pag-input.</p>
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Pag-apruba ng Magsasaka</h1>
+          <p className="text-muted-foreground">Suriin at aprubahan ang mga bagong magsasaka na nagparehistro sa pamamagitan ng SMS o manu-manong pag-input.</p>
+        </div>
+        <div className="flex gap-2">
+            <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Mag-import</Button>
+            <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
+        </div>
       </div>
 
       <Card>
