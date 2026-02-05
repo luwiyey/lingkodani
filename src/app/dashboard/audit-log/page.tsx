@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,11 @@ import type { AuditLog } from '@/lib/types';
 export default function AuditLogPage() {
     const [logs, setLogs] = useState<AuditLog[]>(initialLogs);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const filteredLogs = logs.filter(log =>
         log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,7 +58,7 @@ export default function AuditLogPage() {
             <TableBody>
               {filteredLogs.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                  <TableCell>{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
                   <TableCell className="font-medium">{log.user}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{log.action}</Badge>
