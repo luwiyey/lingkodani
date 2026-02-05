@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
@@ -12,7 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Upload, Download } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Upload, Download, Filter } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -46,6 +53,32 @@ export default function FarmersPage() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const [filters, setFilters] = useState<{
+    barangays: string[];
+    crops: string[];
+    statuses: Farmer['status'][];
+  }>({
+    barangays: [],
+    crops: [],
+    statuses: [],
+  });
+
+  const allBarangays = [...new Set(initialFarmers.map((f) => f.barangay))];
+  const allCrops = [...new Set(initialFarmers.flatMap((f) => f.crops))];
+  const allStatuses: Farmer['status'][] = ['active', 'inactive'];
+
+  const handleFilterChange = (
+    type: 'barangays' | 'crops' | 'statuses',
+    value: string
+  ) => {
+    setFilters((prev) => {
+      const newValues = prev[type].includes(value as never)
+        ? prev[type].filter((v) => v !== value)
+        : [...prev[type], value as never];
+      return { ...prev, [type]: newValues };
+    });
+  };
+
   const generateQr = (farmerId: string) => {
     const url = `${window.location.origin}/dashboard/farmers/${farmerId}`;
     setQrCodeValue(url);
@@ -76,11 +109,19 @@ export default function FarmersPage() {
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
   };
 
-  const filteredFarmers = farmers.filter(farmer =>
-    farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.barangay.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.crops.join(', ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredFarmers = farmers.filter(farmer => {
+    const searchMatch = (
+      farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmer.barangay.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmer.crops.join(', ').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const barangayMatch = filters.barangays.length === 0 || filters.barangays.includes(farmer.barangay);
+    const cropMatch = filters.crops.length === 0 || farmer.crops.some(crop => filters.crops.includes(crop));
+    const statusMatch = filters.statuses.length === 0 || filters.statuses.includes(farmer.status);
+
+    return searchMatch && barangayMatch && cropMatch && statusMatch;
+  });
 
   return (
     <>
@@ -108,7 +149,48 @@ export default function FarmersPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <Button variant="outline">Salain</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline"><Filter className="mr-2" /> Filter</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Lokasyon (Barangay)</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {allBarangays.map((barangay) => (
+                  <DropdownMenuCheckboxItem
+                    key={barangay}
+                    checked={filters.barangays.includes(barangay)}
+                    onCheckedChange={() => handleFilterChange('barangays', barangay)}
+                  >
+                    {barangay}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Pananim</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {allCrops.map((crop) => (
+                  <DropdownMenuCheckboxItem
+                    key={crop}
+                    checked={filters.crops.includes(crop)}
+                    onCheckedChange={() => handleFilterChange('crops', crop)}
+                  >
+                    {crop}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Katayuan</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {allStatuses.map((status) => (
+                  <DropdownMenuCheckboxItem
+                    key={status}
+                    checked={filters.statuses.includes(status)}
+                    onCheckedChange={() => handleFilterChange('statuses', status)}
+                  >
+                    {status}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline">Pagbukud-bukurin</Button>
         </div>
 
