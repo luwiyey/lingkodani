@@ -17,8 +17,9 @@ const getZoneStats = () => {
             zones[farmer.sitio].farmers++;
         }
         
-        // Mock issue count based on farmer status or some other logic
-        if (farmer.status === 'inactive' || Math.random() > 0.8) {
+        // Mock issue count based on farmer status or other logic
+        // Using a deterministic check based on farmer ID to avoid hydration errors from Math.random()
+        if (farmer.status === 'inactive' || (parseInt(farmer.id.replace('FARM', '')) % 4 === 0)) {
             zones[farmer.sitio].issues++;
         }
     });
