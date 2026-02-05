@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function RegisterFarmerPage() {
   const router = useRouter();
@@ -61,11 +62,22 @@ export default function RegisterFarmerPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="barangay">Barangay</Label>
-                    <Input id="barangay" name="barangay" required />
+                    <Input id="barangay" name="barangay" defaultValue="Batakil" required readOnly />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="sitio">Sitio/Purok</Label>
-                    <Input id="sitio" name="sitio" required />
+                    <Select name="sitio" required>
+                      <SelectTrigger id="sitio">
+                        <SelectValue placeholder="Pumili ng Zone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 7 }, (_, i) => i + 1).map(zone => (
+                          <SelectItem key={zone} value={`Zone ${zone}`}>
+                            Zone {zone}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="crops">Mga Pangunahing Pananim</Label>

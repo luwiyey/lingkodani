@@ -4,10 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 
 const barangayData = [
-    { id: 'BRGY01', name: 'San Isidro', farmerCount: 347, activeIssues: 5, pendingRequests: 12 },
-    { id: 'BRGY02', name: 'Santa Cruz', farmerCount: 289, activeIssues: 2, pendingRequests: 8 },
-    { id: 'BRGY03', name: 'Mabini', farmerCount: 412, activeIssues: 8, pendingRequests: 21 },
-    { id: 'BRGY04', name: 'Lapu-Lapu', farmerCount: 198, activeIssues: 1, pendingRequests: 5 },
+    { id: 'BRGY01', name: 'Batakil', farmerCount: 1246, activeIssues: 16, pendingRequests: 46 },
 ];
 
 export default function OversightPage() {
@@ -56,5 +53,3 @@ export default function OversightPage() {
     </div>
   );
 }
-
-    

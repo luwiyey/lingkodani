@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
@@ -48,6 +49,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function FarmersPage() {
   const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status !== 'pending_approval'));
@@ -319,11 +321,22 @@ export default function FarmersPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-barangay" className="text-right">Barangay</Label>
-                    <Input id="edit-barangay" name="barangay" defaultValue={editingFarmer.barangay} required className="col-span-3" />
+                    <Input id="edit-barangay" name="barangay" defaultValue="Batakil" required readOnly className="col-span-3" />
                   </div>
                    <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-sitio" className="text-right">Sitio/Purok</Label>
-                    <Input id="edit-sitio" name="sitio" defaultValue={editingFarmer.sitio} required className="col-span-3" />
+                    <Select name="sitio" defaultValue={editingFarmer.sitio} required>
+                        <SelectTrigger id="edit-sitio" className="col-span-3">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Array.from({ length: 7 }, (_, i) => i + 1).map(zone => (
+                                <SelectItem key={zone} value={`Zone ${zone}`}>
+                                    Zone {zone}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-crops" className="text-right">Mga Pananim</Label>

@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const requests = [
-    { id: 'REQ001', barangay: 'San Isidro', resource: 'Binhi ng Hybrid na Palay', quantity: 20, unit: 'sako', status: 'pending' },
-    { id: 'REQ002', barangay: 'Santa Cruz', resource: 'Patabang Urea', quantity: 50, unit: 'sako', status: 'approved' },
-    { id: 'REQ003', barangay: 'Mabini', resource: 'Hand Tractor', quantity: 1, unit: 'yunit', status: 'rejected' },
+    { id: 'REQ001', barangay: 'Batakil', resource: 'Binhi ng Hybrid na Palay', quantity: 20, unit: 'sako', status: 'pending' },
+    { id: 'REQ002', barangay: 'Batakil', resource: 'Patabang Urea', quantity: 50, unit: 'sako', status: 'approved' },
+    { id: 'REQ003', barangay: 'Batakil', resource: 'Hand Tractor', quantity: 1, unit: 'yunit', status: 'rejected' },
 ];
 
 const vouchers = [
@@ -87,5 +87,3 @@ export default function VouchersPage() {
     </div>
   );
 }
-
-    

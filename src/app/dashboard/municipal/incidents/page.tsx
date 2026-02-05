@@ -5,9 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const incidents = [
-    { id: 'INC001', barangay: 'San Isidro', farmer: 'Maria Clara', title: 'Hindi pangkaraniwang sakit sa kamatis', status: 'under_review', timestamp: new Date(Date.now() - 86400000).toISOString() },
-    { id: 'INC002', barangay: 'Santa Cruz', farmer: 'Jose Rizal', title: 'Paulit-ulit na mababang kumpiyansa ng AI', status: 'open', timestamp: new Date(Date.now() - 172800000).toISOString() },
-    { id: 'INC003', barangay: 'Mabini', farmer: 'Juan dela Cruz', title: 'Salungatan sa mamimili ng ani', status: 'resolved', timestamp: new Date(Date.now() - 259200000).toISOString() },
+    { id: 'INC001', barangay: 'Batakil', farmer: 'Maria Clara', title: 'Hindi pangkaraniwang sakit sa kamatis', status: 'under_review', timestamp: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'INC002', barangay: 'Batakil', farmer: 'Jose Rizal', title: 'Paulit-ulit na mababang kumpiyansa ng AI', status: 'open', timestamp: new Date(Date.now() - 172800000).toISOString() },
+    { id: 'INC003', barangay: 'Batakil', farmer: 'Juan dela Cruz', title: 'Salungatan sa mamimili ng ani', status: 'resolved', timestamp: new Date(Date.now() - 259200000).toISOString() },
 ];
 
 export default function IncidentsPage() {
@@ -58,5 +58,3 @@ export default function IncidentsPage() {
     </div>
   );
 }
-
-    
