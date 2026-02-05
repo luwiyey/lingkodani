@@ -7,8 +7,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search, Edit, Trash2, Upload, Download, ArrowUp, ArrowDown } from 'lucide-react';
+import { PlusCircle, Search, Edit, Trash2, Upload, Download, ArrowUp, ArrowDown, Filter, Archive } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent
+} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -44,6 +56,21 @@ export default function InventoryPage() {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
   const { toast } = useToast();
   
+  const [filters, setFilters] = useState<{ categories: ResourceCategory[] }>({
+    categories: [],
+  });
+
+  const allCategories: ResourceCategory[] = [...new Set(initialResources.map(r => r.category))];
+
+  const handleFilterChange = (category: ResourceCategory) => {
+    setFilters(prev => {
+        const newCategories = prev.categories.includes(category)
+            ? prev.categories.filter(c => c !== category)
+            : [...prev.categories, category];
+        return { ...prev, categories: newCategories };
+    });
+  };
+
   const requestSort = (key: SortableKeys) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -90,10 +117,15 @@ export default function InventoryPage() {
     toast({ title: "Tagumpay!", description: "Natanggal na ang rekurso sa imbentaryo.", variant: 'destructive' });
   };
 
-  const filteredResources = resources.filter(resource =>
-    resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredResources = useMemo(() => {
+    return resources.filter(resource => {
+        const searchMatch = resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            resource.category.toLowerCase().includes(searchTerm.toLowerCase());
+        const categoryMatch = filters.categories.length === 0 || filters.categories.includes(resource.category);
+        return searchMatch && categoryMatch;
+    });
+  }, [resources, searchTerm, filters]);
+
 
   const sortedResources = useMemo(() => {
     let sortableItems = [...filteredResources];
@@ -184,8 +216,38 @@ export default function InventoryPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-           <Button variant="outline">Salain</Button>
-           <Button variant="outline">Pagbukud-bukurin</Button>
+           <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Archive className="mr-2 h-4 w-4" />
+                    <span>Kategorya</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuLabel>Pumili ng Kategorya</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {allCategories.map((category) => (
+                        <DropdownMenuCheckboxItem
+                          key={category}
+                          checked={filters.categories.includes(category)}
+                          onCheckedChange={() => handleFilterChange(category)}
+                        >
+                          {category}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                
+              </DropdownMenuContent>
+            </DropdownMenu>
         </div>
 
 
