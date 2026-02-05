@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Check, Edit, Info, Send, ThumbsDown, User, X, MessageCircle, FilePen, Tractor, CloudCog, ShieldAlert, BadgeInfo, AlertTriangle, ArrowUpCircle, Bot } from 'lucide-react';
+import { Check, Edit, Info, Send, ThumbsDown, User, X, MessageCircle, FilePen, Tractor, CloudCog, ShieldAlert, BadgeInfo, AlertTriangle, ArrowUpCircle, Bot, Sprout } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
