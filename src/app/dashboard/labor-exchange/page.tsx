@@ -1,5 +1,6 @@
 
-import { PlusCircle, HandCoins, Tractor, Seedling } from 'lucide-react';
+
+import { PlusCircle, HandCoins, Tractor, Sprout } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,7 +40,7 @@ export default function AssistancePage() {
             </div>
             <Tabs defaultValue="requests">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="requests"><Seedling className="mr-2"/>Mga Kahilingan sa Input</TabsTrigger>
+                    <TabsTrigger value="requests"><Sprout className="mr-2"/>Mga Kahilingan sa Input</TabsTrigger>
                     <TabsTrigger value="distribution"><HandCoins className="mr-2"/>Log ng Pamamahagi</TabsTrigger>
                     <TabsTrigger value="labor"><Tractor className="mr-2"/>Palitan ng Paggawa</TabsTrigger>
                 </TabsList>
