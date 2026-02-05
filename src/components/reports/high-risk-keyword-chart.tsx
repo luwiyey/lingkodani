@@ -7,7 +7,17 @@ import { highRiskKeywordData } from "@/lib/data";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
+
 
 const chartConfig = {
   count: {
@@ -18,54 +28,89 @@ const chartConfig = {
 
 export function HighRiskKeywordChart() {
   const [timeframe, setTimeframe] = useState('Buwanan');
+  
+  const topKeyword = highRiskKeywordData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
+
+  const renderChart = () => (
+    <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={highRiskKeywordData} layout="vertical" margin={{ left: 10, right: 20 }}>
+             <XAxis type="number" hide />
+             <YAxis 
+                dataKey="word" 
+                type="category" 
+                tickLine={false} 
+                axisLine={false} 
+                tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                width={80}
+             />
+             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+             <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+        </BarChart>
+    </ResponsiveContainer>
+  );
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-end">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4" />
-                        <span>{timeframe}</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+    <Dialog>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div className="grid gap-0.5">
+                <CardTitle>Mga Salitang Nagti-trigger ng Alerto</CardTitle>
+                <CardDescription>Mga salita na awtomatikong nagtaas ng alerto.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                          <CalendarIcon className="w-4 h-4" />
+                          <span>{timeframe}</span>
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
+                  </DropdownMenuContent>
+              </DropdownMenu>
+              <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Expand className="h-4 w-4" />
+                  </Button>
+              </DialogTrigger>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="h-[180px] flex items-center justify-center p-0">
+            <div className="flex flex-col items-center gap-2">
+                <p className="text-5xl font-bold text-destructive">{topKeyword.count}</p>
+                <p className="text-sm text-muted-foreground">pagbanggit ng '{topKeyword.word}'</p>
+            </div>
+        </CardContent>
+        <CardFooter>
+          <p className="text-xs text-muted-foreground">Pagsusuri: Ang salitang "{topKeyword.word}" ang pinakamadalas na dahilan ng alerto, na nagpapakita ng kahalagahan nito sa mga magsasaka.</p>
+        </CardFooter>
+      </Card>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+            <DialogTitle>Mga Salitang Nagti-trigger ng Alerto ({timeframe})</DialogTitle>
+            <DialogDescription>
+              Ipinapakita ng ulat na ito ang dalas ng mga partikular na salita na awtomatikong nag-trigger ng high-risk na alerto sa sistema. Ang pag-unawa sa mga ito ay nakakatulong na i-validate ang escalation logic ng AI.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="h-[400px] w-full">
+            <ChartContainer config={chartConfig}>
+                {renderChart()}
+            </ChartContainer>
         </div>
-        <div className="grid gap-0.5">
-            <CardTitle>Mga Salitang Nagti-trigger ng Alerto</CardTitle>
-            <CardDescription className="text-xs">Mga salita na awtomatikong nagtaas ng alerto.</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={highRiskKeywordData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                     <XAxis type="number" hide />
-                     <YAxis 
-                        dataKey="word" 
-                        type="category" 
-                        tickLine={false} 
-                        axisLine={false} 
-                        tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-                        width={80}
-                     />
-                     <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
-                     <Bar dataKey="count" fill="var(--color-count)" radius={4} />
-                </BarChart>
-            </ResponsiveContainer>
-        </ChartContainer>
-      </CardContent>
-      <CardFooter>
-        <p className="text-xs text-muted-foreground">Pagsusuri: Ang salitang "peste" (58) ang pinakamadalas na dahilan ng alerto, na nagpapakita ng kahalagahan nito sa mga magsasaka.</p>
-      </CardFooter>
-    </Card>
+        <DialogFooter className="mt-4 text-sm text-muted-foreground">
+            <div className="flex flex-col gap-2">
+                <p><strong>Detalyadong Pagsusuri:</strong> Ang salitang '{topKeyword.word}' ang pinakamadalas na nag-trigger ng alerto. Ito ay nagpapatunay na ang sistema ay sensitibo sa mga pinaka-karaniwang problema na kinakaharap ng mga magsasaka. Ang mga salitang tulad ng "namamatay" at "lason" ay mas bihira ngunit kumakatawan sa mga napaka-kritikal na sitwasyon, na nagpapakita na ang sistema ay epektibong nakakakuha ng iba't ibang antas ng panganib.</p>
+                <p><strong>Rekomendasyon:</strong> Regular na suriin ang listahan ng mga high-risk na keyword. Magdagdag ng mga bagong termino kung kinakailangan (hal., mga partikular na pangalan ng kemikal o sakit). Kung may salita na nagdudulot ng masyadong maraming "false positive" na alerto, isaalang-alang ang pag-adjust sa sensitivity ng trigger para sa salitang iyon.</p>
+            </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
