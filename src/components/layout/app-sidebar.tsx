@@ -7,18 +7,15 @@ import {
   Archive,
   BarChart,
   Book,
-  Bot,
-  Flame,
   LayoutDashboard,
-  Leaf,
   MessageSquare,
   Settings,
   Users,
+  Replace,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -33,6 +30,7 @@ const navItems: NavItem[] = [
   { title: "Reports & Analytics", href: "/dashboard/reports", icon: BarChart },
   { title: "Knowledge Base", href: "/dashboard/knowledge-base", icon: Book },
   { title: "Inventory", href: "/dashboard/inventory", icon: Archive },
+  { title: "Labor Exchange", href: "/dashboard/labor-exchange", icon: Replace },
 ];
 
 export function AppSidebar() {
@@ -40,21 +38,13 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2">
-            <div className="bg-primary rounded-lg p-1.5 text-primary-foreground">
-                <Leaf className="w-5 h-5" />
-            </div>
-            <span className="text-lg font-semibold text-primary">Lingkod-Ani</span>
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="pt-4">
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
                   tooltip={{ children: item.title, side: "right" }}
                 >
                   <item.icon />
