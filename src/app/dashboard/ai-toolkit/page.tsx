@@ -6,14 +6,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, Sparkles } from "lucide-react";
+import { Calculator, BrainCircuit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const trainingModules = [
-  { title: "Pagsusuri ng Kaso: Pag-atake ng Leaf Blight", description: "Suriin ang isang tunay na kaso at ang inirekomendang tugon ng AI." },
-  { title: "Pag-unawa sa mga Pattern ng Wika sa SMS", description: "Alamin kung paano mas mahusay na bigyang-kahulugan ang mga karaniwang parirala at wika ng magsasaka (Tagalog, Ilocano, atbp.)." },
-  { title: "Pagbibigay ng Feedback sa Pagtutuwid ng AI", description: "Paano itama ang mga mungkahi ng AI upang mapabuti ang sistema sa paglipas ng panahon." },
-];
+import { Textarea } from "@/components/ui/textarea";
 
 export default function AiToolkitPage() {
   const [fertResult, setFertResult] = useState('');
@@ -23,29 +18,37 @@ export default function AiToolkitPage() {
 
   const calculateFertilizer = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simpleng pagkalkula para sa demo
     setFertResult('Rekomendasyon: 3 sako ng Urea, 2 sako ng Complete (14-14-14).');
-    toast({ title: 'Nakalkula na ang Pataba!', description: fertResult });
+    toast({ title: 'Nakalkula na ang Pataba!', description: 'Nasa ibaba ang resulta.' });
   };
   
   const calculatePesticide = (e: React.FormEvent) => {
     e.preventDefault();
     setPestResult('Rekomendasyon: 20ml ng pestisidyo bawat 16L na tubig.');
-    toast({ title: 'Nakalkula na ang Pestisidyo!', description: pestResult });
+    toast({ title: 'Nakalkula na ang Pestisidyo!', description: 'Nasa ibaba ang resulta.' });
   };
 
   const calculateProfit = (e: React.FormEvent) => {
     e.preventDefault();
     setProfitResult('Tinatayang Kita: ₱45,000. Break-even sa 2,800 kg.');
-    toast({ title: 'Nasuri na ang Kita!', description: profitResult });
+    toast({ title: 'Nasuri na ang Kita!', description: 'Nasa ibaba ang resulta.' });
   };
+  
+  const handleFeedbackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+        title: 'Salamat sa iyong Feedback!',
+        description: 'Natanggap na namin ang iyong isinumite. Gagamitin ito para mapabuti ang performance ng AI sa hinaharap.'
+    });
+    (e.target as HTMLFormElement).reset();
+};
 
 
   return (
     <div className="flex flex-col gap-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">AI Toolkit & Pagsasanay</h1>
-        <p className="text-muted-foreground">Mga calculator at modyul ng pagsasanay para sa mga Agricultural Extension Worker (AEW).</p>
+        <p className="text-muted-foreground">Mga tool at feature para tulungan ang mga admin at sanayin ang AI.</p>
       </div>
       
       <Card>
@@ -127,21 +130,25 @@ export default function AiToolkitPage() {
       
       <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Sparkles /> Mga Modyul ng Pagsasanay sa AI</CardTitle>
-            <CardDescription>Pahusayin ang iyong kakayahan sa paggamit at pag-train sa AI system.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><BrainCircuit /> Feedback sa AI</CardTitle>
+            <CardDescription>Turuan ang AI sa pamamagitan ng pagbibigay ng mga tamang halimbawa. Ito ay makakatulong sa AI na mas maunawaan ang mga lokal na wika at konteksto.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-            {trainingModules.map((module) => (
-                <Card key={module.title}>
-                    <CardHeader>
-                        <CardTitle className="text-lg">{module.title}</CardTitle>
-                        <CardDescription>{module.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button>Simulan ang Modyul</Button>
-                    </CardContent>
-                </Card>
-            ))}
+        <CardContent>
+            <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="feedback-sms">Halimbawang SMS ng Magsasaka</Label>
+                    <Textarea id="feedback-sms" placeholder="hal. 'Agbunga ti mais kon, ngem adda uleg idiay.' (Ilocano)" required rows={3}/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="feedback-intent">Ano ang tamang interpretasyon/layunin nito?</Label>
+                    <Input id="feedback-intent" placeholder="hal. Ulat ng Ani na may Panganib sa Kaligtasan" required/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="feedback-reply">Ano ang dapat na perpektong tugon sa SMS na ito?</Label>
+                    <Textarea id="feedback-reply" placeholder="hal. 'Congrats sa iyong ani! Mag-ingat po sa ahas. Huwag po munang pumasok sa lugar. Makikipag-ugnayan kami para sa tulong.'" required rows={3} />
+                </div>
+                 <Button type="submit">Isumite ang Feedback</Button>
+            </form>
         </CardContent>
       </Card>
     </div>
