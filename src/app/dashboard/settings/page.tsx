@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Trash2 } from 'lucide-react';
 
 export default function BarangaySettingsPage() {
     const { toast } = useToast();
@@ -20,6 +23,29 @@ export default function BarangaySettingsPage() {
     const [replyEndTime, setReplyEndTime] = useState("19:00");
     const [adminPhone, setAdminPhone] = useState("+639123456789");
 
+    const [templates, setTemplates] = useState([
+        "Salamat sa iyong ulat. Pinoproseso na namin ito.",
+        "Natanggap na namin ang iyong kahilingan at babalikan ka namin sa lalong madaling panahon.",
+        "Para sa mga emergency, mangyaring tumawag sa aming hotline sa [Numero ng Hotline].",
+    ]);
+    const [newTemplate, setNewTemplate] = useState('');
+
+    const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
+    const [autoReplyTimeout, setAutoReplyTimeout] = useState(3);
+
+
+    const handleAddTemplate = () => {
+        if (newTemplate.trim()) {
+            setTemplates([...templates, newTemplate.trim()]);
+            setNewTemplate('');
+            toast({ title: "Tagumpay!", description: "Nalagay na ang bagong template." });
+        }
+    };
+
+    const handleDeleteTemplate = (index: number) => {
+        setTemplates(templates.filter((_, i) => i !== index));
+        toast({ title: "Tagumpay!", description: "Natanggal na ang template.", variant: 'destructive' });
+    };
 
     const handleSaveChanges = () => {
         // In a real app, you would save these settings to a database.
@@ -127,6 +153,62 @@ export default function BarangaySettingsPage() {
             <Button onClick={handleSaveChanges}>I-save ang mga Pagbabago</Button>
         </CardFooter>
       </Card>
+
+      <Card>
+          <CardHeader>
+              <CardTitle>Mga Template ng Tugon</CardTitle>
+              <CardDescription>Gumawa at mamahala ng mga paunang-ginawang template para sa mabilis na pagtugon sa SMS.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="space-y-2">
+                  <Label>Mga Kasalukuyang Template</Label>
+                  <div className="space-y-2">
+                      {templates.map((template, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                              <p className="flex-1 text-sm">{template}</p>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplate(index)}>
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+               <Separator />
+              <div className="space-y-2">
+                  <Label htmlFor="new-template">Magdagdag ng Bagong Template</Label>
+                  <Textarea id="new-template" value={newTemplate} onChange={(e) => setNewTemplate(e.target.value)} placeholder="Isulat ang iyong bagong template dito..." />
+              </div>
+          </CardContent>
+          <CardFooter>
+              <Button onClick={handleAddTemplate}>I-save ang Template</Button>
+          </CardFooter>
+      </Card>
+      
+      <Card>
+          <CardHeader>
+              <CardTitle>Pagtugon sa Emergency</CardTitle>
+              <CardDescription>Awtomatikong magpadala ng paunang tugon para sa mga mensaheng may mataas na prayoridad kung walang aksyon mula sa admin.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                  <Switch id="auto-reply-switch" checked={autoReplyEnabled} onCheckedChange={setAutoReplyEnabled} />
+                  <Label htmlFor="auto-reply-switch">Paganahin ang awtomatikong pagtugon para sa mga urgent na mensahe</Label>
+              </div>
+              {autoReplyEnabled && (
+                <div className="space-y-2">
+                    <Label htmlFor="auto-reply-timeout">Timeout para sa Admin (minuto)</Label>
+                    <Input id="auto-reply-timeout" type="number" value={autoReplyTimeout} onChange={(e) => setAutoReplyTimeout(Number(e.target.value))} />
+                    <p className="text-sm text-muted-foreground">
+                        Kung walang aksyon mula sa admin sa loob ng panahong ito, isang paunang abiso ang ipapadala sa magsasaka.
+                    </p>
+                </div>
+              )}
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSaveChanges}>I-save ang mga Setting ng Emergency</Button>
+          </CardFooter>
+      </Card>
+
     </div>
   );
 }

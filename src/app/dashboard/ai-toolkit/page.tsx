@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const trainingModules = [
   { title: "Pagsusuri ng Kaso: Pag-atake ng Leaf Blight", description: "Suriin ang isang tunay na kaso at ang inirekomendang tugon ng AI." },
-  { title: "Pag-unawa sa mga Pattern ng Wika sa SMS", description: "Alamin kung paano mas mahusay na bigyang-kahulugan ang mga karaniwang parirala ng magsasaka." },
+  { title: "Pag-unawa sa mga Pattern ng Wika sa SMS", description: "Alamin kung paano mas mahusay na bigyang-kahulugan ang mga karaniwang parirala at wika ng magsasaka (Tagalog, Ilocano, atbp.)." },
   { title: "Pagbibigay ng Feedback sa Pagtutuwid ng AI", description: "Paano itama ang mga mungkahi ng AI upang mapabuti ang sistema sa paglipas ng panahon." },
 ];
 
@@ -44,8 +44,8 @@ export default function AiToolkitPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">AI Toolkit</h1>
-        <p className="text-muted-foreground">Mga calculator at pagsasanay na pinapagana ng AI para sa pagsasaka.</p>
+        <h1 className="text-2xl font-bold tracking-tight">AI Toolkit & Pagsasanay</h1>
+        <p className="text-muted-foreground">Mga calculator at modyul ng pagsasanay para sa mga Agricultural Extension Worker (AEW).</p>
       </div>
       
       <Card>
@@ -127,8 +127,8 @@ export default function AiToolkitPage() {
       
       <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Sparkles /> Pagsasanay para sa AEW</CardTitle>
-            <CardDescription>Mga mapagkukunan para sa pagpapabuti ng kasanayan ng mga Agricultural Extension Worker.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Sparkles /> Mga Modyul ng Pagsasanay sa AI</CardTitle>
+            <CardDescription>Pahusayin ang iyong kakayahan sa paggamit at pag-train sa AI system.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {trainingModules.map((module) => (

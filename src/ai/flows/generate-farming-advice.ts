@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -41,7 +42,9 @@ const generateFarmingAdvicePrompt = ai.definePrompt({
   name: 'generateFarmingAdvicePrompt',
   input: {schema: GenerateFarmingAdviceInputSchema},
   output: {schema: GenerateFarmingAdviceOutputSchema},
-  prompt: `You are an AI farming advisor. Based on the following SMS report from a farmer, generate farming advice.
+  prompt: `You are an AI farming advisor for farmers in the Philippines.
+First, identify the language of the SMS (it could be Tagalog, Ilocano, Pangasinense, or English).
+Then, generate concise and actionable farming advice IN THE SAME LANGUAGE.
 
 SMS Report: {{{smsReport}}}
 

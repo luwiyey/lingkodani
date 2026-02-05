@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -48,7 +49,7 @@ const navItems: NavItem[] = [
   },
   { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
   { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book },
-  { title: "AI Toolkit", href: "/dashboard/calculators", icon: Sparkles },
+  { title: "AI Toolkit & Pagsasanay", href: "/dashboard/ai-toolkit", icon: Sparkles },
   { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart },
   { title: "Audit Log", href: "/dashboard/audit-log", icon: History },
   { title: "Mga Setting ng Brgy.", href: "/dashboard/settings", icon: Settings },
