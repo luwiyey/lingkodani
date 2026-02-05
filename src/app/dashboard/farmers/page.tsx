@@ -1,9 +1,8 @@
-
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 import { farmers as initialFarmers } from '@/lib/data';
 import type { Farmer } from '@/lib/types';
@@ -240,7 +239,7 @@ export default function FarmersPage() {
               <DialogTitle>Farmer QR ID Card</DialogTitle>
               <DialogDescription>I-scan ang QR code na ito para buksan ang logbook ng magsasaka.</DialogDescription>
             </DialogHeader>
-            <div className="flex items-center justify-center p-4 bg-white rounded-lg"><QRCode value={qrCodeValue} size={256} /></div>
+            <div className="flex items-center justify-center p-4 bg-white rounded-lg"><QRCodeCanvas value={qrCodeValue} size={256} /></div>
             <DialogFooter className="sm:justify-start">
               <Button type="button" variant="secondary" onClick={() => window.print()}>I-print</Button>
               <DialogClose asChild><Button type="button" variant="outline">Isara</Button></DialogClose>
@@ -298,5 +297,3 @@ export default function FarmersPage() {
     </>
   );
 }
-
-    
