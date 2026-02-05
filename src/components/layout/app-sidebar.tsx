@@ -41,7 +41,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarContent className="pt-4">
         <SidebarMenu>
           <SidebarGroupLabel>Barangay</SidebarGroupLabel>
