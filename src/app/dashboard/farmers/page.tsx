@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Upload, Download, Filter } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Upload, Download, Filter, MapPin, Sprout, Activity } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -154,41 +158,75 @@ export default function FarmersPage() {
                 <Button variant="outline"><Filter className="mr-2" /> Filter</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>Lokasyon (Barangay)</DropdownMenuLabel>
+                <DropdownMenuLabel>Filter by</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {allBarangays.map((barangay) => (
-                  <DropdownMenuCheckboxItem
-                    key={barangay}
-                    checked={filters.barangays.includes(barangay)}
-                    onCheckedChange={() => handleFilterChange('barangays', barangay)}
-                  >
-                    {barangay}
-                  </DropdownMenuCheckboxItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Pananim</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {allCrops.map((crop) => (
-                  <DropdownMenuCheckboxItem
-                    key={crop}
-                    checked={filters.crops.includes(crop)}
-                    onCheckedChange={() => handleFilterChange('crops', crop)}
-                  >
-                    {crop}
-                  </DropdownMenuCheckboxItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Katayuan</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {allStatuses.map((status) => (
-                  <DropdownMenuCheckboxItem
-                    key={status}
-                    checked={filters.statuses.includes(status)}
-                    onCheckedChange={() => handleFilterChange('statuses', status)}
-                  >
-                    {status}
-                  </DropdownMenuCheckboxItem>
-                ))}
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <MapPin className="mr-2 h-4 w-4" />
+                    <span>Lokasyon (Barangay)</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuLabel>Pumili ng Barangay</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {allBarangays.map((barangay) => (
+                        <DropdownMenuCheckboxItem
+                          key={barangay}
+                          checked={filters.barangays.includes(barangay)}
+                          onCheckedChange={() => handleFilterChange('barangays', barangay)}
+                        >
+                          {barangay}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Sprout className="mr-2 h-4 w-4" />
+                    <span>Pananim</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuLabel>Pumili ng Pananim</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {allCrops.map((crop) => (
+                        <DropdownMenuCheckboxItem
+                          key={crop}
+                          checked={filters.crops.includes(crop)}
+                          onCheckedChange={() => handleFilterChange('crops', crop)}
+                        >
+                          {crop}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Activity className="mr-2 h-4 w-4" />
+                    <span>Katayuan</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuLabel>Pumili ng Katayuan</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {allStatuses.map((status) => (
+                        <DropdownMenuCheckboxItem
+                          key={status}
+                          checked={filters.statuses.includes(status)}
+                          onCheckedChange={() => handleFilterChange('statuses', status)}
+                        >
+                          {status}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="outline">Pagbukud-bukurin</Button>
