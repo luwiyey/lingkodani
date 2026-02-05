@@ -1,7 +1,6 @@
-
 "use client"
 
-import { Bar, BarChart, ResponsiveContainer } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Cell } from "recharts"
 import {
   Card,
   CardContent,
@@ -45,6 +44,3 @@ export function ValidationQueueChart() {
     </Card>
   )
 }
-
-// You might need to add this import if it's not auto-imported
-import { Cell } from 'recharts';
