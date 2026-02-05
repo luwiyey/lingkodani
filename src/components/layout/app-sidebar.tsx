@@ -56,9 +56,9 @@ export function AppSidebar() {
                   tooltip={{ children: item.title, side: "right" }}
                 >
                   <item.icon />
-                  <span>{item.title}</span>
+                  <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                    {item.label && (
-                    <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
+                    <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full group-data-[collapsible=icon]:hidden">
                       {item.label}
                     </span>
                   )}
