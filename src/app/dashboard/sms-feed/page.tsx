@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, ShieldAlert, CloudCog, Tractor } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -67,46 +67,57 @@ export default function SmsFeedPage() {
 
   return (
     <>
-      <div className="grid md:grid-cols-[350px_1fr] gap-4 h-[calc(100vh-80px)]">
+      <div className="grid md:grid-cols-[400px_1fr] gap-6 h-full">
         {/* Messages List */}
-        <div className="flex flex-col">
-            <div className="p-4">
-                <h1 className="text-2xl font-bold tracking-tight">Live na Feed ng SMS</h1>
-                <p className="text-muted-foreground">Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</p>
-            </div>
-            <ScrollArea className="flex-1">
-            <div className="flex flex-col gap-2 p-4 pt-0">
-                {smsMessages.map(message => (
-                <button 
-                    key={message.id} 
-                    className={cn(
-                        "block w-full text-left p-3 rounded-lg transition-colors",
-                        selectedMessage.id === message.id ? "bg-muted" : "hover:bg-muted/50"
-                    )}
-                    onClick={() => setSelectedMessage(message)}
-                >
-                    <div className="flex justify-between items-start">
-                    <span className="font-semibold text-sm">{message.farmerName}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit'})}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate pr-4">{message.message}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                        <Badge variant={message.status === 'pending_approval' ? 'secondary' : 'outline'}>{message.status.replace('_', ' ')}</Badge>
-                        <Badge variant={message.urgency === 'high' ? 'destructive' : 'outline'}>{message.urgency}</Badge>
-                    </div>
-                </button>
-                ))}
-            </div>
-            </ScrollArea>
-        </div>
+        <Card className="flex flex-col h-full">
+            <CardHeader>
+                <CardTitle>Live na Feed ng SMS</CardTitle>
+                <CardDescription>Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 flex-1">
+              <ScrollArea className="h-full">
+                <div className="p-4 flex flex-col gap-4">
+                    {smsMessages.map(message => (
+                    <button 
+                        key={message.id} 
+                        className={cn(
+                            "flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-all hover:bg-accent",
+                            selectedMessage.id === message.id && "bg-muted"
+                        )}
+                        onClick={() => setSelectedMessage(message)}
+                    >
+                      <div className="flex w-full flex-col gap-1">
+                        <div className="flex items-center">
+                          <div className="flex items-center gap-2">
+                            <div className="font-semibold">{message.farmerName}</div>
+                          </div>
+                          <div className={cn( "ml-auto text-xs", selectedMessage.id === message.id ? "text-foreground" : "text-muted-foreground" )}>
+                            {new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit'})}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="line-clamp-2 text-xs text-muted-foreground">
+                        {message.message}
+                      </div>
+                       <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={message.status === 'pending_approval' ? 'secondary' : 'outline'}>{message.status.replace('_', ' ')}</Badge>
+                          <Badge variant={message.urgency === 'high' ? 'destructive' : 'outline'}>{message.urgency}</Badge>
+                      </div>
+                    </button>
+                    ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+        </Card>
 
         {/* Message Details */}
         {selectedMessage && (
-            <div className="bg-muted/30 rounded-lg flex flex-col">
+            <div className="bg-muted/40 dark:bg-muted/20 rounded-lg flex flex-col h-full">
                 <div className="p-6 border-b">
                      <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
                             <Avatar className="w-12 h-12">
+                                <AvatarImage src={`https://picsum.photos/seed/${selectedMessage.farmerId}/48/48`} alt={selectedMessage.farmerName} />
                                 <AvatarFallback>{selectedMessage.farmerName.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
@@ -118,10 +129,10 @@ export default function SmsFeedPage() {
                              <p className="text-xs text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleString()}</p>
                         </div>
                     </div>
-                    <p className="mt-4 text-md p-4 bg-background rounded-lg">"{selectedMessage.message}"</p>
+                    <p className="mt-6 text-md p-4 bg-background rounded-lg">"{selectedMessage.message}"</p>
                 </div>
                 
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base flex items-center gap-2">
@@ -174,7 +185,7 @@ export default function SmsFeedPage() {
                         </CardContent>
                     </Card>
 
-                     <Card>
+                     <Card className="bg-background">
                         <CardHeader className="pb-2">
                              <CardTitle className="text-base flex items-center gap-2">
                                 <MessageSquare className="w-4 h-4 text-primary" /> Iminungkahing Tugon ng AI
@@ -187,8 +198,8 @@ export default function SmsFeedPage() {
 
                 </div>
 
-                <div className="p-6 mt-auto border-t">
-                    <div className="flex flex-wrap gap-2 justify-end">
+                <div className="p-6 mt-auto border-t bg-muted/40 dark:bg-muted/20 rounded-b-lg">
+                    <div className="flex flex-wrap gap-4 justify-end">
                         <Button onClick={() => openDialog('approve', selectedMessage)} size="sm">
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Aprubahan ang Tugon

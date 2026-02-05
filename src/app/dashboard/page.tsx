@@ -45,12 +45,12 @@ const alerts = [
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col gap-4 md:gap-8">
+    <div className="flex flex-col gap-6">
        <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
         <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Kabuuang Magsasaka"
           value="347"
@@ -93,7 +93,7 @@ export default function DashboardPage() {
           <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>
           <CardDescription>Mga awtomatikong nabuong alerto batay sa data ng panahon at mga ulat sa bukid.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {alerts.map(alert => {
                 const Icon = alert.icon;
                 return (
@@ -107,12 +107,12 @@ export default function DashboardPage() {
                                 <CardDescription>{alert.description}</CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="flex-grow flex flex-col justify-end">
+                        <CardContent className="flex-grow flex flex-col justify-end gap-4">
                             <div className="flex justify-between items-center text-sm">
                                 <Badge variant={alert.severity === 'Kritikal' ? 'destructive' : 'secondary'}>{alert.severity}</Badge>
                                 <span className="text-muted-foreground">{alert.affected} magsasaka ang apektado</span>
                             </div>
-                            <Button className="w-full mt-4">Magpadala ng Abiso</Button>
+                            <Button className="w-full">Magpadala ng Abiso</Button>
                         </CardContent>
                     </Card>
                 )
@@ -120,7 +120,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <div className="lg:col-span-4">
             <SmsFeedPreview />
         </div>
@@ -128,12 +128,10 @@ export default function DashboardPage() {
             <ResourceStatus />
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
         <DailySmsChart />
       </div>
 
     </div>
   );
 }
-
-    

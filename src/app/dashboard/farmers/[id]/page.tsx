@@ -42,7 +42,7 @@ export default function FarmerLogbookPage() {
 
   return (
     <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 flex flex-col gap-6">
             <Card>
                 <CardHeader className="flex-row items-center gap-4">
                     <Image src={farmer.avatarUrl} alt={farmer.name} width={64} height={64} className="rounded-full" />
@@ -51,7 +51,7 @@ export default function FarmerLogbookPage() {
                         <CardDescription>ID: {farmer.id}</CardDescription>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
+                <CardContent className="space-y-4 text-sm">
                     <p><strong>Edad:</strong> {farmer.age}</p>
                     <p><strong>Kasarian:</strong> {farmer.gender}</p>
                     <p><strong>Telepono:</strong> {farmer.phone}</p>
@@ -61,14 +61,14 @@ export default function FarmerLogbookPage() {
                     <p><strong>Petsa ng Pagpaparehistro:</strong> {new Date(farmer.registrationDate).toLocaleDateString()}</p>
                 </CardContent>
             </Card>
-            <Card className="mt-6">
+            <Card>
                  <CardHeader>
                     <CardTitle className="flex items-center gap-2"><FilePen /> Magdagdag ng Tala sa Bukid</CardTitle>
                     <CardDescription>Mag-log ng mga obserbasyon, mag-upload ng mga larawan, o mag-record ng audio mula sa field. Nagsi-sync offline.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                     <Textarea placeholder="Isulat ang iyong mga obserbasyon dito..." />
-                    <div className="flex gap-2">
+                    <div className="flex gap-4">
                         <Button variant="outline" className="flex-1"><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
                         <Button variant="outline" className="flex-1"><Mic className="mr-2"/> Mag-record ng Audio</Button>
                     </div>
@@ -92,5 +92,3 @@ export default function FarmerLogbookPage() {
     </div>
   );
 }
-
-    

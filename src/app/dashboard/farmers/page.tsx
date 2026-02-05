@@ -34,13 +34,13 @@ export default function FarmersPage() {
 
   return (
     <>
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng Magsasaka</h1>
           <p className="text-muted-foreground">Tingnan, pamahalaan, at i-update ang mga profile ng lahat ng nakarehistrong magsasaka.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-4">
             <Button variant="outline">
                 <MessageSquarePlus className="mr-2 h-4 w-4" />
                 Magpadala ng Broadcast
@@ -59,7 +59,7 @@ export default function FarmersPage() {
                         Manu-manong magdagdag ng bagong magsasaka sa sistema. I-click ang i-save kapag tapos na.
                     </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-6 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="name" className="text-right">Pangalan</Label>
                             <Input id="name" defaultValue="Pedro Penduko" className="col-span-3" />
