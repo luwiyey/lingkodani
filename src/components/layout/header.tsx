@@ -77,7 +77,7 @@ export function Header() {
             className="flex items-center gap-2 text-sm font-medium"
           >
             <Flame className="w-4 h-4 text-destructive" />
-            <span className="hidden sm:inline">Modo ng Sakuna</span>
+            <span className="hidden sm:inline">Disaster Mode</span>
           </Label>
           <Switch
             id="disaster-mode"
