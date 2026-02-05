@@ -42,6 +42,11 @@ export default function SmsFeedPage() {
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [editableResponse, setEditableResponse] = React.useState('');
     const { toast } = useToast();
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
@@ -92,7 +97,7 @@ export default function SmsFeedPage() {
                             <div className="font-semibold">{message.farmerName}</div>
                           </div>
                           <div className={cn( "ml-auto text-xs", selectedMessage.id === message.id ? "text-foreground" : "text-muted-foreground" )}>
-                            {new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit'})}
+                            {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit'}) : null}
                           </div>
                         </div>
                       </div>
@@ -126,7 +131,7 @@ export default function SmsFeedPage() {
                             </div>
                         </div>
                         <div className="text-right">
-                             <p className="text-xs text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleString()}</p>
+                             <p className="text-xs text-muted-foreground">{isClient ? new Date(selectedMessage.timestamp).toLocaleString() : ''}</p>
                         </div>
                     </div>
                     <p className="mt-6 text-md p-4 bg-background rounded-lg">"{selectedMessage.message}"</p>

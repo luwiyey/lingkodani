@@ -1,6 +1,9 @@
 
+'use client';
+
 import Link from 'next/link';
 import { ArrowUpRight, User, FilePen, Tractor, ShieldAlert, CloudCog, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +31,11 @@ const typeInfo: Record<SmsIntent, {icon: React.ElementType }> = {
 
 export function SmsFeedPreview() {
     const recentMessages = smsMessages.slice(0, 4);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     return (
         <Card>
@@ -63,7 +71,7 @@ export function SmsFeedPreview() {
                         <div className="flex flex-col items-end gap-1">
                             <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
                             <div className="text-xs text-muted-foreground">
-                            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null}
                             </div>
                         </div>
                     </div>
@@ -75,4 +83,3 @@ export function SmsFeedPreview() {
     )
 }
 
-    
