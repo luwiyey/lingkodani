@@ -44,11 +44,11 @@ const barangayNavItems: NavItem[] = [
     icon: Users,
     subItems: [
       { title: "Database", href: "/dashboard/farmers" },
+      { title: "Pangkalahatang-ideya", href: "/dashboard/oversight" },
       { title: "Pagpaparehistro", href: "/dashboard/farmers/register" },
       { title: "Pag-apruba", href: "/dashboard/farmers/approvals", label: '3' },
     ],
   },
-  { title: "Pangkalahatang-ideya", href: "/dashboard/oversight", icon: LayoutGrid },
   { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
   {
     title: "Kaalaman",
