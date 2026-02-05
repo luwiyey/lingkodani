@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -6,9 +5,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, BrainCircuit } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "@/components/ui/textarea";
 
 export default function AiToolkitPage() {
   const [fertResult, setFertResult] = useState('');
@@ -34,21 +32,11 @@ export default function AiToolkitPage() {
     toast({ title: 'Nasuri na ang Kita!', description: 'Nasa ibaba ang resulta.' });
   };
   
-  const handleFeedbackSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-        title: 'Salamat sa iyong Feedback!',
-        description: 'Natanggap na namin ang iyong isinumite. Gagamitin ito para mapabuti ang performance ng AI sa hinaharap.'
-    });
-    (e.target as HTMLFormElement).reset();
-};
-
-
   return (
     <div className="flex flex-col gap-8">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">AI Toolkit & Pagsasanay</h1>
-        <p className="text-muted-foreground">Mga tool at feature para tulungan ang mga admin at sanayin ang AI.</p>
+        <h1 className="text-2xl font-bold tracking-tight">AI Toolkit</h1>
+        <p className="text-muted-foreground">Mga tool para tulungan ang mga admin sa paggawa ng desisyon.</p>
       </div>
       
       <Card>
@@ -124,30 +112,6 @@ export default function AiToolkitPage() {
                 <Button className="w-full">Kalkulahin</Button>
             </CardFooter>
             </Card>
-            </form>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2"><BrainCircuit /> Feedback sa AI</CardTitle>
-            <CardDescription>Turuan ang AI sa pamamagitan ng pagbibigay ng mga tamang halimbawa. Ito ay makakatulong sa AI na mas maunawaan ang mga lokal na wika at konteksto.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <form onSubmit={handleFeedbackSubmit} className="space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="feedback-sms">Halimbawang SMS ng Magsasaka</Label>
-                    <Textarea id="feedback-sms" placeholder="hal. 'Agbunga ti mais kon, ngem adda uleg idiay.' (Ilocano)" required rows={3}/>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="feedback-intent">Ano ang tamang interpretasyon/layunin nito?</Label>
-                    <Input id="feedback-intent" placeholder="hal. Ulat ng Ani na may Panganib sa Kaligtasan" required/>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="feedback-reply">Ano ang dapat na perpektong tugon sa SMS na ito?</Label>
-                    <Textarea id="feedback-reply" placeholder="hal. 'Congrats sa iyong ani! Mag-ingat po sa ahas. Huwag po munang pumasok sa lugar. Makikipag-ugnayan kami para sa tulong.'" required rows={3} />
-                </div>
-                 <Button type="submit">Isumite ang Feedback</Button>
             </form>
         </CardContent>
       </Card>

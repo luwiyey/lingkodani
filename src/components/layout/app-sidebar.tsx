@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -15,6 +14,12 @@ import {
   Sparkles,
   History,
   ChevronRight,
+  LayoutGrid,
+  GraduationCap,
+  Building,
+  ShieldAlert,
+  DollarSign,
+  Truck
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,7 +39,7 @@ import {
 } from "@/components/ui/collapsible";
 import type { NavItem } from "@/lib/types";
 
-const navItems: NavItem[] = [
+const barangayNavItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Live SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
   {
@@ -47,30 +52,35 @@ const navItems: NavItem[] = [
       { title: "Pag-apruba", href: "/dashboard/farmers/approvals", label: '3' },
     ],
   },
+  { title: "Pangkalahatang-ideya", href: "/dashboard/oversight", icon: LayoutGrid },
   { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
   { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book },
-  { title: "AI Toolkit & Pagsasanay", href: "/dashboard/ai-toolkit", icon: Sparkles },
+  { title: "AI Toolkit", href: "/dashboard/ai-toolkit", icon: Sparkles },
+  { title: "Pagsasanay ng AEW", href: "/dashboard/training", icon: GraduationCap },
   { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart },
   { title: "Audit Log", href: "/dashboard/audit-log", icon: History },
   { title: "Mga Setting ng Brgy.", href: "/dashboard/settings", icon: Settings },
 ];
 
-export function AppSidebar() {
-  const pathname = usePathname();
+const municipalNavItems: NavItem[] = [
+    { title: "Pangkalahatang-ideya", href: "/dashboard/municipal/oversight", icon: Building },
+    { title: "Desk ng Insidente", href: "/dashboard/municipal/incidents", icon: ShieldAlert },
+    { title: "Awtoridad sa Presyo", href: "/dashboard/municipal/prices", icon: DollarSign },
+    { title: "Mga Kahilingan ng Rekurso", href: "/dashboard/municipal/vouchers", icon: Truck },
+];
 
-  const isParentActive = (item: NavItem) => {
-    if (item.subItems) {
-      return item.subItems.some(sub => pathname.startsWith(sub.href));
+function NavMenu({ items }: { items: NavItem[] }) {
+    const pathname = usePathname();
+    const isParentActive = (item: NavItem) => {
+        if (item.subItems) {
+            return pathname.startsWith(item.href);
+        }
+        return item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
     }
-    return item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
-  }
 
-  return (
-    <Sidebar collapsible="icon">
-      <SidebarContent className="pt-4 flex-1 flex flex-col">
-        <SidebarMenu className="flex-1">
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          {navItems.map((item) => (
+    return (
+        <SidebarMenu>
+            {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               {item.subItems ? (
                 <Collapsible defaultOpen={isParentActive(item)}>
@@ -91,7 +101,7 @@ export function AppSidebar() {
                     <SidebarMenuSub>
                       {item.subItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <Link href={subItem.href}>
+                           <Link href={subItem.href} passHref>
                             <SidebarMenuSubButton isActive={pathname === subItem.href}>
                               <span>{subItem.title}</span>
                               {subItem.label && (
@@ -127,6 +137,21 @@ export function AppSidebar() {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+    )
+}
+
+export function AppSidebar() {
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarContent className="pt-4 flex-1 flex flex-col">
+        <div>
+            <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
+            <NavMenu items={barangayNavItems} />
+        </div>
+        <div className="mt-auto">
+            <SidebarGroupLabel>Portal ng Munisipyo</SidebarGroupLabel>
+            <NavMenu items={municipalNavItems} />
+        </div>
       </SidebarContent>
     </Sidebar>
   );
