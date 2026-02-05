@@ -43,10 +43,10 @@ const barangayNavItems: NavItem[] = [
     href: "/dashboard/farmers",
     icon: Users,
     subItems: [
-      { title: "Database", href: "/dashboard/farmers" },
-      { title: "Pangkalahatang-ideya", href: "/dashboard/oversight" },
       { title: "Pagpaparehistro", href: "/dashboard/farmers/register" },
       { title: "Pag-apruba", href: "/dashboard/farmers/approvals", label: '3' },
+      { title: "Database", href: "/dashboard/farmers" },
+      { title: "Pangkalahatang-ideya", href: "/dashboard/oversight" },
     ],
   },
   { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
@@ -69,10 +69,16 @@ function NavMenu({ items }: { items: NavItem[] }) {
     const pathname = usePathname();
     const isParentActive = (item: NavItem) => {
         if (item.subItems) {
-            return item.subItems.some(sub => pathname.startsWith(sub.href));
+            // Updated logic to ensure parent is active even for href that is also a subitem href
+            const isActive = item.subItems.some(sub => pathname.startsWith(sub.href));
+            if (item.href === '/dashboard/farmers' && pathname === '/dashboard/farmers') {
+                return true;
+            }
+            return isActive;
         }
         return item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
     }
+
 
     return (
         <SidebarMenu>
