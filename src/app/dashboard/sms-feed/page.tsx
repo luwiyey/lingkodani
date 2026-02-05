@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { Check, Edit, Info, Send, ThumbsDown, User, X } from 'lucide-react';
+import { Check, Edit, Info, Send, ThumbsDown, User, X, MessageCircle, FilePen, Tractor, CloudCog, ShieldAlert, BadgeInfo } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { smsMessages } from '@/lib/data';
-import type { SmsMessage } from '@/lib/types';
+import type { SmsMessage, SmsMessageType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -30,6 +30,16 @@ const statusColors = {
     approved: 'bg-green-500',
     rejected: 'bg-red-500',
     edited: 'bg-blue-500',
+    actioned: 'bg-purple-500',
+}
+
+const typeInfo: Record<SmsMessageType, {label: string, icon: React.ElementType, color: string}> = {
+    registration: { label: 'Pagpaparehistro', icon: User, color: 'bg-blue-500'},
+    'crop-update': { label: 'Update sa Pananim', icon: FilePen, color: 'bg-green-500' },
+    request: { label: 'Kahilingan', icon: Tractor, color: 'bg-orange-500' },
+    'pest-report': { label: 'Ulat ng Peste', icon: ShieldAlert, color: 'bg-red-500' },
+    weather: { label: 'Panahon', icon: CloudCog, color: 'bg-sky-500'},
+    general: { label: 'Pangkalahatan', icon: MessageCircle, color: 'bg-gray-500' },
 }
 
 export default function SmsFeedPage() {
@@ -45,7 +55,7 @@ export default function SmsFeedPage() {
     }, [selectedMessage]);
 
     if (!selectedMessage) {
-        return <div>Loading...</div>
+        return <div className="flex items-center justify-center h-full"><p>Mangyaring pumili ng mensahe.</p></div>
     }
 
   return (
@@ -53,30 +63,38 @@ export default function SmsFeedPage() {
       <Card className="md:col-span-1 lg:col-span-1 h-full overflow-y-auto">
         <CardHeader>
           <CardTitle>Mga Papasok na SMS</CardTitle>
-          <CardDescription>Pumili ng mensahe upang mapatunayan.</CardDescription>
+          <CardDescription>Pumili ng mensahe upang suriin at aksyunan.</CardDescription>
         </CardHeader>
         <CardContent className="p-2">
             <div className="flex flex-col gap-2">
-            {smsMessages.map(message => (
-                <button
-                    key={message.id}
-                    onClick={() => setSelectedMessage(message)}
-                    className={cn(
-                        "w-full text-left p-3 rounded-lg border transition-colors",
-                        selectedMessage?.id === message.id ? 'bg-accent' : 'hover:bg-accent/50'
-                    )}
-                >
-                    <div className="flex justify-between items-start">
-                        <p className="font-semibold">{message.farmerName}</p>
-                        <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate mt-1">{message.message}</p>
-                    <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-muted-foreground">{new Date(message.timestamp).toLocaleString()}</span>
-                        <div className={`w-2 h-2 rounded-full ${statusColors[message.status]}`}></div>
-                    </div>
-                </button>
-            ))}
+            {smsMessages.map(message => {
+                const TypeIcon = typeInfo[message.type].icon;
+                return (
+                    <button
+                        key={message.id}
+                        onClick={() => setSelectedMessage(message)}
+                        className={cn(
+                            "w-full text-left p-3 rounded-lg border transition-colors",
+                            selectedMessage?.id === message.id ? 'bg-accent' : 'hover:bg-accent/50'
+                        )}
+                    >
+                        <div className="flex justify-between items-start">
+                            <p className="font-semibold">{message.farmerName}</p>
+                            <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                            <TypeIcon className="w-4 h-4 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground truncate">{message.message}</p>
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                            <span className="text-xs text-muted-foreground">{new Date(message.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                            <TooltipProvider><Tooltip><TooltipTrigger>
+                                <div className={cn("w-2 h-2 rounded-full", statusColors[message.status])}></div>
+                            </TooltipTrigger><TooltipContent><p>{message.status}</p></TooltipContent></Tooltip></TooltipProvider>
+                        </div>
+                    </button>
+                )
+            })}
             </div>
         </CardContent>
       </Card>
@@ -85,8 +103,8 @@ export default function SmsFeedPage() {
         <CardHeader>
             <div className="flex justify-between items-start">
                 <div>
-                    <CardTitle className="text-2xl">Proseso ng Pagpapatunay ng AI</CardTitle>
-                    <CardDescription>Suriin at gumawa ng aksyon sa payo na binuo ng AI.</CardDescription>
+                    <CardTitle className="text-2xl">Proseso ng Pagpapatunay</CardTitle>
+                    <CardDescription>Suriin at gumawa ng aksyon sa mensahe ng magsasaka at payo ng AI.</CardDescription>
                 </div>
                 <Badge variant={selectedMessage.status === 'pending' ? 'default' : selectedMessage.status === 'approved' ? 'secondary' : 'destructive'}>
                     Katayuan: {selectedMessage.status}
@@ -94,8 +112,17 @@ export default function SmsFeedPage() {
             </div>
         </CardHeader>
         <CardContent className="space-y-6">
-            <div className="space-y-2">
-                <h3 className="font-semibold flex items-center gap-2"><User className="w-4 h-4"/> Ulat ng Magsasaka</h3>
+            <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <User className="w-4 h-4"/>
+                        <h3 className="font-semibold">Ulat mula kay {selectedMessage.farmerName}</h3>
+                    </div>
+                    <Badge variant="outline" className={cn("text-xs", typeInfo[selectedMessage.type].color, "border-transparent text-white")}>
+                        <typeInfo[selectedMessage.type].icon className="w-3 h-3 mr-1" />
+                        {typeInfo[selectedMessage.type].label}
+                    </Badge>
+                </div>
                 <div className="p-4 bg-muted rounded-lg">
                     <p className="text-muted-foreground">{selectedMessage.message}</p>
                 </div>
@@ -103,8 +130,8 @@ export default function SmsFeedPage() {
 
             <Separator />
             
-            <div className="space-y-2">
-                <h3 className="font-semibold">Payo na Binuo ng AI</h3>
+            <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2"><BadgeInfo className="w-4 h-4"/> Payo na Binuo ng AI</h3>
                 <div className="flex items-center gap-4">
                     <span>Marka ng Kumpiyansa:</span>
                     <Progress value={selectedMessage.aiConfidence * 100} className="w-1/3 h-3" />
@@ -113,7 +140,7 @@ export default function SmsFeedPage() {
                 {selectedMessage.knowledgeBaseId && (
                      <p className="text-sm text-muted-foreground flex items-center gap-2">
                         <Info className="w-4 h-4" />
-                        Sumasangguni sa Artikulo sa Knowledge Base: <Link href="/dashboard/knowledge-base" className="text-primary underline">{selectedMessage.knowledgeBaseId}</Link>
+                        Sumasangguni sa Artikulo sa Knowledge Base: <Link href={`/dashboard/knowledge-base#${selectedMessage.knowledgeBaseId}`} className="text-primary underline">{selectedMessage.knowledgeBaseId}</Link>
                     </p>
                 )}
                 <div className="p-4 bg-primary/5 rounded-lg">
@@ -152,7 +179,7 @@ export default function SmsFeedPage() {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="outline" onClick={() => setIsEditing(true)}>
-                                    <Edit className="mr-2" />I-edit ang Payo
+                                    <Edit className="mr-2" />I-edit bago Ipadala
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>Baguhin ang payo bago ipadala.</p></TooltipContent>
@@ -177,4 +204,4 @@ export default function SmsFeedPage() {
 }
 
 // Dummy Link component for demonstration since next/link is not available here
-const Link = ({href, className, children}: {href:string, className:string, children: React.ReactNode}) => <a href={href} className={className}>{children}</a>;
+const Link = ({href, className, children}: {href:string, className?:string, children: React.ReactNode}) => <a href={href} className={className}>{children}</a>;

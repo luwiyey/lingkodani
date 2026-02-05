@@ -12,7 +12,8 @@ export type Farmer = {
   id: string;
   name: string;
   phone: string;
-  location: string;
+  location: string; // Barangay
+  municipality: string;
   farmSize: number; // in hectares
   crops: string[];
   riskScore: number;
@@ -20,14 +21,23 @@ export type Farmer = {
   avatarUrl: string;
 };
 
+export type SmsMessageType = 
+  | 'registration' 
+  | 'crop-update' 
+  | 'request' 
+  | 'pest-report' 
+  | 'weather'
+  | 'general';
+
 export type SmsMessage = {
   id: string;
   farmerId: string;
   farmerName: string;
   message: string;
   timestamp: string;
+  type: SmsMessageType;
   urgency: 'low' | 'medium' | 'high';
-  status: 'pending' | 'approved' | 'rejected' | 'edited';
+  status: 'pending' | 'approved' | 'rejected' | 'edited' | 'actioned';
   aiAdvice: string;
   aiConfidence: number;
   knowledgeBaseId?: string;

@@ -1,9 +1,11 @@
+
 import { knowledgeArticles } from '@/lib/data';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Bot } from 'lucide-react';
+import { PlusCircle, Bot, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const suggestedArticles = [
     { title: 'Pinakamahusay na Kasanayan para sa Pagpapataba ng Mais', summary: 'Sinasaklaw ang tiyempo at mga uri ng pataba para sa mga pananim na mais batay sa mga kamakailang katanungan tungkol sa mga kakulangan sa sustansya.', keywords: ['mais', 'pataba', 'sustansya'] },
@@ -54,6 +56,14 @@ export default function KnowledgeBasePage() {
       <Card>
         <CardHeader>
             <CardTitle>Mga Inilathalang Artikulo</CardTitle>
+            <div className="relative pt-2">
+                <Search className="absolute left-2.5 top-4.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Maghanap ng artikulo..."
+                    className="w-full rounded-lg bg-background pl-8"
+                />
+            </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -67,7 +77,7 @@ export default function KnowledgeBasePage() {
             </TableHeader>
             <TableBody>
               {knowledgeArticles.map((article) => (
-                <TableRow key={article.id}>
+                <TableRow key={article.id} id={article.id}>
                   <TableCell className="font-medium">{article.title}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">

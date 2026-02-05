@@ -1,16 +1,27 @@
+
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, User, FilePen, Tractor, ShieldAlert, CloudCog, MessageCircle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { smsMessages } from '@/lib/data';
+import type { SmsMessageType } from '@/lib/types';
 
 const urgencyVariant = {
   high: 'destructive',
   medium: 'secondary',
   low: 'outline',
 } as const;
+
+const typeInfo: Record<SmsMessageType, {icon: React.ElementType }> = {
+    registration: { icon: User },
+    'crop-update': { icon: FilePen },
+    request: { icon: Tractor },
+    'pest-report': { icon: ShieldAlert },
+    weather: { icon: CloudCog },
+    general: { icon: MessageCircle },
+}
 
 export function SmsFeedPreview() {
     const recentMessages = smsMessages.slice(0, 4);
@@ -19,7 +30,7 @@ export function SmsFeedPreview() {
         <Card>
             <CardHeader className="flex flex-row items-center">
               <div className="grid gap-2">
-                <CardTitle>Live na Feed ng Misyon ng SMS</CardTitle>
+                <CardTitle>Live na Feed ng SMS</CardTitle>
                 <CardDescription>
                   Mga papasok na ulat mula sa mga magsasaka na nangangailangan ng pagpapatunay.
                 </CardDescription>
@@ -33,8 +44,11 @@ export function SmsFeedPreview() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                {recentMessages.map((message) => (
+                {recentMessages.map((message) => {
+                    const TypeIcon = typeInfo[message.type].icon;
+                    return (
                     <div key={message.id} className="flex items-start gap-4">
+                        <TypeIcon className="h-5 w-5 text-muted-foreground mt-1" />
                         <div className="flex-1">
                             <p className="text-sm font-medium leading-none">
                                 {message.farmerName}
@@ -50,7 +64,8 @@ export function SmsFeedPreview() {
                             </div>
                         </div>
                     </div>
-                ))}
+                )}
+                )}
                 </div>
             </CardContent>
         </Card>

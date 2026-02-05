@@ -25,12 +25,12 @@ import type { NavItem } from "@/lib/types";
 
 const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Feed ng Misyon ng SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
+  { title: "Feed ng SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
   { title: "Talaan ng Magsasaka", href: "/dashboard/farmers", icon: Users },
   { title: "Mga Ulat at Analitika", href: "/dashboard/reports", icon: BarChart },
   { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book },
   { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
-  { title: "Palitan ng Paggawa", href: "/dashboard/labor-exchange", icon: Replace },
+  { title: "Palitan ng Trabaho", href: "/dashboard/labor-exchange", icon: Replace },
 ];
 
 export function AppSidebar() {
