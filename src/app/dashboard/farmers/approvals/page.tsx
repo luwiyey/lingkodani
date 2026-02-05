@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -93,7 +92,7 @@ export default function ApprovalsPage() {
                 <TableHead>Pangalan</TableHead>
                 <TableHead>Numero ng Telepono</TableHead>
                 <TableHead>Lokasyon</TableHead>
-                <TableHead>Petsa ng Pagpaparehistro</TableHead>
+                <TableHead>Oras at Petsa ng Pagpaparehistro</TableHead>
                 <TableHead className="text-right">Mga Aksyon</TableHead>
               </TableRow>
             </TableHeader>
@@ -104,7 +103,7 @@ export default function ApprovalsPage() {
                     <TableCell className="font-medium">{farmer.name}</TableCell>
                     <TableCell>{farmer.phone}</TableCell>
                     <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
-                    <TableCell>{new Date(farmer.registrationDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(farmer.registrationDate).toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col space-y-2 items-end">
                         <Button size="sm" onClick={() => handleApproval(farmer.id, true)} className="w-[120px]">
