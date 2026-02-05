@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function BarangaySettingsPage() {
     const { toast } = useToast();
@@ -195,13 +196,33 @@ export default function BarangaySettingsPage() {
                   <Label htmlFor="auto-reply-switch">Paganahin ang awtomatikong pagtugon para sa mga urgent na mensahe</Label>
               </div>
               {autoReplyEnabled && (
-                <div className="space-y-2">
-                    <Label htmlFor="auto-reply-timeout">Timeout para sa Admin (minuto)</Label>
-                    <Input id="auto-reply-timeout" type="number" value={autoReplyTimeout} onChange={(e) => setAutoReplyTimeout(Number(e.target.value))} />
-                    <p className="text-sm text-muted-foreground">
-                        Kung walang aksyon mula sa admin sa loob ng panahong ito, isang paunang abiso ang ipapadala sa magsasaka.
-                    </p>
-                </div>
+                <>
+                  <div className="space-y-2 pt-4">
+                      <Label htmlFor="auto-reply-timeout">Timeout para sa Admin (minuto)</Label>
+                      <Input id="auto-reply-timeout" type="number" value={autoReplyTimeout} onChange={(e) => setAutoReplyTimeout(Number(e.target.value))} />
+                      <p className="text-sm text-muted-foreground">
+                          Kung walang aksyon mula sa admin sa loob ng panahong ito, isang paunang abiso ang ipapadala.
+                      </p>
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="auto-reply-template">Template para sa Auto-Reply</Label>
+                      <Select defaultValue={templates[2]}>
+                          <SelectTrigger id="auto-reply-template">
+                              <SelectValue placeholder="Pumili ng template na ipapadala..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {templates.map((template, index) => (
+                                  <SelectItem key={index} value={template}>
+                                      {template}
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">
+                          Ito ang mensaheng awtomatikong ipapadala. Maaari kang magdagdag ng mga template sa itaas.
+                      </p>
+                  </div>
+                </>
               )}
           </CardContent>
           <CardFooter>
