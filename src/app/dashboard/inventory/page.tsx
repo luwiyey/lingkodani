@@ -57,8 +57,12 @@ export default function InventoryPage() {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
   const { toast } = useToast();
   
-  const [filters, setFilters] = useState<{ categories: ResourceCategory[] }>({
+  const [filters, setFilters] = useState<{
+    categories: ResourceCategory[];
+    kagamitan: string[];
+  }>({
     categories: [],
+    kagamitan: [],
   });
 
   const [stockFilter, setStockFilter] = useState<number | null>(null);
@@ -71,13 +75,19 @@ export default function InventoryPage() {
   const [isUnitDialogOpen, setUnitDialogOpen] = useState(false);
   const [isDateDialogOpen, setDateDialogOpen] = useState(false);
 
+  const allKagamitan = [...new Set(resources.filter(r => r.category === 'Kagamitan').map(r => r.name))];
 
-  const handleFilterChange = (category: ResourceCategory) => {
+
+  const handleFilterChange = (
+    type: 'categories' | 'kagamitan',
+    value: string
+    ) => {
     setFilters(prev => {
-        const newCategories = prev.categories.includes(category)
-            ? prev.categories.filter(c => c !== category)
-            : [...prev.categories, category];
-        return { ...prev, categories: newCategories };
+        const currentValues = prev[type];
+        const newValues = currentValues.includes(value as never)
+            ? currentValues.filter((v) => v !== value)
+            : [...currentValues, value as never];
+        return { ...prev, [type]: newValues };
     });
   };
 
@@ -130,12 +140,24 @@ export default function InventoryPage() {
   const filteredResources = useMemo(() => {
     return resources.filter(resource => {
         const searchMatch = resource.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = filters.categories.length === 0 || filters.categories.includes(resource.category);
+        
+        const hasCategoryFilters = filters.categories.length > 0;
+        const hasKagamitanFilters = filters.kagamitan.length > 0;
+
+        const filterMatch = (() => {
+            if (!hasCategoryFilters && !hasKagamitanFilters) return true;
+
+            const categoryMatch = hasCategoryFilters && filters.categories.includes(resource.category);
+            const kagamitanMatch = hasKagamitanFilters && resource.category === 'Kagamitan' && filters.kagamitan.includes(resource.name);
+            
+            return categoryMatch || kagamitanMatch;
+        })();
+
         const stockMatch = stockFilter === null || resource.stock >= stockFilter;
         const unitMatch = unitFilter === '' || resource.unit.toLowerCase().includes(unitFilter.toLowerCase());
         const dateMatch = !dateFilter || new Date(resource.lastUpdated) >= dateFilter;
 
-        return searchMatch && categoryMatch && stockMatch && unitMatch && dateMatch;
+        return searchMatch && filterMatch && stockMatch && unitMatch && dateMatch;
     });
   }, [resources, searchTerm, filters, stockFilter, unitFilter, dateFilter]);
 
@@ -243,25 +265,41 @@ export default function InventoryPage() {
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent>
-                      <DropdownMenuCheckboxItem checked={filters.categories.includes('Pataba')} onCheckedChange={() => handleFilterChange('Pataba')}>
+                      <DropdownMenuCheckboxItem checked={filters.categories.includes('Pataba')} onCheckedChange={() => handleFilterChange('categories', 'Pataba')}>
                         Pataba
                       </DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem checked={filters.categories.includes('Binhi')} onCheckedChange={() => handleFilterChange('Binhi')}>
+                      <DropdownMenuCheckboxItem checked={filters.categories.includes('Binhi')} onCheckedChange={() => handleFilterChange('categories', 'Binhi')}>
                         Binhi
                       </DropdownMenuCheckboxItem>
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
                 </DropdownMenuSub>
 
-                <DropdownMenuItem onSelect={() => handleFilterChange('Kagamitan')}>
-                    <DropdownMenuCheckboxItem checked={filters.categories.includes('Kagamitan')} onCheckedChange={() => {}} className="p-0 mr-2" />
-                    <span>Kagamitan</span>
-                </DropdownMenuItem>
+                <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                        <span>Kagamitan</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                            {allKagamitan.map((item) => (
+                                <DropdownMenuCheckboxItem
+                                    key={item}
+                                    checked={filters.kagamitan.includes(item)}
+                                    onCheckedChange={() => handleFilterChange('kagamitan', item)}
+                                >
+                                    {item}
+                                </DropdownMenuCheckboxItem>
+                            ))}
+                        </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                </DropdownMenuSub>
 
-                <DropdownMenuItem onSelect={() => handleFilterChange('Paggawa')}>
-                     <DropdownMenuCheckboxItem checked={filters.categories.includes('Paggawa')} onCheckedChange={() => {}} className="p-0 mr-2" />
-                    <span>Paggawa</span>
-                </DropdownMenuItem>
+                <DropdownMenuCheckboxItem
+                    checked={filters.categories.includes('Paggawa')}
+                    onCheckedChange={() => handleFilterChange('categories', 'Paggawa')}
+                >
+                    Paggawa
+                </DropdownMenuCheckboxItem>
                 
                 <DropdownMenuSeparator />
 
