@@ -47,12 +47,7 @@ export function AIConfidenceTrendChart() {
     <Dialog>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="grid gap-0.5">
-                <CardTitle>Trend ng Kumpiyansa ng AI</CardTitle>
-                <CardDescription>Pag-unlad ng kumpiyansa ng AI sa paglipas ng panahon.</CardDescription>
-            </div>
-             <div className="flex items-center gap-2">
+           <div className="flex justify-end gap-2">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -74,7 +69,10 @@ export function AIConfidenceTrendChart() {
                     </Button>
                 </DialogTrigger>
              </div>
-          </div>
+            <div className="grid gap-0.5">
+                <CardTitle>Trend ng Kumpiyansa ng AI</CardTitle>
+                <CardDescription>Pag-unlad ng kumpiyansa ng AI sa paglipas ng panahon.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
             <div className="flex items-center gap-2 text-chart-1">

@@ -50,12 +50,7 @@ export function CropStageChart() {
     <Dialog>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="grid gap-0.5">
-                <CardTitle>Pamamahagi ng Yugto ng Pananim</CardTitle>
-                <CardDescription>Porsyento ng mga pananim sa bawat yugto.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex justify-end gap-2">
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -65,10 +60,6 @@ export function CropStageChart() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                       <DropdownMenuItem onClick={() => setTimeframe('Kasalukuyan')}>Kasalukuyan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                   </DropdownMenuContent>
               </DropdownMenu>
               <DialogTrigger asChild>
@@ -77,7 +68,10 @@ export function CropStageChart() {
                   </Button>
               </DialogTrigger>
             </div>
-          </div>
+            <div className="grid gap-0.5">
+                <CardTitle>Pamamahagi ng Yugto ng Pananim</CardTitle>
+                <CardDescription>Porsyento ng mga pananim sa bawat yugto.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
              <div className="flex items-center gap-4">

@@ -46,12 +46,7 @@ export function MessageLengthChart() {
     <Dialog>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="grid gap-0.5">
-                <CardTitle>Haba ng Mensahe</CardTitle>
-                <CardDescription>Pamamahagi ng haba ng mga mensahe.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex justify-end gap-2">
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -73,7 +68,10 @@ export function MessageLengthChart() {
                   </Button>
               </DialogTrigger>
             </div>
-          </div>
+            <div className="grid gap-0.5">
+                <CardTitle>Haba ng Mensahe</CardTitle>
+                <CardDescription>Pamamahagi ng haba ng mga mensahe.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
              <div className="flex flex-col items-center gap-2">

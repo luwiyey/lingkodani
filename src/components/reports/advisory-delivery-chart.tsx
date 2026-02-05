@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, Cell, Tooltip, Legend } from "recharts"
+import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { advisoryDeliveryData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -47,12 +47,7 @@ export function AdvisoryDeliveryChart() {
     <Dialog>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="grid gap-0.5">
-                <CardTitle>Success Rate ng Pagpapadala ng Advisory</CardTitle>
-                <CardDescription>Porsyento ng mga SMS na matagumpay na naipadala.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex justify-end gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -74,7 +69,10 @@ export function AdvisoryDeliveryChart() {
                   </Button>
               </DialogTrigger>
             </div>
-          </div>
+            <div className="grid gap-0.5">
+                <CardTitle>Success Rate ng Pagpapadala ng Advisory</CardTitle>
+                <CardDescription>Porsyento ng mga SMS na matagumpay na naipadala.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
             <div className="flex flex-col items-center gap-2">

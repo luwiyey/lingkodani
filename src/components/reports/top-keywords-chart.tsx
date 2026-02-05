@@ -53,12 +53,7 @@ export function TopKeywordsChart() {
     <Dialog>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="grid gap-0.5">
-                <CardTitle>Mga Karaniwang Salita</CardTitle>
-                <CardDescription>Mga pinakamadalas na salitang ginagamit sa SMS.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex justify-end gap-2">
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -80,7 +75,10 @@ export function TopKeywordsChart() {
                   </Button>
               </DialogTrigger>
             </div>
-          </div>
+            <div className="grid gap-0.5">
+                <CardTitle>Mga Karaniwang Salita</CardTitle>
+                <CardDescription>Mga pinakamadalas na salitang ginagamit sa SMS.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
             <div className="flex flex-col items-center gap-2">

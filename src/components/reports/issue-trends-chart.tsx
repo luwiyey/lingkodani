@@ -58,12 +58,7 @@ export function IssueTrendsChart() {
     <Dialog>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="grid gap-0.5">
-                <CardTitle>Graph ng Trend ng Isyu</CardTitle>
-                <CardDescription>Lingguhang uso ng mga pangunahing isyu.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex justify-end gap-2">
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -85,7 +80,10 @@ export function IssueTrendsChart() {
                   </Button>
               </DialogTrigger>
             </div>
-          </div>
+            <div className="grid gap-0.5">
+                <CardTitle>Graph ng Trend ng Isyu</CardTitle>
+                <CardDescription>Lingguhang uso ng mga pangunahing isyu.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
             <div className="flex items-center gap-2 text-chart-1">
