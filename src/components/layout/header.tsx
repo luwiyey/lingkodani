@@ -94,7 +94,7 @@ export function Header() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Aking Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild><Link href="/dashboard/settings"><Settings className="mr-2" />Mga Setting</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href="/dashboard/account"><User className="mr-2" />Account</Link></DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Mag-logout</Link></DropdownMenuItem>
         </DropdownMenuContent>

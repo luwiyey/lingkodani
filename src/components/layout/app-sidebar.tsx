@@ -22,12 +22,11 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import type { NavItem } from "@/lib/types";
 
-const barangayNavItems: NavItem[] = [
+const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Live SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
   { title: "Database ng Magsasaka", href: "/dashboard/farmers", icon: Users },
@@ -37,6 +36,8 @@ const barangayNavItems: NavItem[] = [
   { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book },
   { title: "AI Toolkit", href: "/dashboard/calculators", icon: Sparkles },
   { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart },
+  { title: "Audit Log", href: "/dashboard/audit-log", icon: History },
+  { title: "Mga Setting ng Brgy.", href: "/dashboard/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -44,10 +45,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="pt-4">
-        <SidebarMenu>
-          <SidebarGroupLabel>Barangay</SidebarGroupLabel>
-          {barangayNavItems.map((item) => (
+      <SidebarContent className="pt-4 flex-1 flex flex-col">
+        <SidebarMenu className="flex-1">
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
@@ -67,32 +68,6 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-           <SidebarMenuItem>
-             <Link href="/dashboard/audit-log" passHref>
-                <SidebarMenuButton
-                  isActive={pathname === "/dashboard/audit-log"}
-                  tooltip={{ children: "Audit Log", side: "right" }}
-                >
-                  <History />
-                  <span>Audit Log</span>
-                </SidebarMenuButton>
-              </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-             <Link href="/dashboard/settings" passHref>
-                <SidebarMenuButton
-                  isActive={pathname === "/dashboard/settings"}
-                  tooltip={{ children: "Mga Setting", side: "right" }}
-                >
-                  <Settings />
-                  <span>Mga Setting</span>
-                </SidebarMenuButton>
-              </Link>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }
