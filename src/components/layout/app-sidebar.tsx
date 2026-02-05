@@ -55,8 +55,8 @@ export function AppSidebar() {
                   tooltip={{ children: item.title, side: "right" }}
                 >
                   <item.icon />
-                  <div className="flex w-full items-center group-data-[collapsible=icon]:hidden">
-                    <span>{item.title}</span>
+                  <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
+                    <span className="truncate">{item.title}</span>
                     {item.label && (
                       <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
                         {item.label}
