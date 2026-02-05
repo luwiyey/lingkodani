@@ -1,16 +1,14 @@
 
 "use client"
 
+import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { topInquiriesData } from "@/lib/data";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 const chartConfig = {
   count: {
@@ -20,11 +18,30 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function TopInquiriesChart() {
+  const [timeframe, setTimeframe] = useState('Buwanan');
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pinakakaraniwang Uri ng Tanong</CardTitle>
-        <CardDescription className="text-xs">Mga pinakamadalas na tanong o paksa na itinanong ng mga magsasaka.</CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>Pinakakaraniwang Uri ng Tanong</CardTitle>
+                <CardDescription className="text-xs">Mga pinakamadalas na tanong ng mga magsasaka.</CardDescription>
+            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4" />
+                        <span>{timeframe}</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -45,6 +62,9 @@ export function TopInquiriesChart() {
             </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
+      <CardFooter>
+        <p className="text-xs text-muted-foreground">Pagsusuri: Ang tanong na "Gamot sa peste?" (88) ang pinakamadalas, na nagpapakita ng pangunahing pangangailangan para sa solusyon sa peste.</p>
+      </CardFooter>
     </Card>
   )
 }

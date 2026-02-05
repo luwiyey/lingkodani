@@ -1,16 +1,14 @@
 
 "use client"
 
+import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { seasonalTrendData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 const chartConfig = {
   reports: {
@@ -20,11 +18,28 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function SeasonalTrendChart() {
+  const [timeframe, setTimeframe] = useState('Taunan');
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Dami ng Ulat Ayon sa Panahon</CardTitle>
-        <CardDescription className="text-xs">Ipinapakita ang mga buwan na may pinakamataas na dami ng ulat.</CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>Dami ng Ulat Ayon sa Panahon</CardTitle>
+                <CardDescription className="text-xs">Mga buwan na may pinakamataas na dami ng ulat.</CardDescription>
+            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4" />
+                        <span>{timeframe}</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -37,6 +52,9 @@ export function SeasonalTrendChart() {
             </LineChart>
         </ChartContainer>
       </CardContent>
+      <CardFooter>
+        <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamarami ang ulat tuwing Agosto (320), na maaaring kasabay ng peak ng tag-ulan at mga kaugnay na isyu.</p>
+      </CardFooter>
     </Card>
   )
 }

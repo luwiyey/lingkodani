@@ -1,12 +1,13 @@
 
 'use client';
 import { useState } from 'react';
-import { Bot, Calendar as CalendarIcon, Download, Filter, ArrowDownToLine } from 'lucide-react';
+import { Bot, Calendar as CalendarIcon, Download, ArrowDownToLine, MessageSquare, BrainCircuit, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Existing Charts
+// Chart Imports
 import { IssueTrendsChart } from '@/components/reports/issue-trends-chart';
 import { SmsVolumeChart } from '@/components/reports/sms-volume-chart';
 import { AdviceSuccessChart } from '@/components/reports/advice-success-chart';
@@ -14,8 +15,6 @@ import { CropStageChart } from '@/components/reports/crop-stage-chart';
 import { TopKeywordsChart } from '@/components/reports/top-keywords-chart';
 import { LanguageUsageChart } from '@/components/reports/language-usage-chart';
 import { SmsPeakHoursChart } from '@/components/reports/sms-peak-hours-chart';
-
-// New Chart Imports
 import { InterventionSupportChart } from '@/components/reports/intervention-support-chart';
 import { ValidationQueueChart } from '@/components/reports/validation-queue-chart';
 import { AdvisoryDeliveryChart } from '@/components/reports/advisory-delivery-chart';
@@ -36,7 +35,6 @@ import { GeographicHotspotChart } from '@/components/reports/geographic-hotspot-
 import { SmsDeliveryStatusChart } from '@/components/reports/sms-delivery-status-chart';
 import { MessageToneChart } from '@/components/reports/message-tone-chart';
 import { ResponseTimeChart } from '@/components/reports/response-time-chart';
-import { Separator } from '@/components/ui/separator';
 
 
 export default function ReportsPage() {
@@ -50,32 +48,36 @@ export default function ReportsPage() {
           <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight para sa paggawa ng desisyon.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {timeframe}
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
             <Button>
                 <ArrowDownToLine className="mr-2 h-4 w-4" />
-                I-export sa CSV
+                I-export ang Buod
             </Button>
         </div>
       </div>
       
        <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Buod ng AI ({timeframe})</CardTitle>
-                <CardDescription>Mga awtomatikong nabuong insight mula sa data. Huling update: 7:00 PM.</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Buod ng AI</CardTitle>
+                        <CardDescription>Mga awtomatikong nabuong insight. Huling update: 7:00 PM.</CardDescription>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline">
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {timeframe}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-3 text-sm text-muted-foreground">
@@ -86,56 +88,52 @@ export default function ReportsPage() {
             </CardContent>
         </Card>
 
-        {/* SMS Analysis Section */}
-        <div className="space-y-4">
-            <h2 className="text-xl font-bold tracking-tight">Pagsusuri ng SMS</h2>
-            <Separator />
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                <SmsVolumeChart />
-                <SmsPeakHoursChart />
-                <MessageToneChart />
-                <LanguageUsageChart />
-                <MessageLengthChart />
-                <TopKeywordsChart />
-                <TopInquiriesChart />
-                <HighRiskKeywordChart />
-                <GeographicHotspotChart />
-                 <SeasonalTrendChart />
-                 <OutbreakAlertChart />
-                 <SeverityIndexChart />
-                 <SmsDeliveryStatusChart />
-            </div>
-        </div>
-
-        {/* AI Performance Section */}
-        <div className="space-y-4">
-            <h2 className="text-xl font-bold tracking-tight">Pagsusuri sa Performance ng AI</h2>
-            <Separator />
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                <AdviceSuccessChart />
-                <AIAgreementChart />
-                <AIConfidenceTrendChart />
-                <ClarificationNeededChart />
-                <CorrectionLogChart />
-                <RecommendationTypeChart />
-            </div>
-        </div>
-
-        {/* Operations & Engagement Section */}
-         <div className="space-y-4">
-            <h2 className="text-xl font-bold tracking-tight">Pagsusuri ng Operasyon & Pakikilahok</h2>
-            <Separator />
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                <IssueTrendsChart />
-                <CropStageChart />
-                <InterventionSupportChart />
-                <ValidationQueueChart />
-                <AdvisoryDeliveryChart />
-                <FollowUpRateChart />
-                <FarmerEngagementChart />
-                <ResponseTimeChart />
-            </div>
-        </div>
+        <Tabs defaultValue="sms" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="sms" className="flex items-center gap-2"><MessageSquare /> Pagsusuri ng SMS</TabsTrigger>
+                <TabsTrigger value="ai" className="flex items-center gap-2"><BrainCircuit /> Performance ng AI</TabsTrigger>
+                <TabsTrigger value="operations" className="flex items-center gap-2"><Activity /> Operasyon at Pakikilahok</TabsTrigger>
+            </TabsList>
+            <TabsContent value="sms" className="mt-6">
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <SmsVolumeChart />
+                    <SmsPeakHoursChart />
+                    <MessageToneChart />
+                    <LanguageUsageChart />
+                    <MessageLengthChart />
+                    <TopKeywordsChart />
+                    <TopInquiriesChart />
+                    <HighRiskKeywordChart />
+                    <GeographicHotspotChart />
+                    <SeasonalTrendChart />
+                    <OutbreakAlertChart />
+                    <SeverityIndexChart />
+                    <SmsDeliveryStatusChart />
+                </div>
+            </TabsContent>
+            <TabsContent value="ai" className="mt-6">
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <AdviceSuccessChart />
+                    <AIAgreementChart />
+                    <AIConfidenceTrendChart />
+                    <ClarificationNeededChart />
+                    <CorrectionLogChart />
+                    <RecommendationTypeChart />
+                </div>
+            </TabsContent>
+            <TabsContent value="operations" className="mt-6">
+                 <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <IssueTrendsChart />
+                    <CropStageChart />
+                    <InterventionSupportChart />
+                    <ValidationQueueChart />
+                    <AdvisoryDeliveryChart />
+                    <FollowUpRateChart />
+                    <FarmerEngagementChart />
+                    <ResponseTimeChart />
+                </div>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }

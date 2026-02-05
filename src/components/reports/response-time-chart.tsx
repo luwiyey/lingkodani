@@ -1,16 +1,14 @@
 
 "use client"
 
+import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { responseTimeData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 const chartConfig = {
   time: {
@@ -20,11 +18,30 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function ResponseTimeChart() {
+  const [timeframe, setTimeframe] = useState('Lingguhan');
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Karaniwang Oras ng Pagtugon sa Ulat ng SMS</CardTitle>
-        <CardDescription className="text-xs">Average na oras bago maipadala ang isang advisory o tugon.</CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>Oras ng Pagtugon</CardTitle>
+                <CardDescription className="text-xs">Average na oras bago maipadala ang isang tugon.</CardDescription>
+            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4" />
+                        <span>{timeframe}</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -36,6 +53,9 @@ export function ResponseTimeChart() {
             </BarChart>
         </ChartContainer>
       </CardContent>
+      <CardFooter>
+        <p className="text-xs text-muted-foreground">Pagsusuri: Ang average na oras ng pagtugon ay 5.5 minuto, na nagpapakita ng isang mabilis at mahusay na sistema.</p>
+      </CardFooter>
     </Card>
   )
 }
