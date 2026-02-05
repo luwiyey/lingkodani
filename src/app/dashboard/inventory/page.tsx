@@ -472,13 +472,15 @@ export default function InventoryPage() {
                 <DialogTitle>Salain ayon sa Petsa</DialogTitle>
                 <DialogDescription>Ipakita ang mga rekurso na na-update sa o pagkatapos ng petsang ito.</DialogDescription>
             </DialogHeader>
-            <Calendar
-                mode="single"
-                selected={dateFilter}
-                onSelect={setDateFilter}
-                defaultMonth={new Date(2026, 0)}
-                className="rounded-md border"
-            />
+            <div className="flex justify-center">
+              <Calendar
+                  mode="single"
+                  selected={dateFilter}
+                  onSelect={setDateFilter}
+                  defaultMonth={new Date(2026, 0)}
+                  className="rounded-md border"
+              />
+            </div>
             <DialogFooter>
                 <Button variant="secondary" onClick={() => { setDateFilter(undefined); setDateDialogOpen(false); }}>Alisin</Button>
                 <Button onClick={() => setDateDialogOpen(false)}>Itakda ang Filter</Button>
