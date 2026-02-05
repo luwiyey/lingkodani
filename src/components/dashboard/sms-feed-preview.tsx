@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { smsMessages } from '@/lib/data';
-import type { SmsMessageType } from '@/lib/types';
+import type { SmsIntent } from '@/lib/types';
 
 const urgencyVariant = {
   high: 'destructive',
@@ -14,13 +14,16 @@ const urgencyVariant = {
   low: 'outline',
 } as const;
 
-const typeInfo: Record<SmsMessageType, {icon: React.ElementType }> = {
-    pagpaparehistro: { icon: User },
-    'update-sa-pananim': { icon: FilePen },
-    kahilingan: { icon: Tractor },
-    'ulat-ng-peste': { icon: ShieldAlert },
-    'ulat-panahon': { icon: CloudCog },
-    pangkalahatan: { icon: MessageCircle },
+const typeInfo: Record<SmsIntent, {icon: React.ElementType }> = {
+    REGISTER: { icon: User },
+    CROP_UPDATE: { icon: FilePen },
+    HARVEST: { icon: FilePen },
+    REQUEST: { icon: Tractor },
+    PEST_DISEASE: { icon: ShieldAlert },
+    WEATHER_HELP: { icon: CloudCog },
+    PRICE_CHECK: { icon: MessageCircle },
+    EMERGENCY: { icon: ShieldAlert },
+    UNKNOWN: { icon: MessageCircle },
 }
 
 export function SmsFeedPreview() {
@@ -45,7 +48,7 @@ export function SmsFeedPreview() {
             <CardContent>
                 <div className="space-y-4">
                 {recentMessages.map((message) => {
-                    const TypeIcon = typeInfo[message.type]?.icon || MessageCircle;
+                    const TypeIcon = typeInfo[message.parsedIntent]?.icon || MessageCircle;
                     return (
                     <div key={message.id} className="flex items-start gap-4">
                         <TypeIcon className="h-5 w-5 text-muted-foreground mt-1" />
@@ -71,3 +74,5 @@ export function SmsFeedPreview() {
         </Card>
     )
 }
+
+    

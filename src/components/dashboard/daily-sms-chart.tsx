@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
@@ -28,7 +29,6 @@ export function DailySmsChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={smsVolumeData}>
               <XAxis
                 dataKey="name"
@@ -50,9 +50,10 @@ export function DailySmsChart() {
                 />
               <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
             </BarChart>
-          </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
     </Card>
   )
 }
+
+    

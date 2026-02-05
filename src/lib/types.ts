@@ -6,30 +6,53 @@ export type NavItem = {
   href: string;
   icon: LucideIcon;
   label?: string;
+  role?: 'barangay' | 'municipal';
 };
+
+export type UserRole = 'barangay' | 'municipal';
+
+export type UserProfile = {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  barangayId?: string;
+  municipalityId: string;
+};
+
+export type FarmerStatus = 'pending_approval' | 'active' | 'inactive';
 
 export type Farmer = {
-  id: string;
+  id: string; // Corresponds to farmerId
   name: string;
   age: number;
-  gender: 'Lalaki' | 'Babae';
+  gender: string;
   phone: string;
-  location: string; // Barangay
+  barangay: string;
   municipality: string;
+  sitio: string;
   farmSize: number; // in hectares
   crops: string[];
-  riskScore: number;
   registrationDate: string;
+  lastSmsActivity: string;
   avatarUrl: string;
+  status: FarmerStatus;
 };
 
-export type SmsMessageType = 
-  | 'pagpaparehistro' 
-  | 'update-sa-pananim' 
-  | 'kahilingan' 
-  | 'ulat-ng-peste' 
-  | 'ulat-panahon'
-  | 'pangkalahatan';
+export type SmsIntent = 
+  | 'REGISTER' 
+  | 'CROP_UPDATE' 
+  | 'HARVEST'
+  | 'REQUEST'
+  | 'PEST_DISEASE'
+  | 'WEATHER_HELP'
+  | 'PRICE_CHECK'
+  | 'EMERGENCY'
+  | 'UNKNOWN';
+
+export type SafetyFlag = 'Low' | 'Medium' | 'High';
+
+export type SmsMessageStatus = 'pending_approval' | 'approved' | 'escalated' | 'replied' | 'rejected';
 
 export type SmsMessage = {
   id: string;
@@ -37,11 +60,12 @@ export type SmsMessage = {
   farmerName: string;
   message: string;
   timestamp: string;
-  type: SmsMessageType;
+  parsedIntent: SmsIntent;
   urgency: 'low' | 'medium' | 'high';
-  status: 'pending' | 'approved' | 'rejected' | 'edited' | 'actioned';
+  status: SmsMessageStatus;
   aiAdvice: string;
   aiConfidence: number;
+  safetyFlag: SafetyFlag;
   knowledgeBaseId?: string;
 };
 
@@ -56,6 +80,8 @@ export type Resource = {
   lastUpdated: string;
 };
 
+export type KnowledgeArticleType = 'article' | 'audio' | 'tip' | 'myth-buster';
+
 export type KnowledgeArticle = {
   id: string;
   title: string;
@@ -64,4 +90,20 @@ export type KnowledgeArticle = {
   keywords: string[];
   lastUpdated: string;
   author: string;
+  type: KnowledgeArticleType;
+  audioUrl?: string;
 };
+
+export type LogbookEntryType = 'SMS' | 'Payo' | 'Tala sa Bukid' | 'Insidente' | 'Tulong';
+
+export type LogbookEntry = {
+    id: string;
+    timestamp: string;
+    type: LogbookEntryType;
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    data?: any;
+};
+
+    

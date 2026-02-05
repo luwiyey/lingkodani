@@ -1,5 +1,6 @@
 
-import type { Farmer, SmsMessage, Resource, KnowledgeArticle } from '@/lib/types';
+import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry } from '@/lib/types';
+import { MessageSquare, Scan, Tractor, Shield, Wind, Flame, Sprout } from 'lucide-react';
 
 export const farmers: Farmer[] = [
   {
@@ -8,13 +9,15 @@ export const farmers: Farmer[] = [
     age: 45,
     gender: 'Lalaki',
     phone: '+639171234567',
-    location: 'San Isidro',
+    barangay: 'San Isidro',
     municipality: 'Nueva Ecija',
+    sitio: 'Purok 1',
     farmSize: 2.5,
     crops: ['Palay', 'Mais'],
-    riskScore: 25,
     registrationDate: '2023-01-15',
+    lastSmsActivity: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     avatarUrl: 'https://picsum.photos/seed/101/200/200',
+    status: 'active'
   },
   {
     id: 'FARM002',
@@ -22,13 +25,15 @@ export const farmers: Farmer[] = [
     age: 38,
     gender: 'Babae',
     phone: '+639182345678',
-    location: 'Santa Cruz',
+    barangay: 'Santa Cruz',
     municipality: 'Isabela',
+    sitio: 'Purok 3',
     farmSize: 1.8,
     crops: ['Kamatis'],
-    riskScore: 45,
     registrationDate: '2023-02-20',
+    lastSmsActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     avatarUrl: 'https://picsum.photos/seed/102/200/200',
+    status: 'active'
   },
   {
     id: 'FARM003',
@@ -36,13 +41,15 @@ export const farmers: Farmer[] = [
     age: 52,
     gender: 'Lalaki',
     phone: '+639193456789',
-    location: 'Mabini',
+    barangay: 'Mabini',
     municipality: 'Batangas',
+    sitio: 'Purok 2',
     farmSize: 5.0,
     crops: ['Tubo'],
-    riskScore: 15,
     registrationDate: '2023-03-10',
+    lastSmsActivity: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
     avatarUrl: 'https://picsum.photos/seed/103/200/200',
+    status: 'active'
   },
   {
     id: 'FARM004',
@@ -50,27 +57,31 @@ export const farmers: Farmer[] = [
     age: 41,
     gender: 'Babae',
     phone: '+639204567890',
-    location: 'Lapu-Lapu',
+    barangay: 'Lapu-Lapu',
     municipality: 'Ilocos Sur',
+    sitio: 'Purok 7',
     farmSize: 3.2,
     crops: ['Tabako', 'Mais'],
-    riskScore: 60,
     registrationDate: '2023-04-05',
+    lastSmsActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     avatarUrl: 'https://picsum.photos/seed/106/200/200',
+    status: 'inactive'
   },
   {
     id: 'FARM005',
     name: 'Andres Bonifacio',
-    age: 35,
+    age: 29,
     gender: 'Lalaki',
     phone: '+639215678901',
-    location: 'Tondo',
+    barangay: 'Tondo',
     municipality: 'Maynila',
+    sitio: 'Purok 5',
     farmSize: 1.0,
     crops: ['Gulay'],
-    riskScore: 30,
     registrationDate: '2023-05-12',
+    lastSmsActivity: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     avatarUrl: 'https://picsum.photos/seed/105/200/200',
+    status: 'pending_approval'
   },
 ];
 
@@ -81,11 +92,12 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Maria Clara',
     message: 'PEST TOMATO LEAFMINER. May dilaw na batik ang dahon ng kamatis ko. Paano ito masusugpo?',
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    type: 'ulat-ng-peste',
+    parsedIntent: 'PEST_DISEASE',
     urgency: 'high',
-    status: 'pending',
+    status: 'pending_approval',
     aiAdvice: 'Maaaring senyales ng leafminer ang mga dilaw na batik. Isaalang-alang ang paggamit ng neem oil spray. Alisin at sirain ang mga apektadong dahon. Tingnan ang KB012 para sa karagdagang detalye.',
     aiConfidence: 0.85,
+    safetyFlag: 'Low',
     knowledgeBaseId: 'KB012',
   },
   {
@@ -94,11 +106,12 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Juan dela Cruz',
     message: 'HARVEST PALAY 120kg. Malapit na ang anihan ng palay ko. May mga tip ba para pagkatapos ng ani?',
     timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    type: 'update-sa-pananim',
+    parsedIntent: 'HARVEST',
     urgency: 'medium',
     status: 'approved',
     aiAdvice: 'Para sa post-harvest, tiyaking maayos ang pagpapatuyo ng mga butil sa 14% na moisture content bago itago. Gumamit ng malinis na sako at mga pasilidad ng imbakan upang maiwasan ang mga peste.',
     aiConfidence: 0.95,
+    safetyFlag: 'Low',
   },
   {
     id: 'SMS003',
@@ -106,11 +119,12 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Jose Rizal',
     message: 'PEST SUGARCANE BORER. Kinakain ng peste ang mga tubo ko. Mukha silang mga borer.',
     timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-    type: 'ulat-ng-peste',
+    parsedIntent: 'PEST_DISEASE',
     urgency: 'high',
     status: 'rejected',
     aiAdvice: 'Maaaring ito ay isang stem borer infestation. Ang paggamit ng mga pheromone trap o pagpapakilala ng mga natural na mandaragit tulad ng Trichogramma wasps ay maaaring maging epektibo.',
     aiConfidence: 0.78,
+    safetyFlag: 'Medium',
   },
   {
     id: 'SMS004',
@@ -118,35 +132,38 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Gabriela Silang',
     message: 'REQUEST SEED MAIS 10kg. Kailan ang pinakamainam na oras para magtanim ng mais para sa susunod na season?',
     timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    type: 'kahilingan',
+    parsedIntent: 'REQUEST',
     urgency: 'low',
-    status: 'edited',
+    status: 'replied',
     aiAdvice: 'Ang pinakamahusay na oras para magtanim ng mais ay sa simula ng tag-ulan, karaniwang Mayo o Hunyo. Tiyaking mahusay na inihanda ang iyong lupa. Naitala na namin ang iyong kahilingan para sa binhi.',
     aiConfidence: 0.98,
+    safetyFlag: 'Low',
   },
   {
     id: 'SMS005',
     farmerId: 'FARM005',
     farmerName: 'Andres Bonifacio',
-    message: 'REGISTER Andres Bonifacio Tondo Gulay 1ha',
+    message: 'REGISTER Andres Bonifacio 29 Lalaki Tondo Gulay 1ha',
     timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    type: 'pagpaparehistro',
-    status: 'actioned',
+    parsedIntent: 'REGISTER',
+    status: 'pending_approval',
     urgency: 'medium',
-    aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Tondo, Maynila.',
+    aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Tondo, Maynila. Mangyaring kumpirmahin ang pagpaparehistro.',
     aiConfidence: 0.99,
+    safetyFlag: 'Low',
   },
   {
     id: 'SMS006',
     farmerId: 'FARM001',
     farmerName: 'Juan dela Cruz',
-    message: 'WEATHER TYPHOON DAMAGE. Nasira ng malakas na hangin ang bahagi ng aking taniman ng mais.',
+    message: 'EMERGENCY TYPHOON DAMAGE. Nasira ng malakas na hangin ang bahagi ng aking taniman ng mais.',
     timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    type: 'ulat-panahon',
+    parsedIntent: 'EMERGENCY',
     urgency: 'high',
-    status: 'pending',
+    status: 'escalated',
     aiAdvice: 'Nakalulungkot marinig iyan. I-dokumento ang pinsala. Maaari kang mag-apply para sa tulong-pinansyal sa ilalim ng programa ng DA para sa mga nasalanta ng kalamidad. Makipag-ugnayan sa iyong lokal na tanggapan ng agrikultura.',
     aiConfidence: 0.92,
+    safetyFlag: 'Medium',
   },
 ];
 
@@ -168,6 +185,7 @@ export const knowledgeArticles: KnowledgeArticle[] = [
         keywords: ['kamatis', 'peste', 'leafminer', 'organiko'],
         lastUpdated: '2023-09-15',
         author: 'Admin',
+        type: 'article',
     },
     {
         id: 'KB015',
@@ -177,6 +195,7 @@ export const knowledgeArticles: KnowledgeArticle[] = [
         keywords: ['palay', 'ani', 'imbakan', 'pagpapatuyo'],
         lastUpdated: '2023-08-22',
         author: 'Admin',
+        type: 'article',
     },
     {
         id: 'KB021',
@@ -186,6 +205,18 @@ export const knowledgeArticles: KnowledgeArticle[] = [
         keywords: ['urea', 'pataba', 'aplikasyon', 'sustansya'],
         lastUpdated: '2023-09-01',
         author: 'Admin',
+        type: 'article',
+    },
+    {
+        id: 'AUDIO001',
+        title: 'Boses ng Magsasaka: Tagumpay ni Mang Juan sa Organic Farming',
+        summary: 'Pakinggan ang kwento ni Mang Juan kung paano niya napataas ang kanyang ani sa pamamagitan ng mga organikong pamamaraan.',
+        content: '...',
+        keywords: ['organic', 'success story', 'palay'],
+        lastUpdated: '2023-10-10',
+        author: 'Boses ng Magsasaka',
+        type: 'audio',
+        audioUrl: '/placeholder-audio.mp3'
     }
 ];
 
@@ -218,4 +249,41 @@ export const cropStageData = [
     { name: 'Paglago', value: 300, fill: 'hsl(var(--chart-2))' },
     { name: 'Pamumulaklak', value: 200, fill: 'hsl(var(--chart-3))' },
     { name: 'Pag-aani', value: 100, fill: 'hsl(var(--chart-4))' },
-]
+];
+
+export const farmerLogbookEntries: LogbookEntry[] = [
+    {
+        id: 'LOG001',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        type: 'SMS',
+        icon: MessageSquare,
+        title: 'Nag-ulat ng Peste sa Kamatis',
+        description: 'PEST TOMATO LEAFMINER. May dilaw na batik ang dahon ng kamatis ko. Paano ito masusugpo?',
+    },
+    {
+        id: 'LOG002',
+        timestamp: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
+        type: 'Payo',
+        icon: Scan,
+        title: 'Nagpadala ng Payo ang AI',
+        description: 'Maaaring senyales ng leafminer ang mga dilaw na batik. Isaalang-alang ang paggamit ng neem oil spray. Alisin at sirain ang mga apektadong dahon.',
+    },
+     {
+        id: 'LOG003',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        type: 'Tala sa Bukid',
+        icon: Sprout,
+        title: 'Pagbisita sa Bukid ni AEW',
+        description: 'Kinumpirma ang pagkakaroon ng leafminer. Nagbigay ng sample ng neem oil at nagturo ng tamang pag-spray.',
+    },
+    {
+        id: 'LOG004',
+        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        type: 'Tulong',
+        icon: Tractor,
+        title: 'Nakatanggap ng Tulong',
+        description: 'Nakatanggap ng 2 sako ng Urea na pataba bilang bahagi ng municipal aid program.',
+    }
+];
+
+    

@@ -1,0 +1,283 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents an app user, either a Barangay or Municipal admin.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth User ID." },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["barangay", "municipal"] },
+        "barangayId": { "type": "string", "description": "ID of the barangay they belong to. Optional for municipal users." },
+        "municipalityId": { "type": "string", "description": "ID of the municipality they belong to." }
+      },
+      "required": ["uid", "email", "role", "municipalityId"]
+    },
+    "Barangay": {
+        "title": "Barangay",
+        "description": "Represents a single barangay.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "municipalityId": { "type": "string" }
+        },
+        "required": ["name", "municipalityId"]
+    },
+    "Municipality": {
+        "title": "Municipality",
+        "description": "Represents a single municipality.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" }
+        },
+        "required": ["name"]
+    },
+    "Farmer": {
+      "title": "Farmer",
+      "description": "Represents a farmer registered in the system.",
+      "type": "object",
+      "properties": {
+        "farmerId": { "type": "string", "description": "Unique system-generated ID for the farmer." },
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "gender": { "type": "string" },
+        "phone": { "type": "string" },
+        "barangayId": { "type": "string" },
+        "municipalityId": { "type": "string" },
+        "sitio": { "type": "string", "description": "Specific sitio or purok for more granular location." },
+        "farmSize": { "type": "number", "description": "in hectares" },
+        "crops": { "type": "array", "items": { "type": "string" } },
+        "registrationDate": { "type": "string", "format": "date-time" },
+        "lastSmsActivity": { "type": "string", "format": "date-time" },
+        "status": {"type": "string", "enum": ["pending_approval", "active", "inactive"]}
+      },
+      "required": ["farmerId", "name", "phone", "barangayId", "municipalityId"]
+    },
+    "SmsLog": {
+        "title": "SMS Log",
+        "description": "A log of every incoming SMS from a farmer.",
+        "type": "object",
+        "properties": {
+            "farmerId": {"type": "string"},
+            "message": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"},
+            "parsedIntent": {"type": "string", "enum": ["REGISTER", "CROP_UPDATE", "HARVEST", "REQUEST", "PEST_DISEASE", "WEATHER_HELP", "PRICE_CHECK", "EMERGENCY", "UNKNOWN"]},
+            "aiConfidence": {"type": "number"},
+            "safetyFlag": {"type": "string", "enum": ["Low", "Medium", "High"]},
+            "status": {"type": "string", "enum": ["pending_approval", "approved", "escalated", "replied"]}
+        },
+        "required": ["farmerId", "message", "timestamp"]
+    },
+    "AiResponse": {
+        "title": "AI Response",
+        "description": "An AI-generated response to a farmer's SMS.",
+        "type": "object",
+        "properties": {
+            "smsLogId": { "type": "string" },
+            "response": { "type": "string" },
+            "confidence": { "type": "number" },
+            "approvedBy": { "type": "string", "description": "UID of the user who approved/edited." },
+            "status": {"type": "string", "enum": ["approved", "edited", "rejected"]},
+            "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["smsLogId", "response", "timestamp"]
+    },
+    "Alert": {
+        "title": "Alert",
+        "description": "System-generated alerts for risks like floods, pests, etc.",
+        "type": "object",
+        "properties": {
+            "type": {"type": "string", "enum": ["flood", "pest", "wind", "heat"]},
+            "severity": {"type": "string", "enum": ["Warning", "Critical"]},
+            "message": {"type": "string"},
+            "recommendation": {"type": "string"},
+            "affectedFarmerIds": {"type": "array", "items": {"type": "string"}},
+            "timestamp": {"type": "string", "format": "date-time"}
+        },
+        "required": ["type", "severity", "message", "timestamp"]
+    },
+    "FieldNote": {
+        "title": "Field Note",
+        "description": "A note, photo, or audio recording from an AEW in the field.",
+        "type": "object",
+        "properties": {
+            "farmerId": {"type": "string"},
+            "aewId": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"},
+            "note": {"type": "string"},
+            "photoUrl": {"type": "string", "format": "uri"},
+            "audioUrl": {"type": "string", "format": "uri"}
+        },
+        "required": ["farmerId", "aewId", "timestamp"]
+    },
+    "CropCycle": {
+        "title": "Crop Cycle",
+        "description": "Tracks a single crop cycle for a farmer.",
+        "type": "object",
+        "properties": {
+            "farmerId": {"type": "string"},
+            "crop": {"type": "string"},
+            "startDate": {"type": "string", "format": "date-time"},
+            "stage": {"type": "string", "enum": ["planting", "growing", "flowering", "harvesting"]},
+            "expectedYield": {"type": "number"},
+            "actualYield": {"type": "number"},
+            "endDate": {"type": "string", "format": "date-time"}
+        },
+        "required": ["farmerId", "crop", "startDate", "stage"]
+    },
+    "Resource": {
+        "title": "Resource",
+        "description": "A resource available for distribution.",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "category": {"type": "string", "enum": ["seed", "fertilizer", "tool"]},
+            "stock": {"type": "number"},
+            "unit": {"type": "string"}
+        },
+        "required": ["name", "category", "stock", "unit"]
+    },
+    "Voucher": {
+        "title": "Voucher",
+        "description": "An SMS voucher for a resource.",
+        "type": "object",
+        "properties": {
+            "farmerId": {"type": "string"},
+            "resourceId": {"type": "string"},
+            "quantity": {"type": "number"},
+            "code": {"type": "string"},
+            "status": {"type": "string", "enum": ["issued", "redeemed", "expired"]},
+            "issueDate": {"type": "string", "format": "date-time"},
+            "redemptionDate": {"type": "string", "format": "date-time"}
+        },
+        "required": ["farmerId", "resourceId", "code", "status"]
+    },
+    "Buyer": {
+        "title": "Buyer",
+        "description": "A registered crop buyer.",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "contact": {"type": "string"}
+        },
+        "required": ["name"]
+    },
+    "KnowledgePost": {
+        "title": "Knowledge Post",
+        "description": "An article or audio story in the knowledge hub.",
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "content": {"type": "string"},
+            "type": {"type": "string", "enum": ["article", "audio", "tip", "myth-buster"]},
+            "audioUrl": {"type": "string", "format": "uri"},
+            "keywords": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["title", "content", "type"]
+    },
+    "Incident": {
+        "title": "Incident",
+        "description": "An issue escalated by a barangay to the municipal level.",
+        "type": "object",
+        "properties": {
+            "barangayId": {"type": "string"},
+            "farmerId": {"type": "string"},
+            "title": {"type": "string"},
+            "description": {"type": "string"},
+            "status": {"type": "string", "enum": ["open", "under_review", "resolved"]},
+            "timestamp": {"type": "string", "format": "date-time"},
+            "notes": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["barangayId", "title", "description", "timestamp"]
+    },
+     "AuditLog": {
+      "title": "Audit Log",
+      "description": "Tracks important actions taken by users in the system.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "action": { "type": "string", "description": "e.g., 'approve-sms', 'edit-ai-reply', 'send-broadcast'" },
+        "targetId": { "type": "string", "description": "ID of the entity being acted upon (e.g., smsLogId, farmerId)" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "details": { "type": "object" }
+      },
+      "required": ["userId", "action", "timestamp"]
+    }
+  },
+  "auth": {
+    "providers": ["email"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores user profile data."
+    },
+    "/barangays/{barangayId}": {
+      "schema": { "$ref": "#/entities/Barangay" },
+      "description": "List of all barangays."
+    },
+    "/municipalities/{municipalityId}": {
+      "schema": { "$ref": "#/entities/Municipality" },
+      "description": "List of all municipalities."
+    },
+    "/farmers/{farmerId}": {
+      "schema": { "$ref": "#/entities/Farmer" },
+      "description": "Stores all registered farmer profiles."
+    },
+    "/sms_logs/{smsLogId}": {
+      "schema": { "$ref": "#/entities/SmsLog" },
+      "description": "Log of all incoming SMS messages."
+    },
+    "/ai_responses/{responseId}": {
+        "schema": { "$ref": "#/entities/AiResponse" },
+        "description": "Log of all AI-generated responses and their status."
+    },
+    "/farmers/{farmerId}/logbook/{logId}": {
+        "schema": {
+            "oneOf": [
+                { "$ref": "#/entities/SmsLog" },
+                { "$ref": "#/entities/AiResponse" },
+                { "$ref": "#/entities/FieldNote" },
+                { "$ref": "#/entities/Incident" }
+            ]
+        },
+        "description": "Timeline of all interactions for a single farmer."
+    },
+    "/alerts/{alertId}": {
+      "schema": { "$ref": "#/entities/Alert" },
+      "description": "System-generated alerts for barangays."
+    },
+    "/crop_cycles/{cycleId}": {
+        "schema": { "$ref": "#/entities/CropCycle" },
+        "description": "Tracks crop cycles for all farmers."
+    },
+    "/resources/{resourceId}": {
+        "schema": { "$ref": "#/entities/Resource" },
+        "description": "Inventory of all distributable resources."
+    },
+    "/vouchers/{voucherId}": {
+        "schema": { "$ref": "#/entities/Voucher" },
+        "description": "Log of all issued vouchers."
+    },
+    "/buyers/{buyerId}": {
+        "schema": { "$ref": "#/entities/Buyer" },
+        "description": "List of registered crop buyers."
+    },
+    "/knowledge_posts/{postId}": {
+        "schema": { "$ref": "#/entities/KnowledgePost" },
+        "description": "Content for the knowledge hub."
+    },
+    "/incidents/{incidentId}": {
+      "schema": { "$ref": "#/entities/Incident" },
+      "description": "Issues escalated from barangay to municipal level."
+    },
+    "/audit_logs/{auditLogId}": {
+        "schema": { "$ref": "#/entities/AuditLog"},
+        "description": "Tracks all critical user actions for accountability."
+    }
+  }
+}
+
+    

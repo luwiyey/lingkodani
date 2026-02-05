@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -21,7 +22,7 @@ export default function LoginPage() {
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
 
   const handleLogin = () => {
-    // In a real app, you'd perform authentication here
+    // Sa isang tunay na app, gagawin mo ang pagpapatunay dito
     router.push("/dashboard");
   };
 
@@ -57,7 +58,7 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="admin@example.com"
-                  defaultValue="admin@lingkodani.gov.ph"
+                  defaultValue="brgy-admin@lingkodani.gov.ph"
                   required
                 />
               </div>
@@ -80,3 +81,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

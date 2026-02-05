@@ -11,7 +11,14 @@ import {
   MessageSquare,
   Settings,
   Users,
-  Replace,
+  Handshake,
+  Landmark,
+  ShieldAlert,
+  Calculator,
+  FileCheck,
+  DollarSign,
+  ScrollText,
+  GraduationCap
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,27 +27,43 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarSeparator,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import type { NavItem } from "@/lib/types";
 
-const navItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Sentro ng SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
-  { title: "Pamamahala ng Magsasaka", href: "/dashboard/farmers", icon: Users },
-  { title: "Mga Ulat at Pagsusuri", href: "/dashboard/reports", icon: BarChart },
-  { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book },
-  { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
-  { title: "Pamamahala ng Tulong", href: "/dashboard/labor-exchange", icon: Replace },
+const barangayNavItems: NavItem[] = [
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, role: 'barangay' },
+  { title: "SMS Command Monitor", href: "/dashboard/sms-feed", icon: MessageSquare, role: 'barangay' },
+  { title: "Pamamahala ng Magsasaka", href: "/dashboard/farmers", icon: Users, role: 'barangay' },
+  { title: "Bayanihan Hub", href: "/dashboard/bayanihan", icon: Handshake, role: 'barangay' },
+  { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive, role: 'barangay' },
+  { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book, role: 'barangay' },
+  { title: "Mga Calculator", href: "/dashboard/calculators", icon: Calculator, role: 'barangay' },
+  { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart, role: 'barangay' },
+  { title: "Log ng Pagsusuri", href: "/dashboard/audit-log", icon: FileCheck, role: 'barangay' },
 ];
+
+const municipalNavItems: NavItem[] = [
+    { title: "Panel ng Pagsubaybay", href: "/dashboard/municipal/oversight", icon: Landmark, role: 'municipal'},
+    { title: "Desk ng Insidente", href: "/dashboard/municipal/incidents", icon: ShieldAlert, role: 'municipal'},
+    { title: "Awtoridad sa Presyo", href: "/dashboard/municipal/prices", icon: DollarSign, role: 'municipal'},
+    { title: "Rekurso at Voucher", href: "/dashboard/municipal/vouchers", icon: ScrollText, role: 'municipal'},
+    { title: "Pagsasanay sa AEW", href: "/dashboard/municipal/training", icon: GraduationCap, role: 'municipal'},
+]
 
 export function AppSidebar() {
   const pathname = usePathname();
+
+  // Sa isang tunay na app, ang role ay magmumula sa session ng user
+  const userRole = 'barangay'; 
 
   return (
     <Sidebar>
       <SidebarContent className="pt-4">
         <SidebarMenu>
-          {navItems.map((item) => (
+          <SidebarGroupLabel>Barangay</SidebarGroupLabel>
+          {barangayNavItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
@@ -54,6 +77,27 @@ export function AppSidebar() {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+
+        <SidebarSeparator />
+        
+        <SidebarMenu>
+            <SidebarGroupLabel>Munisipyo</SidebarGroupLabel>
+             {municipalNavItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <Link href={item.href} passHref>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={{ children: item.title, side: "right" }}
+                   disabled={userRole !== 'municipal'}
+                >
+                  <item.icon />
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -73,3 +117,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    

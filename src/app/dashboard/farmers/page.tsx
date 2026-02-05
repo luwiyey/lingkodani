@@ -1,12 +1,16 @@
 
+'use client';
+import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import QRCode from 'qrcode.react';
+
 import { farmers } from '@/lib/data';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, MessageSquarePlus } from 'lucide-react';
+import { PlusCircle, Search, MessageSquarePlus, QrCode } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,12 +24,21 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function FarmersPage() {
+  const [qrCodeValue, setQrCodeValue] = React.useState<string | null>(null);
+
+  const generateQr = (farmerId: string) => {
+    // In a real app, this would be a URL to the farmer's logbook
+    const url = `${window.location.origin}/dashboard/farmers/${farmerId}`;
+    setQrCodeValue(url);
+  };
+
   return (
+    <>
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng Magsasaka</h1>
-          <p className="text-muted-foreground">Tingnan at pamahalaan ang lahat ng nakarehistrong magsasaka.</p>
+          <p className="text-muted-foreground">Tingnan, pamahalaan, at i-update ang mga profile ng lahat ng nakarehistrong magsasaka.</p>
         </div>
         <div className="flex gap-2">
             <Button variant="outline">
@@ -51,33 +64,21 @@ export default function FarmersPage() {
                             <Label htmlFor="name" className="text-right">Pangalan</Label>
                             <Input id="name" defaultValue="Pedro Penduko" className="col-span-3" />
                         </div>
-                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="age" className="text-right">Edad</Label>
-                            <Input id="age" type="number" defaultValue="42" className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="gender" className="text-right">Kasarian</Label>
-                             <Select>
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Pumili ng kasarian" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Lalaki">Lalaki</SelectItem>
-                                    <SelectItem value="Babae">Babae</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="phone" className="text-right">Telepono</Label>
                             <Input id="phone" defaultValue="+639123456789" className="col-span-3" />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="municipality" className="text-right">Munisipalidad</Label>
+                            <Input id="municipality" defaultValue="Bulacan" className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="location" className="text-right">Barangay</Label>
                             <Input id="location" defaultValue="San Roque" className="col-span-3" />
                         </div>
-                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="municipality" className="text-right">Munisipalidad</Label>
-                            <Input id="municipality" defaultValue="Bulacan" className="col-span-3" />
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="sitio" className="text-right">Sitio/Purok</Label>
+                            <Input id="sitio" defaultValue="Purok 3" className="col-span-3" />
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="crops" className="text-right">Mga Pananim</Label>
@@ -111,12 +112,10 @@ export default function FarmersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[250px]">Pangalan</TableHead>
-                <TableHead className="text-center">Edad</TableHead>
-                <TableHead>Kasarian</TableHead>
                 <TableHead>Lokasyon</TableHead>
                 <TableHead>Mga Pananim</TableHead>
-                <TableHead className="text-center">Sukat (ha)</TableHead>
-                <TableHead>Petsa ng Pagpaparehistro</TableHead>
+                <TableHead>Huling Aktibidad (SMS)</TableHead>
+                <TableHead className="text-right">Mga Aksyon</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -131,19 +130,22 @@ export default function FarmersPage() {
                             height={32}
                             className="rounded-full object-cover"
                         />
-                        {farmer.name}
+                         <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline">
+                            {farmer.name}
+                        </Link>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">{farmer.age}</TableCell>
-                  <TableCell>{farmer.gender}</TableCell>
-                  <TableCell>{farmer.location}, {farmer.municipality}</TableCell>
+                  <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {farmer.crops.map(crop => <Badge key={crop} variant="outline">{crop}</Badge>)}
-                    </div>
+                    {farmer.crops.join(', ')}
                   </TableCell>
-                  <TableCell className="text-center">{farmer.farmSize}</TableCell>
-                  <TableCell>{new Date(farmer.registrationDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(farmer.lastSmsActivity).toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => generateQr(farmer.id)}>
+                        <QrCode className="mr-2 h-4 w-4"/>
+                        ID Card
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -151,5 +153,27 @@ export default function FarmersPage() {
         </CardContent>
       </Card>
     </div>
+    
+    {qrCodeValue && (
+      <Dialog open={!!qrCodeValue} onOpenChange={() => setQrCodeValue(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Farmer QR ID Card</DialogTitle>
+            <DialogDescription>
+              I-scan ang QR code na ito sa field para buksan ang logbook ng magsasaka.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-white rounded-lg">
+            <QRCode value={qrCodeValue} size={256} />
+          </div>
+          <DialogFooter className="sm:justify-start">
+             <Button type="button" variant="secondary" onClick={() => setQrCodeValue(null)}>
+              Isara
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }

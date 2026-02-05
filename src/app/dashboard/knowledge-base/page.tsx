@@ -1,10 +1,12 @@
 
+'use client';
+import React from 'react';
 import { knowledgeArticles } from '@/lib/data';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Bot, Search } from 'lucide-react';
+import { PlusCircle, Bot, Search, Volume2, BookOpen } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 const suggestedArticles = [
@@ -13,16 +15,21 @@ const suggestedArticles = [
 ]
 
 export default function KnowledgeBasePage() {
+  const [activeTab, setActiveTab] = React.useState('articles');
+  
+  const articles = knowledgeArticles.filter(a => a.type === 'article');
+  const audioStories = knowledgeArticles.filter(a => a.type === 'audio');
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
-          <p className="text-muted-foreground">Pamahalaan ang mga artikulo ng gabay sa pagsasaka at mga mungkahi ng nilalaman na mula sa AI.</p>
+          <p className="text-muted-foreground">Pamahalaan ang mga artikulo, pakinggan ang mga kwento ng tagumpay, at tumuklas ng mga mungkahi ng AI.</p>
         </div>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Bagong Artikulo
+          Bagong Entry
         </Button>
       </div>
 
@@ -53,45 +60,80 @@ export default function KnowledgeBasePage() {
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader>
-            <CardTitle>Mga Inilathalang Artikulo</CardTitle>
-            <div className="relative pt-2">
-                <Search className="absolute left-2.5 top-4.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Maghanap ng artikulo..."
-                    className="w-full rounded-lg bg-background pl-8"
-                />
-            </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pamagat</TableHead>
-                <TableHead>Mga Keyword</TableHead>
-                <TableHead>Huling Na-update</TableHead>
-                <TableHead>May-akda</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {knowledgeArticles.map((article) => (
-                <TableRow key={article.id} id={article.id}>
-                  <TableCell className="font-medium">{article.title}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                        {article.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
-                    </div>
-                  </TableCell>
-                  <TableCell>{new Date(article.lastUpdated).toLocaleDateString()}</TableCell>
-                  <TableCell>{article.author}</TableCell>
+      <div className="flex items-center border-b">
+        <button onClick={() => setActiveTab('articles')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${activeTab === 'articles' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>
+            <BookOpen/> Mga Inilathalang Artikulo
+        </button>
+        <button onClick={() => setActiveTab('audio')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${activeTab === 'audio' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>
+            <Volume2/> Boses ng Magsasaka
+        </button>
+      </div>
+
+      {activeTab === 'articles' && (
+        <Card>
+            <CardHeader>
+                <CardTitle>Mga Inilathalang Artikulo</CardTitle>
+                <div className="relative pt-2">
+                    <Search className="absolute left-2.5 top-4.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Maghanap ng artikulo..."
+                        className="w-full rounded-lg bg-background pl-8"
+                    />
+                </div>
+            </CardHeader>
+            <CardContent className="p-0">
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>Pamagat</TableHead>
+                    <TableHead>Mga Keyword</TableHead>
+                    <TableHead>Huling Na-update</TableHead>
+                    <TableHead>May-akda</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                {articles.map((article) => (
+                    <TableRow key={article.id} id={article.id}>
+                    <TableCell className="font-medium">{article.title}</TableCell>
+                    <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                            {article.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
+                        </div>
+                    </TableCell>
+                    <TableCell>{new Date(article.lastUpdated).toLocaleDateString()}</TableCell>
+                    <TableCell>{article.author}</TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+            </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'audio' && (
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {audioStories.map(story => (
+            <Card key={story.id}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg"><Volume2/> {story.title}</CardTitle>
+                <CardDescription>{story.summary}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {story.keywords.map(kw => <Badge key={kw} variant="outline">{kw}</Badge>)}
+                  </div>
+              </CardContent>
+              <CardFooter>
+                  <audio controls className="w-full">
+                      <source src={story.audioUrl} type="audio/mpeg" />
+                      Your browser does not support the audio element.
+                    </audio>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
