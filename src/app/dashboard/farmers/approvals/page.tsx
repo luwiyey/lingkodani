@@ -7,11 +7,13 @@ import type { Farmer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Upload } from 'lucide-react';
+import { Check, X, Upload, Search } from 'lucide-react';
 
 export default function ApprovalsPage() {
   const [pendingFarmers, setPendingFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status === 'pending_approval'));
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   const handleApproval = (farmerId: string, isApproved: boolean) => {
@@ -45,6 +47,12 @@ export default function ApprovalsPage() {
     });
   };
 
+  const filteredFarmers = pendingFarmers.filter(farmer =>
+    farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    farmer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${farmer.sitio}, ${farmer.barangay}`.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -57,12 +65,25 @@ export default function ApprovalsPage() {
             <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
         </div>
       </div>
+      
+      <div className="flex gap-4">
+        <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+                type="search"
+                placeholder="Maghanap ng magsasaka ayon sa pangalan, telepono, o lokasyon..."
+                className="w-full rounded-lg bg-background pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </div>
+      </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Mga Nakabinbing Pagpaparehistro</CardTitle>
           <CardDescription>
-            Mayroong {pendingFarmers.length} magsasaka na naghihintay ng pag-apruba.
+            Mayroong {filteredFarmers.length} magsasaka na naghihintay ng pag-apruba.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,8 +98,8 @@ export default function ApprovalsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingFarmers.length > 0 ? (
-                pendingFarmers.map((farmer) => (
+              {filteredFarmers.length > 0 ? (
+                filteredFarmers.map((farmer) => (
                   <TableRow key={farmer.id}>
                     <TableCell className="font-medium">{farmer.name}</TableCell>
                     <TableCell>{farmer.phone}</TableCell>
@@ -99,7 +120,7 @@ export default function ApprovalsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
-                    Walang nakabinbing pag-apruba sa kasalukuyan.
+                    {searchTerm ? `Walang nahanap na magsasaka para sa "${searchTerm}".` : "Walang nakabinbing pag-apruba sa kasalukuyan."}
                   </TableCell>
                 </TableRow>
               )}
