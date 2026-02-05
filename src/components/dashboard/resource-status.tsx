@@ -15,7 +15,7 @@ const iconMap: Record<ResourceCategory, React.ElementType> = {
     'Paggawa': Tractor,
 };
 
-export function ResourceStatus() {
+export function ResourceStatus({ manageHref = "/dashboard/inventory" }: { manageHref?: string }) {
     const keyResources = resources.filter(r => r.category !== 'Paggawa').slice(0, 3);
 
     return (
@@ -28,7 +28,7 @@ export function ResourceStatus() {
                 </CardDescription>
               </div>
               <Button asChild size="sm" className="ml-auto gap-1">
-                <Link href="/dashboard/inventory">
+                <Link href={manageHref}>
                   Pamahalaan
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>

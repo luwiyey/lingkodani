@@ -11,11 +11,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isDisasterMode = pathname === '/dashboard/disaster-mode';
+  const isDisasterPath = pathname.startsWith('/dashboard/disaster');
 
   return (
     <SidebarProvider>
-      {!isDisasterMode && <AppSidebar />}
+      {!isDisasterPath && <AppSidebar />}
       <SidebarInset>
         <Header />
         <div className="flex-1 p-6 overflow-y-auto">

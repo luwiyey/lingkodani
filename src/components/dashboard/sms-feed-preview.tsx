@@ -29,7 +29,7 @@ const typeInfo: Record<SmsIntent, {icon: React.ElementType }> = {
     UNKNOWN: { icon: MessageCircle },
 }
 
-export function SmsFeedPreview() {
+export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?: string }) {
     const recentMessages = smsMessages.slice(0, 4);
     const [isClient, setIsClient] = useState(false);
 
@@ -47,7 +47,7 @@ export function SmsFeedPreview() {
                 </CardDescription>
               </div>
               <Button asChild size="sm" className="ml-auto gap-1">
-                <Link href="/dashboard/sms-feed">
+                <Link href={feedHref}>
                   Tingnan Lahat
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>

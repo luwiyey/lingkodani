@@ -49,8 +49,8 @@ export default function DisasterModePage() {
         </Card>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SmsFeedPreview />
-            <ResourceStatus />
+            <SmsFeedPreview feedHref="/dashboard/disaster/sms" />
+            <ResourceStatus manageHref="/dashboard/disaster/inventory" />
         </div>
 
     </div>
