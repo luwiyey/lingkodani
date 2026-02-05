@@ -29,7 +29,7 @@ export default function ApprovalsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Pag-apruba ng Magsasaka</h1>
         <p className="text-muted-foreground">Suriin at aprubahan ang mga bagong magsasaka na nagparehistro sa pamamagitan ng SMS o manu-manong pag-input.</p>
@@ -61,13 +61,15 @@ export default function ApprovalsPage() {
                     <TableCell>{farmer.phone}</TableCell>
                     <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
                     <TableCell>{new Date(farmer.registrationDate).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleApproval(farmer.id, false)}>
-                        <X className="mr-2 h-4 w-4" /> Tanggihan
-                      </Button>
-                      <Button size="sm" onClick={() => handleApproval(farmer.id, true)}>
-                        <Check className="mr-2 h-4 w-4" /> Aprubahan
-                      </Button>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col space-y-2 items-end">
+                        <Button size="sm" onClick={() => handleApproval(farmer.id, true)} className="w-[120px]">
+                          <Check className="mr-2 h-4 w-4" /> Aprubahan
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleApproval(farmer.id, false)} className="w-[120px]">
+                          <X className="mr-2 h-4 w-4" /> Tanggihan
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
