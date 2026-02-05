@@ -67,6 +67,7 @@ export type SmsMessage = {
   aiConfidence: number;
   safetyFlag: SafetyFlag;
   knowledgeBaseId?: string;
+  tone?: 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
 };
 
 export type ResourceCategory = 'Pataba' | 'Binhi' | 'Kagamitan' | 'Paggawa';

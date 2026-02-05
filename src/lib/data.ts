@@ -53,9 +53,9 @@ export const farmers: Farmer[] = [
   },
   {
     id: 'FARM004',
-    name: 'Gabriela Silang',
+    name: 'Lito Batumbakal',
     age: 41,
-    gender: 'Babae',
+    gender: 'Lalaki',
     phone: '+639204567890',
     barangay: 'Lapu-Lapu',
     municipality: 'Ilocos Sur',
@@ -99,6 +99,7 @@ export const smsMessages: SmsMessage[] = [
     aiConfidence: 0.85,
     safetyFlag: 'Low',
     knowledgeBaseId: 'KB012',
+    tone: 'Nag-aalala',
   },
   {
     id: 'SMS002',
@@ -112,6 +113,7 @@ export const smsMessages: SmsMessage[] = [
     aiAdvice: 'Para sa post-harvest, tiyaking maayos ang pagpapatuyo ng mga butil sa 14% na moisture content bago itago. Gumamit ng malinis na sako at mga pasilidad ng imbakan upang maiwasan ang mga peste.',
     aiConfidence: 0.95,
     safetyFlag: 'Low',
+    tone: 'Neutral',
   },
   {
     id: 'SMS003',
@@ -125,19 +127,21 @@ export const smsMessages: SmsMessage[] = [
     aiAdvice: 'Maaaring ito ay isang stem borer infestation. Ang paggamit ng mga pheromone trap o pagpapakilala ng mga natural na mandaragit tulad ng Trichogramma wasps ay maaaring maging epektibo.',
     aiConfidence: 0.78,
     safetyFlag: 'Medium',
+    tone: 'Kritikal',
   },
   {
     id: 'SMS004',
     farmerId: 'FARM004',
-    farmerName: 'Gabriela Silang',
-    message: 'REQUEST SEED MAIS 10kg. Kailan ang pinakamainam na oras para magtanim ng mais para sa susunod na season?',
+    farmerName: 'Lito Batumbakal',
+    message: 'Sira po ang sprayer ko, may mahihiraman po ba sa barangay?',
     timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     parsedIntent: 'REQUEST',
-    urgency: 'low',
-    status: 'replied',
-    aiAdvice: 'Ang pinakamahusay na oras para magtanim ng mais ay sa simula ng tag-ulan, karaniwang Mayo o Hunyo. Tiyaking mahusay na inihanda ang iyong lupa. Naitala na namin ang iyong kahilingan para sa binhi.',
-    aiConfidence: 0.98,
+    urgency: 'medium',
+    status: 'pending_approval',
+    aiAdvice: 'Nakita po namin na kailangan ninyo ng sprayer. Mayroon pong 2 magagamit na sprayer sa barangay hall. Maaari po kayong kumuha ng voucher sa pamamagitan ng pag-apruba sa mensaheng ito.',
+    aiConfidence: 0.97,
     safetyFlag: 'Low',
+    tone: 'Neutral',
   },
   {
     id: 'SMS005',
@@ -151,6 +155,7 @@ export const smsMessages: SmsMessage[] = [
     aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Tondo, Maynila. Mangyaring kumpirmahin ang pagpaparehistro.',
     aiConfidence: 0.99,
     safetyFlag: 'Low',
+    tone: 'Neutral',
   },
   {
     id: 'SMS006',
@@ -164,6 +169,7 @@ export const smsMessages: SmsMessage[] = [
     aiAdvice: 'Nakalulungkot marinig iyan. I-dokumento ang pinsala. Maaari kang mag-apply para sa tulong-pinansyal sa ilalim ng programa ng DA para sa mga nasalanta ng kalamidad. Makipag-ugnayan sa iyong lokal na tanggapan ng agrikultura.',
     aiConfidence: 0.92,
     safetyFlag: 'Medium',
+    tone: 'Kritikal',
   },
 ];
 
@@ -174,6 +180,7 @@ export const resources: Resource[] = [
     { id: 'RES003', name: 'Hand Tractor', category: 'Kagamitan', stock: 5, unit: 'yunit', lastUpdated: '2023-10-20' },
     { id: 'RES004', name: 'Pangkat ng Manggagawa sa Komunidad', category: 'Paggawa', stock: 25, unit: 'tao', lastUpdated: '2023-10-27' },
     { id: 'RES005', name: 'Neem Oil (Organic Pesticide)', category: 'Pataba', stock: 150, unit: 'bote (1L)', lastUpdated: '2023-10-28' },
+    { id: 'RES006', name: 'Sprayer', category: 'Kagamitan', stock: 2, unit: 'yunit', lastUpdated: '2023-10-28' },
 ];
 
 export const knowledgeArticles: KnowledgeArticle[] = [

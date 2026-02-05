@@ -1,237 +1,173 @@
 "use client";
 
 import * as React from 'react';
-import Link from 'next/link';
-import { Check, Edit, Info, Send, ThumbsDown, User, X, MessageCircle, FilePen, Tractor, CloudCog, ShieldAlert, BadgeInfo, AlertTriangle, ArrowUpCircle, Bot, Sprout } from 'lucide-react';
+import { User, Sparkles, MessageSquare, Send, Wrench } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { smsMessages } from '@/lib/data';
-import type { SmsMessage, SmsIntent } from '@/lib/types';
+import { smsMessages, resources } from '@/lib/data';
+import type { SmsMessage, Resource } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 
-const urgencyVariant = {
-  high: 'destructive',
-  medium: 'secondary',
-  low: 'outline',
-} as const;
-
-const statusColors = {
-    pending_approval: 'bg-yellow-500',
-    approved: 'bg-green-500',
-    rejected: 'bg-red-500',
-    replied: 'bg-blue-500',
-}
-
-const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType, color: string}> = {
-    REGISTER: { label: 'Pagpaparehistro', icon: User, color: 'bg-blue-500'},
-    CROP_UPDATE: { label: 'Update sa Pananim', icon: FilePen, color: 'bg-teal-500' },
-    HARVEST: { label: 'Ulat ng Ani', icon: Sprout, color: 'bg-green-500' },
-    REQUEST: { label: 'Kahilingan', icon: Tractor, color: 'bg-orange-500' },
-    PEST_DISEASE: { label: 'Ulat ng Peste', icon: ShieldAlert, color: 'bg-red-500' },
-    WEATHER_HELP: { label: 'Tulong sa Panahon', icon: CloudCog, color: 'bg-sky-500'},
-    PRICE_CHECK: { label: 'Suriin ang Presyo', icon: BadgeInfo, color: 'bg-indigo-500'},
-    EMERGENCY: { label: 'Emergency', icon: AlertTriangle, color: 'bg-rose-600'},
-    UNKNOWN: { label: 'Pangkalahatan', icon: MessageCircle, color: 'bg-gray-500' },
+type DialogState = {
+  type: 'approve' | 'manual' | 'find' | null;
+  message: SmsMessage | null;
 }
 
 export default function SmsFeedPage() {
-    const [selectedMessage, setSelectedMessage] = React.useState<SmsMessage | null>(smsMessages[0]);
-    const [isEditing, setIsEditing] = React.useState(false);
-    const [editedAdvice, setEditedAdvice] = React.useState("");
+    const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
+    const { toast } = useToast();
 
-    React.useEffect(() => {
-        if (selectedMessage) {
-            setEditedAdvice(selectedMessage.aiAdvice);
-            setIsEditing(false);
-        }
-    }, [selectedMessage]);
+    const openDialog = (type: DialogState['type'], message: SmsMessage) => {
+        setDialogState({ type, message });
+    };
 
-    if (!selectedMessage) {
-        return <div className="flex items-center justify-center h-full"><p>Mangyaring pumili ng mensahe.</p></div>
+    const closeDialog = () => {
+        setDialogState({ type: null, message: null });
+    };
+    
+    const handleAction = (action: string) => {
+        toast({
+            title: "Aksyon naisagawa!",
+            description: `Ang mensahe ay matagumpay na ${action}.`,
+        });
+        closeDialog();
     }
 
-    const SelectedMessageIcon = typeInfo[selectedMessage.parsedIntent]?.icon;
-
   return (
-    <div className="h-[calc(100vh-5rem)] grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <Card className="md:col-span-1 lg:col-span-1 h-full overflow-y-auto">
-        <CardHeader>
-          <CardTitle>SMS Command Monitor</CardTitle>
-          <CardDescription>Suriin, aprubahan, at tumugon sa mga papasok na SMS.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-2">
-            <div className="flex flex-col gap-2">
-            {smsMessages.map(message => {
-                const TypeIcon = typeInfo[message.parsedIntent]?.icon || MessageCircle;
-                return (
-                    <button
-                        key={message.id}
-                        onClick={() => setSelectedMessage(message)}
-                        className={cn(
-                            "w-full text-left p-3 rounded-lg border transition-colors",
-                            selectedMessage?.id === message.id ? 'bg-accent' : 'hover:bg-accent/50'
-                        )}
-                    >
-                        <div className="flex justify-between items-start">
-                            <p className="font-semibold">{message.farmerName}</p>
-                            <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                            <TypeIcon className="w-4 h-4 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground truncate">{message.message}</p>
-                        </div>
-                        <div className="flex justify-between items-center mt-2">
-                            <span className="text-xs text-muted-foreground">{new Date(message.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
-                            <TooltipProvider><Tooltip><TooltipTrigger>
-                                <div className={cn("w-2 h-2 rounded-full", statusColors[message.status])}></div>
-                            </TooltipTrigger><TooltipContent><p>{message.status.replace('_', ' ')}</p></TooltipContent></Tooltip></TooltipProvider>
-                        </div>
-                    </button>
-                )
-            })}
-            </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="md:col-span-2 lg:col-span-3 h-full overflow-y-auto">
-        <CardHeader>
-            <div className="flex justify-between items-start">
+    <>
+      <div className="space-y-1 mb-4">
+        <h1 className="text-2xl font-bold tracking-tight">Live na Feed ng SMS</h1>
+        <p className="text-muted-foreground">Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</p>
+      </div>
+      <div className="space-y-4">
+        {smsMessages.map(message => (
+          <Card key={message.id} className="bg-card/80">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback>{message.farmerName.charAt(0)}</AvatarFallback>
+                </Avatar>
                 <div>
-                    <CardTitle className="text-2xl">Proseso ng Pagpapatunay ng Payo</CardTitle>
-                    <CardDescription>Suriin ang SMS, payo ng AI, at gumawa ng aksyon.</CardDescription>
+                  <p className="font-semibold">{message.farmerName}</p>
+                  <p className="text-sm text-muted-foreground">"{message.message}"</p>
                 </div>
-                <Badge variant={selectedMessage.status === 'pending_approval' ? 'default' : selectedMessage.status === 'approved' ? 'secondary' : 'destructive'}>
-                    Katayuan: {selectedMessage.status.replace('_', ' ')}
-                </Badge>
-            </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="space-y-4">
-                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4"/>
-                        <h3 className="font-semibold">Ulat mula kay {selectedMessage.farmerName}</h3>
-                    </div>
-                     {SelectedMessageIcon && (
-                    <Badge variant="outline" className={cn("text-xs border-transparent text-white", typeInfo[selectedMessage.parsedIntent].color)}>
-                        <SelectedMessageIcon className="w-3 h-3 mr-1" />
-                        {typeInfo[selectedMessage.parsedIntent].label}
-                    </Badge>
-                    )}
+              </div>
+              <p className="text-xs text-muted-foreground pt-1">{new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+            </CardHeader>
+            <CardContent>
+              <Separator className="my-3 bg-white/10" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span>Pagsusuri ng AI</span>
                 </div>
-                <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">{selectedMessage.message}</p>
-                </div>
-            </div>
-
-            <Separator />
-            
-            <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="font-semibold flex items-center gap-2"><Bot className="w-4 h-4"/> Payo na Binuo ng AI</h3>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                    <Info className="w-4 h-4" />
-                                    <span className="ml-2">Bakit ito iminungkahi?</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Paliwanag ng AI: Nakita ang keyword na 'leafminer' at 'kamatis'.<br/> Ang mungkahi ay batay sa KB012.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <span>Marka ng Kumpiyansa:</span>
-                        <div className="flex items-center gap-2">
-                            <Progress value={selectedMessage.aiConfidence * 100} className="w-full h-3" />
-                            <span className="font-bold text-primary">{ (selectedMessage.aiConfidence * 100).toFixed(1) }%</span>
-                        </div>
-                    </div>
-                     <div>
-                        <span>Bandila ng Kaligtasan:</span>
-                         <Badge variant={selectedMessage.safetyFlag === 'High' ? 'destructive' : selectedMessage.safetyFlag === 'Medium' ? 'secondary' : 'outline'}>
-                            {selectedMessage.safetyFlag} Panganib
-                        </Badge>
-                    </div>
-                </div>
-
-                {selectedMessage.knowledgeBaseId && (
-                     <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Info className="w-4 h-4" />
-                        Sumasangguni sa Artikulo sa Knowledge Base: <Link href={`/dashboard/knowledge-base#${selectedMessage.knowledgeBaseId}`} className="text-primary underline">{selectedMessage.knowledgeBaseId}</Link>
-                    </p>
-                )}
-                <div className="p-4 bg-primary/5 rounded-lg">
-                   {isEditing ? (
-                        <Textarea 
-                            value={editedAdvice}
-                            onChange={(e) => setEditedAdvice(e.target.value)}
-                            className="min-h-[120px]"
-                        />
-                   ) : (
-                    <p className="text-primary-foreground/80">{selectedMessage.aiAdvice}</p>
-                   )}
-                </div>
-            </div>
-
-            <Separator />
-
-            <TooltipProvider>
                 <div className="flex flex-wrap gap-2">
-                    {isEditing ? (
-                        <>
-                        <Button onClick={() => setIsEditing(false)} variant="outline"><X className="mr-2"/>Kanselahin</Button>
-                        <Button><Check className="mr-2"/>I-save at Aprubahan</Button>
-                        </>
-                    ) : (
-                        <>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button className="bg-green-600 hover:bg-green-700">
-                                    <Send className="mr-2" />Aprubahan at Ipadala
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Ipadala ang payo sa magsasaka kung ano ito.</p></TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                                    <Edit className="mr-2" />I-edit bago Ipadala
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Baguhin ang payo bago ipadala.</p></TooltipContent>
-                        </Tooltip>
-                        
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="destructive">
-                                    <ThumbsDown className="mr-2" />Tanggihan
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Tanggihan ang payo at i-flag para sa manu-manong pagsusuri.</p></TooltipContent>
-                        </Tooltip>
-                        </>
-                    )}
+                  <Badge variant="secondary">Layunin: {message.parsedIntent.replace('_', ' ')}</Badge>
+                  <Badge variant={message.safetyFlag === 'High' ? 'destructive' : message.safetyFlag === 'Medium' ? 'secondary' : 'outline'}>
+                    Panganib: {message.safetyFlag}
+                  </Badge>
+                  <Badge variant="outline">Kumpiyansa: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                  <Badge variant="outline">Tono: {message.tone}</Badge>
                 </div>
-            </TooltipProvider>
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+              <Separator className="my-3 bg-white/10" />
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button onClick={() => openDialog('approve', message)} size="sm" className="bg-white/10 hover:bg-white/20 text-foreground">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Aprubahan ang Tugon ng AI
+                </Button>
+                <Button onClick={() => openDialog('manual', message)} size="sm" className="bg-white/10 hover:bg-white/20 text-foreground">
+                  <Send className="mr-2 h-4 w-4" />
+                  Manu-manong Tugon
+                </Button>
+                {message.parsedIntent === 'REQUEST' && (
+                  <Button onClick={() => openDialog('find', message)} size="sm" className="bg-white/10 hover:bg-white/20 text-foreground">
+                    <Wrench className="mr-2 h-4 w-4" />
+                    Maghanap ng Kagamitan
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Dialog for Approving AI Response */}
+      <Dialog open={dialogState.type === 'approve'} onOpenChange={closeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aprubahan at Ipadala ang Tugon ng AI?</DialogTitle>
+            <DialogDescription>
+              Ang mensaheng ito ay ipapadala kay {dialogState.message?.farmerName}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="my-4 p-4 bg-muted rounded-lg text-sm">
+            <p>{dialogState.message?.aiAdvice}</p>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Kanselahin</Button>
+            </DialogClose>
+            <Button onClick={() => handleAction('naaprubahan')}>Kumpirmahin at Ipadala</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog for Manual Response */}
+      <Dialog open={dialogState.type === 'manual'} onOpenChange={closeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manu-manong Tumugon kay {dialogState.message?.farmerName}</DialogTitle>
+            <DialogDescription>
+              Isulat ang iyong mensahe sa ibaba.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea className="my-4" placeholder="Simulan ang pagsusulat dito..." rows={5} />
+          <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="secondary">Kanselahin</Button>
+            </DialogClose>
+            <Button onClick={() => handleAction('naipadala')}>Ipadala ang Mensahe</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for Finding Equipment */}
+      <Dialog open={dialogState.type === 'find'} onOpenChange={closeDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Maghanap ng Kagamitan sa Imbentaryo</DialogTitle>
+            <DialogDescription>
+              Narito ang mga kasalukuyang magagamit na kagamitan sa barangay.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="my-4 h-64">
+            <div className="space-y-2 pr-4">
+                {resources.filter(r => r.category === 'Kagamitan').map((tool: Resource) => (
+                    <div key={tool.id} className="p-3 bg-muted rounded-lg flex justify-between items-center">
+                        <div>
+                            <p className="font-semibold">{tool.name}</p>
+                            <p className="text-sm text-muted-foreground">{tool.stock} yunit ang magagamit</p>
+                        </div>
+                        <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`)}>Mag-alok</Button>
+                    </div>
+                ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
