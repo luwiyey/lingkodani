@@ -1,0 +1,58 @@
+import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { smsMessages } from '@/lib/data';
+
+const urgencyVariant = {
+  high: 'destructive',
+  medium: 'secondary',
+  low: 'outline',
+} as const;
+
+export function SmsFeedPreview() {
+    const recentMessages = smsMessages.slice(0, 4);
+
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center">
+              <div className="grid gap-2">
+                <CardTitle>Live SMS Mission Feed</CardTitle>
+                <CardDescription>
+                  Incoming reports from farmers needing validation.
+                </CardDescription>
+              </div>
+              <Button asChild size="sm" className="ml-auto gap-1">
+                <Link href="/dashboard/sms-feed">
+                  View All
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                {recentMessages.map((message) => (
+                    <div key={message.id} className="flex items-start gap-4">
+                        <div className="flex-1">
+                            <p className="text-sm font-medium leading-none">
+                                {message.farmerName}
+                            </p>
+                            <p className="text-sm text-muted-foreground truncate">
+                                {message.message}
+                            </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                            <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
+                            <div className="text-xs text-muted-foreground">
+                            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}

@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "login-bg",
+      "description": "A lush green rice paddy field under a clear blue sky, representing modern agriculture.",
+      "imageUrl": "https://images.unsplash.com/photo-1728895604559-a4e16081504e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxyaWNlJTIwcGFkZHl8ZW58MHx8fHwxNzcwMjE5NTQxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "rice paddy"
+    },
+    {
+      "id": "farmer-avatar-1",
+      "description": "Profile picture of a farmer.",
+      "imageUrl": "https://images.unsplash.com/photo-1628600881785-20238ebee731?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmYXJtZXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzAxNjU3ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "farmer portrait"
+    },
+    {
+      "id": "farmer-avatar-2",
+      "description": "Profile picture of a farmer.",
+      "imageUrl": "https://images.unsplash.com/photo-1707721690626-10e5f0366bcb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx3b21hbiUyMGZhcm1lcnxlbnwwfHx8fDE3NzAyNTk4MjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman farmer"
+    },
+    {
+      "id": "farmer-avatar-3",
+      "description": "Profile picture of a farmer.",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzAyMDA4MzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "farm-location",
+      "description": "An aerial view of a farm, used as a placeholder for a map.",
+      "imageUrl": "https://images.unsplash.com/photo-1599536798012-b5c7ab677195?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmYXJtJTIwYWVyaWFsfGVufDB8fHx8MTc3MDI1OTgyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "farm aerial"
+    },
+    {
+      "id": "knowledge-base-article",
+      "description": "Close-up of a healthy plant leaf.",
+      "imageUrl": "https://images.unsplash.com/photo-1769970948373-174ffe6bcb96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwbGFudCUyMGxlYWZ8ZW58MHx8fHwxNzcwMjIwODQ3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plant leaf"
+    }
+  ]
 }
