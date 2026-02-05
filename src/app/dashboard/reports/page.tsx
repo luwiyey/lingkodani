@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import { Bot, Calendar as CalendarIcon, Download, ArrowDownToLine } from 'lucide-react';
@@ -89,7 +88,7 @@ export default function ReportsPage() {
         </Card>
 
         <Tabs defaultValue="sms" className="w-full">
-            <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+            <TabsList className="grid w-full grid-cols-3 rounded-none border-b bg-transparent p-0">
                 <TabsTrigger value="sms" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">Pagsusuri ng SMS</TabsTrigger>
                 <TabsTrigger value="ai" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">Performance ng AI</TabsTrigger>
                 <TabsTrigger value="operations" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">Operasyon at Pakikilahok</TabsTrigger>
