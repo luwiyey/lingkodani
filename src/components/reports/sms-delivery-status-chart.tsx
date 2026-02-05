@@ -21,11 +21,7 @@ export function SmsDeliveryStatusChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Katayuan ng Pagpapadala ng SMS</CardTitle>
-                <CardDescription className="text-xs">Rate ng tagumpay sa pagpapadala ng mga mensahe.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -39,6 +35,10 @@ export function SmsDeliveryStatusChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Katayuan ng Pagpapadala ng SMS</CardTitle>
+            <CardDescription className="text-xs">Rate ng tagumpay sa pagpapadala ng mga mensahe.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

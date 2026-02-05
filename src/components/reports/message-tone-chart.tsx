@@ -23,11 +23,7 @@ export function MessageToneChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Tono ng Mensahe</CardTitle>
-                <CardDescription className="text-xs">Pamamahagi ng emosyonal na tono sa mga mensahe.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function MessageToneChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Tono ng Mensahe</CardTitle>
+            <CardDescription className="text-xs">Pamamahagi ng emosyonal na tono sa mga mensahe.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

@@ -22,11 +22,7 @@ export function ValidationQueueChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Validation Queue</CardTitle>
-                <CardDescription className="text-xs">Bilang ng mga mensaheng nakabinbin vs. nalutas.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -38,6 +34,10 @@ export function ValidationQueueChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Kasalukuyan')}>Kasalukuyan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Validation Queue</CardTitle>
+            <CardDescription className="text-xs">Bilang ng mga mensaheng nakabinbin vs. nalutas.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

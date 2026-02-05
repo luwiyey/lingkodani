@@ -31,11 +31,7 @@ export function IssueTrendsChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Graph ng Trend ng Isyu</CardTitle>
-                <CardDescription className="text-xs">Lingguhang uso ng mga pangunahing isyu.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -49,6 +45,10 @@ export function IssueTrendsChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Graph ng Trend ng Isyu</CardTitle>
+            <CardDescription className="text-xs">Lingguhang uso ng mga pangunahing isyu.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

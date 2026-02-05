@@ -23,11 +23,7 @@ export function CorrectionLogChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Log ng Mga Pagtutuwid</CardTitle>
-                <CardDescription className="text-xs">Mga mensahe na manu-manong iwinasto ng mga eksperto.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function CorrectionLogChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Log ng Mga Pagtutuwid</CardTitle>
+            <CardDescription className="text-xs">Mga mensahe na manu-manong iwinasto ng mga eksperto.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

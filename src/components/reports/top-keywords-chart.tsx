@@ -23,11 +23,7 @@ export function TopKeywordsChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Mga Karaniwang Salita</CardTitle>
-                <CardDescription>Mga pinakamadalas na salitang ginagamit sa SMS.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function TopKeywordsChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Mga Karaniwang Salita</CardTitle>
+            <CardDescription>Mga pinakamadalas na salitang ginagamit sa SMS.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

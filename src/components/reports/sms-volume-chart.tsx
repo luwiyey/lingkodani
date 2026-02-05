@@ -25,11 +25,7 @@ export function SmsVolumeChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Chart ng Dami ng SMS</CardTitle>
-                <CardDescription>Kabuuang papasok na SMS bawat araw.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -42,6 +38,10 @@ export function SmsVolumeChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Chart ng Dami ng SMS</CardTitle>
+            <CardDescription>Kabuuang papasok na SMS bawat araw.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

@@ -23,11 +23,7 @@ export function OutbreakAlertChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Mga Alerto sa Peste</CardTitle>
-                <CardDescription className="text-xs">Biglaang pagdami ng ulat ng parehong peste.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function OutbreakAlertChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Mga Alerto sa Peste</CardTitle>
+            <CardDescription className="text-xs">Biglaang pagdami ng ulat ng parehong peste.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

@@ -23,11 +23,7 @@ export function SeasonalTrendChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Dami ng Ulat Ayon sa Panahon</CardTitle>
-                <CardDescription className="text-xs">Mga buwan na may pinakamataas na dami ng ulat.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -39,6 +35,10 @@ export function SeasonalTrendChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Dami ng Ulat Ayon sa Panahon</CardTitle>
+            <CardDescription className="text-xs">Mga buwan na may pinakamataas na dami ng ulat.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

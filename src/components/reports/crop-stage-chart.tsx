@@ -23,11 +23,7 @@ export function CropStageChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Pamamahagi ng Yugto ng Pananim</CardTitle>
-                <CardDescription>Porsyento ng mga pananim sa bawat yugto.</CardDescription>
-            </div>
+        <div className="flex justify-end">
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -40,6 +36,10 @@ export function CropStageChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Pamamahagi ng Yugto ng Pananim</CardTitle>
+            <CardDescription>Porsyento ng mga pananim sa bawat yugto.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

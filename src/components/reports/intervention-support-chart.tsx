@@ -23,11 +23,7 @@ export function InterventionSupportChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Mga Pagbisita sa Bukid</CardTitle>
-                <CardDescription className="text-xs">Mga kaso na nangailangan ng pisikal na pagbisita.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function InterventionSupportChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Mga Pagbisita sa Bukid</CardTitle>
+            <CardDescription className="text-xs">Mga kaso na nangailangan ng pisikal na pagbisita.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

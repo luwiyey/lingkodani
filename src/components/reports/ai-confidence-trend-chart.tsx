@@ -23,11 +23,7 @@ export function AIConfidenceTrendChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Trend ng Kumpiyansa ng AI</CardTitle>
-                <CardDescription className="text-xs">Sinusubaybayan ang pag-unlad ng kumpiyansa ng AI sa paglipas ng panahon.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function AIConfidenceTrendChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Trend ng Kumpiyansa ng AI</CardTitle>
+            <CardDescription className="text-xs">Sinusubaybayan ang pag-unlad ng kumpiyansa ng AI sa paglipas ng panahon.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

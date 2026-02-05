@@ -23,11 +23,7 @@ export function HighRiskKeywordChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Mga Salitang Nagti-trigger ng Alerto</CardTitle>
-                <CardDescription className="text-xs">Mga salita na awtomatikong nagtaas ng alerto.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function HighRiskKeywordChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Mga Salitang Nagti-trigger ng Alerto</CardTitle>
+            <CardDescription className="text-xs">Mga salita na awtomatikong nagtaas ng alerto.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

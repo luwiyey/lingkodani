@@ -23,11 +23,7 @@ export function RecommendationTypeChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Uri ng Mga Inirekomendang Payo</CardTitle>
-                <CardDescription className="text-xs">Ano ang mga pinakamadalas na uri ng payo ng AI.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function RecommendationTypeChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Uri ng Mga Inirekomendang Payo</CardTitle>
+            <CardDescription className="text-xs">Ano ang mga pinakamadalas na uri ng payo ng AI.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

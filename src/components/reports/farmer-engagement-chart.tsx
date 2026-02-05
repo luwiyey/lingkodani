@@ -23,11 +23,7 @@ export function FarmerEngagementChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Antas ng Pakikilahok ng Magsasaka</CardTitle>
-                <CardDescription className="text-xs">Pamamahagi batay sa dalas ng pag-uulat.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function FarmerEngagementChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Antas ng Pakikilahok ng Magsasaka</CardTitle>
+            <CardDescription className="text-xs">Pamamahagi batay sa dalas ng pag-uulat.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

@@ -23,11 +23,7 @@ export function TopInquiriesChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Pinakakaraniwang Uri ng Tanong</CardTitle>
-                <CardDescription className="text-xs">Mga pinakamadalas na tanong ng mga magsasaka.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function TopInquiriesChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Pinakakaraniwang Uri ng Tanong</CardTitle>
+            <CardDescription className="text-xs">Mga pinakamadalas na tanong ng mga magsasaka.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

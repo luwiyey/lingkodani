@@ -22,11 +22,7 @@ export function AdviceSuccessChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Mga Rate ng Pagpapatunay ng Payo</CardTitle>
-                <CardDescription>Pamamahagi ng mga aksyon ng admin sa payo ng AI.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -40,6 +36,10 @@ export function AdviceSuccessChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Mga Rate ng Pagpapatunay ng Payo</CardTitle>
+            <CardDescription>Pamamahagi ng mga aksyon ng admin sa payo ng AI.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

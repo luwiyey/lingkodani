@@ -21,11 +21,7 @@ export function AdvisoryDeliveryChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle>Success Rate ng Pagpapadala ng Advisory SMS</CardTitle>
-            <CardDescription className="text-xs">Porsyento ng mga SMS na matagumpay na naipadala.</CardDescription>
-          </div>
+        <div className="flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -39,6 +35,10 @@ export function AdvisoryDeliveryChart() {
                 <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Success Rate ng Pagpapadala ng Advisory SMS</CardTitle>
+            <CardDescription className="text-xs">Porsyento ng mga SMS na matagumpay na naipadala.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

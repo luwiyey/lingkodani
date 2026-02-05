@@ -23,11 +23,7 @@ export function ResponseTimeChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Oras ng Pagtugon</CardTitle>
-                <CardDescription className="text-xs">Average na oras bago maipadala ang isang tugon.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -41,6 +37,10 @@ export function ResponseTimeChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Oras ng Pagtugon</CardTitle>
+            <CardDescription className="text-xs">Average na oras bago maipadala ang isang tugon.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>

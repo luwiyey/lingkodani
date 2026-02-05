@@ -21,11 +21,7 @@ export function ClarificationNeededChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>Mga Mensaheng Kailangan ng Paglilinaw</CardTitle>
-                <CardDescription className="text-xs">Mga kaso kung saan mababa ang kumpiyansa ng AI.</CardDescription>
-            </div>
+        <div className="flex justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -39,6 +35,10 @@ export function ClarificationNeededChart() {
                     <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+        <div className="grid gap-0.5">
+            <CardTitle>Mga Mensaheng Kailangan ng Paglilinaw</CardTitle>
+            <CardDescription className="text-xs">Mga kaso kung saan mababa ang kumpiyansa ng AI.</CardDescription>
         </div>
       </CardHeader>
       <CardContent>
