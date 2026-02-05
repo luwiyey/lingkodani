@@ -1,13 +1,13 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { resources as initialResources } from '@/lib/data';
 import type { Resource, ResourceCategory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search, Edit, Trash2, Upload, Download } from 'lucide-react';
+import { PlusCircle, Search, Edit, Trash2, Upload, Download, ArrowUp, ArrowDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -34,12 +34,23 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
 
+type SortableKeys = keyof Omit<Resource, 'id' | 'category'>;
+
 export default function InventoryPage() {
   const [resources, setResources] = useState<Resource[]>(initialResources);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
   const { toast } = useToast();
+  
+  const requestSort = (key: SortableKeys) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+        direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const handleAddResource = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -83,6 +94,25 @@ export default function InventoryPage() {
     resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     resource.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const sortedResources = useMemo(() => {
+    let sortableItems = [...filteredResources];
+    if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+            const aValue = a[sortConfig.key];
+            const bValue = b[sortConfig.key];
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+    }
+    return sortableItems;
+  }, [filteredResources, sortConfig]);
 
   return (
     <>
@@ -164,16 +194,44 @@ export default function InventoryPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pangalan ng Rekurso</TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                     <div className="flex items-center">
+                        Pangalan ng Rekurso
+                        <div className="w-8 flex-shrink-0 flex justify-center">
+                            {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                        </div>
+                    </div>
+                  </TableHead>
                   <TableHead>Kategorya</TableHead>
-                  <TableHead>Kasalukuyang Stak</TableHead>
-                  <TableHead>Yunit</TableHead>
-                  <TableHead>Huling Na-update</TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
+                    <div className="flex items-center">
+                        Kasalukuyang Stak
+                        <div className="w-8 flex-shrink-0 flex justify-center">
+                            {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                        </div>
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
+                    <div className="flex items-center">
+                        Yunit
+                        <div className="w-8 flex-shrink-0 flex justify-center">
+                            {sortConfig?.key === 'unit' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                        </div>
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
+                    <div className="flex items-center">
+                        Huling Na-update
+                        <div className="w-8 flex-shrink-0 flex justify-center">
+                            {sortConfig?.key === 'lastUpdated' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                        </div>
+                    </div>
+                  </TableHead>
                   <TableHead className="text-right">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredResources.map((resource) => (
+                {sortedResources.map((resource) => (
                   <TableRow key={resource.id}>
                     <TableCell className="font-medium">{resource.name}</TableCell>
                     <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
@@ -255,5 +313,3 @@ export default function InventoryPage() {
     </>
   );
 }
-
-    
