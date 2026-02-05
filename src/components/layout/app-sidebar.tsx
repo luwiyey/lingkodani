@@ -50,9 +50,16 @@ const barangayNavItems: NavItem[] = [
   },
   { title: "Pangkalahatang-ideya", href: "/dashboard/oversight", icon: LayoutGrid },
   { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
-  { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base", icon: Book },
-  { title: "AI Toolkit", href: "/dashboard/ai-toolkit", icon: Sparkles },
-  { title: "Pagsasanay ng AEW", href: "/dashboard/training", icon: GraduationCap },
+  {
+    title: "Kaalaman",
+    href: "/dashboard/knowledge-base",
+    icon: Book,
+    subItems: [
+      { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base" },
+      { title: "AI Toolkit", href: "/dashboard/ai-toolkit" },
+      { title: "Pagsasanay ng AEW", href: "/dashboard/training" },
+    ],
+  },
   { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart },
   { title: "Audit Log", href: "/dashboard/audit-log", icon: History },
   { title: "Mga Setting ng Brgy.", href: "/dashboard/settings", icon: Settings },
@@ -62,7 +69,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
     const pathname = usePathname();
     const isParentActive = (item: NavItem) => {
         if (item.subItems) {
-            return pathname.startsWith(item.href);
+            return item.subItems.some(sub => pathname.startsWith(sub.href));
         }
         return item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
     }
