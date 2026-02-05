@@ -11,12 +11,19 @@ import { Calculator, BrainCircuit, CheckCircle, AlertTriangle as AlertTriangleIc
 import { useToast } from "@/hooks/use-toast";
 import { diagnosePlant } from "@/ai/flows/diagnose-plant-problem";
 import type { DiagnosePlantOutput } from "@/ai/flows/diagnose-plant-problem";
+import { calculateFertilizer } from "@/ai/flows/calculate-fertilizer";
+import { calculatePesticide } from "@/ai/flows/calculate-pesticide";
+import { calculateProfit } from "@/ai/flows/calculate-profit";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AiToolkitPage() {
   const [fertResult, setFertResult] = useState('');
   const [pestResult, setPestResult] = useState('');
   const [profitResult, setProfitResult] = useState('');
+
+  const [fertLoading, setFertLoading] = useState(false);
+  const [pestLoading, setPestLoading] = useState(false);
+  const [profitLoading, setProfitLoading] = useState(false);
   
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosePlantOutput | null>(null);
@@ -24,22 +31,61 @@ export default function AiToolkitPage() {
 
   const { toast } = useToast();
 
-  const calculateFertilizer = (e: React.FormEvent) => {
+  const handleFertilizerCalculation = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFertResult('Rekomendasyon: 3 sako ng Urea, 2 sako ng Complete (14-14-14).');
-    toast({ title: 'Nakalkula na ang Pataba!', description: 'Nasa ibaba ang resulta.' });
+    setFertLoading(true);
+    setFertResult('');
+    try {
+        const formData = new FormData(e.currentTarget as HTMLFormElement);
+        const area = Number(formData.get('fert-area') as string);
+        const crop = formData.get('fert-crop') as string;
+        const result = await calculateFertilizer({ area, crop });
+        setFertResult(result.recommendation);
+        toast({ title: 'Nakalkula na ang Pataba!', description: 'Nasa ibaba ang resulta.' });
+    } catch (error) {
+        console.error(error);
+        toast({ title: 'Nagka-error!', description: 'Hindi nagtagumpay ang kalkulasyon.', variant: 'destructive' });
+    } finally {
+        setFertLoading(false);
+    }
   };
   
-  const calculatePesticide = (e: React.FormEvent) => {
+  const handlePesticideCalculation = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPestResult('Rekomendasyon: 20ml ng pestisidyo bawat 16L na tubig.');
-    toast({ title: 'Nakalkula na ang Pestisidyo!', description: 'Nasa ibaba ang resulta.' });
+    setPestLoading(true);
+    setPestResult('');
+     try {
+        const formData = new FormData(e.currentTarget as HTMLFormElement);
+        const area = Number(formData.get('pest-area') as string);
+        const pest = formData.get('pest-name') as string;
+        const result = await calculatePesticide({ area, pest });
+        setPestResult(result.recommendation);
+        toast({ title: 'Nakalkula na ang Pestisidyo!', description: 'Nasa ibaba ang resulta.' });
+    } catch (error) {
+        console.error(error);
+        toast({ title: 'Nagka-error!', description: 'Hindi nagtagumpay ang kalkulasyon.', variant: 'destructive' });
+    } finally {
+        setPestLoading(false);
+    }
   };
 
-  const calculateProfit = (e: React.FormEvent) => {
+  const handleProfitCalculation = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfitResult('Tinatayang Kita: ₱45,000. Break-even sa 2,800 kg.');
-    toast({ title: 'Nasuri na ang Kita!', description: 'Nasa ibaba ang resulta.' });
+    setProfitLoading(true);
+    setProfitResult('');
+    try {
+        const formData = new FormData(e.currentTarget as HTMLFormElement);
+        const yieldVal = Number(formData.get('profit-yield') as string);
+        const price = Number(formData.get('profit-price') as string);
+        const result = await calculateProfit({ yield: yieldVal, price });
+        setProfitResult(result.analysis);
+        toast({ title: 'Nasuri na ang Kita!', description: 'Nasa ibaba ang resulta.' });
+    } catch (error) {
+        console.error(error);
+        toast({ title: 'Nagka-error!', description: 'Hindi nagtagumpay ang pagsusuri.', variant: 'destructive' });
+    } finally {
+        setProfitLoading(false);
+    }
   };
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,7 +191,7 @@ export default function AiToolkitPage() {
           </form>
         </Card>
         <div className="space-y-6">
-            <form onSubmit={calculateFertilizer}>
+            <form onSubmit={handleFertilizerCalculation}>
             <Card>
             <CardHeader>
                 <CardTitle className="text-lg">Calculator ng Pataba</CardTitle>
@@ -154,21 +200,22 @@ export default function AiToolkitPage() {
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                 <Label htmlFor="fert-area">Laki ng Lupa (ha)</Label>
-                <Input id="fert-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
+                <Input id="fert-area" name="fert-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
                 </div>
                 <div className="space-y-2">
                 <Label htmlFor="fert-crop">Uri ng Pananim</Label>
-                <Input id="fert-crop" placeholder="hal. Palay" required/>
+                <Input id="fert-crop" name="fert-crop" placeholder="hal. Palay" required/>
                 </div>
+                {fertLoading && <Skeleton className="h-4 w-full" />}
                 {fertResult && <p className="text-sm font-medium text-primary">{fertResult}</p>}
             </CardContent>
             <CardFooter>
-                <Button className="w-full">Kalkulahin</Button>
+                <Button className="w-full" disabled={fertLoading}>{fertLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
             </CardFooter>
             </Card>
             </form>
             
-            <form onSubmit={calculatePesticide}>
+            <form onSubmit={handlePesticideCalculation}>
             <Card>
             <CardHeader>
                 <CardTitle className="text-lg">Dosis ng Pestisidyo</CardTitle>
@@ -177,21 +224,22 @@ export default function AiToolkitPage() {
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                 <Label htmlFor="pest-area">Laki ng Lupa (ha)</Label>
-                <Input id="pest-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
+                <Input id="pest-area" name="pest-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
                 </div>
                 <div className="space-y-2">
                 <Label htmlFor="pest-name">Pestisidyo</Label>
-                <Input id="pest-name" placeholder="hal. Cypermethrin" required/>
+                <Input id="pest-name" name="pest-name" placeholder="hal. Cypermethrin" required/>
                 </div>
+                {pestLoading && <Skeleton className="h-4 w-full" />}
                 {pestResult && <p className="text-sm font-medium text-primary">{pestResult}</p>}
             </CardContent>
             <CardFooter>
-                <Button className="w-full">Kalkulahin</Button>
+                <Button className="w-full" disabled={pestLoading}>{pestLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
             </CardFooter>
             </Card>
             </form>
 
-            <form onSubmit={calculateProfit}>
+            <form onSubmit={handleProfitCalculation}>
             <Card>
             <CardHeader>
                 <CardTitle className="text-lg">Pagsusuri sa Kita</CardTitle>
@@ -200,16 +248,17 @@ export default function AiToolkitPage() {
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                 <Label htmlFor="profit-yield">Inaasahang Ani (kg)</Label>
-                <Input id="profit-yield" type="number" placeholder="hal. 5000" required/>
+                <Input id="profit-yield" name="profit-yield" type="number" placeholder="hal. 5000" required/>
                 </div>
                 <div className="space-y-2">
                 <Label htmlFor="profit-price">Presyo sa Merkado (bawat kg)</Label>
-                <Input id="profit-price" type="number" placeholder="hal. 19" required/>
+                <Input id="profit-price" name="profit-price" type="number" placeholder="hal. 19" required/>
                 </div>
+                {profitLoading && <Skeleton className="h-4 w-full" />}
                 {profitResult && <p className="text-sm font-medium text-primary">{profitResult}</p>}
             </CardContent>
             <CardFooter>
-                <Button className="w-full">Kalkulahin</Button>
+                <Button className="w-full" disabled={profitLoading}>{profitLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
             </CardFooter>
             </Card>
             </form>
