@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, Cell, Tooltip, Legend } from "recharts"
+import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { messageToneData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
