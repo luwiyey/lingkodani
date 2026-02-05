@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts"
@@ -31,15 +32,15 @@ export function IssueTrendsChart() {
     <Card>
       <CardHeader>
         <CardTitle>Graph ng Trend ng Isyu</CardTitle>
-        <CardDescription>Lingguhang mga uso ng mga pangunahing isyu na iniulat ng mga magsasaka.</CardDescription>
+        <CardDescription className="text-xs">Lingguhang mga uso ng mga pangunahing isyu na iniulat ng mga magsasaka.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
+        <ChartContainer config={chartConfig} className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={issueTrendsData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend content={<ChartLegendContent />} />
                     <Line type="monotone" dataKey="MgaPeste" stroke="var(--color-MgaPeste)" strokeWidth={2} dot={false} />

@@ -258,37 +258,6 @@ export const knowledgeArticles: KnowledgeArticle[] = [
     }
 ];
 
-export const issueTrendsData = [
-    { date: 'Oct 1', MgaPeste: 30, Sakit: 20, Patubig: 15 },
-    { date: 'Oct 8', MgaPeste: 35, Sakit: 25, Patubig: 18 },
-    { date: 'Oct 15', MgaPeste: 45, Sakit: 22, Patubig: 25 },
-    { date: 'Oct 22', MgaPeste: 40, Sakit: 30, Patubig: 20 },
-    { date: 'Oct 29', MgaPeste: 50, Sakit: 35, Patubig: 22 },
-];
-
-export const smsVolumeData = [
-    { name: 'Lun', total: 120 },
-    { name: 'Mar', total: 150 },
-    { name: 'Miy', total: 110 },
-    { name: 'Huw', total: 180 },
-    { name: 'Biy', total: 220 },
-    { name: 'Sab', total: 90 },
-    { name: 'Lin', total: 70 },
-];
-
-export const adviceSuccessData = [
-    { status: 'Inaprubahan', value: 75, fill: 'hsl(var(--chart-1))' },
-    { status: 'In-edit', value: 15, fill: 'hsl(var(--chart-2))' },
-    { status: 'Tinanggihan', value: 10, fill: 'hsl(var(--destructive))' },
-];
-
-export const cropStageData = [
-    { name: 'Pagtatanim', value: 400, fill: 'hsl(var(--chart-1))' },
-    { name: 'Paglago', value: 300, fill: 'hsl(var(--chart-2))' },
-    { name: 'Pamumulaklak', value: 200, fill: 'hsl(var(--chart-3))' },
-    { name: 'Pag-aani', value: 100, fill: 'hsl(var(--chart-4))' },
-];
-
 export const farmerLogbookEntries: LogbookEntry[] = [
     {
         id: 'LOG001',
@@ -332,6 +301,41 @@ export const auditLogs: AuditLog[] = [
     { id: 'AUD005', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), user: 'system', action: 'AUTO_ALERT_GENERATED', details: 'Bumuo ng alerto sa panganib ng baha batay sa data ng panahon.'},
 ];
 
+
+// Data for Report Charts
+
+export const issueTrendsData = [
+    { date: 'Oct 1', MgaPeste: 30, Sakit: 20, Patubig: 15 },
+    { date: 'Oct 8', MgaPeste: 35, Sakit: 25, Patubig: 18 },
+    { date: 'Oct 15', MgaPeste: 45, Sakit: 22, Patubig: 25 },
+    { date: 'Oct 22', MgaPeste: 40, Sakit: 30, Patubig: 20 },
+    { date: 'Oct 29', MgaPeste: 50, Sakit: 35, Patubig: 22 },
+];
+
+export const smsVolumeData = [
+    { name: 'Lun', total: 120 },
+    { name: 'Mar', total: 150 },
+    { name: 'Miy', total: 110 },
+    { name: 'Huw', total: 180 },
+    { name: 'Biy', total: 220 },
+    { name: 'Sab', total: 90 },
+    { name: 'Lin', total: 70 },
+];
+
+export const adviceSuccessData = [
+    { status: 'Inaprubahan', value: 75, fill: 'hsl(var(--chart-1))' },
+    { status: 'In-edit', value: 15, fill: 'hsl(var(--chart-2))' },
+    { status: 'Tinanggihan', value: 10, fill: 'hsl(var(--destructive))' },
+];
+
+export const cropStageData = [
+    { name: 'Pagtatanim', value: 142, fill: 'hsl(var(--chart-1))' },
+    { name: 'Paglago', value: 115, fill: 'hsl(var(--chart-2))' },
+    { name: 'Pamumulaklak', value: 50, fill: 'hsl(var(--chart-3))' },
+    { name: 'Pag-aani', value: 90, fill: 'hsl(var(--chart-4))' },
+];
+
+
 export const topKeywordsData = [
   { word: 'Peste', count: 45 },
   { word: 'Pataba', count: 38 },
@@ -360,4 +364,142 @@ export const smsPeakHoursData = [
   { hour: '2-4pm', messages: 25 },
   { hour: '4-6pm', messages: 35 },
   { hour: '6-8pm', messages: 20 },
+];
+
+export const interventionSupportData = [
+    { month: "Jan", visits: 5 },
+    { month: "Feb", visits: 8 },
+    { month: "Mar", visits: 12 },
+    { month: "Apr", visits: 7 },
+    { month: "May", visits: 15 },
+];
+
+export const validationQueueData = [
+    { name: 'Nakabinbin', value: 25, fill: 'hsl(var(--chart-2))' },
+    { name: 'Nalutas', value: 175, fill: 'hsl(var(--chart-1))' },
+];
+
+export const advisoryDeliveryData = [
+    { name: 'Tagumpay', value: 98, fill: 'hsl(var(--chart-1))' },
+    { name: 'Nabigo', value: 2, fill: 'hsl(var(--destructive))' },
+];
+
+export const followUpRateData = [
+    { name: 'May Follow-up', value: 35, fill: 'hsl(var(--chart-1))' },
+    { name: 'Walang Follow-up', value: 65, fill: 'hsl(var(--chart-2))' },
+];
+
+export const aiConfidenceTrendData = [
+    { date: 'Week 1', confidence: 78 },
+    { date: 'Week 2', confidence: 82 },
+    { date: 'Week 3', confidence: 85 },
+    { date: 'Week 4', confidence: 88 },
+];
+
+export const correctionLogData = [
+    { type: 'Intent', count: 12 },
+    { type: 'Entity', count: 25 },
+    { type: 'Advice', count: 8 },
+];
+
+export const aiAgreementData = [
+    { name: 'Approved As-is', value: 75, fill: 'hsl(var(--chart-1))' },
+    { name: 'Revised', value: 15, fill: 'hsl(var(--chart-2))' },
+    { name: 'Rejected', value: 10, fill: 'hsl(var(--destructive))' },
+];
+
+export const highRiskKeywordData = [
+    { word: 'peste', count: 58 },
+    { word: 'namamatay', count: 23 },
+    { word: 'spray', count: 41 },
+    { word: 'lason', count: 15 },
+    { word: 'emergency', count: 9 },
+];
+
+export const outbreakAlertData = [
+    { date: 'Oct 1', ulat: 5 },
+    { date: 'Oct 8', ulat: 7 },
+    { date: 'Oct 15', ulat: 6 },
+    { date: 'Oct 22', ulat: 18 },
+    { date: 'Oct 29', ulat: 15 },
+];
+
+export const severityIndexData = [
+    { name: 'Peste', mild: 20, moderate: 15, severe: 5 },
+    { name: 'Sakit', mild: 15, moderate: 25, severe: 10 },
+    { name: 'Panahon', mild: 5, moderate: 10, severe: 15 },
+];
+
+export const recommendationTypeData = [
+    { name: 'Pag-iwas', count: 120 },
+    { name: 'Paggamot', count: 95 },
+    { name: 'Pagsubaybay', count: 70 },
+    { name: 'Referral', count: 45 },
+];
+
+export const messageLengthData = [
+    { range: '1-20', count: 50 },
+    { range: '21-80', count: 250 },
+    { range: '81-160', count: 150 },
+];
+
+export const clarificationNeededData = [
+    { name: 'Nangailangan ng Clarification', value: 18, fill: 'hsl(var(--chart-2))' },
+    { name: 'Hindi Kinailangan', value: 82, fill: 'hsl(var(--chart-1))' },
+];
+
+export const topInquiriesData = [
+    { question: 'Gamot sa peste?', count: 88 },
+    { question: 'Bakit dilaw ang dahon?', count: 72 },
+    { question: 'Paano magpataba?', count: 65 },
+    { question: 'Kailan mag-ani?', count: 51 },
+    { question: 'Magkano ang presyo?', count: 45 },
+];
+
+export const seasonalTrendData = [
+    { month: 'Jan', reports: 120 },
+    { month: 'Feb', reports: 150 },
+    { month: 'Mar', reports: 180 },
+    { month: 'Apr', reports: 220 },
+    { month: 'May', reports: 300 },
+    { month: 'Jun', reports: 250 },
+    { month: 'Jul', reports: 280 },
+    { month: 'Aug', reports: 320 },
+    { month: 'Sep', reports: 290 },
+    { month: 'Oct', reports: 260 },
+    { month: 'Nov', reports: 200 },
+    { month: 'Dec', reports: 150 },
+];
+
+export const farmerEngagementData = [
+    { type: 'First-time', count: 50 },
+    { type: 'Repeat', count: 150 },
+    { type: 'Frequent', count: 80 },
+];
+
+export const geographicHotspotData = [
+    { zone: 'Zone 1', issues: 5 },
+    { zone: 'Zone 2', issues: 12 },
+    { zone: 'Zone 3', issues: 25 },
+    { zone: 'Zone 4', issues: 8 },
+    { zone: 'Zone 5', issues: 15 },
+    { zone: 'Zone 6', issues: 9 },
+    { zone: 'Zone 7', issues: 18 },
+];
+
+export const smsDeliveryStatusData = [
+    { name: 'Napadala', value: 995, fill: 'hsl(var(--chart-1))' },
+    { name: 'Nabigo', value: 5, fill: 'hsl(var(--destructive))' },
+];
+
+export const messageToneData = [
+    { tone: 'Neutral', count: 250, fill: 'hsl(var(--chart-1))' },
+    { tone: 'Nag-aalala', count: 120, fill: 'hsl(var(--chart-2))' },
+    { tone: 'Kritikal', count: 50, fill: 'hsl(var(--destructive))' },
+    { tone: 'Positibo', count: 80, fill: 'hsl(var(--chart-3))' },
+];
+
+export const responseTimeData = [
+    { name: 'Average', time: 5.5 },
+    { name: '90th Percentile', time: 15.2 },
 ];
