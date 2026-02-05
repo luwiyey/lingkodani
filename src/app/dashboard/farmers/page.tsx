@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +51,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+type SortableKeys = keyof Farmer | 'location';
+
 export default function FarmersPage() {
   const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status !== 'pending_approval'));
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
@@ -60,21 +62,23 @@ export default function FarmersPage() {
   const router = useRouter();
 
   const [filters, setFilters] = useState<{
-    barangays: string[];
+    sitios: string[];
     crops: string[];
     statuses: Farmer['status'][];
   }>({
-    barangays: [],
+    sitios: [],
     crops: [],
     statuses: [],
   });
+  
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
 
-  const allBarangays = [...new Set(initialFarmers.map((f) => f.barangay))];
+  const allSitios = [...new Set(initialFarmers.map((f) => f.sitio))].sort();
   const allCrops = [...new Set(initialFarmers.flatMap((f) => f.crops))];
   const allStatuses: Farmer['status'][] = ['active', 'inactive'];
 
   const handleFilterChange = (
-    type: 'barangays' | 'crops' | 'statuses',
+    type: 'sitios' | 'crops' | 'statuses',
     value: string
   ) => {
     setFilters((prev) => {
@@ -84,6 +88,15 @@ export default function FarmersPage() {
       return { ...prev, [type]: newValues };
     });
   };
+  
+  const requestSort = (key: SortableKeys) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+        direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
 
   const generateQr = (farmerId: string) => {
     const url = `${window.location.origin}/dashboard/farmers/${farmerId}`;
@@ -115,19 +128,50 @@ export default function FarmersPage() {
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
   };
 
-  const filteredFarmers = farmers.filter(farmer => {
+  const filteredFarmers = useMemo(() => farmers.filter(farmer => {
     const searchMatch = (
       farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      farmer.barangay.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmer.sitio.toLowerCase().includes(searchTerm.toLowerCase()) ||
       farmer.crops.join(', ').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const barangayMatch = filters.barangays.length === 0 || filters.barangays.includes(farmer.barangay);
+    const sitioMatch = filters.sitios.length === 0 || filters.sitios.includes(farmer.sitio);
     const cropMatch = filters.crops.length === 0 || farmer.crops.some(crop => filters.crops.includes(crop));
     const statusMatch = filters.statuses.length === 0 || filters.statuses.includes(farmer.status);
 
-    return searchMatch && barangayMatch && cropMatch && statusMatch;
-  });
+    return searchMatch && sitioMatch && cropMatch && statusMatch;
+  }), [farmers, searchTerm, filters]);
+  
+  const sortedFarmers = useMemo(() => {
+    let sortableItems = [...filteredFarmers];
+    if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+            let aValue, bValue;
+            
+            const key = sortConfig.key;
+
+            if (key === 'location') {
+                aValue = `${a.sitio}, ${a.barangay}`;
+                bValue = `${b.sitio}, ${b.barangay}`;
+            } else if (key === 'crops') {
+                aValue = a.crops.join(', ');
+                bValue = b.crops.join(', ');
+            } else {
+                 aValue = a[key as keyof Farmer];
+                 bValue = b[key as keyof Farmer];
+            }
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+    }
+    return sortableItems;
+  }, [filteredFarmers, sortConfig]);
 
   return (
     <>
@@ -173,19 +217,19 @@ export default function FarmersPage() {
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <MapPin className="mr-2 h-4 w-4" />
-                    <span>Lokasyon (Barangay)</span>
+                    <span>Lokasyon (Sitio)</span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent>
-                      <DropdownMenuLabel>Pumili ng Barangay</DropdownMenuLabel>
+                      <DropdownMenuLabel>Pumili ng Sitio</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      {allBarangays.map((barangay) => (
+                      {allSitios.map((sitio) => (
                         <DropdownMenuCheckboxItem
-                          key={barangay}
-                          checked={filters.barangays.includes(barangay)}
-                          onCheckedChange={() => handleFilterChange('barangays', barangay)}
+                          key={sitio}
+                          checked={filters.sitios.includes(sitio)}
+                          onCheckedChange={() => handleFilterChange('sitios', sitio)}
                         >
-                          {barangay}
+                          {sitio}
                         </DropdownMenuCheckboxItem>
                       ))}
                     </DropdownMenuSubContent>
@@ -238,7 +282,6 @@ export default function FarmersPage() {
                 
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline">Pagbukud-bukurin</Button>
         </div>
 
 
@@ -247,15 +290,35 @@ export default function FarmersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[250px]">Pangalan</TableHead>
-                  <TableHead>Lokasyon</TableHead>
-                  <TableHead>Mga Pananim</TableHead>
-                  <TableHead>Katayuan</TableHead>
-                  <TableHead className="text-right w-[240px]">Mga Aksyon</TableHead>
+                    <TableHead className="w-[250px] cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                        <div className="flex items-center">
+                            Pangalan
+                            {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                        </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('location')}>
+                        <div className="flex items-center">
+                            Lokasyon
+                            {sortConfig?.key === 'location' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                        </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('crops')}>
+                        <div className="flex items-center">
+                            Mga Pananim
+                            {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                        </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('status')}>
+                        <div className="flex items-center">
+                            Katayuan
+                            {sortConfig?.key === 'status' && (sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />)}
+                        </div>
+                    </TableHead>
+                    <TableHead className="text-right w-[240px]">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredFarmers.map((farmer) => (
+                {sortedFarmers.map((farmer) => (
                   <TableRow key={farmer.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
@@ -365,5 +428,3 @@ export default function FarmersPage() {
     </>
   );
 }
-
-    
