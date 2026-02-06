@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LayoutGrid,
   GraduationCap,
+  Leaf,
 } from "lucide-react";
 import {
   Sidebar,
@@ -145,8 +146,19 @@ function NavMenu({ items }: { items: NavItem[] }) {
 export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
-      <div className="h-20 shrink-0" />
-      <SidebarContent className="pt-6 flex-1 flex flex-col">
+       <div className="flex h-20 items-center justify-center p-2 group-data-[state=expanded]:px-4">
+          <Link href="/dashboard" className="flex w-full items-center gap-2">
+            <div className="bg-sidebar-primary rounded-lg p-2 text-sidebar-primary-foreground shrink-0">
+              <Leaf className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
+              <span className="font-semibold text-lg text-sidebar-foreground truncate">
+                Lingkod-Ani
+              </span>
+            </div>
+          </Link>
+        </div>
+      <SidebarContent className="pt-0 flex-1 flex-col">
         <div>
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
             <NavMenu items={barangayNavItems} />
