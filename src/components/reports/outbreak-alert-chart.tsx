@@ -7,7 +7,7 @@ import { outbreakAlertData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -69,6 +70,18 @@ export function OutbreakAlertChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Mga Alerto sa Peste</CardTitle>
@@ -92,9 +105,9 @@ export function OutbreakAlertChart() {
               Sinusubaybayan ng chart na ito ang mga biglaang pagtaas sa bilang ng mga ulat tungkol sa parehong uri ng peste o sakit sa isang maikling panahon, na maaaring magpahiwatig ng isang outbreak.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -103,7 +116,7 @@ export function OutbreakAlertChart() {
                 <p><strong>Rekomendasyon:</strong> Kapag nakakita ng ganitong spike, agad na suriin ang mga kaugnay na ulat. Gamitin ang "Geographic Hotspot" chart upang makita kung ang outbreak ay puro sa isang partikular na lugar. Magpadala ng isang targeted na alerto sa mga magsasaka sa apektadong lugar na may mga tagubilin sa pag-iwas at pagkontrol.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

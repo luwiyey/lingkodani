@@ -7,7 +7,7 @@ import { messageLengthData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -68,6 +69,18 @@ export function MessageLengthChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Haba ng Mensahe</CardTitle>
@@ -91,9 +104,9 @@ export function MessageLengthChart() {
               Sinusuri ng ulat na ito ang haba ng mga papasok na mensahe ng SMS. Ang pag-unawa kung gaano kahaba o kaikli ang mga mensahe ng magsasaka ay makakatulong sa pag-optimize ng pag-unawa ng AI at sa pag-disenyo ng mga epektibong tugon.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -102,7 +115,7 @@ export function MessageLengthChart() {
                 <p><strong>Rekomendasyon:</strong> Para sa mga "Long" na mensahe, tiyaking kaya ng AI na i-parse ang maraming pangungusap at mga ideya. Para sa mga "Short" na mensahe, ang AI ay dapat na mahusay sa pag-unawa ng mga keyword kahit na limitado ang konteksto. Ang pag-alam sa mga haba na ito ay nakakatulong din na matiyak na ang mga awtomatikong tugon ay angkop din sa haba.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

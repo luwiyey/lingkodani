@@ -7,7 +7,7 @@ import { adviceSuccessData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -71,6 +72,18 @@ export function AdviceSuccessChart() {
                         <Expand className="h-4 w-4" />
                     </Button>
                 </DialogTrigger>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                          <Download className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>I-save ang graph bilang PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <div className="grid gap-0.5">
                   <CardTitle>Mga Rate ng Pagpapatunay ng Payo</CardTitle>
@@ -94,9 +107,9 @@ export function AdviceSuccessChart() {
                     Isang detalyadong pagtingin sa kung paano pinangangasiwaan ng mga admin ang mga mungkahi ng AI. Ang mataas na rate ng pag-apruba ay nagpapahiwatig ng malakas na pagganap at pagkakahanay ng AI sa kaalaman ng eksperto.
                 </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto pr-4">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-4">
                 <div className="h-[400px] w-full mt-4">
-                    <ChartContainer config={chartConfig}>
+                    <ChartContainer config={chartConfig} className="w-full h-full">
                         {renderChart()}
                     </ChartContainer>
                 </div>
@@ -105,7 +118,7 @@ export function AdviceSuccessChart() {
                     <p><strong>Rekomendasyon:</strong> Suriin ang mga "In-edit" na kaso. Tukuyin ang mga karaniwang tema sa mga pagwawasto (hal., mga lokal na pangalan ng peste, partikular na dosis ng pataba) at gamitin ang mga ito bilang data para sa susunod na pagsasanay sa AI upang mapabuti pa ang katumpakan nito.</p>
                 </div>
             </div>
-             <DialogFooter className="pt-4">
+             <DialogFooter className="pt-4 border-t">
                 <DialogClose asChild>
                     <Button type="button" variant="secondary">Isara</Button>
                 </DialogClose>

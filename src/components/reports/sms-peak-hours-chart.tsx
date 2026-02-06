@@ -7,7 +7,7 @@ import { smsPeakHoursData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -83,6 +84,18 @@ export function SmsPeakHoursChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Mga Oras na may Pinakamaraming Mensahe</CardTitle>
@@ -106,9 +119,9 @@ export function SmsPeakHoursChart() {
               Ipinapakita ng ulat na ito kung anong mga oras sa isang araw pinaka-aktibo ang mga magsasaka sa pagpapadala ng SMS. Ang impormasyong ito ay mahalaga para sa pag-iskedyul ng mga tauhan at pagtiyak na may sapat na suporta sa mga oras ng mataas na demand.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -117,7 +130,7 @@ export function SmsPeakHoursChart() {
                 <p><strong>Rekomendasyon:</strong> Tiyaking may sapat na bilang ng mga AEW o admin na naka-duty sa mga peak hours upang mabilis na ma-validate at matugunan ang mga papasok na mensahe. Sa mga oras na mababa ang aktibidad, maaaring mag-focus ang mga tauhan sa ibang mga gawain tulad ng paglikha ng nilalaman para sa knowledge base o pagpaplano ng mga field visit.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

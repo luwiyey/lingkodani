@@ -7,7 +7,7 @@ import { languageUsageData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -71,6 +72,18 @@ export function LanguageUsageChart() {
                         <Expand className="h-4 w-4" />
                     </Button>
                 </DialogTrigger>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                          <Download className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>I-save ang graph bilang PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <div className="grid gap-0.5">
                   <CardTitle>Paggamit ng Wika</CardTitle>
@@ -94,9 +107,9 @@ export function LanguageUsageChart() {
                 Ipinapakita ng ulat na ito ang distribusyon ng mga wika at diyalekto na ginagamit ng mga magsasaka sa kanilang mga mensahe. Ito ay kritikal na impormasyon para sa pag-optimize ng AI's Natural Language Understanding (NLU) model.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -105,7 +118,7 @@ export function LanguageUsageChart() {
                 <p><strong>Rekomendasyon:</strong> Tiyaking ang AI model ay patuloy na sinasanay sa lahat ng mga wikang ito, lalo na sa Taglish. Kolektahin ang mas maraming data ng pagsasanay para sa mga hindi gaanong karaniwang wika tulad ng Ilocano upang mapabuti ang pagganap ng AI para sa mga nagsasalita nito. Maaari ring maging kapaki-pakinabang na magkaroon ng mga template ng tugon sa iba't ibang wika.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

@@ -7,7 +7,7 @@ import { farmerEngagementData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -68,6 +69,18 @@ export function FarmerEngagementChart() {
                         <Expand className="h-4 w-4" />
                     </Button>
                 </DialogTrigger>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                          <Download className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>I-save ang graph bilang PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <div className="grid gap-0.5">
                   <CardTitle>Antas ng Pakikilahok ng Magsasaka</CardTitle>
@@ -91,9 +104,9 @@ export function FarmerEngagementChart() {
               Kinakategorya nito ang mga magsasaka batay sa kung gaano sila kadalas nakikipag-ugnayan sa sistema. Ang pag-unawa sa engagement ay tumutulong na sukatin ang pagiging kapaki-pakinabang at pag-ampon ng platform.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -102,7 +115,7 @@ export function FarmerEngagementChart() {
                 <p><strong>Rekomendasyon:</strong> Mag-isip ng mga paraan upang hikayatin ang mga "First-time" na gumagamit na maging "Repeat" reporters. Maaaring ito ay sa pamamagitan ng mga follow-up na mensahe na nagtatanong kung naging kapaki-pakinabang ang payo o pagpapadala ng mga pangkalahatang tip. Kilalanin o bigyan ng insentibo ang mga "Frequent" reporters para sa kanilang patuloy na kontribusyon sa data ng komunidad.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

@@ -7,7 +7,7 @@ import { aiConfidenceTrendData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, TrendingUp } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, TrendingUp, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -69,6 +70,18 @@ export function AIConfidenceTrendChart() {
                         <Expand className="h-4 w-4" />
                     </Button>
                 </DialogTrigger>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                          <Download className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>I-save ang graph bilang PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
              </div>
             <div className="grid gap-0.5">
                 <CardTitle>Trend ng Kumpiyansa ng AI</CardTitle>
@@ -95,9 +108,9 @@ export function AIConfidenceTrendChart() {
                 Sinusubaybayan ng chart na ito ang average na confidence score ng AI sa pag-interpret ng mga SMS sa paglipas ng panahon. Ang isang pataas na trend ay nagpapahiwatig na ang AI ay natututo at gumagaling mula sa mga feedback at pagwawasto.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -106,7 +119,7 @@ export function AIConfidenceTrendChart() {
                 <p><strong>Rekomendasyon:</strong> Ipagpatuloy ang regular na pagbibigay ng feedback at pagwawasto sa mga mungkahi ng AI. Bigyang-pansin ang mga mensahe kung saan biglang bumababa ang kumpiyansa; maaaring ito ay nagpapahiwatig ng isang bagong uri ng tanong o isang kumplikadong isyu na kailangang pag-aralan.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

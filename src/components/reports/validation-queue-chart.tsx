@@ -7,7 +7,7 @@ import { validationQueueData } from "@/lib/data"
 import { ChartConfig, ChartContainer } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -74,6 +75,18 @@ export function ValidationQueueChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Validation Queue</CardTitle>
@@ -97,9 +110,9 @@ export function ValidationQueueChart() {
               Ipinapakita ng ulat na ito ang real-time na katayuan ng validation queue. Sinusukat nito ang bilang ng mga mensahe na nangangailangan ng manu-manong pagsusuri mula sa isang AEW kumpara sa mga nalutas na.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -108,7 +121,7 @@ export function ValidationQueueChart() {
                 <p><strong>Rekomendasyon:</strong> Subaybayan ang bilang ng mga nakabinbin. Kung ito ay patuloy na tumataas, maaaring ito ay isang senyales na kulang ang mga tauhan upang mapangasiwaan ang dami ng mga mensahe. Gamitin ang data na ito upang matukoy ang mga oras na may pinakamataas na pila at mag-iskedyul ng mga tauhan nang naaayon.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

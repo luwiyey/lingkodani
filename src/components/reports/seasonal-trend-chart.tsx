@@ -7,7 +7,7 @@ import { seasonalTrendData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -69,6 +70,18 @@ export function SeasonalTrendChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Dami ng Ulat Ayon sa Panahon</CardTitle>
@@ -92,9 +105,9 @@ export function SeasonalTrendChart() {
                 Ipinapakita ng ulat na ito ang buwanang dami ng mga ulat ng SMS sa buong taon. Ang pag-unawa sa mga seasonal na pattern ay mahalaga para sa pag-anticipate ng mga pangangailangan at pagpaplano ng mga aktibidad ng barangay.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -103,7 +116,7 @@ export function SeasonalTrendChart() {
                 <p><strong>Rekomendasyon:</strong> Gamitin ang data na ito para sa proaktibong pagpaplano. Bago ang mga peak na buwan, mag-broadcast ng mga advisory tungkol sa paghahanda para sa tag-ulan. Tiyaking may sapat na stock ng mga mapagkukunan na may kaugnayan sa mga isyu sa tag-ulan (hal., fungicides, tulong para sa baha). I-schedule ang mga AEW para sa mas maraming field visit sa mga buwan na ito.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

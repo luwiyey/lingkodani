@@ -7,7 +7,7 @@ import { severityIndexData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -70,6 +71,18 @@ export function SeverityIndexChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Antas ng Kalubhaan ng Isyu</CardTitle>
@@ -93,9 +106,9 @@ export function SeverityIndexChart() {
               Kinakategorya ng chart na ito ang bawat uri ng isyu (Peste, Sakit, Panahon) batay sa kalubhaan ng mga iniulat na sintomas. Nakakatulong ito na i-prioritize ang mga isyu na may pinakamalaking epekto.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -104,7 +117,7 @@ export function SeverityIndexChart() {
                 <p><strong>Rekomendasyon:</strong> Bigyan ng mas mataas na prayoridad ang mga ulat na may kaugnayan sa "{mostSevereCategory.name}". Tiyaking ang mga AEW ay may sapat na kaalaman at kagamitan para sa pag-diagnose at paggamot ng mga sakit ng halaman. Isaalang-alang ang paglikha ng mas maraming nilalaman sa knowledge base tungkol sa pag-iwas sa mga sakit.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

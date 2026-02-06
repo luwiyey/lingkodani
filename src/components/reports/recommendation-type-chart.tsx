@@ -7,7 +7,7 @@ import { recommendationTypeData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -68,6 +69,18 @@ export function RecommendationTypeChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Uri ng Mga Inirekomendang Payo</CardTitle>
@@ -91,9 +104,9 @@ export function RecommendationTypeChart() {
               Kinakategorya ng ulat na ito ang mga payo na ibinibigay ng sistema. Ang pag-unawa kung anong uri ng tulong ang pinakamadalas na ibinibigay ay nakakatulong na matukoy ang mga pangunahing tungkulin ng sistema.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -102,7 +115,7 @@ export function RecommendationTypeChart() {
                 <p><strong>Rekomendasyon:</strong> Palakasin ang mga payo sa "Pag-iwas" sa pamamagitan ng pag-broadcast ng mga seasonal na tip. Para sa mga "Referral", pag-aralan ang mga kasong ito upang makita kung may mga umuulit na tema na maaaring matutunan ng AI, upang mabawasan ang bilang ng mga referral sa hinaharap.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

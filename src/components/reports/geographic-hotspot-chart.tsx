@@ -7,7 +7,7 @@ import { geographicHotspotData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -68,6 +69,18 @@ export function GeographicHotspotChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Mga Hotspot ng Suliranin</CardTitle>
@@ -91,9 +104,9 @@ export function GeographicHotspotChart() {
               Ipinapakita ng mapang ito kung saan sa barangay nagkukumpol ang mga isyu. Ang pagtukoy sa mga "hotspot" na ito ay nagbibigay-daan para sa naka-target na interbensyon at mahusay na paglalaan ng mga mapagkukunan.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -102,7 +115,7 @@ export function GeographicHotspotChart() {
                 <p><strong>Rekomendasyon:</strong> I-prioritize ang {topHotspot.zone} para sa susunod na field visit ng Agricultural Extension Worker (AEW). Suriin ang mga partikular na ulat mula sa zone na ito upang maunawaan ang kalikasan ng mga isyu (hal., ito ba ay isang partikular na peste? Isang problema sa patubig?). Magplano ng isang seminar o focus group discussion para sa mga magsasaka sa zone na iyon.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>

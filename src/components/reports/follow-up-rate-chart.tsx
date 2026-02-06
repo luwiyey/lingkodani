@@ -7,7 +7,7 @@ import { followUpRateData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand } from "lucide-react";
+import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const chartConfig = {
@@ -71,6 +72,18 @@ export function FollowUpRateChart() {
                       <Expand className="h-4 w-4" />
                   </Button>
               </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>I-save ang graph bilang PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Rate ng Follow-up</CardTitle>
@@ -94,9 +107,9 @@ export function FollowUpRateChart() {
                 Sinusukat ng ulat na ito ang porsyento ng mga magsasaka na nagpapadala ng isa pang mensahe (isang follow-up na tanong) pagkatapos makatanggap ng payo mula sa sistema.
             </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
             <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
             </div>
@@ -105,7 +118,7 @@ export function FollowUpRateChart() {
                 <p><strong>Rekomendasyon:</strong> Para makasiguro, mag-sample ng ilang mga "Walang Follow-up" na kaso at magpadala ng proaktibong mensahe, tulad ng, "Kumusta po, naging epektibo po ba ang payo namin para sa inyong [isyu]? Mayroon pa po ba kaming maitutulong?" Makakatulong ito na kumpirmahin ang kasiyahan ng magsasaka at magpakita ng mahusay na serbisyo.</p>
             </div>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
                 <Button type="button" variant="secondary">Isara</Button>
             </DialogClose>
