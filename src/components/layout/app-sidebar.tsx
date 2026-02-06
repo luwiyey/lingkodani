@@ -145,7 +145,8 @@ function NavMenu({ items }: { items: NavItem[] }) {
 export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="pt-4 flex-1 flex flex-col">
+      <div className="h-20 shrink-0" />
+      <SidebarContent className="pt-6 flex-1 flex flex-col">
         <div>
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
             <NavMenu items={barangayNavItems} />
