@@ -11,8 +11,54 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Trash2 } from 'lucide-react';
+import { Trash2, PlusCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+
+type Template = {
+  id: string;
+  text: string;
+  keywords: string[];
+};
+
+type TemplateCategory = {
+  label: string;
+  id: string;
+  templates: Template[];
+};
+
+const initialTemplateCategories: TemplateCategory[] = [
+    {
+        label: "Pagkumpirma",
+        id: "confirmation",
+        templates: [
+            { id: 't1', text: "Salamat sa iyong ulat. Pinoproseso na namin ito.", keywords: ['salamat', 'ulat', 'proseso'] },
+            { id: 't2', text: "Natanggap na namin ang iyong kahilingan at babalikan ka namin sa lalong madaling panahon.", keywords: ['kahilingan', 'natanggap'] }
+        ]
+    },
+    {
+        label: "Pagsisiyasat",
+        id: "investigation",
+        templates: [
+            { id: 't3', text: "Salamat sa ulat. Maaari mo bang ilarawan pa ang problema o magpadala ng larawan?", keywords: ['larawan', 'ilarawan', 'problema', 'magpadala'] }
+        ]
+    },
+    {
+        label: "Resolusyon",
+        id: "resolution",
+        templates: [
+             { id: 't4', text: "Ang iyong kahilingan para sa [Resource] ay naaprubahan na. Maaari mo nang kunin ang iyong voucher.", keywords: ['voucher', 'aprubado', 'kunin'] }
+        ]
+    },
+    {
+        label: "Emergency",
+        id: "emergency",
+        templates: [
+            { id: 't5', text: "Para sa mga emergency, mangyaring tumawag sa aming hotline sa [Numero ng Hotline].", keywords: ['emergency', 'hotline', 'tawag'] }
+        ]
+    }
+];
+
 
 export default function BarangaySettingsPage() {
     const { toast } = useToast();
@@ -23,28 +69,54 @@ export default function BarangaySettingsPage() {
     const [replyStartTime, setReplyStartTime] = useState("08:00");
     const [replyEndTime, setReplyEndTime] = useState("19:00");
     const [adminPhone, setAdminPhone] = useState("+639123456789");
+    
+    const [templateCategories, setTemplateCategories] = useState<TemplateCategory[]>(initialTemplateCategories);
 
-    const [templates, setTemplates] = useState([
-        "Salamat sa iyong ulat. Pinoproseso na namin ito.",
-        "Natanggap na namin ang iyong kahilingan at babalikan ka namin sa lalong madaling panahon.",
-        "Para sa mga emergency, mangyaring tumawag sa aming hotline sa [Numero ng Hotline].",
-    ]);
-    const [newTemplate, setNewTemplate] = useState('');
+    const [newTemplateText, setNewTemplateText] = useState('');
+    const [newTemplateKeywords, setNewTemplateKeywords] = useState('');
+    const [newTemplateCategory, setNewTemplateCategory] = useState('');
+
 
     const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
     const [autoReplyTimeout, setAutoReplyTimeout] = useState(3);
+    
+    const allTemplates = templateCategories.flatMap(c => c.templates);
 
 
     const handleAddTemplate = () => {
-        if (newTemplate.trim()) {
-            setTemplates([...templates, newTemplate.trim()]);
-            setNewTemplate('');
-            toast({ title: "Tagumpay!", description: "Nalagay na ang bagong template." });
+        if (!newTemplateText.trim() || !newTemplateCategory) {
+            toast({ title: "Kulang ang Impormasyon", description: "Mangyaring punan ang text ng template at pumili ng kategorya.", variant: 'destructive' });
+            return;
         }
+
+        const newTemplate: Template = {
+            id: `t${Date.now()}`,
+            text: newTemplateText.trim(),
+            keywords: newTemplateKeywords.split(',').map(kw => kw.trim()).filter(Boolean),
+        };
+
+        setTemplateCategories(prev =>
+            prev.map(cat =>
+                cat.id === newTemplateCategory
+                    ? { ...cat, templates: [...cat.templates, newTemplate] }
+                    : cat
+            )
+        );
+
+        setNewTemplateText('');
+        setNewTemplateKeywords('');
+        setNewTemplateCategory('');
+        toast({ title: "Tagumpay!", description: "Nalagay na ang bagong template." });
     };
 
-    const handleDeleteTemplate = (index: number) => {
-        setTemplates(templates.filter((_, i) => i !== index));
+    const handleDeleteTemplate = (categoryId: string, templateId: string) => {
+        setTemplateCategories(prev =>
+            prev.map(cat =>
+                cat.id === categoryId
+                    ? { ...cat, templates: cat.templates.filter(t => t.id !== templateId) }
+                    : cat
+            )
+        );
         toast({ title: "Tagumpay!", description: "Natanggal na ang template.", variant: 'destructive' });
     };
 
@@ -160,28 +232,61 @@ export default function BarangaySettingsPage() {
               <CardTitle>Mga Template ng Tugon</CardTitle>
               <CardDescription>Gumawa at mamahala ng mga paunang-ginawang template para sa mabilis na pagtugon sa SMS.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="space-y-2">
-                  <Label>Mga Kasalukuyang Template</Label>
-                  <div className="space-y-2">
-                      {templates.map((template, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                              <p className="flex-1 text-sm">{template}</p>
-                              <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplate(index)}>
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                          </div>
-                      ))}
-                  </div>
-              </div>
+          <CardContent className="space-y-6">
+              <Accordion type="multiple" className="w-full">
+                  {templateCategories.map(category => (
+                      <AccordionItem key={category.id} value={category.id}>
+                          <AccordionTrigger>{category.label}</AccordionTrigger>
+                          <AccordionContent className="space-y-2 pt-2">
+                              {category.templates.length > 0 ? category.templates.map(template => (
+                                  <div key={template.id} className="flex items-start gap-2 p-3 border rounded-md bg-muted/50">
+                                      <div className="flex-1">
+                                        <p className="text-sm">{template.text}</p>
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {template.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
+                                        </div>
+                                      </div>
+                                      <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplate(category.id, template.id)}>
+                                          <Trash2 className="w-4 h-4 text-destructive" />
+                                      </Button>
+                                  </div>
+                              )) : (
+                                  <p className="text-sm text-muted-foreground text-center p-4">Walang template sa kategoryang ito.</p>
+                              )}
+                          </AccordionContent>
+                      </AccordionItem>
+                  ))}
+              </Accordion>
                <Separator />
-              <div className="space-y-2">
-                  <Label htmlFor="new-template">Magdagdag ng Bagong Template</Label>
-                  <Textarea id="new-template" value={newTemplate} onChange={(e) => setNewTemplate(e.target.value)} placeholder="Isulat ang iyong bagong template dito..." />
-              </div>
+               <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Magdagdag ng Bagong Template</h3>
+                  <div className="space-y-2">
+                      <Label htmlFor="new-template-text">Text ng Template</Label>
+                      <Textarea id="new-template-text" value={newTemplateText} onChange={(e) => setNewTemplateText(e.target.value)} placeholder="Isulat ang iyong bagong template dito..." />
+                  </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="new-template-keywords">Mga Keyword (paghiwalayin ng kuwit)</Label>
+                          <Input id="new-template-keywords" value={newTemplateKeywords} onChange={(e) => setNewTemplateKeywords(e.target.value)} placeholder="hal. voucher, binhi, kunin" />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="new-template-category">Kategorya</Label>
+                          <Select value={newTemplateCategory} onValueChange={setNewTemplateCategory}>
+                              <SelectTrigger id="new-template-category">
+                                  <SelectValue placeholder="Pumili ng kategorya..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {templateCategories.map(cat => (
+                                      <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                   </div>
+               </div>
           </CardContent>
           <CardFooter>
-              <Button onClick={handleAddTemplate}>I-save ang Template</Button>
+              <Button onClick={handleAddTemplate}><PlusCircle className="mr-2"/> I-save ang Bagong Template</Button>
           </CardFooter>
       </Card>
       
@@ -206,14 +311,14 @@ export default function BarangaySettingsPage() {
                   </div>
                   <div className="space-y-2">
                       <Label htmlFor="auto-reply-template">Template para sa Auto-Reply</Label>
-                      <Select defaultValue={templates[2]}>
+                      <Select defaultValue={allTemplates.find(t => t.id === 't5')?.text}>
                           <SelectTrigger id="auto-reply-template">
                               <SelectValue placeholder="Pumili ng template na ipapadala..." />
                           </SelectTrigger>
                           <SelectContent>
-                              {templates.map((template, index) => (
-                                  <SelectItem key={index} value={template}>
-                                      {template}
+                              {allTemplates.map((template) => (
+                                  <SelectItem key={template.id} value={template.text}>
+                                      {template.text}
                                   </SelectItem>
                               ))}
                           </SelectContent>
