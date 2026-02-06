@@ -39,14 +39,14 @@ export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center">
+            <CardHeader className="flex flex-row items-start justify-between">
               <div className="grid gap-2">
                 <CardTitle>Live na Feed ng SMS</CardTitle>
                 <CardDescription>
                   Mga papasok na ulat mula sa mga magsasaka na nangangailangan ng pagpapatunay.
                 </CardDescription>
               </div>
-              <Button asChild size="sm" className="ml-auto gap-1">
+              <Button asChild size="sm" className="gap-1 flex-shrink-0">
                 <Link href={feedHref}>
                   Tingnan Lahat
                   <ArrowUpRight className="h-4 w-4" />
@@ -82,4 +82,3 @@ export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?
         </Card>
     )
 }
-
