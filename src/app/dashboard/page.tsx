@@ -1,5 +1,6 @@
 
-import { Users, ShieldAlert, Inbox, Sprout, Wheat, CheckCircle2, Wind, Sun, Droplets } from "lucide-react";
+import { Users, ShieldAlert, Sprout, Wheat, CheckCircle2, Wind, Sun, Droplets, UserPlus } from "lucide-react";
+import Link from "next/link";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { SmsFeedPreview } from "@/components/dashboard/sms-feed-preview";
 import { ResourceStatus } from "@/components/dashboard/resource-status";
@@ -7,6 +8,7 @@ import { DailySmsChart } from "@/components/dashboard/daily-sms-chart";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { farmers as allFarmers, smsMessages, cropStageData } from "@/lib/data";
 
 const alerts = [
     {
@@ -44,44 +46,65 @@ const alerts = [
 ]
 
 export default function DashboardPage() {
+    const approvedFarmersCount = allFarmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
+    const pendingFarmersCount = allFarmers.filter(f => f.status === 'pending_approval').length;
+    const pestAlertsCount = smsMessages.filter(m => m.parsedIntent === 'PEST_DISEASE' && m.status === 'pending_approval').length;
+    
+    const plantingCount = cropStageData.find(d => d.name === 'Pagtatanim')?.value ?? 0;
+    const growingCount = cropStageData.find(d => d.name === 'Paglago')?.value ?? 0;
+    const harvestingCount = cropStageData.find(d => d.name === 'Pag-aani')?.value ?? 0;
+
   return (
     <div className="flex flex-col gap-6">
        <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
         <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
       </div>
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <StatCard
-          title="Kabuuang Magsasaka"
-          value="347"
-          icon={Users}
-          description="+5 mula noong nakaraang linggo"
-          iconBgClass="bg-primary/10"
-        />
-        <StatCard
-          title="Mga Alertong Pang-peste"
-          value="3"
-          icon={ShieldAlert}
-          description="Mga aktibong ulat ng outbreak"
-          iconBgClass="bg-destructive/10"
-        />
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <Link href="/dashboard/farmers">
+            <StatCard
+            title="Kabuuang Magsasaka"
+            value={String(approvedFarmersCount)}
+            icon={Users}
+            description="Lahat ng aprubadong magsasaka"
+            iconBgClass="bg-primary/10"
+            />
+        </Link>
+        <Link href="/dashboard/farmers/approvals">
+            <StatCard
+            title="Nakabinbing Pag-apruba"
+            value={String(pendingFarmersCount)}
+            icon={UserPlus}
+            description="Bagong rehistro para suriin"
+            iconBgClass="bg-yellow-500/10"
+            />
+        </Link>
+        <Link href="/dashboard/sms-feed">
+            <StatCard
+            title="Mga Alertong Pang-peste"
+            value={String(pestAlertsCount)}
+            icon={ShieldAlert}
+            description="Mga aktibong ulat ng peste"
+            iconBgClass="bg-destructive/10"
+            />
+        </Link>
         <StatCard
           title="Nasa Pagtatanim"
-          value="142"
+          value={String(plantingCount)}
           icon={Sprout}
           description="Bilang ng mga sakahan sa yugto ng pagtatanim"
           iconBgClass="bg-blue-500/10"
         />
         <StatCard
           title="Nasa Paglago"
-          value="115"
+          value={String(growingCount)}
           icon={Wheat}
           description="Bilang ng mga sakahan sa yugto ng paglago"
           iconBgClass="bg-amber-500/10"
         />
         <StatCard
           title="Handa nang Anihin"
-          value="90"
+          value={String(harvestingCount)}
           icon={CheckCircle2}
           description="Bilang ng mga sakahan na malapit nang mag-ani"
           iconBgClass="bg-green-500/10"
