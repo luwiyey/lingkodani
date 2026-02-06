@@ -11,3 +11,4 @@ import '@/ai/flows/calculate-fertilizer.ts';
 import '@/ai/flows/calculate-pesticide.ts';
 import '@/ai/flows/calculate-profit.ts';
 import '@/ai/flows/search-knowledge-base.ts';
+import '@/ai/tools/google-search.ts';
