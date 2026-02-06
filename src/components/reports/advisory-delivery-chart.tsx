@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip } from "recharts"
+import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { advisoryDeliveryData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -34,7 +34,7 @@ export function AdvisoryDeliveryChart() {
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Tooltip content={<ChartTooltipContent nameKey="name" />} />
+        <RechartsTooltip content={<ChartTooltipContent nameKey="name" />} />
         <Legend content={<ChartLegendContent nameKey="name" />} />
         <Pie data={advisoryDeliveryData} dataKey="value" nameKey="name" innerRadius="60%">
           {advisoryDeliveryData.map((entry) => (
