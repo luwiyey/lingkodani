@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { Pie, PieChart, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { messageToneData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -38,7 +38,7 @@ export function MessageToneChart() {
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Tooltip content={<ChartTooltipContent nameKey="tone" />} />
+        <RechartsTooltip content={<ChartTooltipContent nameKey="tone" />} />
         <Legend content={<ChartLegendContent nameKey="tone" />} />
         <Pie data={messageToneData} dataKey="count" nameKey="tone" innerRadius="60%">
           {messageToneData.map((entry) => (
@@ -110,7 +110,7 @@ export function MessageToneChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

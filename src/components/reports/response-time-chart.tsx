@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { responseTimeData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
@@ -38,7 +38,7 @@ export function ResponseTimeChart() {
       <BarChart data={responseTimeData} accessibilityLayer>
         <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
         <YAxis unit="m" tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
-        <Tooltip cursor={false} content={<ChartTooltipContent />} />
+        <RechartsTooltip cursor={false} content={<ChartTooltipContent />} />
         <Bar dataKey="time" fill="var(--color-time)" radius={4} />
       </BarChart>
     </ResponsiveContainer>
@@ -105,7 +105,7 @@ export function ResponseTimeChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

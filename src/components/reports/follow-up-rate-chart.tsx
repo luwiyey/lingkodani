@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { followUpRateData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
@@ -37,7 +37,7 @@ export function FollowUpRateChart() {
       <BarChart data={followUpRateData} layout="vertical" margin={{ left: 20, right: 20 }}>
           <XAxis type="number" dataKey="value" hide />
           <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} />
-          <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+          <RechartsTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
           <Bar dataKey="value" radius={5}>
               {followUpRateData.map((item) => (
                   <Cell key={item.name} fill={item.fill} />
@@ -108,7 +108,7 @@ export function FollowUpRateChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

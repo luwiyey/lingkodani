@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { interventionSupportData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
@@ -38,7 +38,7 @@ export function InterventionSupportChart() {
       <BarChart data={interventionSupportData} accessibilityLayer>
         <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
         <YAxis tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
-          <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+          <RechartsTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
         <Bar dataKey="visits" fill="var(--color-visits)" radius={4} />
       </BarChart>
     </ResponsiveContainer>
@@ -105,7 +105,7 @@ export function InterventionSupportChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

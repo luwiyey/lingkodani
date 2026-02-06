@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { outbreakAlertData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
@@ -39,7 +39,7 @@ export function OutbreakAlertChart() {
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
           <YAxis tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-          <Tooltip content={<ChartTooltipContent />} />
+          <RechartsTooltip content={<ChartTooltipContent />} />
           <Line type="monotone" dataKey="ulat" stroke="var(--color-ulat)" strokeWidth={2} dot={true} />
       </LineChart>
     </ResponsiveContainer>
@@ -106,7 +106,7 @@ export function OutbreakAlertChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

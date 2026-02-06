@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { smsVolumeData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -40,7 +40,7 @@ export function SmsVolumeChart() {
         <BarChart data={smsVolumeData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
           <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8}/>
           <YAxis tickLine={false} axisLine={false} tickMargin={8}/>
-          <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+          <RechartsTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
             <Legend content={<ChartLegendContent />} />
           <Bar dataKey="total" fill="var(--color-total)" radius={4} />
         </BarChart>
@@ -108,7 +108,7 @@ export function SmsVolumeChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

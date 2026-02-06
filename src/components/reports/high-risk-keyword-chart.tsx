@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { highRiskKeywordData } from "@/lib/data";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
@@ -45,7 +45,7 @@ export function HighRiskKeywordChart() {
                 tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
                 width={80}
              />
-             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+             <RechartsTooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
              <Bar dataKey="count" fill="var(--color-count)" radius={4} />
         </BarChart>
     </ResponsiveContainer>
@@ -112,7 +112,7 @@ export function HighRiskKeywordChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

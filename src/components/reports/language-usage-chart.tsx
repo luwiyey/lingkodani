@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, ResponsiveContainer, Tooltip, Legend, Cell } from "recharts"
+import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { languageUsageData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -36,7 +36,7 @@ export function LanguageUsageChart() {
   const renderChart = () => (
      <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-            <Tooltip content={<ChartTooltipContent nameKey="language" />} />
+            <RechartsTooltip content={<ChartTooltipContent nameKey="language" />} />
             <Legend content={<ChartLegendContent nameKey="language"/>} />
             <Pie data={languageUsageData} dataKey="value" nameKey="language" innerRadius="50%" outerRadius="80%">
                  {languageUsageData.map((entry, index) => (
@@ -108,7 +108,7 @@ export function LanguageUsageChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>

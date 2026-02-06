@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { severityIndexData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -37,7 +37,7 @@ export function SeverityIndexChart() {
       <BarChart data={severityIndexData} layout="vertical" stackOffset="expand">
           <XAxis type="number" hide />
           <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} width={50} />
-          <Tooltip content={<ChartTooltipContent />} />
+          <RechartsTooltip content={<ChartTooltipContent />} />
           <Legend content={<ChartLegendContent />} />
           <Bar dataKey="mild" stackId="a" fill="var(--color-mild)" />
           <Bar dataKey="moderate" stackId="a" fill="var(--color-moderate)" />
@@ -107,7 +107,7 @@ export function SeverityIndexChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full h-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
