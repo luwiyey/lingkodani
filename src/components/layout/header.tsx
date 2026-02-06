@@ -33,12 +33,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const { state, isMobile } = useSidebar();
 
   const isDisasterModeActive = pathname.startsWith('/dashboard/disaster');
   const [showDialog, setShowDialog] = useState(false);
@@ -60,6 +61,17 @@ export function Header() {
     <>
       <header className="sticky top-0 z-30 flex h-20 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-6">
         <SidebarTrigger />
+        
+        {state === 'collapsed' && !isMobile && (
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="bg-primary rounded-lg p-2 text-primary-foreground">
+                <Leaf className="h-5 w-5" />
+            </div>
+            <span className="font-semibold text-lg truncate">
+              Lingkod-Ani
+            </span>
+          </Link>
+        )}
         
         <div className="flex-1" />
 
