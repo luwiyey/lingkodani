@@ -7,13 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, PlusCircle } from 'lucide-react';
+import { Trash2, PlusCircle, FilePen } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 type Template = {
   id: string;
@@ -71,16 +75,59 @@ export default function BarangaySettingsPage() {
     const [adminPhone, setAdminPhone] = useState("+639123456789");
     
     const [templateCategories, setTemplateCategories] = useState<TemplateCategory[]>(initialTemplateCategories);
+    
+    // State for Dialogs
+    const [isAddDialogOpen, setAddDialogOpen] = useState(false);
+    const [editingTemplate, setEditingTemplate] = useState<{ categoryId: string; template: Template } | null>(null);
+    const [deletingTemplate, setDeletingTemplate] = useState<{ categoryId: string; templateId: string } | null>(null);
 
+    // State for controlled components in dialogs
     const [newTemplateText, setNewTemplateText] = useState('');
     const [newTemplateKeywords, setNewTemplateKeywords] = useState('');
     const [newTemplateCategory, setNewTemplateCategory] = useState('');
+    
+    const [editedTemplateText, setEditedTemplateText] = useState('');
+    const [editedTemplateKeywords, setEditedTemplateKeywords] = useState('');
 
 
     const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
     const [autoReplyTimeout, setAutoReplyTimeout] = useState(3);
     
     const allTemplates = templateCategories.flatMap(c => c.templates);
+
+    const handleOpenEditDialog = (categoryId: string, template: Template) => {
+        setEditingTemplate({ categoryId, template });
+        setEditedTemplateText(template.text);
+        setEditedTemplateKeywords(template.keywords.join(', '));
+    };
+
+    const handleUpdateTemplate = () => {
+        if (!editingTemplate) return;
+
+        const { categoryId, template } = editingTemplate;
+        
+        setTemplateCategories(prev =>
+            prev.map(cat =>
+                cat.id === categoryId
+                    ? {
+                        ...cat,
+                        templates: cat.templates.map(t =>
+                            t.id === template.id
+                                ? {
+                                    ...t,
+                                    text: editedTemplateText,
+                                    keywords: editedTemplateKeywords.split(',').map(kw => kw.trim()).filter(Boolean),
+                                  }
+                                : t
+                        ),
+                      }
+                    : cat
+            )
+        );
+
+        toast({ title: "Tagumpay!", description: "Nai-update na ang template." });
+        setEditingTemplate(null);
+    };
 
 
     const handleAddTemplate = () => {
@@ -102,14 +149,18 @@ export default function BarangaySettingsPage() {
                     : cat
             )
         );
-
+        
+        setAddDialogOpen(false);
         setNewTemplateText('');
         setNewTemplateKeywords('');
         setNewTemplateCategory('');
         toast({ title: "Tagumpay!", description: "Nalagay na ang bagong template." });
     };
 
-    const handleDeleteTemplate = (categoryId: string, templateId: string) => {
+    const handleDeleteTemplate = () => {
+        if (!deletingTemplate) return;
+        const { categoryId, templateId } = deletingTemplate;
+
         setTemplateCategories(prev =>
             prev.map(cat =>
                 cat.id === categoryId
@@ -118,6 +169,7 @@ export default function BarangaySettingsPage() {
             )
         );
         toast({ title: "Tagumpay!", description: "Natanggal na ang template.", variant: 'destructive' });
+        setDeletingTemplate(null);
     };
 
     const handleSaveChanges = () => {
@@ -227,70 +279,60 @@ export default function BarangaySettingsPage() {
         </CardFooter>
       </Card>
 
-      <Card>
-          <CardHeader>
-              <CardTitle>Mga Template ng Tugon</CardTitle>
-              <CardDescription>Gumawa at mamahala ng mga paunang-ginawang template para sa mabilis na pagtugon sa SMS.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-              <Accordion type="multiple" className="w-full">
-                  {templateCategories.map(category => (
-                      <AccordionItem key={category.id} value={category.id}>
-                          <AccordionTrigger>{category.label}</AccordionTrigger>
-                          <AccordionContent className="space-y-2 pt-2">
-                              {category.templates.length > 0 ? category.templates.map(template => (
-                                  <div key={template.id} className="flex items-start gap-2 p-3 border rounded-md bg-muted/50">
-                                      <div className="flex-1">
-                                        <p className="text-sm">{template.text}</p>
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                            {template.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
-                                        </div>
-                                      </div>
-                                      <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplate(category.id, template.id)}>
-                                          <Trash2 className="w-4 h-4 text-destructive" />
-                                      </Button>
-                                  </div>
-                              )) : (
-                                  <p className="text-sm text-muted-foreground text-center p-4">Walang template sa kategoryang ito.</p>
-                              )}
-                          </AccordionContent>
-                      </AccordionItem>
-                  ))}
-              </Accordion>
-               <Separator />
-               <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Magdagdag ng Bagong Template</h3>
-                  <div className="space-y-2">
-                      <Label htmlFor="new-template-text">Text ng Template</Label>
-                      <Textarea id="new-template-text" value={newTemplateText} onChange={(e) => setNewTemplateText(e.target.value)} placeholder="Isulat ang iyong bagong template dito..." />
-                  </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="new-template-keywords">Mga Keyword (paghiwalayin ng kuwit)</Label>
-                          <Input id="new-template-keywords" value={newTemplateKeywords} onChange={(e) => setNewTemplateKeywords(e.target.value)} placeholder="hal. voucher, binhi, kunin" />
-                      </div>
-                      <div className="space-y-2">
-                          <Label htmlFor="new-template-category">Kategorya</Label>
-                          <Select value={newTemplateCategory} onValueChange={setNewTemplateCategory}>
-                              <SelectTrigger id="new-template-category">
-                                  <SelectValue placeholder="Pumili ng kategorya..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {templateCategories.map(cat => (
-                                      <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                   </div>
-               </div>
-          </CardContent>
-          <CardFooter>
-              <Button onClick={handleAddTemplate}><PlusCircle className="mr-2"/> I-save ang Bagong Template</Button>
-          </CardFooter>
-      </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Mga Template ng Tugon</CardTitle>
+                <CardDescription>Pindutin ang isang kategorya para tingnan, i-edit, o tanggalin ang mga template.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {templateCategories.map((category) => (
+                        <Dialog key={category.id}>
+                            <DialogTrigger asChild>
+                                <button className="w-full text-left p-4 border rounded-lg hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring">
+                                    <h3 className="font-semibold">{category.label}</h3>
+                                    <p className="text-sm text-muted-foreground">{category.templates.length} templates</p>
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-xl">
+                                <DialogHeader>
+                                    <DialogTitle>Mga Template: {category.label}</DialogTitle>
+                                    <DialogDescription>Pamahalaan ang mga template para sa kategoryang ito.</DialogDescription>
+                                </DialogHeader>
+                                <ScrollArea className="h-72 my-4">
+                                    <div className="space-y-3 pr-4">
+                                        {category.templates.map((template) => (
+                                            <div key={template.id} className="flex items-start gap-2 p-3 border rounded-md">
+                                                <div className="flex-1">
+                                                    <p className="text-sm">{template.text}</p>
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {template.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <Button size="icon" variant="ghost" onClick={() => handleOpenEditDialog(category.id, template)}>
+                                                        <FilePen className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button size="icon" variant="ghost" onClick={() => setDeletingTemplate({ categoryId: category.id, templateId: template.id })}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {category.templates.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Walang template sa kategoryang ito.</p>}
+                                    </div>
+                                </ScrollArea>
+                            </DialogContent>
+                        </Dialog>
+                    ))}
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={() => setAddDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Magdagdag ng Template</Button>
+            </CardFooter>
+        </Card>
       
-      <Card>
+        <Card>
           <CardHeader>
               <CardTitle>Pagtugon sa Emergency</CardTitle>
               <CardDescription>Awtomatikong magpadala ng paunang tugon para sa mga mensaheng may mataas na prayoridad kung walang aksyon mula sa admin.</CardDescription>
@@ -334,6 +376,81 @@ export default function BarangaySettingsPage() {
             <Button onClick={handleSaveChanges}>I-save ang mga Setting ng Emergency</Button>
           </CardFooter>
       </Card>
+      
+      {/* Add Template Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Magdagdag ng Bagong Template</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="new-template-text">Text ng Template</Label>
+                        <Textarea id="new-template-text" value={newTemplateText} onChange={(e) => setNewTemplateText(e.target.value)} placeholder="Isulat ang iyong bagong template dito..." />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-template-keywords">Mga Keyword (paghiwalayin ng kuwit)</Label>
+                        <Input id="new-template-keywords" value={newTemplateKeywords} onChange={(e) => setNewTemplateKeywords(e.target.value)} placeholder="hal. voucher, binhi, kunin" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-template-category">Kategorya</Label>
+                        <Select value={newTemplateCategory} onValueChange={setNewTemplateCategory}>
+                            <SelectTrigger id="new-template-category">
+                                <SelectValue placeholder="Pumili ng kategorya..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {templateCategories.map(cat => (
+                                    <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Kanselahin</Button></DialogClose>
+                    <Button onClick={handleAddTemplate}>I-save</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        {/* Edit Template Dialog */}
+        <Dialog open={!!editingTemplate} onOpenChange={() => setEditingTemplate(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>I-edit ang Template</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-template-text">Text ng Template</Label>
+                        <Textarea id="edit-template-text" value={editedTemplateText} onChange={(e) => setEditedTemplateText(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-template-keywords">Mga Keyword (paghiwalayin ng kuwit)</Label>
+                        <Input id="edit-template-keywords" value={editedTemplateKeywords} onChange={(e) => setEditedTemplateKeywords(e.target.value)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Kanselahin</Button></DialogClose>
+                    <Button onClick={handleUpdateTemplate}>I-save ang mga Pagbabago</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deletingTemplate} onOpenChange={() => setDeletingTemplate(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang template na ito.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeletingTemplate(null)}>Kanselahin</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteTemplate}>Ituloy</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
 
     </div>
   );
