@@ -106,7 +106,7 @@ export function Header() {
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Mga Notipikasyon</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/sms-feed')} className="cursor-pointer">
               <div className="flex flex-col">
                 <span className="font-semibold">
                   Bagong SMS mula kay Maria Clara
@@ -116,7 +116,7 @@ export function Header() {
                 </span>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/reports')} className="cursor-pointer">
               <div className="flex flex-col">
                 <span className="font-semibold">Handa na ang Lingguhang Ulat</span>
                 <span className="text-xs text-muted-foreground">
@@ -124,7 +124,7 @@ export function Header() {
                 </span>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/inventory')} className="cursor-pointer">
               <div className="flex flex-col">
                 <span className="font-semibold">Alerto sa Imbentaryo</span>
                 <span className="text-xs text-muted-foreground">
