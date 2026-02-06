@@ -36,24 +36,39 @@ function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onAct
     React.useEffect(() => { setIsClient(true); }, []);
 
     const intentLabel = typeInfo[message.parsedIntent]?.label || 'Hindi Kilala';
+    const IntentIcon = typeInfo[message.parsedIntent]?.icon || MessageSquare;
 
     return (
-        <Card className="flex flex-col h-full bg-card">
+        <Card className="flex flex-col h-full bg-sidebar text-sidebar-foreground border-sidebar-border">
             <CardContent className="p-4 space-y-4 flex flex-col flex-1">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                             <AvatarImage src={`https://picsum.photos/seed/${message.farmerId}/32/32`} alt={message.farmerName} />
+                        <Avatar className="w-10 h-10 border-2 border-background/50">
+                             <AvatarImage src={`https://picsum.photos/seed/${message.farmerId}/40/40`} alt={message.farmerName} />
                              <AvatarFallback>{message.farmerName.charAt(0)}</AvatarFallback>
                          </Avatar>
-                        <span className="font-semibold">{message.farmerName}</span>
+                         <div>
+                            <span className="font-semibold">{message.farmerName}</span>
+                            <p className="text-xs text-sidebar-foreground/70">{message.phone}</p>
+                         </div>
                     </div>
-                    <time className="text-xs text-muted-foreground whitespace-nowrap">
-                        {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
-                    </time>
+                    <div className="text-right flex-shrink-0">
+                        <time className="text-xs text-sidebar-foreground/70 block">
+                            {isClient ? new Date(message.timestamp).toLocaleDateString([], {
+                                month: 'short',
+                                day: 'numeric',
+                            }) : ''}
+                        </time>
+                        <time className="text-xs text-sidebar-foreground/70 block">
+                            {isClient ? new Date(message.timestamp).toLocaleTimeString([], {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                            }) : ''}
+                        </time>
+                    </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground flex-grow">"{message.message}"</p>
+                <p className="text-sm flex-grow">"{message.message}"</p>
 
                 <div className="space-y-3">
                     <div className="flex items-center gap-2">
@@ -61,26 +76,29 @@ function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onAct
                         <h3 className="text-sm font-semibold">Pagsusuri ng AI</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">Layunin: {intentLabel}</Badge>
-                        <Badge variant={message.safetyFlag === 'High' ? 'destructive' : 'secondary'}>Panganib: {message.safetyFlag}</Badge>
-                        <Badge variant="secondary">Kumpiyansa: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
-                        {message.tone && <Badge variant="secondary">Tono: {message.tone}</Badge>}
+                         <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">
+                            <IntentIcon className="w-3 h-3 mr-1.5"/>
+                            {intentLabel}
+                        </Badge>
+                        <Badge variant={message.safetyFlag === 'High' ? 'destructive' : 'outline'} className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">{message.safetyFlag} Risk</Badge>
+                        <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Conf: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                        {message.tone && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Tono: {message.tone}</Badge>}
                     </div>
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
                     <div className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)}>
+                        <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className="bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary">
                             <MessageSquare className="mr-2 h-4 w-4" />
-                            Aprubahan ang Tugon
+                            Aprubahan
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)}>
+                        <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80">
                             <Send className="mr-2 h-4 w-4" />
-                            Manu-manong Tugon
+                            Manwal
                         </Button>
                     </div>
                     {message.parsedIntent === 'REQUEST' && (
-                        <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className="self-start">
+                        <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80 w-full">
                             <Wrench className="mr-2 h-4 w-4" />
                             Maghanap ng Kagamitan
                         </Button>
