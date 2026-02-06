@@ -10,3 +10,4 @@ import '@/ai/flows/diagnose-plant-problem.ts';
 import '@/ai/flows/calculate-fertilizer.ts';
 import '@/ai/flows/calculate-pesticide.ts';
 import '@/ai/flows/calculate-profit.ts';
+import '@/ai/flows/search-knowledge-base.ts';
