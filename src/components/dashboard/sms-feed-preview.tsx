@@ -60,17 +60,17 @@ export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?
                     return (
                     <div key={message.id} className="flex items-start gap-4">
                         <TypeIcon className="h-5 w-5 text-muted-foreground mt-1" />
-                        <div className="flex-1">
-                            <p className="text-sm font-medium leading-none">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium leading-none truncate">
                                 {message.farmerName}
                             </p>
                             <p className="text-sm text-muted-foreground truncate">
                                 {message.message}
                             </p>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
                             <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground whitespace-nowrap">
                             {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null}
                             </div>
                         </div>
