@@ -356,7 +356,7 @@ export default function InventoryPage() {
                         </div>
                     </div>
                   </TableHead>
-                  <TableHead className="text-right">Mga Aksyon</TableHead>
+                  <TableHead className="text-right static">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -367,7 +367,7 @@ export default function InventoryPage() {
                     <TableCell>{resource.stock}</TableCell>
                     <TableCell>{resource.unit}</TableCell>
                     <TableCell>{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right static">
                         <div className="flex flex-wrap justify-end gap-2">
                            <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
                            <AlertDialog>
