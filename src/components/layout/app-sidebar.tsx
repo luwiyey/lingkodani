@@ -146,18 +146,16 @@ function NavMenu({ items }: { items: NavItem[] }) {
 export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
-      <div className="flex h-20 items-center justify-center p-2 group-data-[state=expanded]:px-4">
-          <Link href="/dashboard" className="flex w-full items-center gap-2 group-data-[state=collapsed]:hidden">
-            <div className="bg-sidebar-primary rounded-lg p-2 text-sidebar-primary-foreground shrink-0">
-              <Leaf className="h-5 w-5" />
+      <div className="flex h-20 items-center px-4 group-data-[state=collapsed]:hidden">
+        <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="bg-sidebar-primary rounded-lg p-2 text-sidebar-primary-foreground">
+                <Leaf className="h-5 w-5" />
             </div>
-            <div className="flex flex-col overflow-hidden">
-              <span className="font-semibold text-lg text-sidebar-foreground truncate">
+            <span className="font-semibold text-lg text-sidebar-foreground truncate">
                 Lingkod-Ani
-              </span>
-            </div>
-          </Link>
-        </div>
+            </span>
+        </Link>
+      </div>
       <SidebarContent className="pt-0 flex-1 flex-col">
         <div>
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
