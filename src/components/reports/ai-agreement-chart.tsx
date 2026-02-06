@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip } from "recharts"
+import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { aiAgreementData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -36,7 +36,7 @@ export function AIAgreementChart() {
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Tooltip content={<ChartTooltipContent nameKey="name" />} />
+        <RechartsTooltip content={<ChartTooltipContent nameKey="name" />} />
         <Legend content={<ChartLegendContent nameKey="name" />} />
         <Pie data={aiAgreementData} dataKey="value" nameKey="name" innerRadius="60%">
           {aiAgreementData.map((entry) => (
