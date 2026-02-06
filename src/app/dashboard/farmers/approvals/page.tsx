@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { farmers as initialFarmers } from '@/lib/data';
 import type { Farmer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,11 @@ export default function ApprovalsPage() {
   const [pendingFarmers, setPendingFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status === 'pending_approval'));
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleApproval = (farmerId: string, isApproved: boolean) => {
     const farmer = pendingFarmers.find(f => f.id === farmerId);
@@ -103,7 +108,7 @@ export default function ApprovalsPage() {
                     <TableCell className="font-medium">{farmer.name}</TableCell>
                     <TableCell>{farmer.phone}</TableCell>
                     <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
-                    <TableCell>{new Date(farmer.registrationDate).toLocaleString()}</TableCell>
+                    <TableCell>{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col space-y-2 items-end">
                         <Button size="sm" onClick={() => handleApproval(farmer.id, true)} className="w-[120px]">
