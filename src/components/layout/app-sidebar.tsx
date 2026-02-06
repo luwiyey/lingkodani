@@ -28,6 +28,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Collapsible,
@@ -144,19 +145,24 @@ function NavMenu({ items }: { items: NavItem[] }) {
 }
 
 export function AppSidebar() {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
   return (
     <Sidebar collapsible="icon">
-      <div className="flex h-20 items-center px-4 group-data-[state=collapsed]:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="bg-sidebar-primary rounded-lg p-2 text-sidebar-primary-foreground">
-                <Leaf className="h-5 w-5" />
-            </div>
-            <span className="font-semibold text-lg text-sidebar-foreground truncate">
-                Lingkod-Ani
-            </span>
-        </Link>
+      <div className="flex h-20 items-center px-4">
+        {!isCollapsed && (
+          <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="bg-sidebar-primary rounded-lg p-2 text-sidebar-primary-foreground">
+                  <Leaf className="h-5 w-5" />
+              </div>
+              <span className="font-semibold text-lg text-sidebar-foreground truncate">
+                  Lingkod-Ani
+              </span>
+          </Link>
+        )}
       </div>
-      <SidebarContent className="pt-0 flex-1 flex-col">
+      <SidebarContent className="pt-0 flex-1 flex flex-col">
         <div>
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
             <NavMenu items={barangayNavItems} />
