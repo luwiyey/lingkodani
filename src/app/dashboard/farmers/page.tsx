@@ -322,7 +322,7 @@ export default function FarmersPage() {
                             </div>
                         </div>
                     </TableHead>
-                    <TableHead className="text-right w-[240px]">Mga Aksyon</TableHead>
+                    <TableHead className="text-right w-[240px] static">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -337,7 +337,7 @@ export default function FarmersPage() {
                     <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
                     <TableCell>{farmer.crops.join(', ')}</TableCell>
                     <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right static">
                         <div className="flex flex-wrap justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
                             <AlertDialog>
