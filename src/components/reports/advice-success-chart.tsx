@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, ResponsiveContainer, Cell } from "recharts"
+import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { adviceSuccessData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -36,7 +36,7 @@ export function AdviceSuccessChart() {
   const renderChart = () => (
      <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-            <ChartTooltipContent nameKey="status" />
+            <RechartsTooltip content={<ChartTooltipContent nameKey="status" />} />
             <ChartLegend content={<ChartLegendContent nameKey="status"/>} />
             <Pie data={adviceSuccessData} dataKey="value" nameKey="status" innerRadius="50%" outerRadius="80%">
                  {adviceSuccessData.map((entry, index) => (
