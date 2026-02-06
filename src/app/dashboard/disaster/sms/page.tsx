@@ -1,50 +1,101 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
-import { User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, ShieldAlert, CloudCog, Tractor } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, ShieldAlert, CloudCog, Tractor } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { smsMessages, resources } from '@/lib/data';
 import type { SmsMessage, Resource, SmsIntent } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DialogState = {
   type: 'approve' | 'manual' | 'find' | null;
   message: SmsMessage | null;
 }
 
-const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType, color: string }> = {
-    REGISTER: { label: 'Pagpaparehistro', icon: User, color: 'bg-blue-500'},
-    CROP_UPDATE: { label: 'Update sa Pananim', icon: FilePen, color: 'bg-teal-500' },
-    HARVEST: { label: 'Ulat ng Ani', icon: Sprout, color: 'bg-green-500' },
-    REQUEST: { label: 'Kahilingan', icon: Tractor, color: 'bg-orange-500' },
-    PEST_DISEASE: { label: 'Ulat ng Peste', icon: ShieldAlert, color: 'bg-red-500' },
-    WEATHER_HELP: { label: 'Tulong sa Panahon', icon: CloudCog, color: 'bg-sky-500'},
-    PRICE_CHECK: { label: 'Tsek sa Presyo', icon: MessageSquare, color: 'bg-indigo-500'},
-    EMERGENCY: { label: 'Emergency', icon: ShieldAlert, color: 'bg-destructive' },
-    UNKNOWN: { label: 'Hindi Kilala', icon: MessageSquare, color: 'bg-gray-500'},
+const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
+    REGISTER: { label: 'Pagpaparehistro', icon: User },
+    CROP_UPDATE: { label: 'Update sa Pananim', icon: FilePen },
+    HARVEST: { label: 'Ulat ng Ani', icon: Sprout },
+    REQUEST: { label: 'Tool Request', icon: Tractor },
+    PEST_DISEASE: { label: 'Ulat ng Peste', icon: ShieldAlert },
+    WEATHER_HELP: { label: 'Tulong sa Panahon', icon: CloudCog },
+    PRICE_CHECK: { label: 'Tsek sa Presyo', icon: MessageSquare },
+    EMERGENCY: { label: 'Emergency', icon: ShieldAlert },
+    UNKNOWN: { label: 'Hindi Kilala', icon: MessageSquare },
+}
+
+function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onActionClick: (type: DialogState['type'], message: SmsMessage) => void }) {
+    const [isClient, setIsClient] = React.useState(false);
+    React.useEffect(() => { setIsClient(true); }, []);
+
+    const intentLabel = typeInfo[message.parsedIntent]?.label || 'Hindi Kilala';
+
+    return (
+        <Card className="flex flex-col h-full bg-card">
+            <CardContent className="p-4 space-y-4 flex flex-col flex-1">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8">
+                             <AvatarImage src={`https://picsum.photos/seed/${message.farmerId}/32/32`} alt={message.farmerName} />
+                             <AvatarFallback>{message.farmerName.charAt(0)}</AvatarFallback>
+                         </Avatar>
+                        <span className="font-semibold">{message.farmerName}</span>
+                    </div>
+                    <time className="text-xs text-muted-foreground whitespace-nowrap">
+                        {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
+                    </time>
+                </div>
+
+                <p className="text-sm text-muted-foreground flex-grow">"{message.message}"</p>
+
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        <h3 className="text-sm font-semibold">Pagsusuri ng AI</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">Layunin: {intentLabel}</Badge>
+                        <Badge variant={message.safetyFlag === 'High' ? 'destructive' : 'secondary'}>Panganib: {message.safetyFlag}</Badge>
+                        <Badge variant="secondary">Kumpiyansa: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                        {message.tone && <Badge variant="secondary">Tono: {message.tone}</Badge>}
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Aprubahan ang Tugon
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)}>
+                            <Send className="mr-2 h-4 w-4" />
+                            Manu-manong Tugon
+                        </Button>
+                    </div>
+                    {message.parsedIntent === 'REQUEST' && (
+                        <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className="self-start">
+                            <Wrench className="mr-2 h-4 w-4" />
+                            Maghanap ng Kagamitan
+                        </Button>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
 }
 
 function DisasterSmsFeed() {
-    const [selectedMessage, setSelectedMessage] = React.useState<SmsMessage>(smsMessages[0]);
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [editableResponse, setEditableResponse] = React.useState('');
     const { toast } = useToast();
-    const [isClient, setIsClient] = React.useState(false);
-
-    React.useEffect(() => {
-        setIsClient(true);
-    }, []);
-
+    
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
         if (type === 'approve' && message.aiAdvice) {
@@ -65,158 +116,12 @@ function DisasterSmsFeed() {
         closeDialog();
     }
     
-    const TypeIcon = selectedMessage ? typeInfo[selectedMessage.parsedIntent].icon : MessageSquare;
-
   return (
     <>
-      <div className="grid md:grid-cols-[400px_1fr] gap-6 h-full">
-        <Card className="flex flex-col h-full">
-            <CardHeader>
-                <CardTitle>Disaster Response SMS Feed</CardTitle>
-                <CardDescription>Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 flex-1">
-              <ScrollArea className="h-full">
-                <div className="p-4 flex flex-col gap-4">
-                    {smsMessages.map(message => (
-                    <button 
-                        key={message.id} 
-                        className={cn(
-                            "flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-all hover:bg-accent",
-                            selectedMessage.id === message.id && "bg-muted"
-                        )}
-                        onClick={() => setSelectedMessage(message)}
-                    >
-                      <div className="flex w-full flex-col gap-1">
-                        <div className="flex items-center">
-                          <div className="flex items-center gap-2">
-                            <div className="font-semibold">{message.farmerName}</div>
-                          </div>
-                          <div className={cn( "ml-auto text-xs", selectedMessage.id === message.id ? "text-foreground" : "text-muted-foreground" )}>
-                            {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit'}) : null}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="line-clamp-2 text-xs text-muted-foreground">
-                        {message.message}
-                      </div>
-                       <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={message.status === 'pending_approval' ? 'secondary' : 'outline'}>{message.status.replace('_', ' ')}</Badge>
-                          <Badge variant={message.urgency === 'high' ? 'destructive' : 'outline'}>{message.urgency}</Badge>
-                      </div>
-                    </button>
-                    ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-        </Card>
-
-        {selectedMessage && (
-            <div className="bg-muted/40 dark:bg-muted/20 rounded-lg flex flex-col h-full">
-                <div className="p-6 border-b">
-                     <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                            <Avatar className="w-12 h-12">
-                                <AvatarImage src={`https://picsum.photos/seed/${selectedMessage.farmerId}/48/48`} alt={selectedMessage.farmerName} />
-                                <AvatarFallback>{selectedMessage.farmerName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <h2 className="font-bold text-lg">{selectedMessage.farmerName}</h2>
-                                <p className="text-sm text-muted-foreground">{selectedMessage.phone}</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                             <p className="text-xs text-muted-foreground">{isClient ? new Date(selectedMessage.timestamp).toLocaleString() : ''}</p>
-                        </div>
-                    </div>
-                    <p className="mt-6 text-md p-4 bg-background rounded-lg">"{selectedMessage.message}"</p>
-                </div>
-                
-                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-primary" /> Pagsusuri ng AI
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="flex flex-wrap gap-2 text-sm">
-                                {typeInfo[selectedMessage.parsedIntent] && (
-                                    <Badge variant="outline" className={cn("text-xs", typeInfo[selectedMessage.parsedIntent].color, "border-transparent text-white")}>
-                                        <TypeIcon className="w-3 h-3 mr-1" />
-                                        {typeInfo[selectedMessage.parsedIntent].label}
-                                    </Badge>
-                                )}
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                        <Badge variant={selectedMessage.safetyFlag === 'High' ? 'destructive' : selectedMessage.safetyFlag === 'Medium' ? 'secondary' : 'outline'}>
-                                            Panganib: {selectedMessage.safetyFlag}
-                                        </Badge>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                        <p>Sinuri ng AI ang panganib sa mensahe.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Badge variant="outline">Kumpiyansa: {(selectedMessage.aiConfidence * 100).toFixed(0)}%</Badge>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Kumpiyansa ng AI sa pag-unawa sa layunin.</p>
-                                        </TooltipContent>
-                                     </Tooltip>
-                                </TooltipProvider>
-                                {selectedMessage.tone && (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                            <Badge variant="outline">Tono: {selectedMessage.tone}</Badge>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                            <p>Ang emosyonal na tono na natukoy sa mensahe.</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                     <Card className="bg-background">
-                        <CardHeader className="pb-2">
-                             <CardTitle className="text-base flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4 text-primary" /> Iminungkahing Tugon ng AI
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">{selectedMessage.aiAdvice}</p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="p-6 mt-auto border-t bg-muted/40 dark:bg-muted/20 rounded-b-lg">
-                    <div className="flex flex-wrap gap-4 justify-end">
-                        <Button onClick={() => openDialog('approve', selectedMessage)} size="sm">
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Aprubahan ang Tugon
-                        </Button>
-                        <Button onClick={() => openDialog('manual', selectedMessage)} size="sm" variant="outline">
-                        <Send className="mr-2 h-4 w-4" />
-                        Manu-manong Tugon
-                        </Button>
-                        {selectedMessage.parsedIntent === 'REQUEST' && (
-                        <Button onClick={() => openDialog('find', selectedMessage)} size="sm" variant="outline">
-                            <Wrench className="mr-2 h-4 w-4" />
-                            Maghanap ng Kagamitan
-                        </Button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {smsMessages.map(message => (
+              <SmsMessageCard key={message.id} message={message} onActionClick={openDialog} />
+          ))}
       </div>
 
       <Dialog open={dialogState.type === 'approve'} onOpenChange={closeDialog}>
@@ -294,7 +199,7 @@ function DisasterSmsFeed() {
 
 export default function DisasterSmsPage() {
     return (
-        <div className="flex flex-col gap-6 h-[calc(100vh_-_theme(spacing.24))]">
+        <div className="flex flex-col gap-6 h-full">
             <div className="flex items-center justify-between p-4 rounded-lg bg-destructive text-destructive-foreground">
                 <div className='flex items-center gap-4'>
                     <AlertTriangle className="h-6 w-6" />
@@ -307,7 +212,7 @@ export default function DisasterSmsPage() {
                     </Link>
                 </Button>
             </div>
-            <div className="flex-1 h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
                 <DisasterSmsFeed />
             </div>
         </div>
