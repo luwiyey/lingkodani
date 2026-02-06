@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { aiConfidenceTrendData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
@@ -39,7 +39,7 @@ export function AIConfidenceTrendChart() {
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
             <YAxis unit="%" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-            <Tooltip content={<ChartTooltipContent />} />
+            <RechartsTooltip content={<ChartTooltipContent />} />
             <Line type="monotone" dataKey="confidence" stroke="var(--color-confidence)" strokeWidth={2} dot={true} />
         </LineChart>
     </ResponsiveContainer>
@@ -109,7 +109,7 @@ export function AIConfidenceTrendChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full aspect-video">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
