@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Pie, PieChart, ResponsiveContainer, Tooltip, Legend, Cell } from "recharts"
+import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { cropStageData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
@@ -37,7 +37,7 @@ export function CropStageChart() {
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-            <Tooltip content={<ChartTooltipContent nameKey="name" />} />
+            <RechartsTooltip content={<ChartTooltipContent nameKey="name" />} />
             <Legend content={<ChartLegendContent nameKey="name"/>} />
             <Pie data={cropStageData} dataKey="value" nameKey="name" innerRadius="50%" outerRadius="80%">
                  {cropStageData.map((entry, index) => (
@@ -115,7 +115,7 @@ export function CropStageChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
+            <div className="h-full w-full">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     {renderChart()}
                 </ChartContainer>
