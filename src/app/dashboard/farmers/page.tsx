@@ -290,7 +290,7 @@ export default function FarmersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                    <TableHead className="w-[250px] cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
                         <div className="flex items-center">
                             Pangalan
                              <div className="w-8 flex-shrink-0 flex justify-center">
@@ -322,7 +322,7 @@ export default function FarmersPage() {
                             </div>
                         </div>
                     </TableHead>
-                    <TableHead className="text-right w-[240px] static">Mga Aksyon</TableHead>
+                    <TableHead className="text-right">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -331,13 +331,13 @@ export default function FarmersPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <Image src={farmer.avatarUrl} alt={farmer.name} width={32} height={32} className="rounded-full object-cover" />
-                        <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline">{farmer.name}</Link>
+                        <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline break-words">{farmer.name}</Link>
                       </div>
                     </TableCell>
-                    <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
-                    <TableCell>{farmer.crops.join(', ')}</TableCell>
+                    <TableCell className="break-words">{farmer.sitio}, {farmer.barangay}</TableCell>
+                    <TableCell className="break-words">{farmer.crops.join(', ')}</TableCell>
                     <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
-                    <TableCell className="text-right static">
+                    <TableCell className="text-right">
                         <div className="flex flex-wrap justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
                             <AlertDialog>
@@ -444,3 +444,5 @@ export default function FarmersPage() {
     </>
   );
 }
+
+    
