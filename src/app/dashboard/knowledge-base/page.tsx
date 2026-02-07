@@ -226,7 +226,7 @@ export default function KnowledgeBasePage() {
                     <h2 className="text-lg font-semibold mb-4">Mga Kaugnay na Resulta mula sa Knowledge Base</h2>
                     <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                         {searchResults.articles.map((article) => (
-                            <Link key={article.id} href={`/dashboard/knowledge-base/${article.id}`} legacyBehavior>
+                            <Link key={article.id} href={`/dashboard/knowledge-base/${article.id}`}>
                                 <Card className="cursor-pointer hover:border-primary transition-colors h-full">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-lg">
@@ -297,7 +297,7 @@ export default function KnowledgeBasePage() {
         <h2 className="text-xl font-semibold tracking-tight mb-4">Lahat ng Artikulo sa Knowledge Base</h2>
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {knowledgeArticles.map((article) => (
-                <Link key={article.id} href={`/dashboard/knowledge-base/${article.id}`} legacyBehavior>
+                <Link key={article.id} href={`/dashboard/knowledge-base/${article.id}`}>
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg">
