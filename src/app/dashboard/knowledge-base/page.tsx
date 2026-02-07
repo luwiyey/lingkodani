@@ -11,11 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { suggestKnowledgeBaseArticles } from '@/ai/flows/suggest-knowledge-base-articles.ts';
-import { searchKnowledgeBase } from '@/ai/flows/search-knowledge-base.ts';
+import { suggestKnowledgeBaseArticles } from '@/ai/flows/suggest-knowledge-base-articles';
+import { searchKnowledgeBase } from '@/ai/flows/search-knowledge-base';
 
 type SuggestedArticle = {
     title: string;
