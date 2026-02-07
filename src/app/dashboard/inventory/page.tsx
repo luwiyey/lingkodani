@@ -321,7 +321,7 @@ export default function InventoryPage() {
 
         <Card>
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
@@ -357,7 +357,7 @@ export default function InventoryPage() {
                         </div>
                     </div>
                   </TableHead>
-                  <TableHead className="text-right static">Mga Aksyon</TableHead>
+                  <TableHead className="text-right">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -368,7 +368,7 @@ export default function InventoryPage() {
                     <TableCell>{resource.stock}</TableCell>
                     <TableCell className="break-words">{resource.unit}</TableCell>
                     <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right static">
+                    <TableCell className="text-right">
                         <div className="flex flex-wrap justify-end gap-2">
                            <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
                            <AlertDialog>
@@ -491,6 +491,8 @@ export default function InventoryPage() {
     </>
   );
 }
+
+    
 
     
 
