@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
 import { suggestKnowledgeBaseArticles } from '@/ai/flows/suggest-knowledge-base-articles';
 import { searchKnowledgeBase } from '@/ai/flows/search-knowledge-base';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type SuggestedArticle = {
     title: string;
@@ -32,6 +33,7 @@ export default function KnowledgeBasePage() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
+  const [selectedArticle, setSelectedArticle] = useState<KnowledgeArticle | null>(null);
   
   const { toast } = useToast();
 
@@ -196,7 +198,7 @@ export default function KnowledgeBasePage() {
         </Button>
       </form>
       
-      {isSearching && (
+      {isSearching ? (
         <div className="space-y-6">
             <Card>
                 <CardHeader>
@@ -210,9 +212,7 @@ export default function KnowledgeBasePage() {
                 </CardContent>
             </Card>
         </div>
-      )}
-
-      {searchResults ? (
+      ) : searchResults ? (
         <div className="space-y-6">
             <Card className="bg-primary/5 border-primary/20">
                 <CardHeader>
@@ -228,7 +228,7 @@ export default function KnowledgeBasePage() {
                     <h2 className="text-lg font-semibold mb-4">Mga Kaugnay na Resulta mula sa Knowledge Base</h2>
                     <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                         {searchResults.articles.map((article) => (
-                            <Card key={article.id}>
+                            <Card key={article.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => setSelectedArticle(article)}>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-lg">
                                         {article.type === 'audio' ? <Volume2/> : <FileText/>}
@@ -254,7 +254,7 @@ export default function KnowledgeBasePage() {
                 </div>
             )}
         </div>
-      ) : !isSearching && (
+      ) : (
         <Card>
             <CardHeader>
             <div className="flex items-center gap-2">
@@ -297,6 +297,116 @@ export default function KnowledgeBasePage() {
             </CardContent>
         </Card>
       )}
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold tracking-tight mb-4">Lahat ng Artikulo sa Knowledge Base</h2>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            {knowledgeArticles.map((article) => (
+                <Card key={article.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => setSelectedArticle(article)}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            {article.type === 'audio' ? <Volume2/> : <FileText/>}
+                            {article.title}
+                        </CardTitle>
+                        <CardDescription>{article.summary}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                            {article.keywords.map(kw => <Badge key={kw} variant="outline">{kw}</Badge>)}
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+      </div>
+
+        <Dialog open={isNewEntryDialogOpen} onOpenChange={setNewEntryDialogOpen}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Magdagdag ng Bagong Entry</DialogTitle>
+                    <DialogDescription>Punan ang mga detalye para sa bagong artikulo o audio story.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleAddNewEntry}>
+                    <div className="grid gap-6 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="type">Uri ng Content</Label>
+                             <Select name="type" defaultValue={newEntryType} onValueChange={(value: 'article' | 'audio') => setNewEntryType(value)}>
+                                <SelectTrigger id="type">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="article">Artikulo</SelectItem>
+                                    <SelectItem value="audio">Boses ng Magsasaka (Audio)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="title">Pamagat</Label>
+                            <Input id="title" name="title" required />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="summary">Maikling Buod</Label>
+                            <Textarea id="summary" name="summary" required />
+                        </div>
+                        {newEntryType === 'article' ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="content">Nilalaman</Label>
+                                <Textarea id="content" name="content" rows={8} required/>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <Label htmlFor="audio-file">Mag-upload ng Audio File</Label>
+                                <Input id="audio-file" type="file" accept="audio/*" className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer" />
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            <Label htmlFor="keywords">Mga Keyword (paghiwalayin ng kuwit)</Label>
+                            <Input id="keywords" name="keywords" placeholder="hal. pataba, mais, peste" required />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="outline">Kanselahin</Button></DialogClose>
+                        <Button type="submit">I-save ang Entry</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={!!selectedArticle} onOpenChange={() => setSelectedArticle(null)}>
+            <DialogContent className="sm:max-w-2xl">
+                {selectedArticle && (
+                <>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                            {selectedArticle.type === 'audio' ? <Volume2 /> : <FileText />}
+                            {selectedArticle.title}
+                        </DialogTitle>
+                        <DialogDescription>{selectedArticle.summary}</DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] my-4 pr-6">
+                        {selectedArticle.type === 'article' ? (
+                            <div className="text-sm space-y-4">
+                                <p>{selectedArticle.content}</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 py-8">
+                            <p>I-play ang audio story sa ibaba.</p>
+                                {selectedArticle.audioUrl && <audio controls className="w-full">
+                                    <source src={selectedArticle.audioUrl} type="audio/mpeg" />
+                                    Your browser does not support the audio element.
+                                </audio>}
+                            </div>
+                        )}
+                    </ScrollArea>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline">Isara</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </>
+                )}
+            </DialogContent>
+        </Dialog>
 
     </div>
   );
