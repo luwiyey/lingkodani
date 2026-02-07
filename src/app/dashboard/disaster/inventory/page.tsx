@@ -334,9 +334,3 @@ export default function DisasterInventoryPage() {
         </div>
     );
 }
-
-    
-
-    
-
-    

@@ -70,7 +70,7 @@ export default function InventoryPage() {
   const [tempStock, setTempStock] = useState<string>("");
   const [isStockDialogOpen, setStockDialogOpen] = useState(false);
 
-  const allKagamitan = [...new Set(resources.filter(r => r.category === 'Kagamitan').map(r => r.name))];
+  const allKagamitan = useMemo(() => [...new Set(resources.filter(r => r.category === 'Kagamitan').map(r => r.name))], [resources]);
 
 
   const handleFilterChange = (
@@ -136,17 +136,15 @@ export default function InventoryPage() {
     return resources.filter(resource => {
         const searchMatch = resource.name.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const hasCategoryFilters = filters.categories.length > 0;
-        const hasKagamitanFilters = filters.kagamitan.length > 0;
-
-        const filterMatch = (() => {
-            if (!hasCategoryFilters && !hasKagamitanFilters) return true;
-
-            const categoryMatch = hasCategoryFilters && filters.categories.includes(resource.category);
-            const kagamitanMatch = hasKagamitanFilters && resource.category === 'Kagamitan' && filters.kagamitan.includes(resource.name);
-            
-            return categoryMatch || kagamitanMatch;
-        })();
+        const categoryMatch = filters.categories.length === 0 || filters.categories.includes(resource.category);
+        const kagamitanMatch = filters.kagamitan.length === 0 || (resource.category === 'Kagamitan' && filters.kagamitan.includes(resource.name));
+        const filterMatch = (filters.categories.length > 0 && filters.kagamitan.length > 0)
+            ? categoryMatch || kagamitanMatch
+            : (filters.categories.length > 0)
+            ? categoryMatch
+            : (filters.kagamitan.length > 0)
+            ? kagamitanMatch
+            : true;
 
         const stockMatch = stockFilter === null || resource.stock >= stockFilter;
 
@@ -307,7 +305,7 @@ export default function InventoryPage() {
 
         <Card>
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
@@ -349,11 +347,11 @@ export default function InventoryPage() {
               <TableBody>
                 {sortedResources.map((resource) => (
                   <TableRow key={resource.id}>
-                    <TableCell className="font-medium">{resource.name}</TableCell>
+                    <TableCell className="font-medium break-words">{resource.name}</TableCell>
                     <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
                     <TableCell>{resource.stock}</TableCell>
-                    <TableCell>{resource.unit}</TableCell>
-                    <TableCell>{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
+                    <TableCell className="break-words">{resource.unit}</TableCell>
+                    <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                            <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
