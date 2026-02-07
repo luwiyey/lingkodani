@@ -253,25 +253,6 @@ export default function KnowledgeBasePage() {
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
           <h2 className="text-xl font-semibold tracking-tight">Mga Bagong Dagdag na Artikulo</h2>
-          <Button asChild variant="outline">
-            <Link href="/dashboard/knowledge-base/all">
-              Tingnan Lahat
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-        
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-            <div className="relative flex-1 min-w-[250px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Maghanap sa mga artikulo..."
-                    className="w-full rounded-lg bg-background pl-10"
-                    value={localSearchQuery}
-                    onChange={(e) => setLocalSearchQuery(e.target.value)}
-                />
-            </div>
             <Dialog open={isNewEntryDialogOpen} onOpenChange={setNewEntryDialogOpen}>
                 <DialogTrigger asChild>
                     <Button>
@@ -329,6 +310,25 @@ export default function KnowledgeBasePage() {
                     </form>
                 </DialogContent>
             </Dialog>
+        </div>
+        
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+            <div className="relative flex-1 min-w-[250px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Maghanap sa mga artikulo..."
+                    className="w-full rounded-lg bg-background pl-10"
+                    value={localSearchQuery}
+                    onChange={(e) => setLocalSearchQuery(e.target.value)}
+                />
+            </div>
+            <Button asChild variant="outline">
+                <Link href="/dashboard/knowledge-base/all">
+                  Tingnan Lahat
+                  <ArrowUpRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
         </div>
 
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
