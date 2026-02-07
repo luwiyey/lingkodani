@@ -67,14 +67,8 @@ export default function InventoryPage() {
   });
 
   const [stockFilter, setStockFilter] = useState<number | null>(null);
-  const [unitFilter, setUnitFilter] = useState<string>('');
-  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [tempStock, setTempStock] = useState<string>("");
-  const [tempUnit, setTempUnit] = useState<string>("");
-
   const [isStockDialogOpen, setStockDialogOpen] = useState(false);
-  const [isUnitDialogOpen, setUnitDialogOpen] = useState(false);
-  const [isDateDialogOpen, setDateDialogOpen] = useState(false);
 
   const allKagamitan = [...new Set(resources.filter(r => r.category === 'Kagamitan').map(r => r.name))];
 
@@ -155,12 +149,10 @@ export default function InventoryPage() {
         })();
 
         const stockMatch = stockFilter === null || resource.stock >= stockFilter;
-        const unitMatch = unitFilter === '' || resource.unit.toLowerCase().includes(unitFilter.toLowerCase());
-        const dateMatch = !dateFilter || new Date(resource.lastUpdated) >= dateFilter;
 
-        return searchMatch && filterMatch && stockMatch && unitMatch && dateMatch;
+        return searchMatch && filterMatch && stockMatch;
     });
-  }, [resources, searchTerm, filters, stockFilter, unitFilter, dateFilter]);
+  }, [resources, searchTerm, filters, stockFilter]);
 
 
   const sortedResources = useMemo(() => {
@@ -307,12 +299,6 @@ export default function InventoryPage() {
                 <DropdownMenuItem onSelect={() => setStockDialogOpen(true)}>
                   Salain ayon sa Stak
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setUnitDialogOpen(true)}>
-                  Salain ayon sa Yunit
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setDateDialogOpen(true)}>
-                  Salain ayon sa Petsa
-                </DropdownMenuItem>
                 
               </DropdownMenuContent>
             </DropdownMenu>
@@ -321,7 +307,7 @@ export default function InventoryPage() {
 
         <Card>
           <CardContent className="p-0">
-            <Table className="table-fixed">
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
@@ -363,13 +349,13 @@ export default function InventoryPage() {
               <TableBody>
                 {sortedResources.map((resource) => (
                   <TableRow key={resource.id}>
-                    <TableCell className="font-medium break-words">{resource.name}</TableCell>
+                    <TableCell className="font-medium">{resource.name}</TableCell>
                     <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
                     <TableCell>{resource.stock}</TableCell>
-                    <TableCell className="break-words">{resource.unit}</TableCell>
-                    <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
+                    <TableCell>{resource.unit}</TableCell>
+                    <TableCell>{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                        <div className="flex flex-wrap justify-end gap-2">
+                        <div className="flex justify-end gap-2">
                            <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
                            <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
@@ -454,46 +440,6 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isUnitDialogOpen} onOpenChange={setUnitDialogOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Salain ayon sa Yunit</DialogTitle>
-            </DialogHeader>
-            <Input placeholder="Ilagay ang yunit" value={tempUnit} onChange={(e) => setTempUnit(e.target.value)} />
-            <DialogFooter>
-                <Button variant="secondary" onClick={() => { setUnitFilter(""); setTempUnit(""); setUnitDialogOpen(false); }}>Alisin</Button>
-                <Button onClick={() => { setUnitFilter(tempUnit); setUnitDialogOpen(false); }}>Itakda ang Filter</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isDateDialogOpen} onOpenChange={setDateDialogOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Salain ayon sa Petsa</DialogTitle>
-                <DialogDescription>Ipakita ang mga rekurso na na-update sa o pagkatapos ng petsang ito.</DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-center">
-              <Calendar
-                  mode="single"
-                  selected={dateFilter}
-                  onSelect={setDateFilter}
-                  defaultMonth={new Date(2026, 0)}
-                  className="rounded-md border"
-              />
-            </div>
-            <DialogFooter>
-                <Button variant="secondary" onClick={() => { setDateFilter(undefined); setDateDialogOpen(false); }}>Alisin</Button>
-                <Button onClick={() => setDateDialogOpen(false)}>Itakda ang Filter</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
-
-    
-
-    
-
-    
