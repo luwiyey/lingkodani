@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { knowledgeArticles as initialArticles, smsMessages } from '@/lib/data';
 import type { KnowledgeArticle } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -29,28 +29,30 @@ export default function KnowledgeBasePage() {
   const [searchResults, setSearchResults] = useState<{ directAnswer: string; articles: KnowledgeArticle[] } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [suggestedArticles, setSuggestedArticles] = useState<SuggestedArticle[]>([]);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
   
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchSuggestions() {
-        try {
-            const smsReports = smsMessages.map(m => m.message).slice(0, 10);
-            const result = await suggestKnowledgeBaseArticles({ smsReports, farmerInquiries: [] });
-            setSuggestedArticles(result.suggestedArticles);
-        } catch (error) {
-            console.error("Failed to fetch AI suggestions:", error);
-            toast({
-                title: "Error sa Pagkuha ng Mungkahi",
-                description: "Hindi makuha ang mga mungkahi mula sa AI.",
-                variant: "destructive"
-            });
-        }
+  async function fetchSuggestions() {
+    setIsSuggesting(true);
+    setSuggestedArticles([]);
+    try {
+        const smsReports = smsMessages.map(m => m.message).slice(0, 10);
+        const result = await suggestKnowledgeBaseArticles({ smsReports, farmerInquiries: [] });
+        setSuggestedArticles(result.suggestedArticles);
+    } catch (error) {
+        console.error("Failed to fetch AI suggestions:", error);
+        toast({
+            title: "Error sa Pagkuha ng Mungkahi",
+            description: "Hindi makuha ang mga mungkahi mula sa AI. Maaaring puno na ang quota.",
+            variant: "destructive"
+        });
+    } finally {
+      setIsSuggesting(false);
     }
-    fetchSuggestions();
-  }, [toast]);
+  }
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,11 +262,16 @@ export default function KnowledgeBasePage() {
                 <CardTitle>Mga Mungkahing Artikulo ng AI</CardTitle>
             </div>
             <CardDescription>
-                Batay sa mga kamakailang uso sa SMS, narito ang ilang mga iminungkahing paksa para sa mga bagong artikulo.
+                Pindutin ang button para hilingin sa AI na magmungkahi ng mga paksa para sa bagong artikulo batay sa mga kamakailang SMS.
             </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-            {suggestedArticles.length > 0 ? (
+            {isSuggesting ? (
+                <>
+                    <Skeleton className="h-36 w-full" />
+                    <Skeleton className="h-36 w-full" />
+                </>
+            ) : suggestedArticles.length > 0 ? (
                 suggestedArticles.map(article => (
                     <Card key={article.title} className="bg-primary/5">
                         <CardHeader>
@@ -279,7 +286,13 @@ export default function KnowledgeBasePage() {
                     </Card>
                 ))
             ) : (
-                <p className="text-sm text-muted-foreground">Naglo-load ng mga mungkahi...</p>
+                <div className="col-span-full flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-4">Handa nang mag-isip ng mga bagong ideya ang AI.</p>
+                    <Button onClick={fetchSuggestions} disabled={isSuggesting}>
+                        <Bot className="mr-2"/>
+                        {isSuggesting ? 'Nagmumungkahi...' : 'Kumuha ng mga Mungkahi'}
+                    </Button>
+                </div>
             )}
             </CardContent>
         </Card>
