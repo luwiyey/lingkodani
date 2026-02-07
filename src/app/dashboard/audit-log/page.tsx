@@ -49,7 +49,7 @@ export default function AuditLogPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Timestamp</TableHead>
+                <TableHead>Timestamp</TableHead>
                 <TableHead>Gumagamit</TableHead>
                 <TableHead>Aksyon</TableHead>
                 <TableHead>Mga Detalye</TableHead>
@@ -58,12 +58,12 @@ export default function AuditLogPage() {
             <TableBody>
               {filteredLogs.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell>{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
-                  <TableCell className="font-medium">{log.user}</TableCell>
+                  <TableCell className="break-words">{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
+                  <TableCell className="font-medium break-words">{log.user}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{log.action}</Badge>
                   </TableCell>
-                  <TableCell>{log.details}</TableCell>
+                  <TableCell className="break-words">{log.details}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
