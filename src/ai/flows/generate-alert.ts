@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateAlertInputSchema = z.object({
+const GenerateAlertInputSchema = z.object({
   smsSummary: z.string().describe('A summary of recent, relevant SMS reports from farmers.'),
   weatherData: z.string().describe('A summary of the current weather forecast.'),
 });
@@ -24,7 +24,7 @@ const AlertSchema = z.object({
     recommendation: z.string().describe("A recommended action for the farmers to take."),
 });
 
-export const GenerateAlertOutputSchema = z.object({
+const GenerateAlertOutputSchema = z.object({
     shouldGenerateAlert: z.boolean().describe("Indicates whether an alert is necessary based on the input."),
     alert: AlertSchema.optional().describe("The generated alert details, if one is necessary."),
 });

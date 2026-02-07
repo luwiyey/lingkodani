@@ -3,13 +3,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const CalculateProfitInputSchema = z.object({
+const CalculateProfitInputSchema = z.object({
   yield: z.number().describe('The expected yield in kilograms.'),
   price: z.number().describe('The market price per kilogram.'),
 });
 export type CalculateProfitInput = z.infer<typeof CalculateProfitInputSchema>;
 
-export const CalculateProfitOutputSchema = z.object({
+const CalculateProfitOutputSchema = z.object({
   analysis: z.string().describe('A simple, one-sentence profit analysis.'),
 });
 export type CalculateProfitOutput = z.infer<typeof CalculateProfitOutputSchema>;

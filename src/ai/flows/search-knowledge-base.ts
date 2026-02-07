@@ -1,7 +1,7 @@
 'use server';
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 import { googleSearchTool } from '../tools/google-search';
 
 const ArticleForSearchSchema = z.object({
@@ -12,7 +12,7 @@ const ArticleForSearchSchema = z.object({
   type: z.enum(['article', 'audio']),
 });
 
-export const SearchKnowledgeBaseInputSchema = z.object({
+const SearchKnowledgeBaseInputSchema = z.object({
   query: z.string().describe("The user's search query."),
   articles: z
     .array(ArticleForSearchSchema)
@@ -22,7 +22,7 @@ export type SearchKnowledgeBaseInput = z.infer<
   typeof SearchKnowledgeBaseInputSchema
 >;
 
-export const SearchKnowledgeBaseOutputSchema = z.object({
+const SearchKnowledgeBaseOutputSchema = z.object({
   directAnswer: z
     .string()
     .describe(

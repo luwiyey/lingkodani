@@ -3,13 +3,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const CalculateFertilizerInputSchema = z.object({
+const CalculateFertilizerInputSchema = z.object({
   area: z.number().describe('The area of the farm in hectares.'),
   crop: z.string().describe('The type of crop being planted.'),
 });
 export type CalculateFertilizerInput = z.infer<typeof CalculateFertilizerInputSchema>;
 
-export const CalculateFertilizerOutputSchema = z.object({
+const CalculateFertilizerOutputSchema = z.object({
   recommendation: z.string().describe('The fertilizer recommendation in clear, simple terms.'),
 });
 export type CalculateFertilizerOutput = z.infer<typeof CalculateFertilizerOutputSchema>;
