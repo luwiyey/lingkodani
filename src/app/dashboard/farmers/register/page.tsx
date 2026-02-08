@@ -28,6 +28,7 @@ export default function RegisterFarmerPage() {
       name: '',
       phone: '',
       barangay: 'Batakil',
+      sitio: '',
       crops: '',
       gender: '',
     },
@@ -113,7 +114,7 @@ export default function RegisterFarmerPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sitio/Purok *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Pumili ng Zone" />
@@ -151,7 +152,7 @@ export default function RegisterFarmerPage() {
                       <FormItem>
                         <FormLabel>Sukat ng Bukid (ha)</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.1" {...field} />
+                          <Input type="number" step="0.1" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -164,7 +165,7 @@ export default function RegisterFarmerPage() {
                       <FormItem>
                         <FormLabel>Edad</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input type="number" {...field} value={field.value ?? ''} />
                         </FormControl>
                          <FormMessage />
                       </FormItem>
