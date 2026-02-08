@@ -14,10 +14,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import Link from 'next/link';
 import { userManagementSchema, type UserManagementValues } from '@/lib/schemas';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { useData } from '@/context/data-context';
 
 export default function AddUserPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { addUser, users } = useData();
 
   const form = useForm<UserManagementValues>({
     resolver: zodResolver(userManagementSchema),
@@ -29,14 +31,19 @@ export default function AddUserPage() {
   });
 
   const handleAddUser = (data: UserManagementValues) => {
-    // In a real app, this would save to a database and update a global state.
-    // Since we are using mock data, this will just show a success message and redirect.
-    // The new user will not actually appear in the list on the developer page without a backend.
-    console.log('Adding new user:', data);
+    if (users.some(u => u.email === data.email)) {
+      form.setError('email', {
+        type: 'manual',
+        message: 'Ang email na ito ay ginagamit na.',
+      });
+      return;
+    }
+    
+    addUser(data);
 
     toast({
       title: 'Tagumpay!',
-      description: `Ang user na si ${data.name} ay naidagdag na. Ang pagbabago ay makikita kapag mayroon nang database.`,
+      description: `Ang user na si ${data.name} ay naidagdag na.`,
     });
 
     router.push('/dashboard/developer');

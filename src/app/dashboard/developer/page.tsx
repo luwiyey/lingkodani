@@ -32,18 +32,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
-import { registeredUsers as initialUsers } from '@/lib/data';
+import { useData } from '@/context/data-context';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import type { User } from '@/lib/types';
 
-type User = {
-  email: string;
-  name: string;
-  role: 'barangay' | 'developer';
-}
 
 export default function DeveloperPage() {
-    const [users, setUsers] = useState<User[]>(initialUsers);
+    const { users, updateUser, deleteUser } = useData();
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const { toast } = useToast();
 
@@ -65,7 +61,7 @@ export default function DeveloperPage() {
             role: formData.get('role') as 'barangay' | 'developer',
         };
 
-        setUsers(prev => prev.map(u => (u.email === editingUser.email ? updatedUser : u)));
+        updateUser(editingUser.email, updatedUser);
         setEditingUser(null);
         toast({ title: "Tagumpay!", description: `Nai-update na ang mga detalye ni ${updatedUser.name}.` });
     };
@@ -73,7 +69,7 @@ export default function DeveloperPage() {
     const handleDeleteUser = (email: string) => {
         const userToDelete = users.find(u => u.email === email);
         if (userToDelete) {
-            setUsers(prev => prev.filter(u => u.email !== email));
+            deleteUser(email);
             toast({ title: "Tagumpay!", description: `Ang user na si ${userToDelete.name} ay natanggal na.`, variant: "destructive" });
         }
     };

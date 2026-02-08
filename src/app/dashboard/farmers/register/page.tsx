@@ -15,6 +15,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { farmerRegistrationSchema, type FarmerRegistrationValues } from '@/lib/schemas';
+import { useData } from '@/context/data-context';
 
 // This would ideally be in a layout if it's shared
 // export const metadata: Metadata = {
@@ -26,6 +27,7 @@ import { farmerRegistrationSchema, type FarmerRegistrationValues } from '@/lib/s
 export default function RegisterFarmerPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { addPendingFarmer } = useData();
 
   const form = useForm<FarmerRegistrationValues>({
     resolver: zodResolver(farmerRegistrationSchema),
@@ -39,8 +41,7 @@ export default function RegisterFarmerPage() {
   });
 
   const handleRegisterFarmer = (data: FarmerRegistrationValues) => {
-    // In a real app, you would save this to your database.
-    console.log('Registering new farmer:', data);
+    addPendingFarmer(data);
 
     toast({
       title: 'Nakabinbin para sa Pag-apruba',

@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
-import { registeredUsers } from "@/lib/data";
+import { useData } from "@/context/data-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { users } = useData();
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
   const [showNotRegisteredDialog, setShowNotRegisteredDialog] = useState(false);
 
@@ -42,7 +43,7 @@ export default function LoginPage() {
     const emailInput = form.elements.namedItem('email') as HTMLInputElement;
     const email = emailInput.value;
 
-    const user = registeredUsers.find(u => u.email === email);
+    const user = users.find(u => u.email === email);
 
     if (user) {
       router.push(`/verify?email=${encodeURIComponent(email)}`);

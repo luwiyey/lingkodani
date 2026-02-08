@@ -17,11 +17,12 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useToast } from "@/hooks/use-toast";
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
-import { registeredUsers } from '@/lib/data';
+import { useData } from '@/context/data-context';
 
 export default function VerifyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { users } = useData();
   const { toast } = useToast();
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
 
@@ -29,7 +30,7 @@ export default function VerifyPage() {
     e.preventDefault();
     
     const email = searchParams.get('email');
-    const user = registeredUsers.find(u => u.email === email);
+    const user = users.find(u => u.email === email);
 
     toast({
       title: "Pag-verify Nagtagumpay!",

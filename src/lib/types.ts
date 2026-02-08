@@ -16,12 +16,10 @@ export type NavItem = {
 
 export type UserRole = 'barangay' | 'developer';
 
-export type UserProfile = {
-  uid: string;
+export type User = {
   email: string;
-  displayName: string;
+  name: string;
   role: UserRole;
-  barangayId: string;
 };
 
 export type FarmerStatus = 'pending_approval' | 'active' | 'inactive' | 'rejected';
