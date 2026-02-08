@@ -14,6 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { HelpDialog } from '@/components/ui/help-dialog';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 export default function AllKnowledgeArticlesPage() {
   const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>(initialArticles);
@@ -67,32 +69,44 @@ export default function AllKnowledgeArticlesPage() {
   return (
     <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()}>
-                <ArrowLeft />
-            </Button>
+            <HoverTooltip text="Bumalik sa pangunahing pahina ng Knowledge Base.">
+              <Button variant="outline" size="icon" onClick={() => router.back()}>
+                  <ArrowLeft />
+              </Button>
+            </HoverTooltip>
             <div className="space-y-1">
-                <h1 className="text-2xl font-bold tracking-tight">Lahat ng Artikulo sa Knowledge Base</h1>
+                <div className="flex items-center">
+                  <h1 className="text-2xl font-bold tracking-tight">Lahat ng Artikulo sa Knowledge Base</h1>
+                  <HelpDialog title="Lahat ng Artikulo">
+                    <p>Ito ang iyong kumpletong aklatan ng lahat ng kaalaman sa pagsasaka. Dito mo maaaring tingnan, hanapin, at pamahalaan ang bawat artikulo at audio story.</p>
+                    <p>Gamitin ang search bar upang mabilis na mahanap ang isang partikular na paksa, o pindutin ang "Bagong Entry" na button upang magdagdag ng bagong kaalaman sa iyong koleksyon.</p>
+                  </HelpDialog>
+                </div>
                 <p className="text-muted-foreground">Maghanap, magdagdag, at pamahalaan ang lahat ng entry.</p>
             </div>
         </div>
 
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-            <div className="relative flex-1 min-w-[250px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Maghanap sa mga artikulo..."
-                    className="w-full rounded-lg bg-background pl-10"
-                    value={localSearchQuery}
-                    onChange={(e) => setLocalSearchQuery(e.target.value)}
-                />
-            </div>
+            <HoverTooltip text="Mag-type dito para mahanap ang isang artikulo ayon sa pamagat, buod, o keyword.">
+              <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      type="search"
+                      placeholder="Maghanap sa mga artikulo..."
+                      className="w-full rounded-lg bg-background pl-10"
+                      value={localSearchQuery}
+                      onChange={(e) => setLocalSearchQuery(e.target.value)}
+                  />
+              </div>
+            </HoverTooltip>
             <Dialog open={isNewEntryDialogOpen} onOpenChange={setNewEntryDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Bagong Entry
-                    </Button>
+                    <HoverTooltip text="Magdagdag ng bagong artikulo o audio story sa knowledge base.">
+                      <Button>
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Bagong Entry
+                      </Button>
+                    </HoverTooltip>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>

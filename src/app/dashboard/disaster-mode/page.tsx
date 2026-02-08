@@ -34,21 +34,23 @@ export default function DisasterModePage() {
 
         <Card className="border-destructive">
             <CardHeader className="flex-row items-start justify-between">
-                <div className="flex items-center">
-                    <CardTitle className="flex items-center gap-2">
-                        <Megaphone /> Magpadala ng Emergency Broadcast
-                    </CardTitle>
-                    <HelpDialog title="Emergency Broadcast">
-                        <p>Gamitin ang feature na ito upang magpadala ng agarang SMS alert sa LAHAT ng nakarehistrong magsasaka sa iyong barangay.</p>
-                        <p><strong>Paano Gamitin:</strong></p>
-                        <ul className="list-disc pl-5 space-y-1">
-                            <li><strong>Isulat ang Mensahe:</strong> I-type ang iyong maikli at malinaw na alerto sa text box. Halimbawa: "BAHA ALERT: Agad na lumikas sa mas mataas na lugar. Manatiling nakatutok para sa mga update."</li>
-                            <li><strong>Ipadala:</strong> Pindutin ang "IPADALA NGAYON" na button. Ang mensahe ay agad na ipapadala sa lahat.</li>
-                        </ul>
-                        <p className="font-bold mt-2">Mag-ingat: Gamitin lamang ang feature na ito para sa mga tunay na emerhensiya.</p>
-                    </HelpDialog>
+                <div className="flex-1">
+                  <div className="flex items-center">
+                      <CardTitle className="flex items-center gap-2">
+                          <Megaphone /> Magpadala ng Emergency Broadcast
+                      </CardTitle>
+                      <HelpDialog title="Emergency Broadcast">
+                          <p>Gamitin ang feature na ito upang magpadala ng agarang SMS alert sa LAHAT ng nakarehistrong magsasaka sa iyong barangay.</p>
+                          <p><strong>Paano Gamitin:</strong></p>
+                          <ul className="list-disc pl-5 space-y-1">
+                              <li><strong>Isulat ang Mensahe:</strong> I-type ang iyong maikli at malinaw na alerto sa text box. Halimbawa: "BAHA ALERT: Agad na lumikas sa mas mataas na lugar. Manatiling nakatutok para sa mga update."</li>
+                              <li><strong>Ipadala:</strong> Pindutin ang "IPADALA NGAYON" na button. Ang mensahe ay agad na ipapadala sa lahat.</li>
+                          </ul>
+                          <p className="font-bold mt-2">Mag-ingat: Gamitin lamang ang feature na ito para sa mga tunay na emerhensiya.</p>
+                      </HelpDialog>
+                  </div>
+                  <CardDescription>Magpadala ng agarang SMS alert sa lahat ng magsasaka.</CardDescription>
                 </div>
-                <CardDescription>Magpadala ng agarang SMS alert sa lahat ng magsasaka.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <HoverTooltip text="Isulat dito ang iyong emergency na mensahe. Siguraduhing ito ay malinaw at madaling maintindihan.">

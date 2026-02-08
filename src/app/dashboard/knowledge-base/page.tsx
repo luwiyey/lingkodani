@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { HelpDialog } from '@/components/ui/help-dialog';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 type SuggestedArticle = {
     title: string;
@@ -134,23 +136,34 @@ export default function KnowledgeBasePage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
+            <HelpDialog title="Base ng Kaalaman">
+              <p>Ito ang iyong sentral na hub para sa lahat ng impormasyon sa pagsasaka. Mayroon itong dalawang pangunahing paraan ng paghahanap:</p>
+              <p><strong>Paghahanap gamit ang AI (itaas):</strong> Gamitin ito para sa mga kumplikadong tanong sa natural na wika (Tagalog/English). Ang AI ay magbibigay ng direktang sagot at magmumungkahi ng mga kaugnay na artikulo.</p>
+              <p><strong>Mga Bagong Dagdag na Artikulo:</strong> Nagpapakita ito ng mga pinakabagong artikulo. Mayroon itong sariling simpleng search bar para mabilis na mahanap ang mga artikulo ayon sa pamagat o keyword. Pindutin ang "Tingnan Lahat" para makita ang kumpletong listahan.</p>
+            </HelpDialog>
+          </div>
           <p className="text-muted-foreground">Maghanap ng impormasyon at pamahalaan ang mga artikulo at audio.</p>
         </div>
       </div>
       
-      <form onSubmit={handleSearch} className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input
-            type="search"
-            placeholder="Magtanong tungkol sa pagsasaka... hal. 'Paano sugpuin ang armyworms sa sibuyas?'"
-            className="w-full rounded-lg bg-background pl-12 pr-24 py-6 text-base"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2" disabled={isSearching}>
-            {isSearching ? 'Naghahanap...' : 'Maghanap'}
-        </Button>
+      <form onSubmit={handleSearch}>
+        <HoverTooltip text="Gamitin ito para sa mga tanong na parang nakikipag-usap sa isang eksperto. Hal. 'Paano ko masusugpo ang mga peste sa aking taniman ng kamatis?'">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+                type="search"
+                placeholder="Magtanong tungkol sa pagsasaka... hal. 'Paano sugpuin ang armyworms sa sibuyas?'"
+                className="w-full rounded-lg bg-background pl-12 pr-24 py-6 text-base"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2" disabled={isSearching}>
+                {isSearching ? 'Naghahanap...' : 'Maghanap'}
+            </Button>
+          </div>
+        </HoverTooltip>
       </form>
       
       {isSearching ? (
@@ -171,7 +184,12 @@ export default function KnowledgeBasePage() {
         <div className="space-y-6">
             <Card className="bg-primary/5 border-primary/20">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng AI</CardTitle>
+                    <div className="flex items-center">
+                      <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng AI</CardTitle>
+                      <HelpDialog title="Sagot ng AI">
+                        <p>Ito ang sagot na binuo ng artificial intelligence batay sa iyong tanong. Sinusuri nito ang parehong internal na knowledge base at mga resulta mula sa web search upang magbigay ng pinaka-komprehensibong sagot.</p>
+                      </HelpDialog>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-foreground">{searchResults.directAnswer}</p>
@@ -208,14 +226,20 @@ export default function KnowledgeBasePage() {
         <Card>
             <CardHeader>
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Bot className="h-6 w-6" />
-                    <CardTitle>Mga Mungkahing Artikulo ng AI</CardTitle>
+                <div className="flex items-center">
+                    <div className="flex items-center">
+                      <CardTitle className="flex items-center gap-2"><Bot className="h-6 w-6" />Mga Mungkahing Artikulo ng AI</CardTitle>
+                      <HelpDialog title="Mga Mungkahing Artikulo ng AI">
+                        <p>Sinusuri ng AI ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend at mga karaniwang tanong. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring maging kapaki-pakinabang para sa komunidad.</p>
+                      </HelpDialog>
+                    </div>
                 </div>
-                <Button onClick={fetchSuggestions} disabled={isSuggesting} size="sm">
-                    <Bot className="mr-2 h-4 w-4"/>
-                    {isSuggesting ? 'Nagmumungkahi...' : 'Kumuha ng mga Mungkahi'}
-                </Button>
+                <HoverTooltip text="Hilingin sa AI na suriin ang mga kamakailang SMS at magmungkahi ng mga bagong paksa.">
+                  <Button onClick={fetchSuggestions} disabled={isSuggesting} size="sm">
+                      <Bot className="mr-2 h-4 w-4"/>
+                      {isSuggesting ? 'Nagmumungkahi...' : 'Kumuha ng mga Mungkahi'}
+                  </Button>
+                </HoverTooltip>
             </div>
             <CardDescription>
                 Pindutin ang button para hilingin sa AI na magmungkahi ng mga paksa para sa bagong artikulo batay sa mga kamakailang SMS.
@@ -252,13 +276,15 @@ export default function KnowledgeBasePage() {
 
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-          <h2 className="text-xl font-semibold tracking-tight">Mga Bagong Dagdag na Artikulo</h2>
+            <h2 className="text-xl font-semibold tracking-tight">Mga Bagong Dagdag na Artikulo</h2>
             <Dialog open={isNewEntryDialogOpen} onOpenChange={setNewEntryDialogOpen}>
                 <DialogTrigger asChild>
+                   <HoverTooltip text="Magdagdag ng bagong artikulo o kwentong audio sa knowledge base.">
                     <Button>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Bagong Entry
                     </Button>
+                  </HoverTooltip>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
@@ -267,6 +293,7 @@ export default function KnowledgeBasePage() {
                     </DialogHeader>
                     <form onSubmit={handleAddNewEntry}>
                         <div className="grid gap-6 py-4">
+                           <HoverTooltip text="Pumili kung ito ay isang text-based na artikulo o isang audio recording.">
                             <div className="space-y-2">
                                 <Label htmlFor="type-main">Uri ng Content</Label>
                                 <Select name="type" defaultValue={newEntryType} onValueChange={(value: 'article' | 'audio') => setNewEntryType(value)}>
@@ -279,33 +306,48 @@ export default function KnowledgeBasePage() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                           </HoverTooltip>
+                           <HoverTooltip text="Ang pamagat ng iyong artikulo o audio story.">
                             <div className="space-y-2">
                                 <Label htmlFor="title-main">Pamagat</Label>
                                 <Input id="title-main" name="title" required />
                             </div>
+                           </HoverTooltip>
+                           <HoverTooltip text="Isang maikling, isang-pangungusap na buod ng nilalaman.">
                             <div className="space-y-2">
                                 <Label htmlFor="summary-main">Maikling Buod</Label>
                                 <Textarea id="summary-main" name="summary" required />
                             </div>
+                           </HoverTooltip>
                             {newEntryType === 'article' ? (
+                                <HoverTooltip text="Isulat dito ang buong nilalaman ng iyong artikulo.">
                                 <div className="space-y-2">
                                     <Label htmlFor="content-main">Nilalaman</Label>
                                     <Textarea id="content-main" name="content" rows={8} required/>
                                 </div>
+                                </HoverTooltip>
                             ) : (
+                                <HoverTooltip text="Pumili ng audio file (hal. MP3) mula sa iyong computer.">
                                 <div className="space-y-2">
                                     <Label htmlFor="audio-file-main">Mag-upload ng Audio File</Label>
                                     <Input id="audio-file-main" type="file" accept="audio/*" className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer" />
                                 </div>
+                                </HoverTooltip>
                             )}
-                            <div className="space-y-2">
-                                <Label htmlFor="keywords-main">Mga Keyword (paghiwalayin ng kuwit)</Label>
-                                <Input id="keywords-main" name="keywords" placeholder="hal. pataba, mais, peste" required />
-                            </div>
+                             <HoverTooltip text="Maglagay ng mga kaugnay na salita para mas madaling mahanap ang entry. Paghiwalayin ng kuwit.">
+                              <div className="space-y-2">
+                                  <Label htmlFor="keywords-main">Mga Keyword (paghiwalayin ng kuwit)</Label>
+                                  <Input id="keywords-main" name="keywords" placeholder="hal. pataba, mais, peste" required />
+                              </div>
+                            </HoverTooltip>
                         </div>
                         <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="outline">Kanselahin</Button></DialogClose>
-                            <Button type="submit">I-save ang Entry</Button>
+                            <HoverTooltip text="Isara ang window na ito nang hindi nagse-save.">
+                              <DialogClose asChild><Button type="button" variant="outline">Kanselahin</Button></DialogClose>
+                            </HoverTooltip>
+                            <HoverTooltip text="I-save ang bagong entry sa knowledge base.">
+                              <Button type="submit">I-save ang Entry</Button>
+                            </HoverTooltip>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -313,22 +355,26 @@ export default function KnowledgeBasePage() {
         </div>
         
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-            <div className="relative flex-1 min-w-[250px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Maghanap sa mga artikulo..."
-                    className="w-full rounded-lg bg-background pl-10"
-                    value={localSearchQuery}
-                    onChange={(e) => setLocalSearchQuery(e.target.value)}
-                />
-            </div>
-            <Button asChild variant="outline">
-                <Link href="/dashboard/knowledge-base/all">
-                  Tingnan Lahat
-                  <ArrowUpRight className="ml-2 h-4 w-4" />
-                </Link>
-            </Button>
+            <HoverTooltip text="Mag-type dito upang mabilis na mahanap ang isang artikulo sa listahan.">
+              <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      type="search"
+                      placeholder="Maghanap sa mga artikulo..."
+                      className="w-full rounded-lg bg-background pl-10"
+                      value={localSearchQuery}
+                      onChange={(e) => setLocalSearchQuery(e.target.value)}
+                  />
+              </div>
+            </HoverTooltip>
+            <HoverTooltip text="Tingnan ang kumpletong listahan ng lahat ng artikulo sa isang hiwalay na pahina.">
+              <Button asChild variant="outline">
+                  <Link href="/dashboard/knowledge-base/all">
+                    Tingnan Lahat
+                    <ArrowUpRight className="ml-2 h-4 w-4" />
+                  </Link>
+              </Button>
+            </HoverTooltip>
         </div>
 
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HelpDialog } from '@/components/ui/help-dialog';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 // Chart Imports
 import { IssueTrendsChart } from '@/components/reports/issue-trends-chart';
@@ -57,10 +58,12 @@ export default function ReportsPage() {
           <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight para sa paggawa ng desisyon.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <HoverTooltip text="I-download ang buod ng ulat sa AI bilang PDF.">
             <Button>
                 <ArrowDownToLine className="mr-2 h-4 w-4" />
                 I-export ang Buod
             </Button>
+          </HoverTooltip>
         </div>
       </div>
       
@@ -79,10 +82,12 @@ export default function ReportsPage() {
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
+                          <HoverTooltip text="Baguhin ang sakop na oras para sa buod at mga ulat.">
                             <Button variant="outline">
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {timeframe}
                             </Button>
+                          </HoverTooltip>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
