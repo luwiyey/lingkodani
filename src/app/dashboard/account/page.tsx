@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -150,10 +151,10 @@ export default function AccountSettingsPage() {
               <h3 className="font-semibold text-lg">Baguhin ang Email Address</h3>
               <div className="space-y-2">
                 <Label>Kasalukuyang Email</Label>
-                <div className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
-                    <p className="text-sm text-muted-foreground">brgy-admin@lingkodani.gov.ph</p>
+                <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-muted/50">
+                    <p className="text-sm text-muted-foreground truncate">brgy-admin@lingkodani.gov.ph</p>
                     <HoverTooltip text="Simulan ang proseso ng pagbabago ng iyong email address.">
-                        <Button variant="outline" onClick={handleChangeEmail}>Baguhin ang Email</Button>
+                        <Button variant="outline" onClick={handleChangeEmail} className="flex-shrink-0">Baguhin ang Email</Button>
                     </HoverTooltip>
                 </div>
               </div>
