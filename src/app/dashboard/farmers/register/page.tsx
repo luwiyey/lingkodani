@@ -2,6 +2,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { Metadata } from 'next';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,23 +13,32 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { farmerRegistrationSchema, type FarmerRegistrationValues } from '@/lib/schemas';
+
 
 export default function RegisterFarmerPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleRegisterFarmer = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const farmerName = formData.get('name') as string;
-    
+  const form = useForm<FarmerRegistrationValues>({
+    resolver: zodResolver(farmerRegistrationSchema),
+    defaultValues: {
+      name: '',
+      phone: '',
+      barangay: 'Batakil',
+      crops: '',
+      gender: '',
+    },
+  });
+
+  const handleRegisterFarmer = (data: FarmerRegistrationValues) => {
     // In a real app, you would save this to your database.
-    // Here, we'll just show a success message.
-    console.log('Registering new farmer:', Object.fromEntries(formData.entries()));
+    console.log('Registering new farmer:', data);
 
     toast({
       title: 'Nakabinbin para sa Pag-apruba',
-      description: `Ang bagong magsasaka, ${farmerName}, ay naidagdag na at naghihintay ng pag-apruba.`,
+      description: `Ang bagong magsasaka, ${data.name}, ay naidagdag na at naghihintay ng pag-apruba.`,
     });
 
     // Redirect to the approvals page
@@ -47,59 +60,133 @@ export default function RegisterFarmerPage() {
       <Card>
         <CardHeader>
             <CardTitle>Form ng Pagpaparehistro</CardTitle>
-            <CardDescription>Punan ang mga detalye sa ibaba.</CardDescription>
+            <CardDescription>Punan ang mga detalye sa ibaba. Ang mga field na may * ay kinakailangan.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleRegisterFarmer} className="max-w-2xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Buong Pangalan</Label>
-                    <Input id="name" name="name" required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="phone">Numero ng Telepono</Label>
-                    <Input id="phone" name="phone" required placeholder="+63..." />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="barangay">Barangay</Label>
-                    <Input id="barangay" name="barangay" defaultValue="Batakil" required readOnly />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="sitio">Sitio/Purok</Label>
-                    <Select name="sitio" required>
-                      <SelectTrigger id="sitio">
-                        <SelectValue placeholder="Pumili ng Zone" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 7 }, (_, i) => i + 1).map(zone => (
-                          <SelectItem key={zone} value={`Zone ${zone}`}>
-                            Zone {zone}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="crops">Mga Pangunahing Pananim</Label>
-                    <Input id="crops" name="crops" placeholder="hal. Palay, Mais" />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="farm-size">Sukat ng Bukid (ha)</Label>
-                    <Input id="farm-size" name="farm-size" type="number" step="0.1" />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="age">Edad</Label>
-                    <Input id="age" name="age" type="number"/>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="gender">Kasarian</Label>
-                    <Input id="gender" name="gender"/>
-                </div>
-            </div>
-            <div className="flex justify-end mt-6">
-              <Button type="submit">Isumite para sa Pag-apruba</Button>
-            </div>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleRegisterFarmer)} className="max-w-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Buong Pangalan *</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Numero ng Telepono *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+63..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="barangay"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barangay</FormLabel>
+                        <FormControl>
+                          <Input {...field} readOnly />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="sitio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sitio/Purok *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pumili ng Zone" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Array.from({ length: 7 }, (_, i) => i + 1).map(zone => (
+                              <SelectItem key={zone} value={`Zone ${zone}`}>
+                                Zone {zone}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="crops"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mga Pangunahing Pananim</FormLabel>
+                        <FormControl>
+                          <Input placeholder="hal. Palay, Mais" {...field} />
+                        </FormControl>
+                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="farmSize"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sukat ng Bukid (ha)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Edad</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Kasarian</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              </div>
+              <div className="flex justify-end mt-6">
+                <Button type="submit">Isumite para sa Pag-apruba</Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
