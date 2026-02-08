@@ -11,7 +11,13 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
-import { HoverTooltip } from './hover-tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
 
 interface HelpDialogProps {
   title: string;
@@ -21,14 +27,22 @@ interface HelpDialogProps {
 export function HelpDialog({ title, children }: HelpDialogProps) {
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <HoverTooltip text={`Tulong para sa: ${title}`}>
-          <Button variant="ghost" size="icon" className="h-7 w-7 ml-1 self-center shrink-0">
-            <HelpCircle className="h-5 w-5 text-muted-foreground" />
-            <span className="sr-only">Tulong: {title}</span>
-          </Button>
-        </HoverTooltip>
-      </DialogTrigger>
+        <TooltipProvider>
+            <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 ml-1 self-center shrink-0">
+                            <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                            <span className="sr-only">Tulong para sa: {title}</span>
+                        </Button>
+                    </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Tulong para sa: {title}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
