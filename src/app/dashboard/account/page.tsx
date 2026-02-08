@@ -120,37 +120,44 @@ export default function AccountSettingsPage() {
           <CardDescription>I-update ang iyong password at pamahalaan ang iyong email sa pag-login.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
-            <HoverTooltip text="Ilagay ang iyong kasalukuyang password.">
-                <div className="space-y-2">
-                    <Label htmlFor="current-password">Kasalukuyang Password</Label>
-                    <Input id="current-password" type="password" required />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <h3 className="font-semibold text-lg">Baguhin ang Password</h3>
+              <HoverTooltip text="Ilagay ang iyong kasalukuyang password.">
+                  <div className="space-y-2">
+                      <Label htmlFor="current-password">Kasalukuyang Password</Label>
+                      <Input id="current-password" type="password" required />
+                  </div>
+              </HoverTooltip>
+              <HoverTooltip text="Ilagay ang iyong nais na bagong password.">
+                  <div className="space-y-2">
+                      <Label htmlFor="new-password">Bagong Password</Label>
+                      <Input id="new-password" type="password" required />
+                  </div>
+              </HoverTooltip>
+               <HoverTooltip text="Kumpirmahin ang iyong bagong password.">
+                   <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Kumpirmahin ang Bagong Password</Label>
+                      <Input id="confirm-password" type="password" required />
+                  </div>
+              </HoverTooltip>
+              <HoverTooltip text="I-save ang mga pagbabago sa iyong password.">
+                  <Button type="submit">I-save ang Bagong Password</Button>
+              </HoverTooltip>
+            </form>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Baguhin ang Email Address</h3>
+              <div className="space-y-2">
+                <Label>Kasalukuyang Email</Label>
+                <div className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
+                    <p className="text-sm text-muted-foreground">brgy-admin@lingkodani.gov.ph</p>
+                    <HoverTooltip text="Simulan ang proseso ng pagbabago ng iyong email address.">
+                        <Button variant="outline" onClick={handleChangeEmail}>Baguhin ang Email</Button>
+                    </HoverTooltip>
                 </div>
-            </HoverTooltip>
-            <HoverTooltip text="Ilagay ang iyong nais na bagong password.">
-                <div className="space-y-2">
-                    <Label htmlFor="new-password">Bagong Password</Label>
-                    <Input id="new-password" type="password" required />
-                </div>
-            </HoverTooltip>
-             <HoverTooltip text="Kumpirmahin ang iyong bagong password.">
-                 <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Kumpirmahin ang Bagong Password</Label>
-                    <Input id="confirm-password" type="password" required />
-                </div>
-            </HoverTooltip>
-            <HoverTooltip text="I-save ang mga pagbabago sa iyong password.">
-                <Button type="submit">I-save ang Bagong Password</Button>
-            </HoverTooltip>
-          </form>
-          <Separator className="my-6" />
-          <div className="space-y-2">
-            <Label>Baguhin ang Email Address</Label>
-            <div className="flex items-center justify-between p-3 border rounded-md">
-                <p className="text-sm text-muted-foreground">brgy-admin@lingkodani.gov.ph</p>
-                <HoverTooltip text="Simulan ang proseso ng pagbabago ng iyong email address.">
-                    <Button variant="outline" onClick={handleChangeEmail}>Baguhin ang Email</Button>
-                </HoverTooltip>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">Ang pag-click sa "Baguhin ang Email" ay magpapadala ng link sa pag-verify sa iyong bagong email address.</p>
             </div>
           </div>
         </CardContent>
