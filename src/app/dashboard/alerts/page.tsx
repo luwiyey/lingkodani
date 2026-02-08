@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +78,12 @@ export default function AlertsPage() {
   const [generatedAlert, setGeneratedAlert] = useState<GenerateAlertOutput | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const handleGenerateAlert = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -233,7 +239,7 @@ export default function AlertsPage() {
                 const Icon = alertIcons[alert.type] || Siren;
                 return (
                   <TableRow key={alert.id}>
-                    <TableCell>{new Date(alert.timestamp).toLocaleDateString()}</TableCell>
+                    <TableCell>{isClient ? new Date(alert.timestamp).toLocaleDateString() : ''}</TableCell>
                     <TableCell className="capitalize">
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4"/> {alert.type}
