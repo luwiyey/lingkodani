@@ -8,14 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { smsMessages, resources } from '@/lib/data';
-import type { SmsMessage, Resource, SmsIntent } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import type { SmsMessage, Resource, SmsIntent, Farmer } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { useData } from '@/context/data-context';
 
 type DialogState = {
   type: 'approve' | 'manual' | 'find' | null;
@@ -34,12 +33,16 @@ const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     UNKNOWN: { label: 'Hindi Kilala', icon: MessageSquare },
 }
 
-function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onActionClick: (type: DialogState['type'], message: SmsMessage) => void }) {
+function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessage, onActionClick: (type: DialogState['type'], message: SmsMessage) => void, farmers: Farmer[] }) {
     const [isClient, setIsClient] = React.useState(false);
     React.useEffect(() => { setIsClient(true); }, []);
 
     const intentLabel = typeInfo[message.parsedIntent]?.label || 'Hindi Kilala';
     const IntentIcon = typeInfo[message.parsedIntent]?.icon || MessageSquare;
+
+    const farmer = farmers.find(f => f.id === message.farmerId);
+    const farmerName = farmer ? farmer.name : message.farmerName;
+    const avatarUrl = farmer?.avatarUrl;
 
     return (
         <Card className="flex flex-col h-full bg-sidebar text-sidebar-foreground border-sidebar-border">
@@ -47,11 +50,11 @@ function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onAct
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
                         <Avatar className="w-10 h-10 border-2 border-background/50 flex-shrink-0">
-                             <AvatarImage src={`https://picsum.photos/seed/${message.farmerId}/40/40`} alt={message.farmerName} />
-                             <AvatarFallback>{message.farmerName.charAt(0)}</AvatarFallback>
+                             <AvatarImage src={avatarUrl} alt={farmerName} />
+                             <AvatarFallback>{farmerName ? farmerName.charAt(0) : '?'}</AvatarFallback>
                          </Avatar>
                          <div className="min-w-0">
-                            <span className="font-semibold truncate block">{message.farmerName}</span>
+                            <span className="font-semibold truncate block">{farmerName}</span>
                             <p className="text-xs text-sidebar-foreground/70">{message.phone}</p>
                          </div>
                     </div>
@@ -119,6 +122,7 @@ function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onAct
 }
 
 export default function SmsFeedPage() {
+    const { smsMessages, farmers, resources } = useData();
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [editableResponse, setEditableResponse] = React.useState('');
     const { toast } = useToast();
@@ -163,7 +167,7 @@ export default function SmsFeedPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {smsMessages.map(message => (
-              <SmsMessageCard key={message.id} message={message} onActionClick={openDialog} />
+              <SmsMessageCard key={message.id} message={message} onActionClick={openDialog} farmers={farmers} />
           ))}
       </div>
 

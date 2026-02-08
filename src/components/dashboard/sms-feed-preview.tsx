@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -7,9 +8,9 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { smsMessages } from '@/lib/data';
 import type { SmsIntent } from '@/lib/types';
 import { HoverTooltip } from '../ui/hover-tooltip';
+import { useData } from '@/context/data-context';
 
 const urgencyVariant = {
   high: 'destructive',
@@ -30,6 +31,7 @@ const typeInfo: Record<SmsIntent, {icon: React.ElementType }> = {
 }
 
 export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?: string }) {
+    const { smsMessages, farmers } = useData();
     const recentMessages = smsMessages.slice(0, 4);
     const [isClient, setIsClient] = useState(false);
 
@@ -59,13 +61,15 @@ export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?
                 <div className="space-y-4">
                 {recentMessages.map((message) => {
                     const TypeIcon = typeInfo[message.parsedIntent]?.icon || MessageCircle;
+                    const farmer = farmers.find(f => f.id === message.farmerId);
+                    const farmerName = farmer ? farmer.name : message.farmerName;
                     return (
                     <HoverTooltip key={message.id} text={`Layunin ng AI: ${message.parsedIntent} | Kumpiyansa: ${(message.aiConfidence * 100).toFixed(0)}%`}>
                         <div className="flex items-start gap-4">
                             <TypeIcon className="h-5 w-5 text-muted-foreground mt-1" />
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium leading-none truncate">
-                                    {message.farmerName}
+                                    {farmerName}
                                 </p>
                                 <p className="text-sm text-muted-foreground truncate">
                                     {message.message}

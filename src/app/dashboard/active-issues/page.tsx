@@ -2,13 +2,13 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { smsMessages, alerts } from '@/lib/data';
+import { alerts } from '@/lib/data';
 import { ShieldAlert, Droplets, Wind, Sun, User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, CloudCog, Tractor, ArrowLeft } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
-import type { SmsMessage, SmsIntent, Resource } from '@/lib/types';
+import type { SmsMessage, SmsIntent, Resource, Farmer } from '@/lib/types';
 import * as React from 'react';
 import { useRouter } from "next/navigation";
 import {
@@ -33,8 +33,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { resources } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useData } from "@/context/data-context";
 
 const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     REGISTER: { label: 'Pagpaparehistro', icon: User },
@@ -48,12 +48,16 @@ const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     UNKNOWN: { label: 'Hindi Kilala', icon: MessageSquare },
 }
 
-function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onActionClick: (type: DialogState['type'], message: SmsMessage) => void }) {
+function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessage, onActionClick: (type: DialogState['type'], message: SmsMessage) => void, farmers: Farmer[] }) {
     const [isClient, setIsClient] = React.useState(false);
     React.useEffect(() => { setIsClient(true); }, []);
 
     const intentLabel = typeInfo[message.parsedIntent]?.label || 'Hindi Kilala';
     const IntentIcon = typeInfo[message.parsedIntent]?.icon || MessageSquare;
+    
+    const farmer = farmers.find(f => f.id === message.farmerId);
+    const farmerName = farmer ? farmer.name : message.farmerName;
+    const avatarUrl = farmer?.avatarUrl;
 
     return (
         <Card className="flex flex-col h-full bg-sidebar text-sidebar-foreground border-sidebar-border">
@@ -61,11 +65,11 @@ function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onAct
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
                         <Avatar className="w-10 h-10 border-2 border-background/50 flex-shrink-0">
-                             <AvatarImage src={`https://picsum.photos/seed/${message.farmerId}/40/40`} alt={message.farmerName} />
-                             <AvatarFallback>{message.farmerName.charAt(0)}</AvatarFallback>
+                             <AvatarImage src={avatarUrl} alt={farmerName} />
+                             <AvatarFallback>{farmerName ? farmerName.charAt(0) : '?'}</AvatarFallback>
                          </Avatar>
                          <div className="min-w-0">
-                            <span className="font-semibold truncate block">{message.farmerName}</span>
+                            <span className="font-semibold truncate block">{farmerName}</span>
                             <p className="text-xs text-sidebar-foreground/70">{message.phone}</p>
                          </div>
                     </div>
@@ -138,6 +142,7 @@ type DialogState = {
 }
 
 export default function ActiveIssuesPage() {
+    const { smsMessages, farmers, resources } = useData();
     const highUrgencySms = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval');
     const criticalAlerts = alerts.filter(a => a.severity === 'Kritikal');
     const router = useRouter();
@@ -242,7 +247,7 @@ export default function ActiveIssuesPage() {
         <h2 className="text-xl font-semibold tracking-tight mb-4">Mga SMS na may Mataas na Urgency</h2>
          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {highUrgencySms.map(message => (
-              <SmsMessageCard key={message.id} message={message} onActionClick={openDialog} />
+              <SmsMessageCard key={message.id} message={message} onActionClick={openDialog} farmers={farmers} />
           ))}
            {highUrgencySms.length === 0 && (
                  <Card className="md:col-span-2 xl:col-span-3">
