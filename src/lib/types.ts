@@ -14,7 +14,7 @@ export type NavItem = {
   }[];
 };
 
-export type UserRole = 'barangay';
+export type UserRole = 'barangay' | 'developer';
 
 export type UserProfile = {
   uid: string;
@@ -22,7 +22,6 @@ export type UserProfile = {
   displayName: string;
   role: UserRole;
   barangayId: string;
-  municipalityId: string;
 };
 
 export type FarmerStatus = 'pending_approval' | 'active' | 'inactive' | 'rejected';

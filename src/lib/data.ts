@@ -348,10 +348,18 @@ export const farmerLogbookEntries: LogbookEntry[] = [
     }
 ];
 
+export const registeredUsers = [
+    { email: 'brgy-admin@lingkodani.gov.ph', name: 'Brgy. Admin', role: 'barangay' },
+    { email: 'captain@lingkodani.gov.ph', name: 'Bgy. Captain Cruz', role: 'barangay' },
+    { email: 'secretary@lingkodani.gov.ph', name: 'Sec. Maria Clara', role: 'barangay' },
+    { email: 'aew@lingkodani.gov.ph', name: 'AEW Jose Rizal', role: 'barangay' },
+    { email: 'dev@lingkodani.gov.ph', name: 'Developer', role: 'developer' },
+];
+
 export const auditLogs: AuditLog[] = [
-    { id: 'AUD001', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'APPROVE_AI_REPLY', details: 'Inaprubahan ang tugon para sa SMS002 mula kay Juan dela Cruz.'},
-    { id: 'AUD002', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'REJECT_AI_REPLY', details: 'Tinanggihan ang tugon para sa SMS003 mula kay Jose Rizal.'},
-    { id: 'AUD003', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'SEND_BROADCAST', details: 'Nagpadala ng alerto sa baha sa 4 na magsasaka.'},
+    { id: 'AUD001', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), user: 'AEW Jose Rizal', action: 'APPROVE_AI_REPLY', details: 'Inaprubahan ang tugon para sa SMS002 mula kay Juan dela Cruz.'},
+    { id: 'AUD002', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), user: 'Sec. Maria Clara', action: 'REJECT_AI_REPLY', details: 'Tinanggihan ang tugon para sa SMS003 mula kay Jose Rizal.'},
+    { id: 'AUD003', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), user: 'Bgy. Captain Cruz', action: 'SEND_BROADCAST', details: 'Nagpadala ng alerto sa baha sa 4 na magsasaka.'},
     { id: 'AUD004', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'UPDATE_FARMER', details: 'In-update ang mga pananim para kay Maria Clara (FARM002).'},
     { id: 'AUD005', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), user: 'system', action: 'AUTO_ALERT_GENERATED', details: 'Bumuo ng alerto sa panganib ng baha batay sa data ng panahon.'},
 ];

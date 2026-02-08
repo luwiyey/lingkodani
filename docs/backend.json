@@ -2,27 +2,25 @@
   "entities": {
     "UserProfile": {
       "title": "User Profile",
-      "description": "Represents a Barangay admin app user.",
+      "description": "Represents an app user, who can be a 'barangay' staff or a 'developer'.",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "Firebase Auth User ID." },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["barangay"] },
-        "barangayId": { "type": "string", "description": "ID of the barangay they belong to." },
-        "municipalityId": { "type": "string", "description": "ID of the municipality they belong to." }
+        "role": { "type": "string", "enum": ["barangay", "developer"] },
+        "barangayId": { "type": "string", "description": "ID of the barangay they belong to." }
       },
-      "required": ["uid", "email", "role", "barangayId", "municipalityId"]
+      "required": ["uid", "email", "role", "barangayId"]
     },
     "Barangay": {
         "title": "Barangay",
         "description": "Represents a single barangay.",
         "type": "object",
         "properties": {
-            "name": { "type": "string" },
-            "municipalityId": { "type": "string" }
+            "name": { "type": "string" }
         },
-        "required": ["name", "municipalityId"]
+        "required": ["name"]
     },
     "Farmer": {
       "title": "Farmer",

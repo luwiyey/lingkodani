@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Leaf } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,16 +19,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import { registeredUsers } from "@/lib/data";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 export default function LoginPage() {
   const router = useRouter();
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
+  const [showNotRegisteredDialog, setShowNotRegisteredDialog] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would perform authentication here
-    // On success, redirect to the verification page
-    router.push("/verify");
+    const form = e.target as HTMLFormElement;
+    const emailInput = form.elements.namedItem('email') as HTMLInputElement;
+    const email = emailInput.value;
+
+    const isRegistered = registeredUsers.some(user => user.email === email);
+
+    if (isRegistered) {
+      router.push("/verify");
+    } else {
+      setShowNotRegisteredDialog(true);
+    }
   };
 
   return (
@@ -63,6 +84,7 @@ export default function LoginPage() {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="admin@example.com"
                     defaultValue="brgy-admin@lingkodani.gov.ph"
@@ -95,6 +117,20 @@ export default function LoginPage() {
        <footer className="relative z-10 p-4 text-center text-xs text-white">
           <Link href="/terms-of-service" className="hover:underline">Terms of Service</Link> | <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
         </footer>
+
+        <AlertDialog open={showNotRegisteredDialog} onOpenChange={setShowNotRegisteredDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Hindi Nakarehistro</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa developer upang ma-access ang Lingkod-Ani.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setShowNotRegisteredDialog(false)}>Naiintindihan</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }

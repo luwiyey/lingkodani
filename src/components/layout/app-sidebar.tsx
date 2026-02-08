@@ -19,7 +19,8 @@ import {
   GraduationCap,
   Leaf,
   ShieldAlert,
-  Sprout
+  Sprout,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   useSidebar,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
   Collapsible,
@@ -150,6 +152,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
 }
 
 export function AppSidebar() {
+  const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
@@ -168,9 +171,28 @@ export function AppSidebar() {
         )}
       </div>
       <SidebarContent className="pt-0 flex-1 flex flex-col">
-        <div>
+        <div className="flex-1">
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
             <NavMenu items={barangayNavItems} />
+        </div>
+        <div>
+            <SidebarSeparator />
+            <SidebarGroupLabel>Developer</SidebarGroupLabel>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <Link href="/dashboard/developer" passHref>
+                        <SidebarMenuButton
+                        isActive={pathname.startsWith('/dashboard/developer')}
+                        tooltip={{ children: "User Management", side: "right" }}
+                        >
+                        <Shield />
+                        <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
+                            <span className="truncate">User Management</span>
+                        </div>
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+            </SidebarMenu>
         </div>
       </SidebarContent>
     </Sidebar>
