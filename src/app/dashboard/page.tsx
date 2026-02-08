@@ -158,7 +158,7 @@ export default function DashboardPage() {
         </Card>
 
        <Card className="border-destructive/50" id="risk-center">
-        <CardHeader className="flex-row items-start justify-between">
+        <CardHeader className="flex flex-wrap flex-row items-start justify-between gap-4">
             <div className="flex-1">
                 <div className="flex items-center">
                     <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>

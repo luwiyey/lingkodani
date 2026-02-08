@@ -249,8 +249,8 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        <div className="flex gap-4">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap gap-4">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -461,5 +461,4 @@ export default function InventoryPage() {
     </>
   );
 }
-
     

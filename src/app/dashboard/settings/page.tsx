@@ -240,7 +240,7 @@ export default function BarangaySettingsPage() {
             <div className="space-y-4">
                  <div className="space-y-2">
                     <Label>Oras ng Serbisyo ng Auto-Reply</Label>
-                     <div className="flex items-center gap-2">
+                     <div className="flex flex-wrap items-center gap-2">
                         <Input 
                             id="reply-start-time" 
                             type="time" 

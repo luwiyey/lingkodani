@@ -67,13 +67,13 @@ function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onAct
         <Card className="flex flex-col h-full bg-sidebar text-sidebar-foreground border-sidebar-border">
             <CardContent className="p-4 space-y-4 flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 border-2 border-background/50">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="w-10 h-10 border-2 border-background/50 flex-shrink-0">
                              <AvatarImage src={`https://picsum.photos/seed/${message.farmerId}/40/40`} alt={message.farmerName} />
                              <AvatarFallback>{message.farmerName.charAt(0)}</AvatarFallback>
                          </Avatar>
-                         <div>
-                            <span className="font-semibold">{message.farmerName}</span>
+                         <div className="min-w-0">
+                            <span className="font-semibold truncate block">{message.farmerName}</span>
                             <p className="text-xs text-sidebar-foreground/70">{message.phone}</p>
                          </div>
                     </div>
