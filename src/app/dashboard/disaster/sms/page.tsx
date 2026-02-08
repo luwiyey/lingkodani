@@ -248,7 +248,7 @@ function DisasterSmsFeed() {
 export default function DisasterSmsPage() {
     return (
         <div className="flex flex-col gap-6 h-full">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-destructive text-destructive-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg bg-destructive text-destructive-foreground">
                 <div className='flex items-center gap-4'>
                     <AlertTriangle className="h-6 w-6" />
                     <div className="flex items-center">

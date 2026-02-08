@@ -127,12 +127,12 @@ export default function DisasterInventoryPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-         <div className="flex items-center justify-between p-4 rounded-lg bg-destructive text-destructive-foreground">
+         <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg bg-destructive text-destructive-foreground">
             <div className='flex items-center gap-4'>
                 <AlertTriangle className="h-6 w-6" />
                  <div className="flex items-center">
                     <h1 className="text-xl font-bold tracking-tight">Imbentaryo (Disaster Mode)</h1>
-                    <HelpDialog title="Disaster Inventory" tooltipText="Pamahalaan ang mga kritikal na suplay sa panahon ng sakuna.">
+                    <HelpDialog title="Imbentaryo sa Disaster Mode" tooltipText="Pamahalaan ang mga kritikal na suplay sa panahon ng sakuna.">
                         <p>Ito ay isang simplified na bersyon ng imbentaryo, na nakatuon sa mabilis na pag-access at pamamahala ng mga kritikal na suplay sa panahon ng sakuna (hal. relief goods, gamot, kagamitan sa pag-rescue).</p>
                         <p><strong>Mga Aksyon:</strong></p>
                         <ul className="list-disc pl-5 space-y-1">
@@ -226,91 +226,93 @@ export default function DisasterInventoryPage() {
 
             <Card>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                        <HoverTooltip text="Pindutin upang i-sort ayon sa pangalan (A-Z o Z-A).">
-                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
-                                <div className="flex items-center">
-                                    Pangalan ng Rekurso
-                                    <div className="w-8 flex-shrink-0 flex justify-center">
-                                        {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                                    </div>
-                                </div>
-                            </TableHead>
-                        </HoverTooltip>
-                      <TableHead>Kategorya</TableHead>
-                      <HoverTooltip text="Pindutin upang i-sort ayon sa dami (pataas o pababa).">
-                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
-                                <div className="flex items-center">
-                                    Kasalukuyang Stak
-                                    <div className="w-8 flex-shrink-0 flex justify-center">
-                                        {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                                    </div>
-                                </div>
-                            </TableHead>
-                        </HoverTooltip>
-                        <HoverTooltip text="Pindutin upang i-sort ayon sa yunit (A-Z o Z-A).">
-                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
-                                <div className="flex items-center">
-                                    Yunit
-                                    <div className="w-8 flex-shrink-0 flex justify-center">
-                                        {sortConfig?.key === 'unit' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                                    </div>
-                                </div>
-                            </TableHead>
-                        </HoverTooltip>
-                        <HoverTooltip text="Pindutin upang i-sort ayon sa petsa (bago o luma).">
-                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
-                                <div className="flex items-center">
-                                    Huling Na-update
-                                    <div className="w-8 flex-shrink-0 flex justify-center">
-                                        {sortConfig?.key === 'lastUpdated' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                                    </div>
-                                </div>
-                            </TableHead>
-                        </HoverTooltip>
-                      <TableHead className="text-right">Mga Aksyon</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedResources.map((resource) => (
-                      <TableRow key={resource.id}>
-                        <TableCell className="font-medium break-words">{resource.name}</TableCell>
-                        <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
-                        <TableCell>{resource.stock}</TableCell>
-                        <TableCell className="break-words">{resource.unit}</TableCell>
-                        <TableCell className="break-words">{isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}</TableCell>
-                        <TableCell className="text-right">
-                            <div className="flex flex-wrap justify-end gap-1">
-                              <HoverTooltip text="I-edit ang mga detalye ng rekurso na ito.">
-                                <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
-                              </HoverTooltip>
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <HoverTooltip text="Permanenteng tanggalin ang rekurso na ito.">
-                                        <Button variant="destructive" size="sm"><Trash2 /></Button>
-                                    </HoverTooltip>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang rekurso.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </TableCell>
+                <div className="relative w-full overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                          <HoverTooltip text="Pindutin upang i-sort ayon sa pangalan (A-Z o Z-A).">
+                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                                  <div className="flex items-center">
+                                      Pangalan ng Rekurso
+                                      <div className="w-8 flex-shrink-0 flex justify-center">
+                                          {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                      </div>
+                                  </div>
+                              </TableHead>
+                          </HoverTooltip>
+                        <TableHead>Kategorya</TableHead>
+                        <HoverTooltip text="Pindutin upang i-sort ayon sa dami (pataas o pababa).">
+                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
+                                  <div className="flex items-center">
+                                      Kasalukuyang Stak
+                                      <div className="w-8 flex-shrink-0 flex justify-center">
+                                          {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                      </div>
+                                  </div>
+                              </TableHead>
+                          </HoverTooltip>
+                          <HoverTooltip text="Pindutin upang i-sort ayon sa yunit (A-Z o Z-A).">
+                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
+                                  <div className="flex items-center">
+                                      Yunit
+                                      <div className="w-8 flex-shrink-0 flex justify-center">
+                                          {sortConfig?.key === 'unit' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                      </div>
+                                  </div>
+                              </TableHead>
+                          </HoverTooltip>
+                          <HoverTooltip text="Pindutin upang i-sort ayon sa petsa (bago o luma).">
+                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
+                                  <div className="flex items-center">
+                                      Huling Na-update
+                                      <div className="w-8 flex-shrink-0 flex justify-center">
+                                          {sortConfig?.key === 'lastUpdated' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                      </div>
+                                  </div>
+                              </TableHead>
+                          </HoverTooltip>
+                        <TableHead className="text-right">Mga Aksyon</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedResources.map((resource) => (
+                        <TableRow key={resource.id}>
+                          <TableCell className="font-medium break-words">{resource.name}</TableCell>
+                          <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
+                          <TableCell>{resource.stock}</TableCell>
+                          <TableCell className="break-words">{resource.unit}</TableCell>
+                          <TableCell className="break-words">{isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}</TableCell>
+                          <TableCell className="text-right">
+                              <div className="flex flex-wrap justify-end gap-1">
+                                <HoverTooltip text="I-edit ang mga detalye ng rekurso na ito.">
+                                  <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
+                                </HoverTooltip>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <HoverTooltip text="Permanenteng tanggalin ang rekurso na ito.">
+                                          <Button variant="destructive" size="sm"><Trash2 /></Button>
+                                      </HoverTooltip>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang rekurso.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                              </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </div>
