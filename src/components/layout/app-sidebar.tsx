@@ -48,9 +48,15 @@ import { useData } from "@/context/data-context";
 function NavMenu({ items }: { items: NavItem[] }) {
     const pathname = usePathname();
     const { farmers } = useData();
-    const { state } = useSidebar();
+    const { state, isMobile, setOpenMobile } = useSidebar();
     const isCollapsed = state === 'collapsed';
     const pendingApprovalsCount = farmers.filter(f => f.status === 'pending_approval').length;
+
+    const handleLinkClick = () => {
+        if (isMobile) {
+            setOpenMobile(false);
+        }
+    };
 
     const isParentActive = (item: NavItem) => {
         if (item.subItems) {
@@ -90,7 +96,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                                 const subItemLabel = subItem.href === '/dashboard/farmers/approvals' && pendingApprovalsCount > 0 ? String(pendingApprovalsCount) : subItem.label;
                                 return (
                                     <Link key={subItem.title} href={subItem.href} passHref>
-                                        <DropdownMenuItem className="flex justify-between cursor-pointer">
+                                        <DropdownMenuItem onClick={handleLinkClick} className="flex justify-between cursor-pointer">
                                             <span>{subItem.title}</span>
                                             {subItemLabel && (
                                                 <span className="ml-auto text-xs font-bold text-primary-foreground bg-primary rounded-full px-1.5 py-0.5">
@@ -128,7 +134,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                                 const subItemLabel = subItem.href === '/dashboard/farmers/approvals' && pendingApprovalsCount > 0 ? String(pendingApprovalsCount) : subItem.label;
                                 return (
                                     <SidebarMenuSubItem key={subItem.title}>
-                                    <Link href={subItem.href}>
+                                    <Link href={subItem.href} onClick={handleLinkClick}>
                                         <SidebarMenuSubButton isActive={pathname === subItem.href}>
                                         <span>{subItem.title}</span>
                                         {subItemLabel && (
@@ -148,6 +154,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                   ) : (
                     <Link href={item.href} passHref>
                       <SidebarMenuButton
+                        onClick={handleLinkClick}
                         isActive={isParentActive(item)}
                         tooltip={{ children: item.title, side: "right" }}
                       >
