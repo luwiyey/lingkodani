@@ -119,9 +119,9 @@ export default function ReportsPage() {
 
         <Tabs defaultValue="sms" className="w-full">
             <TabsList className="grid w-full grid-cols-3 rounded-none border-b bg-transparent p-0">
-                <TabsTrigger value="sms" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">Pagsusuri ng SMS</TabsTrigger>
-                <TabsTrigger value="ai" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">Performance ng AI</TabsTrigger>
-                <TabsTrigger value="operations" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">Operasyon at Pakikilahok</TabsTrigger>
+                <TabsTrigger value="sms" className="relative h-auto min-h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Pagsusuri ng SMS</TabsTrigger>
+                <TabsTrigger value="ai" className="relative h-auto min-h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Performance ng AI</TabsTrigger>
+                <TabsTrigger value="operations" className="relative h-auto min-h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Operasyon at Pakikilahok</TabsTrigger>
             </TabsList>
             <TabsContent value="sms" className="mt-6">
                 <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -165,4 +165,5 @@ export default function ReportsPage() {
         </Tabs>
     </div>
   );
-}
+
+    
