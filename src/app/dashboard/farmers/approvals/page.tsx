@@ -119,7 +119,7 @@ export default function ApprovalsPage() {
         </CardHeader>
         <CardContent>
           <div className="relative w-full overflow-auto">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="px-2 md:px-4">Pangalan</TableHead>
@@ -133,7 +133,7 @@ export default function ApprovalsPage() {
                 {filteredFarmers.length > 0 ? (
                   filteredFarmers.map((farmer) => (
                     <TableRow key={farmer.id}>
-                      <TableCell className="font-medium px-2 py-4 md:px-4">{farmer.name}</TableCell>
+                      <TableCell className="font-medium px-2 py-4 md:px-4 break-words">{farmer.name}</TableCell>
                       <TableCell className="break-all px-2 py-4 md:px-4">{farmer.phone}</TableCell>
                       <TableCell className="break-words px-2 py-4 md:px-4">{farmer.sitio}, {farmer.barangay}</TableCell>
                       <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>

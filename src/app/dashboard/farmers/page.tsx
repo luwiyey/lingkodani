@@ -307,7 +307,7 @@ export default function FarmersPage() {
         <Card>
           <CardContent className="p-0">
             <div className="relative w-full overflow-auto">
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
                       <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4">

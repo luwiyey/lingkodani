@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import React from "react";
 
 const stageColors: { [key: string]: string } = {
     'Pagtatanim': 'bg-blue-500/10 text-blue-500',
@@ -23,6 +24,11 @@ const stageColors: { [key: string]: string } = {
 export default function ActiveFarmsPage() {
   const router = useRouter();
   const { farmers } = useData();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const activeFarms = farmers.filter(f => f.status === 'active').map((farmer, index) => {
     const stages = ['Paglago', 'Pamumulaklak', 'Pagtatanim', 'Pag-aani'];
@@ -73,7 +79,7 @@ export default function ActiveFarmsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="px-2 md:px-4">Pangalan ng Magsasaka</TableHead>
@@ -93,7 +99,7 @@ export default function ActiveFarmsPage() {
                       {farm.stage}
                     </Badge>
                   </TableCell>
-                  <TableCell className="break-words px-2 py-4 md:px-4">{new Date(farm.lastUpdate).toLocaleDateString()}</TableCell>
+                  <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(farm.lastUpdate).toLocaleDateString() : ''}</TableCell>
                   <TableCell className="text-right px-2 py-4 md:px-4">
                     <Button asChild variant="outline" size="sm">
                         <Link href={`/dashboard/farmers/${farm.farmerId}`}>
