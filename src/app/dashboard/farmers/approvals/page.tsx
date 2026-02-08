@@ -25,18 +25,20 @@ export default function ApprovalsPage() {
   const pendingFarmers = farmers.filter(f => f.status === 'pending_approval');
 
   const handleApproval = (farmerId: string, isApproved: boolean) => {
-    const farmer = pendingFarmers.find(f => f.id === farmerId);
-    if (!farmer) return;
+    const farmerToUpdate = farmers.find(f => f.id === farmerId);
+    if (!farmerToUpdate) return;
 
-    setFarmers(current => 
-        current.map(f => 
-            f.id === farmerId ? { ...f, status: isApproved ? 'active' : 'rejected' } : f
-        )
+    setFarmers(current =>
+      current.map(f =>
+        f.id === farmerId
+          ? { ...f, status: isApproved ? 'active' : 'rejected' }
+          : f
+      )
     );
 
     toast({
       title: isApproved ? "Magsasaka Inaprubahan" : "Magsasaka Tinanggihan",
-      description: `Si ${farmer.name} ay matagumpay na ${isApproved ? 'naaprubahan at naidagdag sa database' : 'tinanggihan'}.`,
+      description: `Si ${farmerToUpdate.name} ay matagumpay na ${isApproved ? 'naaprubahan at naidagdag sa database' : 'tinanggihan'}.`,
     });
   };
 
