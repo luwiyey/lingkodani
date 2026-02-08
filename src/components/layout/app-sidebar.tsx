@@ -145,8 +145,15 @@ export function AppSidebar() {
   const barangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { title: "Live SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
-      { title: "Pamamahala ng Alerto", href: "/dashboard/alerts", icon: Siren },
-      { title: "Mga Aktibong Isyu", href: "/dashboard/active-issues", icon: ShieldAlert },
+      {
+        title: "Panganib at Alerto",
+        href: "/dashboard/active-issues",
+        icon: ShieldAlert,
+        subItems: [
+          { title: "Mga Aktibong Isyu", href: "/dashboard/active-issues" },
+          { title: "Pamamahala ng Alerto", href: "/dashboard/alerts" },
+        ],
+      },
       {
         title: "Magsasaka",
         href: "/dashboard/farmers",
@@ -159,8 +166,15 @@ export function AppSidebar() {
           { title: "Pangkalahatang-ideya", href: "/dashboard/oversight" },
         ],
       },
-      { title: "Imbentaryo", href: "/dashboard/inventory", icon: Archive },
-      { title: "Mga Voucher", href: "/dashboard/vouchers", icon: Ticket },
+      {
+        title: "Rekurso",
+        href: "/dashboard/inventory",
+        icon: Archive,
+        subItems: [
+          { title: "Imbentaryo", href: "/dashboard/inventory" },
+          { title: "Mga Voucher", href: "/dashboard/vouchers" },
+        ],
+      },
       {
         title: "Kaalaman",
         href: "/dashboard/knowledge-base",
