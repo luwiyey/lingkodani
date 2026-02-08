@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from "next/image";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,20 +17,30 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useToast } from "@/hooks/use-toast";
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { registeredUsers } from '@/lib/data';
 
 export default function VerifyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
 
   const handleVerification = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would verify the code here
+    
+    const email = searchParams.get('email');
+    const user = registeredUsers.find(u => u.email === email);
+
     toast({
       title: "Pag-verify Nagtagumpay!",
       description: "Maligayang pagbabalik sa Lingkod-Ani.",
     });
-    router.push('/dashboard');
+
+    if (user?.role === 'developer') {
+      router.push('/dashboard/developer');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const handleResendCode = () => {

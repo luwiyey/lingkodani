@@ -42,10 +42,10 @@ export default function LoginPage() {
     const emailInput = form.elements.namedItem('email') as HTMLInputElement;
     const email = emailInput.value;
 
-    const isRegistered = registeredUsers.some(user => user.email === email);
+    const user = registeredUsers.find(u => u.email === email);
 
-    if (isRegistered) {
-      router.push("/verify");
+    if (user) {
+      router.push(`/verify?email=${encodeURIComponent(email)}`);
     } else {
       setShowNotRegisteredDialog(true);
     }
