@@ -33,6 +33,13 @@ export default function VerifyPage() {
     router.push('/dashboard');
   };
 
+  const handleResendCode = () => {
+    toast({
+      title: "Code Ipinadala Muli",
+      description: "Isang bagong verification code ang ipinadala sa iyong email.",
+    });
+  };
+
   return (
     <div className="w-full h-screen relative">
        {loginBg && (
@@ -80,7 +87,7 @@ export default function VerifyPage() {
             </form>
              <div className="mt-4 text-center text-sm">
                 <HoverTooltip text="Humingi ng bagong code kung hindi mo natanggap ang una.">
-                  <button className="underline text-muted-foreground">
+                  <button onClick={handleResendCode} className="underline text-muted-foreground">
                     Hindi natanggap ang code? Ipadala muli.
                   </button>
                 </HoverTooltip>
