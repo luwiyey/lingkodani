@@ -36,6 +36,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
+import { HelpDialog } from '@/components/ui/help-dialog';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 type SortableKeys = keyof Omit<Resource, 'id' | 'category'>;
 
@@ -121,14 +123,28 @@ function DisasterInventory() {
     <>
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight">Imbentaryo (Disaster Mode)</h1>
-            <p className="text-muted-foreground">Pamahalaan ang mga kritikal na rekurso habang may sakuna.</p>
+          <div className="flex items-center">
+            <div className="space-y-1">
+                <h1 className="text-2xl font-bold tracking-tight">Imbentaryo (Disaster Mode)</h1>
+                <p className="text-muted-foreground">Pamahalaan ang mga kritikal na rekurso habang may sakuna.</p>
+            </div>
+             <HelpDialog title="Disaster Inventory">
+                <p>Ito ay isang simplified na bersyon ng imbentaryo, na nakatuon sa mabilis na pag-access at pamamahala ng mga kritikal na suplay sa panahon ng sakuna.</p>
+                <p><strong>Mga Aksyon:</strong></p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Magdagdag ng Rekurso:</strong> Mabilis na magdagdag ng mga bagong dating na donasyon o suplay.</li>
+                    <li><strong>Maghanap:</strong> Hanapin ang mga rekurso ayon sa pangalan.</li>
+                    <li><strong>Mag-sort:</strong> Pindutin ang mga header ng table upang ayusin ang listahan.</li>
+                    <li><strong>I-edit/Tanggalin:</strong> Mabilis na i-update ang bilang o tanggalin ang mga rekurso.</li>
+                </ul>
+            </HelpDialog>
           </div>
           <div className="flex gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button><PlusCircle /> Magdagdag ng Rekurso</Button>
+                <HoverTooltip text="Magdagdag ng bagong item sa imbentaryo, tulad ng relief goods o gamot.">
+                    <Button><PlusCircle /> Magdagdag ng Rekurso</Button>
+                </HoverTooltip>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -137,36 +153,44 @@ function DisasterInventory() {
                 </DialogHeader>
                 <form onSubmit={handleAddResource}>
                   <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">Pangalan</Label>
-                      <Input id="name" name="name" required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="category" className="text-right">Kategorya</Label>
-                      <Select name="category" required>
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Pumili ng kategorya" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pataba">Pataba</SelectItem>
-                          <SelectItem value="Binhi">Binhi</SelectItem>
-                          <SelectItem value="Kagamitan">Kagamitan</SelectItem>
-                          <SelectItem value="Paggawa">Paggawa</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="stock" className="text-right">Stak</Label>
-                      <Input id="stock" name="stock" type="number" required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="unit" className="text-right">Yunit</Label>
-                      <Input id="unit" name="unit" placeholder="hal. sako, yunit, bote" required className="col-span-3" />
-                    </div>
+                    <HoverTooltip text="Pangalan ng item, hal. 'Bigas', 'Sardinas'">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">Pangalan</Label>
+                        <Input id="name" name="name" required className="col-span-3" />
+                        </div>
+                    </HoverTooltip>
+                    <HoverTooltip text="Piliin ang kategorya ng item.">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="category" className="text-right">Kategorya</Label>
+                        <Select name="category" required>
+                            <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Pumili ng kategorya" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="Pataba">Pataba</SelectItem>
+                            <SelectItem value="Binhi">Binhi</SelectItem>
+                            <SelectItem value="Kagamitan">Kagamitan</SelectItem>
+                            <SelectItem value="Paggawa">Paggawa</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        </div>
+                    </HoverTooltip>
+                     <HoverTooltip text="Ilang piraso o dami ang mayroon?">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="stock" className="text-right">Stak</Label>
+                        <Input id="stock" name="stock" type="number" required className="col-span-3" />
+                        </div>
+                    </HoverTooltip>
+                    <HoverTooltip text="Paano ito binibilang? (hal. sako, lata, bote, yunit)">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="unit" className="text-right">Yunit</Label>
+                        <Input id="unit" name="unit" placeholder="hal. sako, yunit, bote" required className="col-span-3" />
+                        </div>
+                    </HoverTooltip>
                   </div>
                   <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
-                    <Button type="submit">I-save ang Rekurso</Button>
+                    <HoverTooltip text="Isara ang window na ito nang walang pagbabago."><DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose></HoverTooltip>
+                    <HoverTooltip text="I-save ang bagong rekurso sa imbentaryo."><Button type="submit">I-save ang Rekurso</Button></HoverTooltip>
                   </DialogFooter>
                 </form>
               </DialogContent>
@@ -175,16 +199,18 @@ function DisasterInventory() {
         </div>
 
         <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Maghanap ng rekurso..."
-              className="w-full rounded-lg bg-background pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <HoverTooltip text="Mag-type dito upang mabilis na mahanap ang isang partikular na rekurso.">
+            <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                type="search"
+                placeholder="Maghanap ng rekurso..."
+                className="w-full rounded-lg bg-background pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+          </HoverTooltip>
         </div>
 
         <Card>
@@ -192,39 +218,47 @@ function DisasterInventory() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
-                     <div className="flex items-center">
-                        Pangalan ng Rekurso
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
+                    <HoverTooltip text="Pindutin upang i-sort ayon sa pangalan (A-Z o Z-A).">
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                            <div className="flex items-center">
+                                Pangalan ng Rekurso
+                                <div className="w-8 flex-shrink-0 flex justify-center">
+                                    {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                </div>
+                            </div>
+                        </TableHead>
+                    </HoverTooltip>
                   <TableHead>Kategorya</TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
-                    <div className="flex items-center">
-                        Kasalukuyang Stak
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
-                    <div className="flex items-center">
-                        Yunit
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'unit' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
-                    <div className="flex items-center">
-                        Huling Na-update
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'lastUpdated' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
+                   <HoverTooltip text="Pindutin upang i-sort ayon sa dami (pataas o pababa).">
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
+                            <div className="flex items-center">
+                                Kasalukuyang Stak
+                                <div className="w-8 flex-shrink-0 flex justify-center">
+                                    {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                </div>
+                            </div>
+                        </TableHead>
+                    </HoverTooltip>
+                    <HoverTooltip text="Pindutin upang i-sort ayon sa yunit (A-Z o Z-A).">
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
+                            <div className="flex items-center">
+                                Yunit
+                                <div className="w-8 flex-shrink-0 flex justify-center">
+                                    {sortConfig?.key === 'unit' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                </div>
+                            </div>
+                        </TableHead>
+                    </HoverTooltip>
+                    <HoverTooltip text="Pindutin upang i-sort ayon sa petsa (bago o luma).">
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
+                            <div className="flex items-center">
+                                Huling Na-update
+                                <div className="w-8 flex-shrink-0 flex justify-center">
+                                    {sortConfig?.key === 'lastUpdated' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                </div>
+                            </div>
+                        </TableHead>
+                    </HoverTooltip>
                   <TableHead className="text-right">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
@@ -238,9 +272,15 @@ function DisasterInventory() {
                     <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                         <div className="flex flex-wrap justify-end gap-1">
-                           <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
+                           <HoverTooltip text="I-edit ang mga detalye ng rekurso na ito.">
+                             <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
+                           </HoverTooltip>
                            <AlertDialog>
-                              <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
+                              <AlertDialogTrigger asChild>
+                                <HoverTooltip text="Permanenteng tanggalin ang rekurso na ito.">
+                                    <Button variant="destructive" size="sm"><Trash2 /></Button>
+                                </HoverTooltip>
+                              </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
@@ -273,36 +313,44 @@ function DisasterInventory() {
               </DialogHeader>
               <form onSubmit={handleEditResource}>
                   <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="edit-name" className="text-right">Pangalan</Label>
-                      <Input id="edit-name" name="name" defaultValue={editingResource.name} required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="edit-category" className="text-right">Kategorya</Label>
-                      <Select name="category" defaultValue={editingResource.category} required>
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pataba">Pataba</SelectItem>
-                          <SelectItem value="Binhi">Binhi</SelectItem>
-                          <SelectItem value="Kagamitan">Kagamitan</SelectItem>
-                          <SelectItem value="Paggawa">Paggawa</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="edit-stock" className="text-right">Stak</Label>
-                      <Input id="edit-stock" name="stock" type="number" defaultValue={editingResource.stock} required className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="edit-unit" className="text-right">Yunit</Label>
-                      <Input id="edit-unit" name="unit" defaultValue={editingResource.unit} required className="col-span-3" />
-                    </div>
+                     <HoverTooltip text="Baguhin ang pangalan ng item.">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-name" className="text-right">Pangalan</Label>
+                        <Input id="edit-name" name="name" defaultValue={editingResource.name} required className="col-span-3" />
+                        </div>
+                    </HoverTooltip>
+                    <HoverTooltip text="Baguhin ang kategorya ng item.">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-category" className="text-right">Kategorya</Label>
+                        <Select name="category" defaultValue={editingResource.category} required>
+                            <SelectTrigger className="col-span-3">
+                            <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="Pataba">Pataba</SelectItem>
+                            <SelectItem value="Binhi">Binhi</SelectItem>
+                            <SelectItem value="Kagamitan">Kagamitan</SelectItem>
+                            <SelectItem value="Paggawa">Paggawa</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        </div>
+                    </HoverTooltip>
+                    <HoverTooltip text="I-update ang kasalukuyang bilang o dami.">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-stock" className="text-right">Stak</Label>
+                        <Input id="edit-stock" name="stock" type="number" defaultValue={editingResource.stock} required className="col-span-3" />
+                        </div>
+                    </HoverTooltip>
+                    <HoverTooltip text="Baguhin ang yunit ng pagsukat.">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-unit" className="text-right">Yunit</Label>
+                        <Input id="edit-unit" name="unit" defaultValue={editingResource.unit} required className="col-span-3" />
+                        </div>
+                    </HoverTooltip>
                   </div>
                   <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
-                    <Button type="submit">I-save</Button>
+                    <HoverTooltip text="Isara nang hindi sine-save ang mga pagbabago."><DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose></HoverTooltip>
+                    <HoverTooltip text="I-save ang mga na-update na detalye."><Button type="submit">I-save</Button></HoverTooltip>
                   </DialogFooter>
                 </form>
             </DialogContent>
@@ -319,14 +367,23 @@ export default function DisasterInventoryPage() {
             <div className="flex items-center justify-between p-4 rounded-lg bg-destructive text-destructive-foreground">
                 <div className='flex items-center gap-4'>
                     <AlertTriangle className="h-6 w-6" />
-                    <h1 className="text-xl font-bold tracking-tight">Disaster Inventory Management</h1>
+                     <div className="flex items-center">
+                        <h1 className="text-xl font-bold tracking-tight">Disaster Inventory Management</h1>
+                        <HelpDialog title="Disaster Inventory Management">
+                            <p>Nasa Disaster Mode ka. Ang pahinang ito ay nagpapakita ng isang nakatuong view para sa pamamahala ng imbentaryo sa panahon ng mga emerhensiya.</p>
+                            <p>Lahat ng pagbabago na gagawin mo dito ay makikita rin sa regular na pahina ng imbentaryo.</p>
+                            <p>Pindutin ang 'Bumalik sa Disaster Dashboard' upang bumalik sa pangunahing command center para sa disaster response.</p>
+                        </HelpDialog>
+                     </div>
                 </div>
-                <Button asChild variant="outline" className="bg-transparent border-destructive-foreground/50 text-destructive-foreground hover:bg-destructive-foreground/10 hover:text-destructive-foreground">
-                    <Link href="/dashboard/disaster-mode">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Bumalik sa Disaster Dashboard
-                    </Link>
-                </Button>
+                <HoverTooltip text="Bumalik sa pangunahing dashboard para sa disaster response.">
+                    <Button asChild variant="outline" className="bg-transparent border-destructive-foreground/50 text-destructive-foreground hover:bg-destructive-foreground/10 hover:text-destructive-foreground">
+                        <Link href="/dashboard/disaster-mode">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Bumalik sa Disaster Dashboard
+                        </Link>
+                    </Button>
+                </HoverTooltip>
             </div>
             <div className="flex-1 overflow-y-auto">
                 <DisasterInventory />

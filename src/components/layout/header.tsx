@@ -35,6 +35,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { HoverTooltip } from '../ui/hover-tooltip';
 
 export function Header() {
   const router = useRouter();
@@ -60,7 +61,9 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-30 flex h-20 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-6">
-        <SidebarTrigger />
+        <HoverTooltip text="I-toggle ang sidebar. (Cmd/Ctrl + B)">
+            <SidebarTrigger />
+        </HoverTooltip>
         
         {state === 'collapsed' && !isMobile && (
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -75,33 +78,39 @@ export function Header() {
         
         <div className="flex-1" />
 
-        <div className="flex items-center gap-2">
-          <Label
-            htmlFor="disaster-mode"
-            className="flex items-center gap-2 text-sm font-medium"
-          >
-            <Flame className="w-4 h-4 text-destructive" />
-            <span className="hidden sm:inline">Disaster Mode</span>
-          </Label>
-          <Switch
-            id="disaster-mode"
-            checked={isDisasterModeActive}
-            onCheckedChange={handleSwitchChange}
-            className="data-[state=checked]:bg-destructive"
-          />
-        </div>
+        <HoverTooltip text={isDisasterModeActive ? "I-deactivate ang Disaster Mode" : "I-activate ang Disaster Mode"}>
+            <div className="flex items-center gap-2">
+            <Label
+                htmlFor="disaster-mode"
+                className="flex items-center gap-2 text-sm font-medium cursor-pointer"
+            >
+                <Flame className="w-4 h-4 text-destructive" />
+                <span className="hidden sm:inline">Disaster Mode</span>
+            </Label>
+            <Switch
+                id="disaster-mode"
+                checked={isDisasterModeActive}
+                onCheckedChange={handleSwitchChange}
+                className="data-[state=checked]:bg-destructive"
+            />
+            </div>
+        </HoverTooltip>
 
-        <ThemeToggle />
+        <HoverTooltip text="Baguhin ang tema (Light/Dark).">
+            <ThemeToggle />
+        </HoverTooltip>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
-                3
-              </span>
-              <span className="sr-only">I-toggle ang mga notipikasyon</span>
-            </Button>
+            <HoverTooltip text="Tingnan ang mga notipikasyon.">
+                <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
+                    3
+                </span>
+                <span className="sr-only">I-toggle ang mga notipikasyon</span>
+                </Button>
+            </HoverTooltip>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Mga Notipikasyon</DropdownMenuLabel>
@@ -137,13 +146,15 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="overflow-hidden rounded-full"
-            >
-              <User className="h-5 w-5" />
-            </Button>
+            <HoverTooltip text="Pamahalaan ang iyong account o mag-logout.">
+                <Button
+                variant="outline"
+                size="icon"
+                className="overflow-hidden rounded-full"
+                >
+                <User className="h-5 w-5" />
+                </Button>
+            </HoverTooltip>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Aking Account</DropdownMenuLabel>

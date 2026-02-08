@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { HelpDialog } from '@/components/ui/help-dialog';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 type DialogState = {
   type: 'approve' | 'manual' | 'find' | null;
@@ -88,20 +90,26 @@ function SmsMessageCard({ message, onActionClick }: { message: SmsMessage, onAct
 
                 <div className="flex flex-col gap-2 pt-2">
                     <div className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className="bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary">
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Aprubahan
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80">
-                            <Send className="mr-2 h-4 w-4" />
-                            Manwal
-                        </Button>
+                        <HoverTooltip text="Suriin at i-edit ang tugon ng AI bago ipadala.">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className="bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary">
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Aprubahan
+                            </Button>
+                        </HoverTooltip>
+                        <HoverTooltip text="Sumulat ng sarili mong tugon mula sa simula.">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80">
+                                <Send className="mr-2 h-4 w-4" />
+                                Manwal
+                            </Button>
+                        </HoverTooltip>
                     </div>
                     {message.parsedIntent === 'REQUEST' && (
-                        <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80 w-full">
-                            <Wrench className="mr-2 h-4 w-4" />
-                            Maghanap ng Kagamitan
-                        </Button>
+                        <HoverTooltip text="Tingnan kung may magagamit na kagamitan sa imbentaryo.">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80 w-full">
+                                <Wrench className="mr-2 h-4 w-4" />
+                                Maghanap ng Kagamitan
+                            </Button>
+                        </HoverTooltip>
                     )}
                 </div>
             </CardContent>
@@ -136,9 +144,26 @@ export default function SmsFeedPage() {
     
   return (
     <>
-      <div className="space-y-1 mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Live na Feed ng SMS</h1>
-          <p className="text-muted-foreground">Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</p>
+      <div className="flex items-center mb-6">
+          <div className="space-y-1">
+              <h1 className="text-2xl font-bold tracking-tight">Live na Feed ng SMS</h1>
+              <p className="text-muted-foreground">Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</p>
+          </div>
+          <HelpDialog title="Live na Feed ng SMS">
+            <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang SMS.</p>
+            <p><strong>Daloy ng Trabaho:</strong></p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Ang isang bagong SMS ay papasok at susuriin ng AI.</li>
+                <li>Ang AI ay magmumungkahi ng isang tugon at kikilalanin ang layunin ng mensahe.</li>
+                <li>Ang iyong gawain ay suriin ang mungkahi ng AI.</li>
+            </ul>
+             <p><strong>Mga Aksyon sa Card:</strong></p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li><strong>Aprubahan:</strong> Nagbubukas ng pop-up kung saan maaari mong i-edit ang tugon ng AI bago ito ipadala.</li>
+                <li><strong>Manwal:</strong> Nagbibigay-daan sa iyo na magsulat ng iyong sariling tugon mula sa simula.</li>
+                <li><strong>Maghanap ng Kagamitan:</strong> Para sa mga hiling ng kagamitan, mabilis nitong hinahanap ang imbentaryo.</li>
+            </ul>
+          </HelpDialog>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {smsMessages.map(message => (
@@ -154,17 +179,23 @@ export default function SmsFeedPage() {
               Maaari mong i-edit ang mensahe bago ipadala kay {dialogState.message?.farmerName}.
             </DialogDescription>
           </DialogHeader>
-          <Textarea 
-            className="my-4"
-            value={editableResponse}
-            onChange={(e) => setEditableResponse(e.target.value)}
-            rows={5} 
-          />
+          <HoverTooltip text="I-edit dito ang iminungkahing tugon ng AI.">
+            <Textarea 
+                className="my-4"
+                value={editableResponse}
+                onChange={(e) => setEditableResponse(e.target.value)}
+                rows={5} 
+            />
+          </HoverTooltip>
           <DialogFooter>
-            <DialogClose asChild>
-                <Button type="button" variant="secondary">Kanselahin</Button>
-            </DialogClose>
-            <Button onClick={() => handleAction('na-edit at naipadala')}>I-save at Ipadala</Button>
+            <HoverTooltip text="Isara at huwag ipadala ang tugon.">
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">Kanselahin</Button>
+                </DialogClose>
+            </HoverTooltip>
+            <HoverTooltip text="I-save ang iyong mga pag-edit at ipadala ang tugon sa magsasaka.">
+                <Button onClick={() => handleAction('na-edit at naipadala')}>I-save at Ipadala</Button>
+            </HoverTooltip>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -177,12 +208,18 @@ export default function SmsFeedPage() {
               Isulat ang iyong mensahe sa ibaba.
             </DialogDescription>
           </DialogHeader>
-          <Textarea className="my-4" placeholder="Simulan ang pagsusulat dito..." rows={5} />
+          <HoverTooltip text="Isulat dito ang iyong custom na tugon.">
+            <Textarea className="my-4" placeholder="Simulan ang pagsusulat dito..." rows={5} />
+          </HoverTooltip>
           <DialogFooter>
-            <DialogClose asChild>
-                <Button type="button" variant="secondary">Kanselahin</Button>
-            </DialogClose>
-            <Button onClick={() => handleAction('naipadala')}>Ipadala ang Mensahe</Button>
+             <HoverTooltip text="Isara at huwag magpadala ng mensahe.">
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">Kanselahin</Button>
+                </DialogClose>
+            </HoverTooltip>
+             <HoverTooltip text="Ipadala ang iyong isinulat na mensahe sa magsasaka.">
+                <Button onClick={() => handleAction('naipadala')}>Ipadala ang Mensahe</Button>
+            </HoverTooltip>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -203,15 +240,19 @@ export default function SmsFeedPage() {
                             <p className="font-semibold">{tool.name}</p>
                             <p className="text-sm text-muted-foreground">{tool.stock} yunit ang magagamit</p>
                         </div>
-                        <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`)}>Mag-alok</Button>
+                        <HoverTooltip text={`Ipadala ang isang SMS na nag-aalok ng ${tool.name} sa magsasaka.`}>
+                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`)}>Mag-alok</Button>
+                        </HoverTooltip>
                     </div>
                 ))}
             </div>
           </ScrollArea>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">Isara</Button>
-            </DialogClose>
+            <HoverTooltip text="Isara ang window na ito.">
+                <DialogClose asChild>
+                <Button type="button" variant="secondary">Isara</Button>
+                </DialogClose>
+            </HoverTooltip>
           </DialogFooter>
         </DialogContent>
       </Dialog>
