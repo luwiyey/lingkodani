@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { TopInquiriesChart } from '@/components/reports/top-inquiries-chart';
 
 export default function DashboardPage() {
     const approvedFarmersCount = allFarmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
@@ -204,8 +205,9 @@ export default function DashboardPage() {
             <ResourceStatus />
         </div>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+      <div className="grid gap-6 md:grid-cols-2">
         <DailySmsChart />
+        <TopInquiriesChart />
       </div>
 
     </div>
