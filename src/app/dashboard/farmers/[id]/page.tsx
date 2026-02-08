@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpDialog } from '@/components/ui/help-dialog';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 function TimelineItem({ entry }: { entry: LogbookEntry }) {
   const { icon: Icon, title, description, timestamp } = entry;
@@ -93,17 +94,19 @@ export default function FarmerLogbookPage() {
   return (
     <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()}>
-              <ArrowLeft />
-            </Button>
+            <HoverTooltip text="Bumalik sa listahan ng mga magsasaka.">
+                <Button variant="outline" size="icon" onClick={() => router.back()}>
+                  <ArrowLeft />
+                </Button>
+            </HoverTooltip>
             <div className="space-y-1">
                 <div className="flex items-center">
                     <h1 className="text-2xl font-bold tracking-tight">Profile ng Magsasaka</h1>
                     <HelpDialog title="Profile ng Magsasaka">
-                        <p>Ito ang detalyadong view para sa isang magsasaka.</p>
-                        <p><strong>Profile Card:</strong> Naglalaman ng lahat ng personal at impormasyon sa bukid ng magsasaka. Maaari mong i-edit ang impormasyon sa pamamagitan ng pag-click sa Edit button.</p>
-                        <p><strong>Logbook:</strong> Isang kumpletong timeline ng lahat ng interaksyon, kabilang ang mga SMS, payo ng AI, at mga tala mula sa field. Ito ay mahalaga para sa pag-unawa sa kasaysayan ng isang magsasaka.</p>
-                        <p><strong>Magdagdag ng Tala:</strong> Para sa mga AEW, ito ay isang paraan upang mag-log ng mga obserbasyon, mag-upload ng mga larawan, o mag-record ng audio mula sa isang pagbisita sa bukid.</p>
+                        <p>Ito ang detalyadong view para sa isang partikular na magsasaka. Dito mo makikita ang lahat ng impormasyong may kaugnayan sa kanila sa isang lugar.</p>
+                        <p><strong>Profile Card:</strong> Naglalaman ito ng lahat ng personal at impormasyon sa bukid ng magsasaka. Maaari mong i-edit ang impormasyon sa pamamagitan ng pag-click sa "Edit" (lapis) na button.</p>
+                        <p><strong>Logbook:</strong> Ito ang pinakamahalagang bahagi. Ito ay isang kumpletong timeline ng lahat ng interaksyon sa magsasaka, kabilang ang kanilang mga SMS, payo ng AI, mga tala mula sa field, at iba pang mahahalagang kaganapan. Nakakatulong ito para maunawaan ang buong kasaysayan ng isang magsasaka.</p>
+                        <p><strong>Magdagdag ng Tala:</strong> Para sa mga Agricultural Extension Workers (AEWs), ito ay isang mahalagang tool para mag-log ng mga obserbasyon, mag-upload ng mga larawan, o mag-record ng audio mula sa isang pagbisita sa bukid.</p>
                     </HelpDialog>
                 </div>
                 <p className="text-muted-foreground">Tingnan ang kumpletong profile at kasaysayan ni {farmer?.name}.</p>
@@ -120,9 +123,11 @@ export default function FarmerLogbookPage() {
                                 <CardDescription>ID: {farmer.id}</CardDescription>
                             </div>
                         </div>
-                        <Button variant="outline" size="icon" onClick={() => setEditingFarmer(farmer)}>
-                            <Edit className="h-4 w-4" />
-                        </Button>
+                         <HoverTooltip text="I-edit ang profile ng magsasaka na ito.">
+                            <Button variant="outline" size="icon" onClick={() => setEditingFarmer(farmer)}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                        </HoverTooltip>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm">
                         <p><strong>Telepono:</strong> {farmer.phone}</p>
@@ -143,7 +148,9 @@ export default function FarmerLogbookPage() {
                         <div className="text-center text-muted-foreground p-4 border-2 border-dashed rounded-lg">
                             <p>Wala pang na-upload na dokumento.</p>
                         </div>
-                        <Button variant="outline" className="w-full mt-4"><Upload className="mr-2"/> Mag-upload</Button>
+                        <HoverTooltip text="Mag-upload ng isang file mula sa iyong computer.">
+                          <Button variant="outline" className="w-full mt-4"><Upload className="mr-2"/> Mag-upload</Button>
+                        </HoverTooltip>
                     </CardContent>
                 </Card>
                 <Card>
@@ -152,18 +159,26 @@ export default function FarmerLogbookPage() {
                         <CardDescription>Mag-log ng mga obserbasyon, mag-upload ng mga larawan, o mag-record ng audio mula sa field.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Textarea 
-                            placeholder="Isulat ang iyong mga obserbasyon dito..." 
-                            value={newNote}
-                            onChange={(e) => setNewNote(e.target.value)}
-                        />
+                        <HoverTooltip text="Isulat dito ang iyong mga napansin, rekomendasyon, o anumang mahalagang impormasyon mula sa iyong pagbisita sa bukid.">
+                            <Textarea 
+                                placeholder="Isulat ang iyong mga obserbasyon dito..." 
+                                value={newNote}
+                                onChange={(e) => setNewNote(e.target.value)}
+                            />
+                        </HoverTooltip>
                         <div className="flex gap-4">
-                            <Button variant="outline" className="flex-1"><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
-                            <Button variant="outline" className="flex-1"><Mic className="mr-2"/> Mag-record ng Audio</Button>
+                             <HoverTooltip text="Mag-upload ng larawan mula sa iyong pagbisita.">
+                                <Button variant="outline" className="flex-1"><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
+                            </HoverTooltip>
+                             <HoverTooltip text="Mag-record ng audio note o panayam sa magsasaka.">
+                                <Button variant="outline" className="flex-1"><Mic className="mr-2"/> Mag-record ng Audio</Button>
+                            </HoverTooltip>
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button className="w-full" onClick={handleSaveNote}><PlusCircle className="mr-2"/> I-save ang Tala</Button>
+                         <HoverTooltip text="I-save ang iyong isinulat na tala sa logbook ng magsasaka.">
+                            <Button className="w-full" onClick={handleSaveNote}><PlusCircle className="mr-2"/> I-save ang Tala</Button>
+                        </HoverTooltip>
                     </CardFooter>
                 </Card>
             </div>

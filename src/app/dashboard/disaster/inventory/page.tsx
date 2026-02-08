@@ -127,13 +127,13 @@ function DisasterInventory() {
                 <div className="flex items-center">
                     <h1 className="text-2xl font-bold tracking-tight">Imbentaryo (Disaster Mode)</h1>
                     <HelpDialog title="Disaster Inventory">
-                        <p>Ito ay isang simplified na bersyon ng imbentaryo, na nakatuon sa mabilis na pag-access at pamamahala ng mga kritikal na suplay sa panahon ng sakuna.</p>
+                        <p>Ito ay isang simplified na bersyon ng imbentaryo, na nakatuon sa mabilis na pag-access at pamamahala ng mga kritikal na suplay sa panahon ng sakuna (hal. relief goods, gamot, kagamitan sa pag-rescue).</p>
                         <p><strong>Mga Aksyon:</strong></p>
                         <ul className="list-disc pl-5 space-y-1">
-                            <li><strong>Magdagdag ng Rekurso:</strong> Mabilis na magdagdag ng mga bagong dating na donasyon o suplay.</li>
-                            <li><strong>Maghanap:</strong> Hanapin ang mga rekurso ayon sa pangalan.</li>
-                            <li><strong>Mag-sort:</strong> Pindutin ang mga header ng table upang ayusin ang listahan.</li>
-                            <li><strong>I-edit/Tanggalin:</strong> Mabilis na i-update ang bilang o tanggalin ang mga rekurso.</li>
+                            <li><strong>Magdagdag ng Rekurso:</strong> Mabilis na magdagdag ng mga bagong dating na donasyon o suplay. Punan lamang ang mga pangunahing detalye.</li>
+                            <li><strong>Maghanap:</strong> Hanapin ang mga rekurso ayon sa pangalan upang mabilis na matukoy ang kanilang stock.</li>
+                            <li><strong>Mag-sort:</strong> Pindutin ang mga header ng table (hal. 'Pangalan ng Rekurso', 'Kasalukuyang Stak') upang ayusin ang listahan at mabilis na makita kung ano ang pinakamarami o pinakakaunti.</li>
+                            <li><strong>I-edit/Tanggalin:</strong> Mabilis na i-update ang bilang ng stock habang ipinamamahagi ang mga suplay, o tanggalin ang mga naubos na.</li>
                         </ul>
                     </HelpDialog>
                 </div>
@@ -371,7 +371,7 @@ export default function DisasterInventoryPage() {
                         <h1 className="text-xl font-bold tracking-tight">Disaster Inventory Management</h1>
                         <HelpDialog title="Disaster Inventory Management">
                             <p>Nasa Disaster Mode ka. Ang pahinang ito ay nagpapakita ng isang nakatuong view para sa pamamahala ng imbentaryo sa panahon ng mga emerhensiya.</p>
-                            <p>Lahat ng pagbabago na gagawin mo dito ay makikita rin sa regular na pahina ng imbentaryo.</p>
+                            <p>Ito ay isang mas simpleng bersyon ng normal na imbentaryo, na nakatuon sa bilis at kahusayan. Lahat ng pagbabago na gagawin mo dito ay makikita rin sa regular na pahina ng imbentaryo.</p>
                             <p>Pindutin ang 'Bumalik sa Disaster Dashboard' upang bumalik sa pangunahing command center para sa disaster response.</p>
                         </HelpDialog>
                      </div>

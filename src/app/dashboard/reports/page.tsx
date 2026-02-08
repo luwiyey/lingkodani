@@ -49,10 +49,10 @@ export default function ReportsPage() {
           <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Mga Ulat at Pagsusuri</h1>
             <HelpDialog title="Mga Ulat at Pagsusuri">
-                <p>Ang pahinang ito ay ang iyong sentro para sa pagsusuri ng data. Dito mo makikita ang mga visual na representasyon ng mga trend at pattern na nangyayari sa iyong barangay.</p>
-                <p><strong>Buod ng AI:</strong> Isang mabilis na buod na binuo ng AI batay sa pinakabagong data. Magpalit ng timeframe (lingguhan, buwanan, atbp.) upang makita ang mga insight para sa iba't ibang panahon.</p>
-                <p><strong>Mga Tab:</strong> Ang mga ulat ay naka-grupo sa tatlong kategorya: Pagsusuri ng SMS, Performance ng AI, at Operasyon. Bawat tab ay naglalaman ng mga kaugnay na chart.</p>
-                <p><strong>Mga Chart:</strong> Bawat card ay isang chart. Maaari mong i-click ang expand button (parang box) sa kanang itaas ng bawat card upang makita ang mas malaki at mas detalyadong view ng chart, kasama ang isang mas malalim na pagsusuri at rekomendasyon.</p>
+                <p>Ang pahinang ito ay ang iyong sentro para sa pagsusuri ng data. Dito mo makikita ang mga visual na representasyon ng mga trend at pattern na nangyayari sa iyong komunidad ng magsasaka, na nagbibigay-daan sa iyo na gumawa ng mga desisyon na batay sa datos.</p>
+                <p><strong>Buod ng AI:</strong> Isang mabilis na buod na binuo ng AI batay sa lahat ng data para sa napiling timeframe. Maaari kang magpalit ng timeframe (Lingguhan, Buwanan, atbp.) upang makita ang mga insight para sa iba't ibang panahon.</p>
+                <p><strong>Mga Tab:</strong> Ang mga ulat ay naka-grupo sa tatlong pangunahing kategorya: "Pagsusuri ng SMS" (tungkol sa mga mensahe mismo), "Performance ng AI" (kung gaano kahusay gumagana ang AI), at "Operasyon at Pakikilahok" (tungkol sa workload at paggamit ng sistema).</p>
+                <p><strong>Mga Chart:</strong> Bawat card ay isang interactive na chart. Maaari mong i-click ang expand button (isang box icon) sa kanang itaas ng bawat card upang makita ang mas malaki at mas detalyadong view ng chart. Sa expanded view, makakakita ka ng mas malalim na pagsusuri at mga konkretong rekomendasyon batay sa data.</p>
             </HelpDialog>
           </div>
           <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight para sa paggawa ng desisyon.</p>
@@ -74,8 +74,8 @@ export default function ReportsPage() {
                         <div className="flex items-center">
                             <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Buod ng AI</CardTitle>
                             <HelpDialog title="Buod ng AI">
-                                <p>Ito ay isang awtomatikong buod na binuo ng artificial intelligence. Sinusuri nito ang lahat ng data para sa napiling timeframe at nagbibigay ng mga pangunahing insight at rekomendasyon.</p>
-                                <p>Halimbawa, kung tumaas ang mga ulat ng peste, sasabihin ito ng AI at magmumungkahi ng posibleng aksyon. Ito ay idinisenyo upang makatipid ka ng oras sa pagsusuri ng data.</p>
+                                <p>Ito ay isang awtomatikong buod na binuo ng artificial intelligence. Sinusuri nito ang lahat ng data mula sa mga chart sa ibaba para sa napiling timeframe at nagbibigay ng mga pangunahing insight at rekomendasyon sa simpleng wika.</p>
+                                <p>Halimbawa, kung tumaas ang mga ulat ng peste at sabay na bumaba ang paggamit ng isang partikular na payo, maaaring i-highlight ito ng AI at magmungkahi ng posibleng aksyon. Ito ay idinisenyo upang makatipid ka ng oras sa pagsusuri ng data at mabilis na matukoy ang mga mahahalagang isyu.</p>
                             </HelpDialog>
                         </div>
                         <CardDescription>Mga awtomatikong nabuong insight. Huling update: 7:00 PM.</CardDescription>

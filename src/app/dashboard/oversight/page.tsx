@@ -44,9 +44,9 @@ export default function OversightPage() {
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Pangkalahatang-ideya ng Barangay</h1>
             <HelpDialog title="Pangkalahatang-ideya ng Barangay">
-                <p>Ang pahinang ito ay nagbibigay ng isang "bird's-eye view" ng buong barangay, na pinaghiwa-hiwalay sa bawat zone o purok.</p>
-                <p>Mabilis mong makikita kung aling mga zone ang may pinakamaraming magsasaka at kung saan nagkukumpol-kumpol ang mga aktibong isyu (tulad ng mga ulat ng peste o sakit).</p>
-                <p>Ang badge para sa "Mga Aktibong Isyu" ay magiging pula kung mayroong higit sa isang isyu, na nagpapahiwatig na maaaring kailanganin ng lugar na iyon ang iyong atensyon.</p>
+                <p>Ang pahinang ito ay nagbibigay ng isang "bird's-eye view" ng buong barangay, na pinaghiwa-hiwalay sa bawat zone o purok. Ito ay isang tool para sa madaliang pagtatasa ng sitwasyon sa buong komunidad.</p>
+                <p>Gamit ang talahanayan, mabilis mong makikita kung aling mga zone ang may pinakamaraming magsasaka at kung saan nagkukumpol-kumpol ang mga aktibong isyu (tulad ng mga ulat ng peste, sakit, o iba pang mga problema na nangangailangan ng atensyon).</p>
+                <p>Ang badge para sa "Mga Aktibong Isyu" ay magiging pula kung mayroong higit sa isang isyu, na nagpapahiwatig na maaaring kailanganin ng lugar na iyon ang iyong agarang atensyon at posibleng isang field visit mula sa isang Agricultural Extension Worker (AEW).</p>
             </HelpDialog>
         </div>
         <p className="text-muted-foreground">Pinagsama-samang pagtingin sa aktibidad ng agrikultura sa lahat ng zone (sitio/purok).</p>

@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -139,9 +140,10 @@ export default function KnowledgeBasePage() {
           <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
             <HelpDialog title="Base ng Kaalaman">
-              <p>Ito ang iyong sentral na hub para sa lahat ng impormasyon sa pagsasaka. Mayroon itong dalawang pangunahing paraan ng paghahanap:</p>
-              <p><strong>Paghahanap gamit ang AI (itaas):</strong> Gamitin ito para sa mga kumplikadong tanong sa natural na wika (Tagalog/English). Ang AI ay magbibigay ng direktang sagot at magmumungkahi ng mga kaugnay na artikulo.</p>
-              <p><strong>Mga Bagong Dagdag na Artikulo:</strong> Nagpapakita ito ng mga pinakabagong artikulo. Mayroon itong sariling simpleng search bar para mabilis na mahanap ang mga artikulo ayon sa pamagat o keyword. Pindutin ang "Tingnan Lahat" para makita ang kumpletong listahan.</p>
+              <p>Ito ang iyong sentral na hub para sa lahat ng impormasyon sa pagsasaka. Dito mo maaaring hanapin ang mga sagot sa mga tanong ng magsasaka, pamahalaan ang mga umiiral na artikulo, at magdagdag ng mga bago.</p>
+              <p><strong>Paghahanap gamit ang AI (itaas na search bar):</strong> Gamitin ito para sa mga kumplikadong tanong sa natural na wika (Tagalog/English), hal. "Paano ko masusugpo ang mga peste sa aking taniman ng kamatis?". Ang AI ay magbibigay ng direktang sagot at magmumungkahi ng mga kaugnay na artikulo mula sa iyong knowledge base at sa web.</p>
+              <p><strong>Mga Mungkahing Artikulo ng AI:</strong> Sinusuri ng AI ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring kailanganin ng komunidad.</p>
+              <p><strong>Mga Bagong Dagdag na Artikulo:</strong> Nagpapakita ito ng mga pinakabagong artikulo. Mayroon itong sariling simpleng search bar para mabilis na mahanap ang mga artikulo ayon sa pamagat o keyword. Pindutin ang "Tingnan Lahat" para makita ang kumpletong listahan sa isang hiwalay na pahina.</p>
             </HelpDialog>
           </div>
           <p className="text-muted-foreground">Maghanap ng impormasyon at pamahalaan ang mga artikulo at audio.</p>
@@ -187,7 +189,8 @@ export default function KnowledgeBasePage() {
                     <div className="flex items-center">
                       <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng AI</CardTitle>
                       <HelpDialog title="Sagot ng AI">
-                        <p>Ito ang sagot na binuo ng artificial intelligence batay sa iyong tanong. Sinusuri nito ang parehong internal na knowledge base at mga resulta mula sa web search upang magbigay ng pinaka-komprehensibong sagot.</p>
+                        <p>Ito ang sagot na binuo ng artificial intelligence batay sa iyong tanong. Sinusuri nito ang parehong internal na knowledge base (ang iyong mga artikulo) at mga resulta mula sa isang web search upang magbigay ng pinaka-komprehensibo at napapanahong sagot.</p>
+                        <p>Ang layunin nito ay magbigay ng isang mabilis at direktang sagot na maaari mong ibahagi kaagad sa magsasaka.</p>
                       </HelpDialog>
                     </div>
                 </CardHeader>
@@ -231,6 +234,7 @@ export default function KnowledgeBasePage() {
                       <CardTitle className="flex items-center gap-2"><Bot className="h-6 w-6" />Mga Mungkahing Artikulo ng AI</CardTitle>
                       <HelpDialog title="Mga Mungkahing Artikulo ng AI">
                         <p>Sinusuri ng AI ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend at mga karaniwang tanong. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring maging kapaki-pakinabang para sa komunidad.</p>
+                        <p>Gamitin ito bilang inspirasyon para sa mga susunod na artikulo na iyong isusulat. Ito ay isang proaktibong paraan upang matugunan ang mga pangangailangan ng mga magsasaka bago pa man sila magtanong.</p>
                       </HelpDialog>
                     </div>
                 </div>

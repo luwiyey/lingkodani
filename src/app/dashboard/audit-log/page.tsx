@@ -32,14 +32,14 @@ export default function AuditLogPage() {
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Log ng Pagsusuri</h1>
             <HelpDialog title="Log ng Pagsusuri">
-                <p>Ang pahinang ito ay naglalaman ng isang kumpletong talaan (log) ng lahat ng mahahalagang aksyon na ginawa ng mga user sa sistema. Ito ay para sa layunin ng seguridad, pananagutan, at pag-troubleshoot.</p>
+                <p>Ang pahinang ito ay naglalaman ng isang kumpletong talaan (log) ng lahat ng mahahalagang aksyon na ginawa ng mga user sa sistema. Ito ay isang "read-only" na view para sa layunin ng seguridad, pananagutan (accountability), at pag-troubleshoot.</p>
                 <p><strong>Mga Tampok:</strong></p>
                 <ul className="list-disc pl-5 space-y-1">
-                    <li><strong>Maghanap:</strong> Gamitin ang search bar upang mabilis na mahanap ang mga partikular na log ayon sa pangalan ng user, uri ng aksyon, o mga detalye.</li>
+                    <li><strong>Maghanap:</strong> Gamitin ang search bar upang mabilis na mahanap ang mga partikular na log. Maaari kang maghanap ayon sa email ng user, uri ng aksyon (hal. 'APPROVE_AI_REPLY'), o anumang salita sa hanay ng "Mga Detalye".</li>
                     <li><strong>Timestamp:</strong> Nagpapakita kung kailan eksaktong ginawa ang isang aksyon.</li>
-                    <li><strong>Gumagamit:</strong> Ang email address ng user na gumawa ng aksyon.</li>
-                    <li><strong>Aksyon:</strong> Ang uri ng aksyon na ginawa (hal., pag-apruba ng mensahe, pag-update ng profile).</li>
-                    <li><strong>Mga Detalye:</strong> Isang mas detalyadong paglalarawan ng aksyon.</li>
+                    <li><strong>Gumagamit (User):</strong> Ang email address ng user na gumawa ng aksyon. Ang 'system' ay nangangahulugang awtomatikong ginawa ng programa ang aksyon.</li>
+                    <li><strong>Aksyon:</strong> Ang teknikal na pangalan ng aksyon na ginawa (hal., pag-apruba ng mensahe, pag-update ng profile).</li>
+                    <li><strong>Mga Detalye:</strong> Isang mas detalyadong paglalarawan ng aksyon na madaling maintindihan ng tao.</li>
                 </ul>
             </HelpDialog>
         </div>

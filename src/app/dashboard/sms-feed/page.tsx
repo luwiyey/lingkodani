@@ -149,18 +149,13 @@ export default function SmsFeedPage() {
           <div className="flex items-center">
               <h1 className="text-2xl font-bold tracking-tight">Live na Feed ng SMS</h1>
               <HelpDialog title="Live na Feed ng SMS">
-                <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang SMS.</p>
-                <p><strong>Daloy ng Trabaho:</strong></p>
+                <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang papasok na SMS na kailangan ng iyong atensyon.</p>
+                <p><strong>Daloy ng Trabaho:</strong> Ang isang bagong SMS ay papasok at agad na susuriin ng AI. Ang AI ay magbibigay ng paunang pagsusuri sa layunin (intent), tono, at panganib ng mensahe, at magmumungkahi ng isang tugon. Ang iyong gawain ay suriin ang mungkahi ng AI at aprubahan o i-edit ito.</p>
+                <p><strong>Mga Aksyon sa Card:</strong></p>
                 <ul className="list-disc pl-5 space-y-1">
-                    <li>Ang isang bagong SMS ay papasok at susuriin ng AI.</li>
-                    <li>Ang AI ay magmumungkahi ng isang tugon at kikilalanin ang layunin ng mensahe.</li>
-                    <li>Ang iyong gawain ay suriin ang mungkahi ng AI.</li>
-                </ul>
-                 <p><strong>Mga Aksyon sa Card:</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                    <li><strong>Aprubahan:</strong> Nagbubukas ng pop-up kung saan maaari mong i-edit ang tugon ng AI bago ito ipadala.</li>
-                    <li><strong>Manwal:</strong> Nagbibigay-daan sa iyo na magsulat ng iyong sariling tugon mula sa simula.</li>
-                    <li><strong>Maghanap ng Kagamitan:</strong> Para sa mga hiling ng kagamitan, mabilis nitong hinahanap ang imbentaryo.</li>
+                    <li><strong>Aprubahan:</strong> Nagbubukas ito ng isang pop-up kung saan maaari mong suriin at i-edit ang tugon ng AI bago ito ipadala sa magsasaka. Ito ang pinakakaraniwang aksyon.</li>
+                    <li><strong>Manwal:</strong> Kung ang mungkahi ng AI ay hindi angkop, pinapayagan ka nitong magsulat ng iyong sariling tugon mula sa simula.</li>
+                    <li><strong>Maghanap ng Kagamitan:</strong> Isang shortcut na lilitaw lamang para sa mga mensahe na may layuning "REQUEST". Mabilis nitong hinahanap ang imbentaryo para sa mga magagamit na kagamitan.</li>
                 </ul>
               </HelpDialog>
           </div>

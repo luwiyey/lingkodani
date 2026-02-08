@@ -1,3 +1,4 @@
+
 'use client';
 
 import { SmsFeedPreview } from "@/components/dashboard/sms-feed-preview";
@@ -40,13 +41,13 @@ export default function DisasterModePage() {
                           <Megaphone /> Magpadala ng Emergency Broadcast
                       </CardTitle>
                       <HelpDialog title="Emergency Broadcast">
-                          <p>Gamitin ang feature na ito upang magpadala ng agarang SMS alert sa LAHAT ng nakarehistrong magsasaka sa iyong barangay.</p>
+                          <p>Ito ay isang napakahalagang tool para sa mabilis na pagpapakalat ng impormasyon sa panahon ng emerhensiya. Gamitin ang feature na ito upang magpadala ng agarang SMS alert sa LAHAT ng nakarehistrong magsasaka sa iyong barangay.</p>
                           <p><strong>Paano Gamitin:</strong></p>
                           <ul className="list-disc pl-5 space-y-1">
-                              <li><strong>Isulat ang Mensahe:</strong> I-type ang iyong maikli at malinaw na alerto sa text box. Halimbawa: "BAHA ALERT: Agad na lumikas sa mas mataas na lugar. Manatiling nakatutok para sa mga update."</li>
-                              <li><strong>Ipadala:</strong> Pindutin ang "IPADALA NGAYON" na button. Ang mensahe ay agad na ipapadala sa lahat.</li>
+                              <li><strong>Isulat ang Mensahe:</strong> I-type ang iyong maikli at malinaw na alerto sa text box. Siguraduhing madaling maintindihan ang mga tagubilin. Halimbawa: "BAHA ALERT: Agad na lumikas sa mas mataas na lugar. Manatiling nakatutok para sa mga update."</li>
+                              <li><strong>Ipadala:</strong> Pindutin ang "IPADALA NGAYON" na button. Ang mensahe ay agad na ipapadala sa lahat ng numero sa database.</li>
                           </ul>
-                          <p className="font-bold mt-2">Mag-ingat: Gamitin lamang ang feature na ito para sa mga tunay na emerhensiya.</p>
+                          <p className="font-bold mt-2">Mag-ingat: Gamitin lamang ang feature na ito para sa mga tunay at kumpirmadong emerhensiya upang maiwasan ang hindi kinakailangang pagka-alarma.</p>
                       </HelpDialog>
                   </div>
                   <CardDescription>Magpadala ng agarang SMS alert sa lahat ng magsasaka.</CardDescription>

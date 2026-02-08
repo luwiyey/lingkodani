@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -248,13 +249,13 @@ export default function DisasterSmsPage() {
                     <div className="flex items-center">
                         <h1 className="text-xl font-bold tracking-tight">Disaster SMS Feed</h1>
                         <HelpDialog title="Disaster SMS Feed">
-                            <p>Ito ang iyong command center para sa mga komunikasyon sa panahon ng sakuna. Nakatuon ito sa mabilis na pagtugon sa mga emergency na ulat.</p>
-                            <p>Ang mga mensahe dito ay awtomatikong binibigyan ng mas mataas na priyoridad.</p>
+                            <p>Ito ang iyong command center para sa mga komunikasyon sa panahon ng sakuna. Nakatuon ito sa mabilis na pagtugon sa mga emergency na ulat mula sa mga magsasaka.</p>
+                            <p>Ang mga mensahe na may kaugnayan sa emerhensiya (hal. ulat ng pinsala, kahilingan para sa tulong) ay awtomatikong binibigyan ng mas mataas na priyoridad at ipinapakita dito.</p>
                              <p><strong>Mga Aksyon:</strong></p>
                             <ul className="list-disc pl-5 space-y-1">
-                                <li><strong>Aprubahan:</strong> Mabilis na suriin at ipadala ang mga tugon ng AI, lalo na para sa mga ulat ng pinsala o kahilingan para sa tulong.</li>
-                                <li><strong>Manwal:</strong> Direktang magpadala ng mga tagubilin o kumpirmasyon.</li>
-                                <li><strong>Maghanap ng Kagamitan:</strong> Mabilis na i-access ang imbentaryo ng disaster-relief para sa mga kahilingan.</li>
+                                <li><strong>Aprubahan:</strong> Gamitin ito para mabilis na suriin at ipadala ang mga tugon ng AI, lalo na para sa mga ulat ng pinsala o kahilingan para sa tulong.</li>
+                                <li><strong>Manwal:</strong> Direktang magpadala ng mga tagubilin, kumpirmasyon, o impormasyon sa mga magsasaka.</li>
+                                <li><strong>Maghanap ng Kagamitan:</strong> Mabilis na i-access ang imbentaryo ng disaster-relief supplies para matugunan ang mga kahilingan.</li>
                             </ul>
                         </HelpDialog>
                     </div>

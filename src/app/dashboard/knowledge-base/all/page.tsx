@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -78,8 +79,9 @@ export default function AllKnowledgeArticlesPage() {
                 <div className="flex items-center">
                   <h1 className="text-2xl font-bold tracking-tight">Lahat ng Artikulo sa Knowledge Base</h1>
                   <HelpDialog title="Lahat ng Artikulo">
-                    <p>Ito ang iyong kumpletong aklatan ng lahat ng kaalaman sa pagsasaka. Dito mo maaaring tingnan, hanapin, at pamahalaan ang bawat artikulo at audio story.</p>
-                    <p>Gamitin ang search bar upang mabilis na mahanap ang isang partikular na paksa, o pindutin ang "Bagong Entry" na button upang magdagdag ng bagong kaalaman sa iyong koleksyon.</p>
+                    <p>Ito ang iyong kumpletong aklatan ng lahat ng kaalaman sa pagsasaka. Dito mo maaaring tingnan, hanapin, at pamahalaan ang bawat artikulo at audio story na nasa iyong sistema.</p>
+                    <p>Gamitin ang search bar upang mabilis na mahanap ang isang partikular na paksa. Ang pag-click sa anumang card ng artikulo ay magdadala sa iyo sa pahina ng pagbabasa para sa entry na iyon.</p>
+                    <p>Pindutin ang "Bagong Entry" na button upang magdagdag ng bagong kaalaman sa iyong koleksyon. Maaari kang magdagdag ng mga nakasulat na artikulo o mag-upload ng mga audio recording.</p>
                   </HelpDialog>
                 </div>
                 <p className="text-muted-foreground">Maghanap, magdagdag, at pamahalaan ang lahat ng entry.</p>
