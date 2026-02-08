@@ -310,7 +310,7 @@ export default function FarmersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('name')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4">
                           <div className="flex items-center">
                               <span>Pangalan</span>
                                <div className="w-8 flex-shrink-0 flex justify-center">
@@ -318,7 +318,7 @@ export default function FarmersPage() {
                               </div>
                           </div>
                       </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('location')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4">
                           <div className="flex items-center">
                               <span>Lokasyon</span>
                               <div className="w-8 flex-shrink-0 flex justify-center">
@@ -326,7 +326,7 @@ export default function FarmersPage() {
                               </div>
                           </div>
                       </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('crops')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4">
                           <div className="flex items-center">
                               <span>Mga Pananim</span>
                               <div className="w-8 flex-shrink-0 flex justify-center">
@@ -334,7 +334,7 @@ export default function FarmersPage() {
                               </div>
                           </div>
                       </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('status')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4">
                           <div className="flex items-center">
                               <span>Katayuan</span>
                               <div className="w-8 flex-shrink-0 flex justify-center">
@@ -356,7 +356,7 @@ export default function FarmersPage() {
                                     <User className="h-4 w-4" />
                                 </AvatarFallback>
                             </Avatar>
-                          <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline min-w-0 break-words">{farmer.name}</Link>
+                          <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline min-w-0 break-all">{farmer.name}</Link>
                         </div>
                       </TableCell>
                       <TableCell className="break-words px-2 py-4 md:px-4">{farmer.sitio}, {farmer.barangay}</TableCell>

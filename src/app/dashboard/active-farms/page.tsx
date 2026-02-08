@@ -86,18 +86,18 @@ export default function ActiveFarmsPage() {
             <TableBody>
               {activeFarms.map((farm) => (
                 <TableRow key={farm.id}>
-                  <TableCell className="font-medium px-2 py-4 md:px-4">{farm.farmerName}</TableCell>
+                  <TableCell className="font-medium break-words px-2 py-4 md:px-4">{farm.farmerName}</TableCell>
                   <TableCell className="px-2 py-4 md:px-4">{farm.crop}</TableCell>
                   <TableCell className="px-2 py-4 md:px-4">
                     <Badge variant="outline" className={stageColors[farm.stage as keyof typeof stageColors] || ''}>
                       {farm.stage}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-2 py-4 md:px-4">{new Date(farm.lastUpdate).toLocaleDateString()}</TableCell>
+                  <TableCell className="break-words px-2 py-4 md:px-4">{new Date(farm.lastUpdate).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right px-2 py-4 md:px-4">
                     <Button asChild variant="outline" size="sm">
                         <Link href={`/dashboard/farmers/${farm.farmerId}`}>
-                            Tingnan <ArrowUpRight className="ml-2 h-4 w-4" />
+                            <span className="hidden sm:inline">Tingnan</span> <ArrowUpRight className="ml-0 sm:ml-2 h-4 w-4" />
                         </Link>
                     </Button>
                   </TableCell>

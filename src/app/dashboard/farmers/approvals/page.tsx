@@ -122,22 +122,22 @@ export default function ApprovalsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pangalan</TableHead>
-                  <TableHead>Numero ng Telepono</TableHead>
-                  <TableHead>Lokasyon</TableHead>
-                  <TableHead>Oras at Petsa ng Pagpaparehistro</TableHead>
-                  <TableHead className="text-right">Mga Aksyon</TableHead>
+                  <TableHead className="px-2 md:px-4">Pangalan</TableHead>
+                  <TableHead className="px-2 md:px-4">Numero ng Telepono</TableHead>
+                  <TableHead className="px-2 md:px-4">Lokasyon</TableHead>
+                  <TableHead className="px-2 md:px-4">Oras at Petsa ng Pagpaparehistro</TableHead>
+                  <TableHead className="text-right px-2 md:px-4">Mga Aksyon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredFarmers.length > 0 ? (
                   filteredFarmers.map((farmer) => (
                     <TableRow key={farmer.id}>
-                      <TableCell className="font-medium">{farmer.name}</TableCell>
-                      <TableCell>{farmer.phone}</TableCell>
-                      <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
-                      <TableCell>{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="font-medium px-2 py-4 md:px-4">{farmer.name}</TableCell>
+                      <TableCell className="break-all px-2 py-4 md:px-4">{farmer.phone}</TableCell>
+                      <TableCell className="break-words px-2 py-4 md:px-4">{farmer.sitio}, {farmer.barangay}</TableCell>
+                      <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
+                      <TableCell className="text-right px-2 py-4 md:px-4">
                         <div className="flex justify-end gap-2">
                             <HoverTooltip text="Aprubahan">
                                 <Button size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, true)}>
