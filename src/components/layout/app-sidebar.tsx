@@ -195,25 +195,6 @@ export function AppSidebar() {
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
             <NavMenu items={barangayNavItems} />
         </div>
-        <div>
-            <SidebarSeparator />
-            <SidebarGroupLabel>Developer</SidebarGroupLabel>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <Link href="/dashboard/developer" passHref>
-                        <SidebarMenuButton
-                        isActive={pathname.startsWith('/dashboard/developer')}
-                        tooltip={{ children: "User Management", side: "right" }}
-                        >
-                        <Shield />
-                        <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
-                            <span className="truncate">User Management</span>
-                        </div>
-                        </SidebarMenuButton>
-                    </Link>
-                </SidebarMenuItem>
-            </SidebarMenu>
-        </div>
       </SidebarContent>
     </Sidebar>
   );
