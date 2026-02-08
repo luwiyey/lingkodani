@@ -122,23 +122,23 @@ function DisasterInventory() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
+        <div className="flex items-start justify-between">
             <div className="space-y-1">
-                <h1 className="text-2xl font-bold tracking-tight">Imbentaryo (Disaster Mode)</h1>
+                <div className="flex items-center">
+                    <h1 className="text-2xl font-bold tracking-tight">Imbentaryo (Disaster Mode)</h1>
+                    <HelpDialog title="Disaster Inventory">
+                        <p>Ito ay isang simplified na bersyon ng imbentaryo, na nakatuon sa mabilis na pag-access at pamamahala ng mga kritikal na suplay sa panahon ng sakuna.</p>
+                        <p><strong>Mga Aksyon:</strong></p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li><strong>Magdagdag ng Rekurso:</strong> Mabilis na magdagdag ng mga bagong dating na donasyon o suplay.</li>
+                            <li><strong>Maghanap:</strong> Hanapin ang mga rekurso ayon sa pangalan.</li>
+                            <li><strong>Mag-sort:</strong> Pindutin ang mga header ng table upang ayusin ang listahan.</li>
+                            <li><strong>I-edit/Tanggalin:</strong> Mabilis na i-update ang bilang o tanggalin ang mga rekurso.</li>
+                        </ul>
+                    </HelpDialog>
+                </div>
                 <p className="text-muted-foreground">Pamahalaan ang mga kritikal na rekurso habang may sakuna.</p>
             </div>
-             <HelpDialog title="Disaster Inventory">
-                <p>Ito ay isang simplified na bersyon ng imbentaryo, na nakatuon sa mabilis na pag-access at pamamahala ng mga kritikal na suplay sa panahon ng sakuna.</p>
-                <p><strong>Mga Aksyon:</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                    <li><strong>Magdagdag ng Rekurso:</strong> Mabilis na magdagdag ng mga bagong dating na donasyon o suplay.</li>
-                    <li><strong>Maghanap:</strong> Hanapin ang mga rekurso ayon sa pangalan.</li>
-                    <li><strong>Mag-sort:</strong> Pindutin ang mga header ng table upang ayusin ang listahan.</li>
-                    <li><strong>I-edit/Tanggalin:</strong> Mabilis na i-update ang bilang o tanggalin ang mga rekurso.</li>
-                </ul>
-            </HelpDialog>
-          </div>
           <div className="flex gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>

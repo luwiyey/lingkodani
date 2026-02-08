@@ -58,17 +58,17 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-       <div className="flex items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
-          <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
+       <div className="space-y-1">
+        <div className="flex items-center">
+            <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
+            <HelpDialog title="Dashboard ng Barangay">
+                <p>Ito ang iyong pangunahing command center. Dito mo makikita ang isang mabilis na pangkalahatang-ideya ng lahat ng nangyayari sa iyong barangay.</p>
+                <p><strong>Mga Stat Card:</strong> Nagbibigay ito ng mga mahahalagang numero tulad ng kabuuang bilang ng magsasaka at mga bagong alerto. Ang pag-click sa mga ito ay magdadala sa iyo sa mga kaugnay na pahina.</p>
+                <p><strong>Sentro ng Panganib:</strong> Nagpapakita ito ng mga awtomatikong nabuong alerto batay sa mga ulat ng magsasaka at data ng panahon. Maaari kang magpadala ng abiso mula dito.</p>
+                <p><strong>Live na Feed ng SMS & Katayuan ng Rekurso:</strong> Mga shortcut para sa iyong mga pang-araw-araw na gawain.</p>
+            </HelpDialog>
         </div>
-        <HelpDialog title="Dashboard ng Barangay">
-            <p>Ito ang iyong pangunahing command center. Dito mo makikita ang isang mabilis na pangkalahatang-ideya ng lahat ng nangyayari sa iyong barangay.</p>
-            <p><strong>Mga Stat Card:</strong> Nagbibigay ito ng mga mahahalagang numero tulad ng kabuuang bilang ng magsasaka at mga bagong alerto. Ang pag-click sa mga ito ay magdadala sa iyo sa mga kaugnay na pahina.</p>
-            <p><strong>Sentro ng Panganib:</strong> Nagpapakita ito ng mga awtomatikong nabuong alerto batay sa mga ulat ng magsasaka at data ng panahon. Maaari kang magpadala ng abiso mula dito.</p>
-            <p><strong>Live na Feed ng SMS & Katayuan ng Rekurso:</strong> Mga shortcut para sa iyong mga pang-araw-araw na gawain.</p>
-        </HelpDialog>
+        <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
       </div>
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <HoverTooltip text="Tingnan ang lahat ng aprubadong magsasaka sa iyong database.">
@@ -135,15 +135,17 @@ export default function DashboardPage() {
 
        <Card className="border-destructive/50">
         <CardHeader className="flex-row items-start justify-between">
-          <div className="flex items-center">
-            <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>
-             <HelpDialog title="Sentro ng Panganib at Alerto">
-                <p>Ang seksyon na ito ay awtomatikong sinusuri ang mga papasok na data (mula sa SMS at panahon) upang matukoy ang mga potensyal na panganib.</p>
-                <p>Bawat card ay kumakatawan sa isang aktibong alerto. Ipinapakita nito ang uri ng panganib, isang maikling paglalarawan, at kung gaano karaming magsasaka ang maaaring maapektuhan.</p>
-                <p><strong>Magpadala ng Abiso:</strong> Pindutin ang button na ito upang mag-broadcast ng isang babala sa lahat ng mga magsasaka na nasa panganib.</p>
-              </HelpDialog>
-          </div>
-          <CardDescription>Mga awtomatikong nabuong alerto batay sa data ng panahon at mga ulat sa bukid.</CardDescription>
+            <div className="flex-1">
+                <div className="flex items-center">
+                    <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>
+                    <HelpDialog title="Sentro ng Panganib at Alerto">
+                        <p>Ang seksyon na ito ay awtomatikong sinusuri ang mga papasok na data (mula sa SMS at panahon) upang matukoy ang mga potensyal na panganib.</p>
+                        <p>Bawat card ay kumakatawan sa isang aktibong alerto. Ipinapakita nito ang uri ng panganib, isang maikling paglalarawan, at kung gaano karaming magsasaka ang maaaring maapektuhan.</p>
+                        <p><strong>Magpadala ng Abiso:</strong> Pindutin ang button na ito upang mag-broadcast ng isang babala sa lahat ng mga magsasaka na nasa panganib.</p>
+                    </HelpDialog>
+                </div>
+                <CardDescription>Mga awtomatikong nabuong alerto batay sa data ng panahon at mga ulat sa bukid.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
             {alerts.map(alert => {

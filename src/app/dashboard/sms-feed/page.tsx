@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -144,26 +145,26 @@ export default function SmsFeedPage() {
     
   return (
     <>
-      <div className="flex items-center mb-6">
-          <div className="space-y-1">
+      <div className="mb-6 space-y-1">
+          <div className="flex items-center">
               <h1 className="text-2xl font-bold tracking-tight">Live na Feed ng SMS</h1>
-              <p className="text-muted-foreground">Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</p>
+              <HelpDialog title="Live na Feed ng SMS">
+                <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang SMS.</p>
+                <p><strong>Daloy ng Trabaho:</strong></p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li>Ang isang bagong SMS ay papasok at susuriin ng AI.</li>
+                    <li>Ang AI ay magmumungkahi ng isang tugon at kikilalanin ang layunin ng mensahe.</li>
+                    <li>Ang iyong gawain ay suriin ang mungkahi ng AI.</li>
+                </ul>
+                 <p><strong>Mga Aksyon sa Card:</strong></p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Aprubahan:</strong> Nagbubukas ng pop-up kung saan maaari mong i-edit ang tugon ng AI bago ito ipadala.</li>
+                    <li><strong>Manwal:</strong> Nagbibigay-daan sa iyo na magsulat ng iyong sariling tugon mula sa simula.</li>
+                    <li><strong>Maghanap ng Kagamitan:</strong> Para sa mga hiling ng kagamitan, mabilis nitong hinahanap ang imbentaryo.</li>
+                </ul>
+              </HelpDialog>
           </div>
-          <HelpDialog title="Live na Feed ng SMS">
-            <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang SMS.</p>
-            <p><strong>Daloy ng Trabaho:</strong></p>
-            <ul className="list-disc pl-5 space-y-1">
-                <li>Ang isang bagong SMS ay papasok at susuriin ng AI.</li>
-                <li>Ang AI ay magmumungkahi ng isang tugon at kikilalanin ang layunin ng mensahe.</li>
-                <li>Ang iyong gawain ay suriin ang mungkahi ng AI.</li>
-            </ul>
-             <p><strong>Mga Aksyon sa Card:</strong></p>
-            <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Aprubahan:</strong> Nagbubukas ng pop-up kung saan maaari mong i-edit ang tugon ng AI bago ito ipadala.</li>
-                <li><strong>Manwal:</strong> Nagbibigay-daan sa iyo na magsulat ng iyong sariling tugon mula sa simula.</li>
-                <li><strong>Maghanap ng Kagamitan:</strong> Para sa mga hiling ng kagamitan, mabilis nitong hinahanap ang imbentaryo.</li>
-            </ul>
-          </HelpDialog>
+          <p className="text-muted-foreground">Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {smsMessages.map(message => (

@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,16 +31,16 @@ export default function TrainingPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center">
-        <div className="space-y-1">
+      <div className="space-y-1">
+        <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Pagsasanay at Feedback para sa AEW</h1>
-            <p className="text-muted-foreground">Mga mapagkukunan para sa pagpapabuti ng kasanayan at paghubog sa talino ng AI.</p>
+            <HelpDialog title="Pagsasanay at Feedback">
+                <p>Ang pahinang ito ay idinisenyo para sa mga Agricultural Extension Workers (AEWs) upang mapabuti ang kanilang mga kasanayan at, higit sa lahat, turuan ang AI.</p>
+                <p><strong>Mga Modyul sa Pagsasanay:</strong> Ang mga ito ay mga interactive na aralin na tumutulong sa mga AEW na mas maunawaan ang sistema at ang mga karaniwang kaso na kanilang hinaharap.</p>
+                <p><strong>Feedback sa AI:</strong> Ito ang pinakamahalagang bahagi. Dito mo maaaring direktang turuan ang AI sa pamamagitan ng pagbibigay ng mga tamang halimbawa. Kapag nagbigay ka ng feedback, natututo ang AI at nagiging mas mahusay sa pag-unawa sa mga lokal na diyalekto at konteksto.</p>
+            </HelpDialog>
         </div>
-        <HelpDialog title="Pagsasanay at Feedback">
-            <p>Ang pahinang ito ay idinisenyo para sa mga Agricultural Extension Workers (AEWs) upang mapabuti ang kanilang mga kasanayan at, higit sa lahat, turuan ang AI.</p>
-            <p><strong>Mga Modyul sa Pagsasanay:</strong> Ang mga ito ay mga interactive na aralin na tumutulong sa mga AEW na mas maunawaan ang sistema at ang mga karaniwang kaso na kanilang hinaharap.</p>
-            <p><strong>Feedback sa AI:</strong> Ito ang pinakamahalagang bahagi. Dito mo maaaring direktang turuan ang AI sa pamamagitan ng pagbibigay ng mga tamang halimbawa. Kapag nagbigay ka ng feedback, natututo ang AI at nagiging mas mahusay sa pag-unawa sa mga lokal na diyalekto at konteksto.</p>
-        </HelpDialog>
+        <p className="text-muted-foreground">Mga mapagkukunan para sa pagpapabuti ng kasanayan at paghubog sa talino ng AI.</p>
       </div>
 
 
@@ -47,14 +48,16 @@ export default function TrainingPage() {
         {modules.map((module) => (
             <Card key={module.title}>
                 <CardHeader className="flex-row items-start justify-between">
-                    <div>
-                        <CardTitle>{module.title}</CardTitle>
-                        <CardDescription>{module.description}</CardDescription>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                          <CardTitle>{module.title}</CardTitle>
+                          <HelpDialog title={module.title}>
+                            <p>{module.description}</p>
+                            <p>Ang pag-click sa "Simulan ang Modyul" ay magbubukas ng isang interactive na aralin para sa pagsasanay na ito.</p>
+                          </HelpDialog>
+                      </div>
+                      <CardDescription>{module.description}</CardDescription>
                     </div>
-                     <HelpDialog title={module.title}>
-                        <p>{module.description}</p>
-                        <p>Ang pag-click sa "Simulan ang Modyul" ay magbubukas ng isang interactive na aralin para sa pagsasanay na ito.</p>
-                    </HelpDialog>
                 </CardHeader>
                 <CardContent>
                     <HoverTooltip text="Simulan ang interactive na aralin na ito.">
@@ -67,19 +70,21 @@ export default function TrainingPage() {
 
        <Card>
         <CardHeader className="flex-row items-start justify-between">
-            <div>
+            <div className="flex-1">
+              <div className="flex items-center">
                 <CardTitle className="flex items-center gap-2"><BrainCircuit /> Feedback sa AI</CardTitle>
-                <CardDescription>Turuan ang AI sa pamamagitan ng pagbibigay ng mga tamang halimbawa. Ito ay makakatulong sa AI na mas maunawaan ang mga lokal na wika at konteksto.</CardDescription>
+                <HelpDialog title="Paano Magbigay ng Feedback sa AI">
+                    <p>Ito ay isang paraan para direktang turuan ang AI. Sundin ang mga hakbang na ito:</p>
+                    <ol className="list-decimal pl-5 space-y-2">
+                        <li><strong>Halimbawang SMS:</strong> Maglagay ng isang aktwal na SMS mula sa isang magsasaka na sa tingin mo ay mahirap o mali ang interpretasyon ng AI. Halimbawa, isang mensahe na may halo-halong diyalekto.</li>
+                        <li><strong>Tamang Interpretasyon:</strong> Isulat kung ano talaga ang ibig sabihin ng magsasaka. Ano ang kanyang tunay na layunin?</li>
+                        <li><strong>Perpektong Tugon:</strong> Isulat ang pinakamahusay na posibleng tugon sa SMS na iyon. Ito ang magiging "gold standard" na matututunan ng AI.</li>
+                        <li><strong>Isumite:</strong> Pindutin ang button upang ipadala ang iyong feedback. Ang data na ito ay gagamitin sa susunod na pag-update ng AI model.</li>
+                    </ol>
+                </HelpDialog>
+              </div>
+              <CardDescription>Turuan ang AI sa pamamagitan ng pagbibigay ng mga tamang halimbawa. Ito ay makakatulong sa AI na mas maunawaan ang mga lokal na wika at konteksto.</CardDescription>
             </div>
-            <HelpDialog title="Paano Magbigay ng Feedback sa AI">
-                <p>Ito ay isang paraan para direktang turuan ang AI. Sundin ang mga hakbang na ito:</p>
-                <ol className="list-decimal pl-5 space-y-2">
-                    <li><strong>Halimbawang SMS:</strong> Maglagay ng isang aktwal na SMS mula sa isang magsasaka na sa tingin mo ay mahirap o mali ang interpretasyon ng AI. Halimbawa, isang mensahe na may halo-halong diyalekto.</li>
-                    <li><strong>Tamang Interpretasyon:</strong> Isulat kung ano talaga ang ibig sabihin ng magsasaka. Ano ang kanyang tunay na layunin?</li>
-                    <li><strong>Perpektong Tugon:</strong> Isulat ang pinakamahusay na posibleng tugon sa SMS na iyon. Ito ang magiging "gold standard" na matututunan ng AI.</li>
-                    <li><strong>Isumite:</strong> Pindutin ang button upang ipadala ang iyong feedback. Ang data na ito ay gagamitin sa susunod na pag-update ng AI model.</li>
-                </ol>
-            </HelpDialog>
         </CardHeader>
         <CardContent>
             <form onSubmit={handleFeedbackSubmit} className="space-y-6">

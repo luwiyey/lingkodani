@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { HelpDialog } from '@/components/ui/help-dialog';
 
 function TimelineItem({ entry }: { entry: LogbookEntry }) {
   const { icon: Icon, title, description, timestamp } = entry;
@@ -96,7 +97,15 @@ export default function FarmerLogbookPage() {
               <ArrowLeft />
             </Button>
             <div className="space-y-1">
-                <h1 className="text-2xl font-bold tracking-tight">Profile ng Magsasaka</h1>
+                <div className="flex items-center">
+                    <h1 className="text-2xl font-bold tracking-tight">Profile ng Magsasaka</h1>
+                    <HelpDialog title="Profile ng Magsasaka">
+                        <p>Ito ang detalyadong view para sa isang magsasaka.</p>
+                        <p><strong>Profile Card:</strong> Naglalaman ng lahat ng personal at impormasyon sa bukid ng magsasaka. Maaari mong i-edit ang impormasyon sa pamamagitan ng pag-click sa Edit button.</p>
+                        <p><strong>Logbook:</strong> Isang kumpletong timeline ng lahat ng interaksyon, kabilang ang mga SMS, payo ng AI, at mga tala mula sa field. Ito ay mahalaga para sa pag-unawa sa kasaysayan ng isang magsasaka.</p>
+                        <p><strong>Magdagdag ng Tala:</strong> Para sa mga AEW, ito ay isang paraan upang mag-log ng mga obserbasyon, mag-upload ng mga larawan, o mag-record ng audio mula sa isang pagbisita sa bukid.</p>
+                    </HelpDialog>
+                </div>
                 <p className="text-muted-foreground">Tingnan ang kumpletong profile at kasaysayan ni {farmer?.name}.</p>
             </div>
         </div>

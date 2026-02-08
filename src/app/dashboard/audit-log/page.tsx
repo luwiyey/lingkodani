@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,22 +28,22 @@ export default function AuditLogPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Log ng Pagsusuri</h1>
-          <p className="text-muted-foreground">Isang detalyadong talaan ng lahat ng mahahalagang aksyon na ginawa sa sistema.</p>
+      <div className="space-y-1">
+        <div className="flex items-center">
+            <h1 className="text-2xl font-bold tracking-tight">Log ng Pagsusuri</h1>
+            <HelpDialog title="Log ng Pagsusuri">
+                <p>Ang pahinang ito ay naglalaman ng isang kumpletong talaan (log) ng lahat ng mahahalagang aksyon na ginawa ng mga user sa sistema. Ito ay para sa layunin ng seguridad, pananagutan, at pag-troubleshoot.</p>
+                <p><strong>Mga Tampok:</strong></p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Maghanap:</strong> Gamitin ang search bar upang mabilis na mahanap ang mga partikular na log ayon sa pangalan ng user, uri ng aksyon, o mga detalye.</li>
+                    <li><strong>Timestamp:</strong> Nagpapakita kung kailan eksaktong ginawa ang isang aksyon.</li>
+                    <li><strong>Gumagamit:</strong> Ang email address ng user na gumawa ng aksyon.</li>
+                    <li><strong>Aksyon:</strong> Ang uri ng aksyon na ginawa (hal., pag-apruba ng mensahe, pag-update ng profile).</li>
+                    <li><strong>Mga Detalye:</strong> Isang mas detalyadong paglalarawan ng aksyon.</li>
+                </ul>
+            </HelpDialog>
         </div>
-         <HelpDialog title="Log ng Pagsusuri">
-            <p>Ang pahinang ito ay naglalaman ng isang kumpletong talaan (log) ng lahat ng mahahalagang aksyon na ginawa ng mga user sa sistema. Ito ay para sa layunin ng seguridad, pananagutan, at pag-troubleshoot.</p>
-            <p><strong>Mga Tampok:</strong></p>
-            <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Maghanap:</strong> Gamitin ang search bar upang mabilis na mahanap ang mga partikular na log ayon sa pangalan ng user, uri ng aksyon, o mga detalye.</li>
-                <li><strong>Timestamp:</strong> Nagpapakita kung kailan eksaktong ginawa ang isang aksyon.</li>
-                <li><strong>Gumagamit:</strong> Ang email address ng user na gumawa ng aksyon.</li>
-                <li><strong>Aksyon:</strong> Ang uri ng aksyon na ginawa (hal., pag-apruba ng mensahe, pag-update ng profile).</li>
-                <li><strong>Mga Detalye:</strong> Isang mas detalyadong paglalarawan ng aksyon.</li>
-            </ul>
-        </HelpDialog>
+        <p className="text-muted-foreground">Isang detalyadong talaan ng lahat ng mahahalagang aksyon na ginawa sa sistema.</p>
       </div>
 
        <div className="flex gap-4">

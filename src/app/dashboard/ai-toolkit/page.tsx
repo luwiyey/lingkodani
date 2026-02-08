@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -125,33 +126,35 @@ export default function AiToolkitPage() {
   
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">AI Toolkit</h1>
-          <p className="text-muted-foreground">Mga tool para tulungan ang mga admin sa paggawa ng desisyon.</p>
+      <div className="space-y-1">
+        <div className="flex items-center">
+            <h1 className="text-2xl font-bold tracking-tight">AI Toolkit</h1>
+            <HelpDialog title="AI Toolkit">
+              <p>Ito ay isang koleksyon ng mga espesyal na tool na pinapagana ng AI upang tulungan ka sa mga karaniwang kalkulasyon at pagsusuri sa agrikultura.</p>
+              <p><strong>Plant-MD:</strong> Mag-upload ng larawan ng may sakit na halaman at ilarawan ang mga sintomas. Gagamitin ng AI ang impormasyong ito upang magbigay ng diagnosis at mga hakbang sa paggamot.</p>
+              <p><strong>Mga Calculator:</strong> Mabilis na kalkulahin ang mga rekomendasyon para sa pataba, pestisidyo, at tantyahin ang potensyal na kita batay sa ani at presyo sa merkado.</p>
+            </HelpDialog>
         </div>
-        <HelpDialog title="AI Toolkit">
-          <p>Ito ay isang koleksyon ng mga espesyal na tool na pinapagana ng AI upang tulungan ka sa mga karaniwang kalkulasyon at pagsusuri sa agrikultura.</p>
-          <p><strong>Plant-MD:</strong> Mag-upload ng larawan ng may sakit na halaman at ilarawan ang mga sintomas. Gagamitin ng AI ang impormasyong ito upang magbigay ng diagnosis at mga hakbang sa paggamot.</p>
-          <p><strong>Mga Calculator:</strong> Mabilis na kalkulahin ang mga rekomendasyon para sa pataba, pestisidyo, at tantyahin ang potensyal na kita batay sa ani at presyo sa merkado.</p>
-        </HelpDialog>
+        <p className="text-muted-foreground">Mga tool para tulungan ang mga admin sa paggawa ng desisyon.</p>
       </div>
       
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-start justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2"><BrainCircuit /> Plant-MD: Pagsusuri ng Halaman gamit ang AI</CardTitle>
+              <div className="flex-1">
+                <div className="flex items-center">
+                    <CardTitle className="flex items-center gap-2"><BrainCircuit /> Plant-MD: Pagsusuri ng Halaman gamit ang AI</CardTitle>
+                    <HelpDialog title="Plant-MD: Pagsusuri ng Halaman">
+                      <p>Gamitin ang tool na ito upang makakuha ng mabilis na pagsusuri ng AI para sa mga problema sa halaman.</p>
+                      <ol className="list-decimal pl-5 space-y-2">
+                        <li><strong>Mag-upload ng Larawan:</strong> Pumili ng malinaw na larawan ng apektadong bahagi ng halaman.</li>
+                        <li><strong>Ilarawan ang Sintomas:</strong> Magbigay ng mas maraming detalye hangga't maaari, tulad ng kulay ng mga batik, kung may mga insekto, atbp.</li>
+                        <li><strong>Suriin:</strong> Pindutin ang button upang simulan ang pagsusuri. Ibabalik ng AI ang pangalan ng halaman, ang diagnosis, at mga rekomendasyon sa paggamot.</li>
+                      </ol>
+                  </HelpDialog>
+                </div>
                 <CardDescription>Mag-upload ng larawan ng halaman upang matukoy ang mga sakit o peste.</CardDescription>
               </div>
-               <HelpDialog title="Plant-MD: Pagsusuri ng Halaman">
-                  <p>Gamitin ang tool na ito upang makakuha ng mabilis na pagsusuri ng AI para sa mga problema sa halaman.</p>
-                  <ol className="list-decimal pl-5 space-y-2">
-                    <li><strong>Mag-upload ng Larawan:</strong> Pumili ng malinaw na larawan ng apektadong bahagi ng halaman.</li>
-                    <li><strong>Ilarawan ang Sintomas:</strong> Magbigay ng mas maraming detalye hangga't maaari, tulad ng kulay ng mga batik, kung may mga insekto, atbp.</li>
-                    <li><strong>Suriin:</strong> Pindutin ang button upang simulan ang pagsusuri. Ibabalik ng AI ang pangalan ng halaman, ang diagnosis, at mga rekomendasyon sa paggamot.</li>
-                  </ol>
-              </HelpDialog>
           </CardHeader>
           <form onSubmit={handlePlantDiagnosis}>
             <CardContent className="space-y-4">
@@ -219,14 +222,16 @@ export default function AiToolkitPage() {
             <form onSubmit={handleFertilizerCalculation}>
             <Card>
             <CardHeader className="flex-row items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">Calculator ng Pataba</CardTitle>
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    <CardTitle className="text-lg">Calculator ng Pataba</CardTitle>
+                    <HelpDialog title="Calculator ng Pataba">
+                      <p>Gamitin ito para makakuha ng mabilis na rekomendasyon sa pataba na nasa Filipino.</p>
+                      <p>Ilagay ang sukat ng lupa sa ektarya (hectares) at ang uri ng pananim. Ang AI ay magbibigay ng simpleng rekomendasyon batay sa mga karaniwang kasanayan.</p>
+                    </HelpDialog>
+                  </div>
                   <CardDescription>Kalkulahin ang tamang dami ng pataba.</CardDescription>
                 </div>
-                <HelpDialog title="Calculator ng Pataba">
-                  <p>Gamitin ito para makakuha ng mabilis na rekomendasyon sa pataba na nasa Filipino.</p>
-                  <p>Ilagay ang sukat ng lupa sa ektarya (hectares) at ang uri ng pananim. Ang AI ay magbibigay ng simpleng rekomendasyon batay sa mga karaniwang kasanayan.</p>
-                </HelpDialog>
             </CardHeader>
             <CardContent className="space-y-4">
                 <HoverTooltip text="Ilagay ang sukat ng iyong bukid sa ektarya.">
@@ -255,14 +260,16 @@ export default function AiToolkitPage() {
             <form onSubmit={handlePesticideCalculation}>
             <Card>
             <CardHeader className="flex-row items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">Dosis ng Pestisidyo</CardTitle>
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    <CardTitle className="text-lg">Dosis ng Pestisidyo</CardTitle>
+                    <HelpDialog title="Dosis ng Pestisidyo">
+                      <p>Gamitin ito para makakuha ng rekomendasyon sa tamang pag-halo ng pestisidyo.</p>
+                       <p>Ilagay ang sukat ng lupa na i-ispreyan at ang pangalan ng pestisidyo. Ang AI ay magbibigay ng rekomendasyon sa Filipino, tulad ng "X ml bawat 16L na tubig".</p>
+                    </HelpDialog>
+                  </div>
                   <CardDescription>Tukuyin ang tamang halo ng pestisidyo.</CardDescription>
                 </div>
-                 <HelpDialog title="Dosis ng Pestisidyo">
-                  <p>Gamitin ito para makakuha ng rekomendasyon sa tamang pag-halo ng pestisidyo.</p>
-                   <p>Ilagay ang sukat ng lupa na i-ispreyan at ang pangalan ng pestisidyo. Ang AI ay magbibigay ng rekomendasyon sa Filipino, tulad ng "X ml bawat 16L na tubig".</p>
-                </HelpDialog>
             </CardHeader>
             <CardContent className="space-y-4">
                 <HoverTooltip text="Ilagay ang sukat ng lupa na i-ispreyan sa ektarya.">
@@ -291,14 +298,16 @@ export default function AiToolkitPage() {
             <form onSubmit={handleProfitCalculation}>
             <Card>
             <CardHeader className="flex-row items-start justify-between">
-              <div>
-                <CardTitle className="text-lg">Pagsusuri sa Kita</CardTitle>
+              <div className="flex-1">
+                <div className="flex items-center">
+                    <CardTitle className="text-lg">Pagsusuri sa Kita</CardTitle>
+                    <HelpDialog title="Pagsusuri sa Kita">
+                      <p>Isang simpleng calculator para matantya ang potensyal na kita mula sa iyong ani.</p>
+                       <p>Ilagay ang inaasahang ani sa kilo (kg) at ang kasalukuyang presyo sa merkado bawat kilo. Ang AI ay magbibigay ng isang pangungusap na pagsusuri sa Filipino, kasama ang tinatayang kita at break-even point.</p>
+                    </HelpDialog>
+                </div>
                 <CardDescription>Tantyahin ang potensyal na kita.</CardDescription>
               </div>
-               <HelpDialog title="Pagsusuri sa Kita">
-                  <p>Isang simpleng calculator para matantya ang potensyal na kita mula sa iyong ani.</p>
-                   <p>Ilagay ang inaasahang ani sa kilo (kg) at ang kasalukuyang presyo sa merkado bawat kilo. Ang AI ay magbibigay ng isang pangungusap na pagsusuri sa Filipino, kasama ang tinatayang kita at break-even point.</p>
-                </HelpDialog>
             </CardHeader>
             <CardContent className="space-y-4">
                 <HoverTooltip text="Ilagay ang inaasahang ani sa kilo.">

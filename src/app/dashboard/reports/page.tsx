@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Bot, Calendar as CalendarIcon, Download, ArrowDownToLine } from 'lucide-react';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HelpDialog } from '@/components/ui/help-dialog';
 
 // Chart Imports
 import { IssueTrendsChart } from '@/components/reports/issue-trends-chart';
@@ -43,7 +45,15 @@ export default function ReportsPage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Mga Ulat at Pagsusuri</h1>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold tracking-tight">Mga Ulat at Pagsusuri</h1>
+            <HelpDialog title="Mga Ulat at Pagsusuri">
+                <p>Ang pahinang ito ay ang iyong sentro para sa pagsusuri ng data. Dito mo makikita ang mga visual na representasyon ng mga trend at pattern na nangyayari sa iyong barangay.</p>
+                <p><strong>Buod ng AI:</strong> Isang mabilis na buod na binuo ng AI batay sa pinakabagong data. Magpalit ng timeframe (lingguhan, buwanan, atbp.) upang makita ang mga insight para sa iba't ibang panahon.</p>
+                <p><strong>Mga Tab:</strong> Ang mga ulat ay naka-grupo sa tatlong kategorya: Pagsusuri ng SMS, Performance ng AI, at Operasyon. Bawat tab ay naglalaman ng mga kaugnay na chart.</p>
+                <p><strong>Mga Chart:</strong> Bawat card ay isang chart. Maaari mong i-click ang expand button (parang box) sa kanang itaas ng bawat card upang makita ang mas malaki at mas detalyadong view ng chart, kasama ang isang mas malalim na pagsusuri at rekomendasyon.</p>
+            </HelpDialog>
+          </div>
           <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight para sa paggawa ng desisyon.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -57,8 +67,14 @@ export default function ReportsPage() {
        <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Buod ng AI</CardTitle>
+                    <div className="flex-1">
+                        <div className="flex items-center">
+                            <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Buod ng AI</CardTitle>
+                            <HelpDialog title="Buod ng AI">
+                                <p>Ito ay isang awtomatikong buod na binuo ng artificial intelligence. Sinusuri nito ang lahat ng data para sa napiling timeframe at nagbibigay ng mga pangunahing insight at rekomendasyon.</p>
+                                <p>Halimbawa, kung tumaas ang mga ulat ng peste, sasabihin ito ng AI at magmumungkahi ng posibleng aksyon. Ito ay idinisenyo upang makatipid ka ng oras sa pagsusuri ng data.</p>
+                            </HelpDialog>
+                        </div>
                         <CardDescription>Mga awtomatikong nabuong insight. Huling update: 7:00 PM.</CardDescription>
                     </div>
                     <DropdownMenu>
