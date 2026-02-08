@@ -1,5 +1,5 @@
 
-import { Users, ShieldAlert, Sprout, Wheat, CheckCircle2, Wind, Sun, Droplets, UserPlus } from "lucide-react";
+import { Users, ShieldAlert, Sprout, Wheat, CheckCircle2, Wind, Sun, Droplets, UserPlus, Archive, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { SmsFeedPreview } from "@/components/dashboard/sms-feed-preview";
@@ -8,7 +8,7 @@ import { DailySmsChart } from "@/components/dashboard/daily-sms-chart";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { farmers as allFarmers, smsMessages, cropStageData } from "@/lib/data";
+import { farmers as allFarmers, smsMessages, cropStageData, resources as allResources } from "@/lib/data";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 
@@ -55,6 +55,11 @@ export default function DashboardPage() {
     const plantingCount = cropStageData.find(d => d.name === 'Pagtatanim')?.value ?? 0;
     const growingCount = cropStageData.find(d => d.name === 'Paglago')?.value ?? 0;
     const harvestingCount = cropStageData.find(d => d.name === 'Pag-aani')?.value ?? 0;
+
+    const highUrgencySmsCount = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval').length;
+    const criticalAlertsCount = alerts.filter(a => a.severity === 'Kritikal').length;
+    const lowStockCount = allResources.filter(r => r.stock < 10).length;
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -133,7 +138,60 @@ export default function DashboardPage() {
         </HoverTooltip>
       </div>
 
-       <Card className="border-destructive/50">
+       <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">Mga Prayoridad na Gawain</CardTitle>
+                <CardDescription>Mga mahahalagang item na nangangailangan ng iyong agarang atensyon.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <HoverTooltip text="Pumunta sa pahina ng pag-apruba para suriin ang mga bagong magsasaka.">
+                    <Link href="/dashboard/farmers/approvals" className="block">
+                        <div className="p-4 border rounded-lg flex items-center gap-4 hover:bg-accent hover:text-accent-foreground transition-colors h-full">
+                            <UserPlus className="h-8 w-8 text-yellow-500 flex-shrink-0" />
+                            <div>
+                                <p className="text-2xl font-bold">{pendingFarmersCount}</p>
+                                <p className="text-sm text-muted-foreground">Nakabinbing Pag-apruba</p>
+                            </div>
+                        </div>
+                    </Link>
+                </HoverTooltip>
+                 <HoverTooltip text="Pumunta sa SMS feed upang tugunan ang mga urgent na mensahe.">
+                    <Link href="/dashboard/sms-feed" className="block">
+                        <div className="p-4 border rounded-lg flex items-center gap-4 hover:bg-accent hover:text-accent-foreground transition-colors h-full">
+                            <ClipboardList className="h-8 w-8 text-orange-500 flex-shrink-0" />
+                            <div>
+                                <p className="text-2xl font-bold">{highUrgencySmsCount}</p>
+                                <p className="text-sm text-muted-foreground">Urgent na SMS</p>
+                            </div>
+                        </div>
+                    </Link>
+                </HoverTooltip>
+                 <HoverTooltip text="Suriin ang mga kritikal na alerto sa panganib sa dashboard.">
+                    <Link href="#risk-center" className="block" onClick={(e) => { e.preventDefault(); document.getElementById('risk-center')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                        <div className="p-4 border rounded-lg flex items-center gap-4 hover:bg-accent hover:text-accent-foreground transition-colors h-full">
+                            <ShieldAlert className="h-8 w-8 text-red-500 flex-shrink-0" />
+                            <div>
+                                <p className="text-2xl font-bold">{criticalAlertsCount}</p>
+                                <p className="text-sm text-muted-foreground">Kritikal na Alerto</p>
+                            </div>
+                        </div>
+                    </Link>
+                </HoverTooltip>
+                <HoverTooltip text="Pumunta sa imbentaryo upang pamahalaan ang mga suplay.">
+                    <Link href="/dashboard/inventory" className="block">
+                        <div className="p-4 border rounded-lg flex items-center gap-4 hover:bg-accent hover:text-accent-foreground transition-colors h-full">
+                            <Archive className="h-8 w-8 text-blue-500 flex-shrink-0" />
+                            <div>
+                                <p className="text-2xl font-bold">{lowStockCount}</p>
+                                <p className="text-sm text-muted-foreground">Mababang Stock</p>
+                            </div>
+                        </div>
+                    </Link>
+                </HoverTooltip>
+            </CardContent>
+        </Card>
+
+       <Card className="border-destructive/50" id="risk-center">
         <CardHeader className="flex-row items-start justify-between">
             <div className="flex-1">
                 <div className="flex items-center">
