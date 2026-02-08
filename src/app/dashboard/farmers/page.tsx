@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight, ArrowLeft } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +50,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 type SortableKeys = keyof Farmer | 'location';
 
@@ -176,11 +177,18 @@ export default function FarmersPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight">Database ng Magsasaka</h1>
-            <p className="text-muted-foreground">Tingnan, pamahalaan, at i-update ang mga profile ng lahat ng aprubadong magsasaka.</p>
-          </div>
+        <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+                <HoverTooltip text="Bumalik sa Dashboard">
+                    <Button variant="outline" size="icon" onClick={() => router.back()}>
+                        <ArrowLeft />
+                    </Button>
+                </HoverTooltip>
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-bold tracking-tight">Database ng Magsasaka</h1>
+                    <p className="text-muted-foreground">Tingnan, pamahalaan, at i-update ang mga profile ng lahat ng aprubadong magsasaka.</p>
+                </div>
+            </div>
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -444,5 +452,3 @@ export default function FarmersPage() {
     </>
   );
 }
-
-    

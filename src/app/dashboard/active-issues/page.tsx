@@ -3,13 +3,14 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { smsMessages, alerts } from '@/lib/data';
-import { ShieldAlert, Droplets, Wind, Sun, User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, CloudCog, Tractor } from 'lucide-react';
+import { ShieldAlert, Droplets, Wind, Sun, User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, CloudCog, Tractor, ArrowLeft } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import type { SmsMessage, SmsIntent, Resource } from '@/lib/types';
 import * as React from 'react';
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -130,6 +131,7 @@ type DialogState = {
 export default function ActiveIssuesPage() {
     const highUrgencySms = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval');
     const criticalAlerts = alerts.filter(a => a.severity === 'Kritikal');
+    const router = useRouter();
 
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [editableResponse, setEditableResponse] = React.useState('');
@@ -158,20 +160,27 @@ export default function ActiveIssuesPage() {
   return (
     <>
     <div className="flex flex-col gap-6">
-      <div className="space-y-1">
-        <div className="flex items-center">
-            <ShieldAlert className="mr-2 h-6 w-6 text-destructive"/>
-            <h1 className="text-2xl font-bold tracking-tight">Mga Aktibong Isyu at Alerto</h1>
-             <HelpDialog title="Mga Aktibong Isyu at Alerto">
-                <p>Ito ang iyong "triage center." Pinagsasama-sama ng pahinang ito ang lahat ng item na may mataas na priyoridad mula sa iba't ibang bahagi ng sistema upang matulungan kang tumuon sa mga pinaka-urgent na problema.</p>
-                <p><strong>Mga Seksyon:</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                    <li><strong>Mga Kritikal na Alerto sa Panganib:</strong> Ipinapakita nito ang mga pinaka-seryosong alerto sa buong barangay, tulad ng mga babala sa baha o malawakang pag-atake ng peste, na nangangailangan ng malawakang aksyon.</li>
-                    <li><strong>Mga SMS na may Mataas na Urgency:</strong> Ito ang mga indibidwal na ulat mula sa mga magsasaka na minarkahan ng sistema bilang urgent (hal., emergency, kritikal na sintomas). Kailangan itong tugunan sa lalong madaling panahon.</li>
-                </ul>
-            </HelpDialog>
-        </div>
-        <p className="text-muted-foreground">Isang pinagsama-samang view ng lahat ng kasalukuyang mataas na priyoridad na mga item.</p>
+      <div className="flex items-center gap-4">
+            <HoverTooltip text="Bumalik sa Dashboard">
+                <Button variant="outline" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft />
+                </Button>
+            </HoverTooltip>
+            <div className="space-y-1">
+                <div className="flex items-center">
+                    <ShieldAlert className="mr-2 h-6 w-6 text-destructive"/>
+                    <h1 className="text-2xl font-bold tracking-tight">Mga Aktibong Isyu at Alerto</h1>
+                    <HelpDialog title="Mga Aktibong Isyu at Alerto">
+                        <p>Ito ang iyong "triage center." Pinagsasama-sama ng pahinang ito ang lahat ng item na may mataas na priyoridad mula sa iba't ibang bahagi ng sistema upang matulungan kang tumuon sa mga pinaka-urgent na problema.</p>
+                        <p><strong>Mga Seksyon:</strong></p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li><strong>Mga Kritikal na Alerto sa Panganib:</strong> Ipinapakita nito ang mga pinaka-seryosong alerto sa buong barangay, tulad ng mga babala sa baha o malawakang pag-atake ng peste, na nangangailangan ng malawakang aksyon.</li>
+                            <li><strong>Mga SMS na may Mataas na Urgency:</strong> Ito ang mga indibidwal na ulat mula sa mga magsasaka na minarkahan ng sistema bilang urgent (hal., emergency, kritikal na sintomas). Kailangan itong tugunan sa lalong madaling panahon.</li>
+                        </ul>
+                    </HelpDialog>
+                </div>
+                <p className="text-muted-foreground">Isang pinagsama-samang view ng lahat ng kasalukuyang mataas na priyoridad na mga item.</p>
+            </div>
       </div>
 
        <Card className="border-destructive/50">

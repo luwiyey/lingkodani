@@ -6,10 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { farmers } from '@/lib/data';
 import { HelpDialog } from "@/components/ui/help-dialog";
-import { Sprout } from 'lucide-react';
+import { Sprout, ArrowLeft } from 'lucide-react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { HoverTooltip } from "@/components/ui/hover-tooltip";
 
 // Mock data for active farms/crop cycles
 const activeFarms = [
@@ -26,25 +28,34 @@ const stageColors = {
 }
 
 export default function ActiveFarmsPage() {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="space-y-1">
-        <div className="flex items-center">
-            <Sprout className="mr-2 h-6 w-6"/>
-            <h1 className="text-2xl font-bold tracking-tight">Mga Aktibong Sakahan</h1>
-            <HelpDialog title="Mga Aktibong Sakahan">
-                <p>Ang pahinang ito ay nagbibigay ng isang pangkalahatang-ideya ng lahat ng mga sakahan na kasalukuyang may aktibong tanim (crop cycle). Ito ay nagbibigay-daan sa iyo na subaybayan ang pag-unlad ng mga pananim sa buong barangay.</p>
-                <p><strong>Talahanayan ng mga Aktibong Sakahan:</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                    <li><strong>Pangalan ng Magsasaka:</strong> Ang magsasaka na nagmamay-ari ng sakahan. Maaari mong i-click ang pangalan upang pumunta sa kanilang detalyadong profile.</li>
-                    <li><strong>Pananim:</strong> Ang kasalukuyang itinatanim na pananim.</li>
-                    <li><strong>Kasalukuyang Yugto:</strong> Ang yugto ng paglago ng pananim (hal. Pagtatanim, Paglago, Pamumulaklak, Pag-aani).</li>
-                    <li><strong>Huling Update:</strong> Ang petsa kung kailan huling nagbigay ng update ang magsasaka tungkol sa kanilang pananim.</li>
-                </ul>
-                <p>Gamitin ang impormasyong ito upang ma-anticipate ang mga pangangailangan ng mga magsasaka batay sa yugto ng kanilang pananim. Halimbawa, ang mga nasa yugto ng paglago ay maaaring mangailangan ng payo tungkol sa pataba o peste.</p>
-            </HelpDialog>
-        </div>
-        <p className="text-muted-foreground">Subaybayan ang kasalukuyang yugto at pag-unlad ng mga pananim sa buong barangay.</p>
+       <div className="flex items-center gap-4">
+            <HoverTooltip text="Bumalik sa Dashboard">
+                <Button variant="outline" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft />
+                </Button>
+            </HoverTooltip>
+            <div className="space-y-1">
+                <div className="flex items-center">
+                    <Sprout className="mr-2 h-6 w-6"/>
+                    <h1 className="text-2xl font-bold tracking-tight">Mga Aktibong Sakahan</h1>
+                    <HelpDialog title="Mga Aktibong Sakahan">
+                        <p>Ang pahinang ito ay nagbibigay ng isang pangkalahatang-ideya ng lahat ng mga sakahan na kasalukuyang may aktibong tanim (crop cycle). Ito ay nagbibigay-daan sa iyo na subaybayan ang pag-unlad ng mga pananim sa buong barangay.</p>
+                        <p><strong>Talahanayan ng mga Aktibong Sakahan:</strong></p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li><strong>Pangalan ng Magsasaka:</strong> Ang magsasaka na nagmamay-ari ng sakahan. Maaari mong i-click ang pangalan upang pumunta sa kanilang detalyadong profile.</li>
+                            <li><strong>Pananim:</strong> Ang kasalukuyang itinatanim na pananim.</li>
+                            <li><strong>Kasalukuyang Yugto:</strong> Ang yugto ng paglago ng pananim (hal. Pagtatanim, Paglago, Pamumulaklak, Pag-aani).</li>
+                            <li><strong>Huling Update:</strong> Ang petsa kung kailan huling nagbigay ng update ang magsasaka tungkol sa kanilang pananim.</li>
+                        </ul>
+                        <p>Gamitin ang impormasyong ito upang ma-anticipate ang mga pangangailangan ng mga magsasaka batay sa yugto ng kanilang pananim. Halimbawa, ang mga nasa yugto ng paglago ay maaaring mangailangan ng payo tungkol sa pataba o peste.</p>
+                    </HelpDialog>
+                </div>
+                <p className="text-muted-foreground">Subaybayan ang kasalukuyang yugto at pag-unlad ng mga pananim sa buong barangay.</p>
+            </div>
       </div>
       <Card>
         <CardHeader>
