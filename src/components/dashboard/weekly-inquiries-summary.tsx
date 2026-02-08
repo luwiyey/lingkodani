@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip as RechartsTooltip } from 'recharts';
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ChartConfig, ChartContainer } from '../ui/chart';
+import { ChartConfig, ChartContainer, ChartTooltipContent } from '../ui/chart';
 
 const weeklyInquiriesData = [
   { question: 'Peste', count: 45 },
@@ -65,6 +65,10 @@ export function WeeklyInquiriesSummary() {
                 tickMargin={10}
                 fontSize={12}
                 interval={0}
+              />
+              <RechartsTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" hideLabel />}
               />
               <Bar
                 dataKey="count"
