@@ -159,7 +159,7 @@ export default function AccountSettingsPage() {
                 <Input id="new-email" type="email" placeholder="ilagay ang iyong bagong email address" />
               </div>
               <HoverTooltip text="Simulan ang proseso ng pagbabago ng iyong email address.">
-                  <Button variant="outline" onClick={handleChangeEmail}>Baguhin ang Email</Button>
+                  <Button onClick={handleChangeEmail}>Baguhin ang Email</Button>
               </HoverTooltip>
               <p className="text-xs text-muted-foreground pt-2">Ang pag-click sa "Baguhin ang Email" ay magpapadala ng link sa pag-verify sa iyong bagong email address.</p>
             </div>
