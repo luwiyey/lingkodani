@@ -31,18 +31,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full h-screen relative">
-      {loginBg && (
-         <Image
-            src={loginBg.imageUrl}
-            alt={loginBg.description}
-            fill
-            className="object-cover"
-            data-ai-hint={loginBg.imageHint}
-         />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-primary/40" />
-      <div className="relative z-10 flex items-center justify-center h-full p-4">
+    <div className="w-full h-screen relative flex flex-col">
+      <div className="absolute inset-0">
+        {loginBg && (
+           <Image
+              src={loginBg.imageUrl}
+              alt={loginBg.description}
+              fill
+              className="object-cover"
+              data-ai-hint={loginBg.imageHint}
+           />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-primary/40" />
+      </div>
+      <div className="relative z-10 flex flex-1 items-center justify-center h-full p-4">
         <Card className="w-full max-w-md mx-auto shadow-2xl">
           <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-2 mb-2">
@@ -90,6 +92,9 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
+       <footer className="relative z-10 p-4 text-center text-xs text-white">
+          <Link href="/terms-of-service" className="hover:underline">Terms of Service</Link> | <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
+        </footer>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 
 'use client';
 import { useState } from 'react';
+import type { Metadata } from 'next';
 import { Bot, Calendar as CalendarIcon, Download, ArrowDownToLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +39,11 @@ import { GeographicHotspotChart } from '@/components/reports/geographic-hotspot-
 import { SmsDeliveryStatusChart } from '@/components/reports/sms-delivery-status-chart';
 import { MessageToneChart } from '@/components/reports/message-tone-chart';
 import { ResponseTimeChart } from '@/components/reports/response-time-chart';
+
+export const metadata: Metadata = {
+    title: 'Mga Ulat at Pagsusuri | Lingkod-Ani',
+    description: 'I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight para sa paggawa ng desisyon.',
+};
 
 
 export default function ReportsPage() {
