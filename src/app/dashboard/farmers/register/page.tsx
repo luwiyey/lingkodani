@@ -16,6 +16,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { farmerRegistrationSchema, type FarmerRegistrationValues } from '@/lib/schemas';
 
+// This would ideally be in a layout if it's shared
+// export const metadata: Metadata = {
+//   title: 'Magrehistro ng Magsasaka | Lingkod-Ani',
+//   description: 'Manu-manong magdagdag ng bagong magsasaka sa sistema.',
+// };
+
 
 export default function RegisterFarmerPage() {
   const router = useRouter();

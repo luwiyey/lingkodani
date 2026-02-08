@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | Lingkod-Ani',
+  title: 'Mga Tuntunin ng Serbisyo | Lingkod-Ani',
   description: 'Basahin ang aming mga tuntunin at kundisyon.',
 };
 
@@ -11,25 +11,25 @@ export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold mb-6 text-primary">Terms of Service</h1>
+        <h1 className="text-4xl font-bold mb-6 text-primary">Mga Tuntunin ng Serbisyo</h1>
         <div className="prose dark:prose-invert max-w-none space-y-4">
-          <p>Last updated: October 29, 2023</p>
-          <p>Please read these terms and conditions carefully before using Our Service.</p>
+          <p>Huling na-update: Oktubre 29, 2023</p>
+          <p>Mangyaring basahin nang mabuti ang mga tuntunin at kundisyon na ito bago gamitin ang Aming Serbisyo.</p>
           
-          <h2 className="text-2xl font-semibold">Interpretation and Definitions</h2>
-          <p>The words of which the initial letter is capitalized have meanings defined under the following conditions. The following definitions shall have the same meaning regardless of whether they appear in singular or in plural.</p>
+          <h2 className="text-2xl font-semibold">Interpretasyon at mga Kahulugan</h2>
+          <p>Ang mga salita kung saan ang unang titik ay naka-capitalize ay may mga kahulugan na tinukoy sa ilalim ng mga sumusunod na kundisyon. Ang mga sumusunod na kahulugan ay magkakaroon ng parehong kahulugan anuman ang lumitaw sa isahan o sa pangmaramihang anyo.</p>
           
-          <h2 className="text-2xl font-semibold">Acknowledgment</h2>
-          <p>These are the Terms and Conditions governing the use of this Service and the agreement that operates between You and the Company. These Terms and Conditions set out the rights and obligations of all users regarding the use of the Service.</p>
+          <h2 className="text-2xl font-semibold">Pagkilala</h2>
+          <p>Ito ang mga Tuntunin at Kundisyon na namamahala sa paggamit ng Serbisyo na ito at ang kasunduan na nagpapatakbo sa pagitan Mo at ng Kumpanya. Ang mga Tuntunin at Kundisyon na ito ay nagtatakda ng mga karapatan at obligasyon ng lahat ng mga gumagamit tungkol sa paggamit ng Serbisyo.</p>
           
-          <h2 className="text-2xl font-semibold">User Accounts</h2>
-          <p>When You create an account with Us, You must provide Us information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of Your account on Our Service.</p>
+          <h2 className="text-2xl font-semibold">Mga User Account</h2>
+          <p>Kapag lumikha Ka ng isang account sa Amin, dapat Mo kaming bigyan ng impormasyon na tumpak, kumpleto, at kasalukuyan sa lahat ng oras. Ang hindi paggawa nito ay bumubuo ng isang paglabag sa mga Tuntunin, na maaaring magresulta sa agarang pagwawakas ng Iyong account sa Aming Serbisyo.</p>
           
-          <h2 className="text-2xl font-semibold">Termination</h2>
-          <p>We may terminate or suspend Your Account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if You breach these Terms and Conditions.</p>
+          <h2 className="text-2xl font-semibold">Pagwawakas</h2>
+          <p>Maaari naming wakasan o suspindihin ang Iyong Account kaagad, nang walang paunang abiso o pananagutan, para sa anumang dahilan, kasama na nang walang limitasyon kung lalabagin Mo ang mga Tuntunin at Kundisyon na ito.</p>
 
-           <h2 className="text-2xl font-semibold">Contact Us</h2>
-          <p>If you have any questions about these Terms and Conditions, You can contact us: by email: contact@lingkodani.gov.ph</p>
+           <h2 className="text-2xl font-semibold">Makipag-ugnayan sa Amin</h2>
+          <p>Kung mayroon kang anumang mga katanungan tungkol sa mga Tuntunin at Kundisyon na ito, maaari kang makipag-ugnayan sa amin: sa pamamagitan ng email: contact@lingkodani.gov.ph</p>
 
           <Link href="/" className="text-primary hover:underline mt-8 block">Bumalik sa Home</Link>
         </div>

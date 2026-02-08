@@ -10,6 +10,13 @@ import { BrainCircuit } from "lucide-react";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import React from 'react';
+import type { Metadata } from 'next';
+
+// This would ideally be in a layout if it's shared
+// export const metadata: Metadata = {
+//   title: 'Pagsasanay at Feedback | Lingkod-Ani',
+//   description: 'Mga mapagkukunan para sa pagpapabuti ng kasanayan at paghubog sa talino ng AI.',
+// };
 
 
 const modules = [
