@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import { ArrowUpRight, Tractor, Wheat, Droplets } from 'lucide-react';
 

@@ -15,6 +15,8 @@ import { calculateFertilizer } from "@/ai/flows/calculate-fertilizer";
 import { calculatePesticide } from "@/ai/flows/calculate-pesticide";
 import { calculateProfit } from "@/ai/flows/calculate-profit";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HelpDialog } from "@/components/ui/help-dialog";
+import { HoverTooltip } from "@/components/ui/hover-tooltip";
 
 export default function AiToolkitPage() {
   const [fertResult, setFertResult] = useState('');
@@ -136,17 +138,21 @@ export default function AiToolkitPage() {
           </CardHeader>
           <form onSubmit={handlePlantDiagnosis}>
             <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="plant-photo">Larawan ng Halaman</Label>
-                  <div className="flex items-center gap-2">
-                    <Input id="plant-photo" type="file" accept="image/*" onChange={handleImageChange} required className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer"/>
+                <HoverTooltip text="Pumili ng larawan ng halaman na may sintomas.">
+                  <div className="space-y-2">
+                    <Label htmlFor="plant-photo">Larawan ng Halaman</Label>
+                    <div className="flex items-center gap-2">
+                      <Input id="plant-photo" type="file" accept="image/*" onChange={handleImageChange} required className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer"/>
+                    </div>
                   </div>
-                </div>
+                </HoverTooltip>
                 {previewImage && <Image src={previewImage} alt="Plant preview" width={200} height={200} className="rounded-md mx-auto object-cover" />}
-                <div className="space-y-2">
-                    <Label htmlFor="plant-description">Maikling Paglalarawan ng Sintomas</Label>
-                    <Textarea id="plant-description" placeholder="hal. May mga dilaw na batik sa dahon, butas-butas ang bunga..." required/>
-                </div>
+                <HoverTooltip text="Ilarawan ang mga nakikitang sintomas. Mas maraming detalye, mas mahusay.">
+                  <div className="space-y-2">
+                      <Label htmlFor="plant-description">Maikling Paglalarawan ng Sintomas</Label>
+                      <Textarea id="plant-description" placeholder="hal. May mga dilaw na batik sa dahon, butas-butas ang bunga..." required/>
+                  </div>
+                </HoverTooltip>
                 
                 {diagnosisLoading && (
                   <div className="space-y-4 pt-2">
@@ -184,9 +190,11 @@ export default function AiToolkitPage() {
                 )}
             </CardContent>
             <CardFooter>
-                <Button className="w-full" type="submit" disabled={diagnosisLoading}>
-                    {diagnosisLoading ? 'Nagsusuri...' : 'Suriin ang Halaman'}
-                </Button>
+                <HoverTooltip text="Simulan ang pagsusuri ng AI sa in-upload na larawan at deskripsyon.">
+                  <Button className="w-full" type="submit" disabled={diagnosisLoading}>
+                      {diagnosisLoading ? 'Nagsusuri...' : 'Suriin ang Halaman'}
+                  </Button>
+                </HoverTooltip>
             </CardFooter>
           </form>
         </Card>
@@ -198,19 +206,25 @@ export default function AiToolkitPage() {
                 <CardDescription>Kalkulahin ang tamang dami ng pataba.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="space-y-2">
-                <Label htmlFor="fert-area">Laki ng Lupa (ha)</Label>
-                <Input id="fert-area" name="fert-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
-                </div>
-                <div className="space-y-2">
-                <Label htmlFor="fert-crop">Uri ng Pananim</Label>
-                <Input id="fert-crop" name="fert-crop" placeholder="hal. Palay" required/>
-                </div>
+                <HoverTooltip text="Ilagay ang sukat ng iyong bukid sa ektarya.">
+                  <div className="space-y-2">
+                  <Label htmlFor="fert-area">Laki ng Lupa (ha)</Label>
+                  <Input id="fert-area" name="fert-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
+                  </div>
+                </HoverTooltip>
+                <HoverTooltip text="Ilagay ang uri ng iyong pananim.">
+                  <div className="space-y-2">
+                  <Label htmlFor="fert-crop">Uri ng Pananim</Label>
+                  <Input id="fert-crop" name="fert-crop" placeholder="hal. Palay" required/>
+                  </div>
+                </HoverTooltip>
                 {fertLoading && <Skeleton className="h-4 w-full" />}
                 {fertResult && <p className="text-sm font-medium text-primary">{fertResult}</p>}
             </CardContent>
             <CardFooter>
-                <Button className="w-full" disabled={fertLoading}>{fertLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                <HoverTooltip text="Kalkulahin ang rekomendasyon ng pataba.">
+                  <Button className="w-full" disabled={fertLoading}>{fertLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                </HoverTooltip>
             </CardFooter>
             </Card>
             </form>
@@ -222,19 +236,25 @@ export default function AiToolkitPage() {
                 <CardDescription>Tukuyin ang tamang halo ng pestisidyo.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="space-y-2">
-                <Label htmlFor="pest-area">Laki ng Lupa (ha)</Label>
-                <Input id="pest-area" name="pest-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
-                </div>
-                <div className="space-y-2">
-                <Label htmlFor="pest-name">Pestisidyo</Label>
-                <Input id="pest-name" name="pest-name" placeholder="hal. Cypermethrin" required/>
-                </div>
+                <HoverTooltip text="Ilagay ang sukat ng lupa na i-ispreyan sa ektarya.">
+                  <div className="space-y-2">
+                  <Label htmlFor="pest-area">Laki ng Lupa (ha)</Label>
+                  <Input id="pest-area" name="pest-area" type="number" step="0.1" placeholder="hal. 1.5" required/>
+                  </div>
+                </HoverTooltip>
+                <HoverTooltip text="Ilagay ang pangalan ng pestisidyo na gagamitin.">
+                  <div className="space-y-2">
+                  <Label htmlFor="pest-name">Pestisidyo</Label>
+                  <Input id="pest-name" name="pest-name" placeholder="hal. Cypermethrin" required/>
+                  </div>
+                </HoverTooltip>
                 {pestLoading && <Skeleton className="h-4 w-full" />}
                 {pestResult && <p className="text-sm font-medium text-primary">{pestResult}</p>}
             </CardContent>
             <CardFooter>
-                <Button className="w-full" disabled={pestLoading}>{pestLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                <HoverTooltip text="Kalkulahin ang rekomendasyon sa dosis ng pestisidyo.">
+                  <Button className="w-full" disabled={pestLoading}>{pestLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                </HoverTooltip>
             </CardFooter>
             </Card>
             </form>
@@ -246,19 +266,25 @@ export default function AiToolkitPage() {
                 <CardDescription>Tantyahin ang potensyal na kita.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="space-y-2">
-                <Label htmlFor="profit-yield">Inaasahang Ani (kg)</Label>
-                <Input id="profit-yield" name="profit-yield" type="number" placeholder="hal. 5000" required/>
-                </div>
-                <div className="space-y-2">
-                <Label htmlFor="profit-price">Presyo sa Merkado (bawat kg)</Label>
-                <Input id="profit-price" name="profit-price" type="number" placeholder="hal. 19" required/>
-                </div>
+                <HoverTooltip text="Ilagay ang inaasahang ani sa kilo.">
+                  <div className="space-y-2">
+                  <Label htmlFor="profit-yield">Inaasahang Ani (kg)</Label>
+                  <Input id="profit-yield" name="profit-yield" type="number" placeholder="hal. 5000" required/>
+                  </div>
+                </HoverTooltip>
+                <HoverTooltip text="Ilagay ang kasalukuyang presyo sa merkado bawat kilo.">
+                  <div className="space-y-2">
+                  <Label htmlFor="profit-price">Presyo sa Merkado (bawat kg)</Label>
+                  <Input id="profit-price" name="profit-price" type="number" placeholder="hal. 19" required/>
+                  </div>
+                </HoverTooltip>
                 {profitLoading && <Skeleton className="h-4 w-full" />}
                 {profitResult && <p className="text-sm font-medium text-primary">{profitResult}</p>}
             </CardContent>
             <CardFooter>
-                <Button className="w-full" disabled={profitLoading}>{profitLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                <HoverTooltip text="Kalkulahin ang tinatayang kita.">
+                  <Button className="w-full" disabled={profitLoading}>{profitLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                </HoverTooltip>
             </CardFooter>
             </Card>
             </form>
