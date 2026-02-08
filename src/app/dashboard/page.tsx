@@ -1,7 +1,7 @@
 
 'use client';
 import { useState } from 'react';
-import { Users, ShieldAlert, Sprout, CheckCircle2, Wind, Sun, Droplets, UserPlus, Archive, ClipboardList, Wheat } from "lucide-react";
+import { Users, ShieldAlert, Sprout, UserPlus, Archive, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { SmsFeedPreview } from "@/components/dashboard/sms-feed-preview";
@@ -10,7 +10,7 @@ import { DailySmsChart } from "@/components/dashboard/daily-sms-chart";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { farmers as allFarmers, smsMessages, resources as allResources, alerts as initialAlerts } from "@/lib/data";
+import { alerts as initialAlerts } from "@/lib/data";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import {
@@ -25,18 +25,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { WeeklyInquiriesSummary } from '@/components/dashboard/weekly-inquiries-summary';
+import { useData } from '@/context/data-context';
 
 export default function DashboardPage() {
-    const approvedFarmersCount = allFarmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
-    const activeFarmsCount = allFarmers.filter(f => f.status === 'active').length;
+    const { farmers, smsMessages, resources } = useData();
+    const [alerts, setAlerts] = useState(initialAlerts);
+
+    const approvedFarmersCount = farmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
+    const activeFarmsCount = farmers.filter(f => f.status === 'active').length;
     const activeIssuesCount = smsMessages.filter(m => m.status === 'pending_approval' && m.urgency === 'high').length;
     
-    const pendingFarmersCount = allFarmers.filter(f => f.status === 'pending_approval').length;
+    const pendingFarmersCount = farmers.filter(f => f.status === 'pending_approval').length;
     const highUrgencySmsCount = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval').length;
     
-    const [alerts, setAlerts] = useState(initialAlerts);
     const criticalAlertsCount = alerts.filter(a => a.severity === 'Kritikal').length;
-    const lowStockCount = allResources.filter(r => r.stock < 10).length;
+    const lowStockCount = resources.filter(r => r.stock < 10).length;
 
     const [confirmingAlert, setConfirmingAlert] = useState<(typeof alerts)[0] | null>(null);
     const { toast } = useToast();

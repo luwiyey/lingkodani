@@ -1,9 +1,9 @@
 
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
-import { farmers as initialFarmers, farmerLogbookEntries as initialLogbook } from '@/lib/data';
+import { useData } from '@/context/data-context';
 import type { LogbookEntry, Farmer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,12 @@ import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 function TimelineItem({ entry }: { entry: LogbookEntry }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const { icon: Icon, title, description, timestamp } = entry;
   return (
     <div className="flex items-start gap-4">
@@ -29,7 +35,7 @@ function TimelineItem({ entry }: { entry: LogbookEntry }) {
         <div className="flex items-center justify-between">
           <p className="font-medium">{title}</p>
           <time className="text-xs text-muted-foreground">
-            {new Date(timestamp).toLocaleString()}
+            {isClient ? new Date(timestamp).toLocaleString() : ''}
           </time>
         </div>
         <p className="text-sm text-muted-foreground">{description}</p>
@@ -44,12 +50,17 @@ export default function FarmerLogbookPage() {
     const router = useRouter();
     const farmerId = params.id as string;
     
-    // In a real app, this would be a fetch call.
-    const [farmer, setFarmer] = useState<Farmer | undefined>(initialFarmers.find(f => f.id === farmerId));
-    const [logbook, setLogbook] = useState<LogbookEntry[]>(initialLogbook);
+    const { farmers, setFarmers, logbook, setLogbook } = useData();
+    const farmer = farmers.find(f => f.id === farmerId);
+    
     const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
     const [newNote, setNewNote] = useState('');
     const { toast } = useToast();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+      setIsClient(true);
+    }, []);
 
     const docUploadRef = useRef<HTMLInputElement>(null);
     const photoUploadRef = useRef<HTMLInputElement>(null);
@@ -67,7 +78,7 @@ export default function FarmerLogbookPage() {
         
         reader.onloadend = () => {
             const newAvatarUrl = reader.result as string;
-            setFarmer(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : undefined);
+            setFarmers(prev => prev.map(f => f.id === farmer.id ? { ...f, avatarUrl: newAvatarUrl } : f));
             toast({
                 title: "Nai-upload na ang Larawan!",
                 description: `Ang profile picture para kay ${farmer.name} ay na-update na.`,
@@ -101,18 +112,18 @@ export default function FarmerLogbookPage() {
 
         const formData = new FormData(event.currentTarget);
         const updatedFarmer: Farmer = {
-        ...editingFarmer,
-        name: formData.get('name') as string,
-        phone: formData.get('phone') as string,
-        barangay: formData.get('barangay') as string,
-        sitio: formData.get('sitio') as string,
-        crops: (formData.get('crops') as string).split(',').map(c => c.trim()),
-        farmSize: Number(formData.get('farm-size') as string),
-        age: Number(formData.get('age') as string),
-        gender: formData.get('gender') as string,
+            ...editingFarmer,
+            name: formData.get('name') as string,
+            phone: formData.get('phone') as string,
+            barangay: formData.get('barangay') as string,
+            sitio: formData.get('sitio') as string,
+            crops: (formData.get('crops') as string).split(',').map(c => c.trim()),
+            farmSize: Number(formData.get('farm-size') as string),
+            age: Number(formData.get('age') as string),
+            gender: formData.get('gender') as string,
         };
         
-        setFarmer(updatedFarmer);
+        setFarmers(current => current.map(f => f.id === updatedFarmer.id ? updatedFarmer : f));
         setEditingFarmer(null);
         toast({ title: "Tagumpay!", description: "Nai-update na ang datos ng magsasaka." });
     };
@@ -165,7 +176,7 @@ export default function FarmerLogbookPage() {
                             <HoverTooltip text="Mag-click para mag-upload ng bagong larawan">
                                 <button onClick={() => photoUploadRef.current?.click()} className="relative group">
                                     <Avatar className="h-24 w-24 border">
-                                        <AvatarImage src={farmer.avatarUrl} alt={farmer.name} />
+                                        {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
                                         <AvatarFallback className="bg-muted">
                                             <User className="h-12 w-12 text-muted-foreground" />
                                         </AvatarFallback>
@@ -195,7 +206,7 @@ export default function FarmerLogbookPage() {
                         <p><strong>Lokasyon:</strong> {farmer.sitio}, {farmer.barangay}</p>
                         <p><strong>Sukat ng Bukid:</strong> {farmer.farmSize} ha</p>
                         <p><strong>Mga Pananim:</strong> {farmer.crops.join(', ')}</p>
-                        <p><strong>Petsa ng Pagpaparehistro:</strong> {new Date(farmer.registrationDate).toLocaleDateString()}</p>
+                        <p><strong>Petsa ng Pagpaparehistro:</strong> {isClient ? new Date(farmer.registrationDate).toLocaleDateString() : ''}</p>
                     </CardContent>
                 </Card>
                  <Card>

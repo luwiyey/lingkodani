@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { farmers } from '@/lib/data';
+import { useData } from '@/context/data-context';
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { Sprout, ArrowLeft } from 'lucide-react';
 import Link from "next/link";
@@ -12,24 +12,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
-
-// In a real app, this data would likely come from a 'crop_cycles' collection in Firestore.
-// For this prototype, we'll generate it based on our mock farmers.
-const activeFarms = farmers.filter(f => f.status === 'active').map((farmer, index) => {
-    // This logic is just for creating varied mock data
-    const stages = ['Paglago', 'Pamumulaklak', 'Pagtatanim', 'Pag-aani'];
-    const crops = farmer.crops.length > 0 ? farmer.crops : ['Unknown'];
-    const stage = stages[index % stages.length];
-    return {
-        id: `CROP${String(index + 1).padStart(3, '0')}`,
-        farmerId: farmer.id,
-        farmerName: farmer.name,
-        crop: crops[0], // Show the first crop for simplicity
-        stage: stage,
-        lastUpdate: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString()
-    }
-});
-
 
 const stageColors: { [key: string]: string } = {
     'Pagtatanim': 'bg-blue-500/10 text-blue-500',
@@ -40,6 +22,21 @@ const stageColors: { [key: string]: string } = {
 
 export default function ActiveFarmsPage() {
   const router = useRouter();
+  const { farmers } = useData();
+
+  const activeFarms = farmers.filter(f => f.status === 'active').map((farmer, index) => {
+    const stages = ['Paglago', 'Pamumulaklak', 'Pagtatanim', 'Pag-aani'];
+    const crops = farmer.crops.length > 0 ? farmer.crops : ['Unknown'];
+    const stage = stages[index % stages.length];
+    return {
+        id: `CROP${String(index + 1).padStart(3, '0')}`,
+        farmerId: farmer.id,
+        farmerName: farmer.name,
+        crop: crops[0], // Show the first crop for simplicity
+        stage: stage,
+        lastUpdate: new Date(new Date('2026-01-28').setDate(new Date('2026-01-28').getDate() - (index + 1))).toISOString()
+    }
+  });
 
   return (
     <div className="flex flex-col gap-4">

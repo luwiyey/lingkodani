@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { farmers as initialFarmers } from '@/lib/data';
+import { useData } from '@/context/data-context';
 import type { Farmer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, X, Upload, Search } from 'lucide-react';
 
 export default function ApprovalsPage() {
-  const [pendingFarmers, setPendingFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status === 'pending_approval'));
+  const { farmers, setFarmers } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
@@ -22,11 +22,17 @@ export default function ApprovalsPage() {
     setIsClient(true);
   }, []);
 
+  const pendingFarmers = farmers.filter(f => f.status === 'pending_approval');
+
   const handleApproval = (farmerId: string, isApproved: boolean) => {
     const farmer = pendingFarmers.find(f => f.id === farmerId);
     if (!farmer) return;
 
-    setPendingFarmers(current => current.filter(f => f.id !== farmerId));
+    setFarmers(current => 
+        current.map(f => 
+            f.id === farmerId ? { ...f, status: isApproved ? 'active' : 'rejected' } : f
+        )
+    );
 
     toast({
       title: isApproved ? "Magsasaka Inaprubahan" : "Magsasaka Tinanggihan",
@@ -44,7 +50,13 @@ export default function ApprovalsPage() {
       return;
     }
     const count = pendingFarmers.length;
-    setPendingFarmers([]);
+    
+    setFarmers(current => 
+        current.map(f => 
+            f.status === 'pending_approval' ? { ...f, status: 'active' } : f
+        )
+    );
+    
     toast({
       title: "Lahat ay Inaprubahan",
       description: `${count} na magsasaka ang matagumpay na naaprubahan at naidagdag sa database.`,
@@ -147,5 +159,3 @@ export default function ApprovalsPage() {
     </div>
   );
 }
-
-    

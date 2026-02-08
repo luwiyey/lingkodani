@@ -1,14 +1,13 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useRouter } from 'next/navigation';
-
-import { farmers as initialFarmers } from '@/lib/data';
+import { useData } from '@/context/data-context';
 import type { Farmer } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,12 +55,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 type SortableKeys = keyof Farmer | 'location';
 
 export default function FarmersPage() {
-  const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers.filter(f => f.status !== 'pending_approval'));
+  const { farmers, setFarmers } = useData();
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const [filters, setFilters] = useState<{
     sitios: string[];
@@ -75,8 +79,9 @@ export default function FarmersPage() {
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
 
-  const allSitios = [...new Set(initialFarmers.map((f) => f.sitio))].sort();
-  const allCrops = [...new Set(initialFarmers.flatMap((f) => f.crops))];
+  const activeFarmers = farmers.filter(f => f.status !== 'pending_approval');
+  const allSitios = [...new Set(farmers.map((f) => f.sitio))].sort();
+  const allCrops = [...new Set(farmers.flatMap((f) => f.crops))];
   const allStatuses: Farmer['status'][] = ['active', 'inactive'];
 
   const handleFilterChange = (
@@ -116,8 +121,7 @@ export default function FarmersPage() {
     if (!editingFarmer) return;
 
     const formData = new FormData(event.currentTarget);
-    const updatedFarmer: Farmer = {
-      ...editingFarmer,
+    const updatedData: Partial<Farmer> = {
       name: formData.get('name') as string,
       phone: formData.get('phone') as string,
       barangay: formData.get('barangay') as string,
@@ -126,7 +130,7 @@ export default function FarmersPage() {
       farmSize: Number(formData.get('farm-size') as string),
     };
 
-    setFarmers(farmers.map(f => f.id === updatedFarmer.id ? updatedFarmer : f));
+    setFarmers(current => current.map(f => f.id === editingFarmer.id ? { ...f, ...updatedData } : f));
     setEditingFarmer(null);
     toast({ title: "Tagumpay!", description: "Nai-update na ang datos ng magsasaka." });
   };
@@ -136,7 +140,7 @@ export default function FarmersPage() {
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
   };
 
-  const filteredFarmers = useMemo(() => farmers.filter(farmer => {
+  const filteredFarmers = useMemo(() => activeFarmers.filter(farmer => {
     const searchMatch = (
       farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       farmer.sitio.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -148,7 +152,7 @@ export default function FarmersPage() {
     const statusMatch = filters.statuses.length === 0 || filters.statuses.includes(farmer.status);
 
     return searchMatch && sitioMatch && cropMatch && statusMatch;
-  }), [farmers, searchTerm, filters]);
+  }), [activeFarmers, searchTerm, filters]);
   
   const sortedFarmers = useMemo(() => {
     let sortableItems = [...filteredFarmers];
@@ -347,7 +351,7 @@ export default function FarmersPage() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
                            <Avatar className="h-8 w-8">
-                                <AvatarImage src={farmer.avatarUrl} alt={farmer.name} />
+                                {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
                                 <AvatarFallback>
                                     <User className="h-4 w-4" />
                                 </AvatarFallback>
@@ -466,4 +470,3 @@ export default function FarmersPage() {
     </>
   );
 }
-    
