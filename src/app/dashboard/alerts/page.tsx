@@ -153,7 +153,7 @@ export default function AlertsPage() {
                 </CardFooter>
             </Card>
 
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="w-[95vw] max-w-2xl">
                 <form onSubmit={handleGenerateAlert}>
                     <DialogHeader>
                         <DialogTitle>Bumuo ng Alerto</DialogTitle>

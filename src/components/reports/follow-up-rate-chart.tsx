@@ -109,7 +109,7 @@ export function FollowUpRateChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {noFollowUpRate}% ng mga magsasaka ay hindi nagtatanong muli, na nagpapahiwatig na sapat na ang unang payo.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Rate ng Follow-up ({timeframe})</DialogTitle>
             <DialogDescription>

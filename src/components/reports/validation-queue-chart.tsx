@@ -103,7 +103,7 @@ export function ValidationQueueChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: May {pendingCount} na mensahe na kasalukuyang naghihintay ng pagsusuri mula sa isang admin.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Katayuan ng Validation Queue ({timeframe})</DialogTitle>
             <DialogDescription>

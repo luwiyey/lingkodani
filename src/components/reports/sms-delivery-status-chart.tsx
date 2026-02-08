@@ -99,7 +99,7 @@ export function SmsDeliveryStatusChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Mataas ang rate ng tagumpay, na nagpapahiwatig ng maaasahang sistema ng komunikasyon.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Katayuan ng Pagpapadala ng SMS ({timeframe})</DialogTitle>
             <DialogDescription>

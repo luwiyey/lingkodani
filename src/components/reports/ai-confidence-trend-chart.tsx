@@ -110,7 +110,7 @@ export function AIConfidenceTrendChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Tumaas ang kumpiyansa ng AI, na nagpapakita ng pag-aaral at pag-unlad nito.</p>
         </CardFooter>
       </Card>
-       <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Trend ng Kumpiyansa ng AI ({timeframe})</DialogTitle>
             <DialogDescription>

@@ -106,7 +106,7 @@ export function GeographicHotspotChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang {topHotspot.zone} ang may pinakamaraming isyu, na ginagawa itong priority area.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Mga Hotspot ng Suliranin ({timeframe})</DialogTitle>
             <DialogDescription>

@@ -109,7 +109,7 @@ export function AdviceSuccessChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Mataas na pagiging maaasahan ng AI, na may {approvedPercentage}% ng payo na inaprubahan nang walang pag-edit.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
             <DialogHeader>
                 <DialogTitle>Mga Rate ng Pagpapatunay ng Payo ({timeframe})</DialogTitle>
                 <DialogDescription>

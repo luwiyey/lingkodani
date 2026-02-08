@@ -280,7 +280,7 @@ export default function KnowledgeBasePage() {
                     </Button>
                   </HoverTooltip>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-2xl">
+                <DialogContent className="w-[95vw] max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Magdagdag ng Bagong Entry</DialogTitle>
                         <DialogDescription>Punan ang mga detalye para sa bagong artikulo o audio story.</DialogDescription>

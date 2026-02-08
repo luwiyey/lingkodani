@@ -113,7 +113,7 @@ export function HighRiskKeywordChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang salitang "{topKeyword.word}" ang pinakamadalas na dahilan ng alerto, na nagpapakita ng kahalagahan nito sa mga magsasaka.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Mga Salitang Nagti-trigger ng Alerto ({timeframe})</DialogTitle>
             <DialogDescription>

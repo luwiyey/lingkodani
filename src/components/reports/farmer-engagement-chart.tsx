@@ -106,7 +106,7 @@ export function FarmerEngagementChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga magsasaka ay "Repeat" reporters, na nagpapakita ng tuluy-tuloy na paggamit ng sistema.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Antas ng Pakikilahok ng Magsasaka ({timeframe})</DialogTitle>
             <DialogDescription>

@@ -97,7 +97,7 @@ export function ResponseTimeChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang average na oras ng pagtugon ay {averageTime} minuto, na nagpapakita ng mabilis na sistema.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Oras ng Pagtugon ({timeframe})</DialogTitle>
             <DialogDescription>

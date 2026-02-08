@@ -104,7 +104,7 @@ export function TopInquiriesChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang tanong tungkol sa "{topInquiry.question}" ang pinakamadalas, na nagpapakita ng pangangailangan para sa solusyon sa peste.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Pinakakaraniwang Uri ng Tanong ({timeframe})</DialogTitle>
             <DialogDescription>

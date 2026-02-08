@@ -98,7 +98,7 @@ export function SeasonalTrendChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamarami ang ulat tuwing {peakMonth.month}, na maaaring kasabay ng peak ng tag-ulan.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Dami ng Ulat Ayon sa Panahon ({timeframe})</DialogTitle>
             <DialogDescription>

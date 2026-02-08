@@ -109,7 +109,7 @@ export function LanguageUsageChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {topLanguage.value}% ng mga mensahe ay nasa purong {topLanguage.language}, na ginagawa itong pangunahing wika.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Paggamit ng Wika ({timeframe})</DialogTitle>
             <DialogDescription>

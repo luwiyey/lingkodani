@@ -106,7 +106,7 @@ export function CorrectionLogChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang pinakamadalas itama ay ang 'Entity', na nagpapahiwatig ng mga hamon sa pagkilala ng AI sa mga partikular na pangngalan.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Log ng Mga Pagtutuwid ({timeframe})</DialogTitle>
             <DialogDescription>

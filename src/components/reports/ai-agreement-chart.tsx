@@ -109,7 +109,7 @@ export function AIAgreementChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {approvedAsIsPercentage}% ng mga output ng AI ay inaprubahan nang walang pag-edit, na nagpapakita ng malakas na pagkakasundo.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Pagkakatugma ng AI at Expert ({timeframe})</DialogTitle>
             <DialogDescription>

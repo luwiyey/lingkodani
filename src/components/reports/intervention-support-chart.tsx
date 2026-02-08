@@ -106,7 +106,7 @@ export function InterventionSupportChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamarami ang kinakailangang pagbisita noong Mayo, posibleng dahil sa pagsisimula ng panahon ng pagtatanim.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Mga Pagbisita sa Bukid ({timeframe})</DialogTitle>
             <DialogDescription>

@@ -121,7 +121,7 @@ export function IssueTrendsChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang mga ulat tungkol sa "Mga Peste" ay patuloy na tumataas, na nagpapahiwatig ng isang lumalalang problema.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Graph ng Trend ng Isyu ({timeframe})</DialogTitle>
             <DialogDescription>

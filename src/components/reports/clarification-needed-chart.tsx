@@ -107,7 +107,7 @@ export function ClarificationNeededChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: {neededClarification}% lamang ng mga mensahe ang nangailangan ng paglilinaw, na nagpapakita ng mahusay na pang-unawa ng AI.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Mga Mensaheng Kailangan ng Paglilinaw ({timeframe})</DialogTitle>
             <DialogDescription>

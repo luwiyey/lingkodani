@@ -98,7 +98,7 @@ export function OutbreakAlertChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Isang biglaang pagtaas ng ulat ng peste ang nangyari noong {peak.date}, na posibleng isang outbreak.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Mga Alerto sa Peste ({timeframe})</DialogTitle>
             <DialogDescription>

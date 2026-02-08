@@ -116,7 +116,7 @@ export function CropStageChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga bukid ay nasa yugto ng "Pagtatanim" at "Paglago", na nagpapahiwatig ng peak season.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Pamamahagi ng Yugto ng Pananim ({timeframe})</DialogTitle>
             <DialogDescription>

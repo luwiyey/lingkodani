@@ -99,7 +99,7 @@ export function SeverityIndexChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Ang "{mostSevereCategory.name}" ang may pinakamataas na bahagdan ng "malubhang" ulat.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Antas ng Kalubhaan ng Isyu ({timeframe})</DialogTitle>
             <DialogDescription>

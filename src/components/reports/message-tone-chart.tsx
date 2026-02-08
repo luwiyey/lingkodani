@@ -102,7 +102,7 @@ export function MessageToneChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan ay "Neutral," ngunit ang {totalUrgent} na mensaheng nag-aalala ay nangangailangan ng pansin.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Tono ng Mensahe ({timeframe})</DialogTitle>
             <DialogDescription>

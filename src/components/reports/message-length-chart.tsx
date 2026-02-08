@@ -97,7 +97,7 @@ export function MessageLengthChart() {
           <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga mensahe ay may haba na 21-80 characters, na mainam para sa SMS.</p>
         </CardFooter>
       </Card>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Haba ng Mensahe ({timeframe})</DialogTitle>
             <DialogDescription>
