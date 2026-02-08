@@ -350,13 +350,13 @@ export default function FarmersPage() {
                     <TableRow key={farmer.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
-                           <Avatar className="h-8 w-8">
+                           <Avatar className="h-8 w-8 flex-shrink-0">
                                 {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
                                 <AvatarFallback>
                                     <User className="h-4 w-4" />
                                 </AvatarFallback>
                             </Avatar>
-                          <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline break-words">{farmer.name}</Link>
+                          <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline min-w-0 break-words">{farmer.name}</Link>
                         </div>
                       </TableCell>
                       <TableCell className="break-words">{farmer.sitio}, {farmer.barangay}</TableCell>
