@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Users, ShieldAlert, Sprout, Wheat, CheckCircle2, Wind, Sun, Droplets, UserPlus, Archive, ClipboardList } from "lucide-react";
@@ -129,14 +128,16 @@ export default function DashboardPage() {
             iconBgClass="bg-amber-500/10"
           />
         </HoverTooltip>
-        <HoverTooltip text="Tingnan ang bilang ng mga sakahan na malapit nang mag-ani.">
-          <StatCard
-            title="Handa nang Anihin"
-            value={String(harvestingCount)}
-            icon={CheckCircle2}
-            description="Bilang ng mga sakahan na malapit nang mag-ani"
-            iconBgClass="bg-green-500/10"
-          />
+        <HoverTooltip text="Tingnan ang mga rekurso na mababa na ang stock.">
+          <Link href="/dashboard/inventory">
+            <StatCard
+              title="Mababang Stock"
+              value={String(lowStockCount)}
+              icon={Archive}
+              description="Mga item na kailangang i-restock"
+              iconBgClass="bg-blue-500/10"
+            />
+          </Link>
         </HoverTooltip>
       </div>
 
