@@ -96,21 +96,17 @@ export function Header() {
             </div>
         </HoverTooltip>
 
-        <HoverTooltip text="Baguhin ang tema (Light/Dark).">
-            <ThemeToggle />
-        </HoverTooltip>
+        <ThemeToggle />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <HoverTooltip text="Tingnan ang mga notipikasyon.">
-                <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
-                    3
-                </span>
-                <span className="sr-only">I-toggle ang mga notipikasyon</span>
-                </Button>
-            </HoverTooltip>
+            <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
+                3
+            </span>
+            <span className="sr-only">I-toggle ang mga notipikasyon</span>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Mga Notipikasyon</DropdownMenuLabel>
@@ -146,15 +142,13 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <HoverTooltip text="Pamahalaan ang iyong account o mag-logout.">
-                <Button
-                variant="outline"
-                size="icon"
-                className="overflow-hidden rounded-full"
-                >
-                <User className="h-5 w-5" />
-                </Button>
-            </HoverTooltip>
+            <Button
+            variant="outline"
+            size="icon"
+            className="overflow-hidden rounded-full"
+            >
+            <User className="h-5 w-5" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Aking Account</DropdownMenuLabel>
