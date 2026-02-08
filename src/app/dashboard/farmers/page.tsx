@@ -98,6 +98,12 @@ export default function FarmersPage() {
     setSortConfig({ key, direction });
   };
 
+  const handleExport = (format: 'JSON' | 'Excel') => {
+    toast({
+        title: "Inihahanda ang Export...",
+        description: `Ang data ng magsasaka ay ie-export bilang ${format} file.`,
+    })
+  };
 
   const generateQr = (farmerId: string) => {
     const url = `${window.location.origin}/dashboard/farmers/${farmerId}`;
@@ -195,8 +201,8 @@ export default function FarmersPage() {
                 <Button variant="outline"><Download className="mr-2" /> I-export</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem>Export as JSON</DropdownMenuItem>
-                <DropdownMenuItem>Export as Excel</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('JSON')}>Export as JSON</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('Excel')}>Export as Excel</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button onClick={() => router.push('/dashboard/farmers/register')}><PlusCircle /> Magrehistro ng Magsasaka</Button>

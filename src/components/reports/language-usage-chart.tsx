@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 
 const chartConfig = {
@@ -30,8 +31,16 @@ const chartConfig = {
 
 export function LanguageUsageChart() {
   const [timeframe, setTimeframe] = useState('Buwanan');
+  const { toast } = useToast();
   
   const topLanguage = languageUsageData.reduce((prev, current) => (prev.value > current.value) ? prev : current);
+  
+  const handleDownload = () => {
+    toast({
+        title: "Nagsisimula ang Pag-download...",
+        description: "Ang iyong chart ay ini-export bilang PDF.",
+    });
+  };
 
   const renderChart = () => (
      <ResponsiveContainer width="100%" height="100%">
@@ -75,7 +84,7 @@ export function LanguageUsageChart() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                           <Download className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>

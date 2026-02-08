@@ -15,6 +15,7 @@ export default function ApprovalsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const importRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -24,8 +25,6 @@ export default function ApprovalsPage() {
     const farmer = pendingFarmers.find(f => f.id === farmerId);
     if (!farmer) return;
 
-    // In a real app, you would update the farmer's status in the database.
-    // For now, we just remove them from the pending list.
     setPendingFarmers(current => current.filter(f => f.id !== farmerId));
 
     toast({
@@ -51,6 +50,15 @@ export default function ApprovalsPage() {
     });
   };
 
+  const handleImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        toast({
+            title: "Nagsisimula ang Pag-import...",
+            description: `Ang file na "${e.target.files[0].name}" ay pinoproseso na.`,
+        });
+    }
+  };
+
   const filteredFarmers = pendingFarmers.filter(farmer =>
     farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     farmer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,13 +67,14 @@ export default function ApprovalsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Pag-apruba ng Magsasaka</h1>
           <p className="text-muted-foreground">Suriin at aprubahan ang mga bagong magsasaka na nagparehistro sa pamamagitan ng SMS o manu-manong pag-input.</p>
         </div>
         <div className="flex gap-2">
-            <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Mag-import</Button>
+            <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Mag-import</Button>
             <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
         </div>
       </div>

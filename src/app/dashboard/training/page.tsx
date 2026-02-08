@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { BrainCircuit } from "lucide-react";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import React from 'react';
 
 
 const modules = [
@@ -27,6 +28,13 @@ export default function TrainingPage() {
             description: 'Natanggap na namin ang iyong isinumite. Gagamitin ito para mapabuti ang performance ng AI sa hinaharap.'
         });
         (e.target as HTMLFormElement).reset();
+    };
+    
+    const handleStartModule = (title: string) => {
+        toast({
+            title: "Modyul Paparating na!",
+            description: `Ang training module na "${title}" ay kasalukuyang ginagawa.`,
+        });
     };
 
   return (
@@ -68,7 +76,7 @@ export default function TrainingPage() {
                 </CardHeader>
                 <CardContent>
                     <HoverTooltip text="Simulan ang interactive na aralin na ito.">
-                        <Button>Simulan ang Modyul</Button>
+                        <Button onClick={() => handleStartModule(module.title)}>Simulan ang Modyul</Button>
                     </HoverTooltip>
                 </CardContent>
             </Card>

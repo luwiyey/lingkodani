@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { farmers as initialFarmers, farmerLogbookEntries as initialLogbook } from '@/lib/data';
@@ -43,16 +43,33 @@ export default function FarmerLogbookPage() {
     const router = useRouter();
     const farmerId = params.id as string;
     
-    // In a real app, this would be a fetch call. Here we simulate it.
+    // In a real app, this would be a fetch call.
     const [farmer, setFarmer] = useState<Farmer | undefined>(initialFarmers.find(f => f.id === farmerId));
     const [logbook, setLogbook] = useState<LogbookEntry[]>(initialLogbook);
     const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
     const [newNote, setNewNote] = useState('');
     const { toast } = useToast();
 
+    const docUploadRef = useRef<HTMLInputElement>(null);
+    const photoUploadRef = useRef<HTMLInputElement>(null);
+    const audioUploadRef = useRef<HTMLInputElement>(null);
+
     if (!farmer) {
         notFound();
     }
+
+     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fileType: string) => {
+        if (e.target.files && e.target.files[0]) {
+            toast({
+                title: `${fileType} Nai-upload!`,
+                description: `Ang file na "${e.target.files[0].name}" ay matagumpay na na-upload.`,
+            });
+        }
+        // Reset file input
+        if (e.target) {
+            e.target.value = '';
+        }
+    };
     
     const handleEditFarmer = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -93,6 +110,10 @@ export default function FarmerLogbookPage() {
 
   return (
     <div className="flex flex-col gap-6">
+        <Input type="file" ref={docUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Dokumento')} />
+        <Input type="file" ref={photoUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Larawan')} accept="image/*"/>
+        <Input type="file" ref={audioUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Audio')} accept="audio/*"/>
+
         <div className="flex items-center gap-4">
             <HoverTooltip text="Bumalik sa listahan ng mga magsasaka.">
                 <Button variant="outline" size="icon" onClick={() => router.back()}>
@@ -149,7 +170,7 @@ export default function FarmerLogbookPage() {
                             <p>Wala pang na-upload na dokumento.</p>
                         </div>
                         <HoverTooltip text="Mag-upload ng isang file mula sa iyong computer.">
-                          <Button variant="outline" className="w-full mt-4"><Upload className="mr-2"/> Mag-upload</Button>
+                          <Button variant="outline" className="w-full mt-4" onClick={() => docUploadRef.current?.click()}><Upload className="mr-2"/> Mag-upload</Button>
                         </HoverTooltip>
                     </CardContent>
                 </Card>
@@ -168,10 +189,10 @@ export default function FarmerLogbookPage() {
                         </HoverTooltip>
                         <div className="flex gap-4">
                              <HoverTooltip text="Mag-upload ng larawan mula sa iyong pagbisita.">
-                                <Button variant="outline" className="flex-1"><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
+                                <Button variant="outline" className="flex-1" onClick={() => photoUploadRef.current?.click()}><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
                             </HoverTooltip>
                              <HoverTooltip text="Mag-record ng audio note o panayam sa magsasaka.">
-                                <Button variant="outline" className="flex-1"><Mic className="mr-2"/> Mag-record ng Audio</Button>
+                                <Button variant="outline" className="flex-1" onClick={() => audioUploadRef.current?.click()}><Mic className="mr-2"/> Mag-record ng Audio</Button>
                             </HoverTooltip>
                         </div>
                     </CardContent>

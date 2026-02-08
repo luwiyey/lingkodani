@@ -20,6 +20,16 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,6 +147,17 @@ export default function ActiveIssuesPage() {
     const [editableResponse, setEditableResponse] = React.useState('');
     const { toast } = useToast();
     
+    const [confirmingAlert, setConfirmingAlert] = React.useState<(typeof alerts)[0] | null>(null);
+
+    const handleSendNotification = () => {
+        if (!confirmingAlert) return;
+        toast({
+            title: "Abiso Ipinadala!",
+            description: `Matagumpay na naipadala ang alerto sa ${confirmingAlert.affected} na magsasaka.`,
+        });
+        setConfirmingAlert(null);
+    };
+
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
         if (type === 'approve' && message.aiAdvice) {
@@ -207,7 +228,7 @@ export default function ActiveIssuesPage() {
                              <span className="text-muted-foreground">{alert.affected} magsasaka ang apektado</span>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full">Magpadala ng Abiso</Button>
+                           <Button className="w-full" onClick={() => setConfirmingAlert(alert)}>Magpadala ng Abiso</Button>
                         </CardFooter>
                     </Card>
                 )
@@ -234,6 +255,20 @@ export default function ActiveIssuesPage() {
         </div>
       </div>
     </div>
+    <AlertDialog open={!!confirmingAlert} onOpenChange={() => setConfirmingAlert(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Kumpirmahin ang Pagpapadala</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Sigurado ka bang nais mong magpadala ng abiso sa {confirmingAlert?.affected} na apektadong magsasaka tungkol sa alertong ito: "{confirmingAlert?.title}"?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSendNotification}>Ituloy</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     <Dialog open={dialogState.type === 'approve'} onOpenChange={closeDialog}>
         <DialogContent>
           <DialogHeader>

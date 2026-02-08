@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { useToast } from '@/hooks/use-toast';
 
 // Chart Imports
 import { IssueTrendsChart } from '@/components/reports/issue-trends-chart';
@@ -41,6 +42,14 @@ import { ResponseTimeChart } from '@/components/reports/response-time-chart';
 
 export default function ReportsPage() {
     const [timeframe, setTimeframe] = useState('Lingguhan');
+    const { toast } = useToast();
+
+    const handleExportSummary = () => {
+        toast({
+            title: "Inihahanda ang Iyong Ulat...",
+            description: `Ang buod ng AI para sa "${timeframe}" ay ini-export bilang PDF.`,
+        });
+    };
 
   return (
     <div className="flex flex-col gap-8">
@@ -59,7 +68,7 @@ export default function ReportsPage() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <HoverTooltip text="I-download ang buod ng ulat sa AI bilang PDF.">
-            <Button>
+            <Button onClick={handleExportSummary}>
                 <ArrowDownToLine className="mr-2 h-4 w-4" />
                 I-export ang Buod
             </Button>

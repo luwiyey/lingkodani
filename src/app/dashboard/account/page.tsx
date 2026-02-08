@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,23 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AccountSettingsPage() {
   const { toast } = useToast();
+  const photoUploadRef = React.useRef<HTMLInputElement>(null);
+
+  const handlePhotoUploadClick = () => {
+    photoUploadRef.current?.click();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        toast({
+            title: "Nai-upload na ang Larawan!",
+            description: `Ang file na "${e.target.files[0].name}" ay matagumpay na na-upload.`,
+        });
+        // In a real app, you would handle the file upload process here
+        // and update the avatar source.
+    }
+  };
+
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +48,7 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <Input type="file" ref={photoUploadRef} className="hidden" onChange={handleFileSelect} accept="image/*" />
       <div className="space-y-1">
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Mga Setting ng Account</h1>
@@ -67,7 +86,7 @@ export default function AccountSettingsPage() {
                     </Avatar>
                 </HoverTooltip>
                 <HoverTooltip text="Pumili ng bagong larawan mula sa iyong device.">
-                    <Button variant="outline">Mag-upload ng Bagong Larawan</Button>
+                    <Button variant="outline" onClick={handlePhotoUploadClick}>Mag-upload ng Bagong Larawan</Button>
                 </HoverTooltip>
             </div>
 

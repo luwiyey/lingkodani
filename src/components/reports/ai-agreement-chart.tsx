@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 
 const chartConfig = {
@@ -29,9 +30,17 @@ const chartConfig = {
 
 export function AIAgreementChart() {
   const [timeframe, setTimeframe] = useState('Lingguhan');
+  const { toast } = useToast();
 
   const total = aiAgreementData.reduce((acc, curr) => acc + curr.value, 0);
   const approvedAsIsPercentage = ((aiAgreementData.find(d => d.name === 'Approved As-is')?.value ?? 0) / total * 100).toFixed(0);
+  
+  const handleDownload = () => {
+    toast({
+        title: "Nagsisimula ang Pag-download...",
+        description: "Ang iyong chart ay ini-export bilang PDF.",
+    });
+  };
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
@@ -75,7 +84,7 @@ export function AIAgreementChart() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                           <Download className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>

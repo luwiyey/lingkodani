@@ -1,7 +1,6 @@
-
 'use client';
-
-import { Users, ShieldAlert, Sprout, Wheat, CheckCircle2, Wind, Sun, Droplets, UserPlus, Archive, ClipboardList } from "lucide-react";
+import { useState } from 'react';
+import { Users, ShieldAlert, Sprout, CheckCircle2, Wind, Sun, Droplets, UserPlus, Archive, ClipboardList, Wheat } from "lucide-react";
 import Link from "next/link";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { SmsFeedPreview } from "@/components/dashboard/sms-feed-preview";
@@ -13,20 +12,42 @@ import { Badge } from "@/components/ui/badge";
 import { farmers as allFarmers, smsMessages, cropStageData, resources as allResources, alerts } from "@/lib/data";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
     const approvedFarmersCount = allFarmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
     const activeFarmsCount = allFarmers.filter(f => f.status === 'active').length;
     const activeIssuesCount = smsMessages.filter(m => m.status === 'pending_approval' && m.urgency === 'high').length;
     
-    // Values for Priority Tasks card
     const pendingFarmersCount = allFarmers.filter(f => f.status === 'pending_approval').length;
     const highUrgencySmsCount = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval').length;
     const criticalAlertsCount = alerts.filter(a => a.severity === 'Kritikal').length;
     const lowStockCount = allResources.filter(r => r.stock < 10).length;
 
+    const [confirmingAlert, setConfirmingAlert] = useState<(typeof alerts)[0] | null>(null);
+    const { toast } = useToast();
+
+    const handleSendNotification = () => {
+        if (!confirmingAlert) return;
+        toast({
+            title: "Abiso Ipinadala!",
+            description: `Matagumpay na naipadala ang alerto sa ${confirmingAlert.affected} na magsasaka.`,
+        });
+        setConfirmingAlert(null);
+    };
 
   return (
+    <>
     <div className="flex flex-col gap-6">
        <div className="space-y-1">
         <div className="flex items-center">
@@ -166,7 +187,7 @@ export default function DashboardPage() {
                                 <span className="text-muted-foreground">{alert.affected} magsasaka ang apektado</span>
                             </div>
                              <HoverTooltip text="Magpadala ng SMS broadcast sa mga apektadong magsasaka tungkol sa alertong ito.">
-                                <Button className="w-full">Magpadala ng Abiso</Button>
+                                <Button className="w-full" onClick={() => setConfirmingAlert(alert)}>Magpadala ng Abiso</Button>
                             </HoverTooltip>
                         </CardContent>
                     </Card>
@@ -188,5 +209,20 @@ export default function DashboardPage() {
       </div>
 
     </div>
+     <AlertDialog open={!!confirmingAlert} onOpenChange={() => setConfirmingAlert(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Kumpirmahin ang Pagpapadala</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Sigurado ka bang nais mong magpadala ng abiso sa {confirmingAlert?.affected} na apektadong magsasaka tungkol sa alertong ito: "{confirmingAlert?.title}"?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSendNotification}>Ituloy</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

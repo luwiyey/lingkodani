@@ -57,6 +57,7 @@ export default function InventoryPage() {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
   const { toast } = useToast();
+  const importRef = React.useRef<HTMLInputElement>(null);
   
   const [filters, setFilters] = useState<{
     categories: ResourceCategory[];
@@ -93,6 +94,22 @@ export default function InventoryPage() {
     }
     setSortConfig({ key, direction });
   };
+  
+  const handleImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        toast({
+            title: "Nagsisimula ang Pag-import...",
+            description: `Ang file na "${e.target.files[0].name}" ay pinoproseso para sa imbentaryo.`,
+        });
+    }
+  };
+
+  const handleExport = () => {
+     toast({
+        title: "Inihahanda ang Iyong File...",
+        description: `Ang data ng imbentaryo ay ini-export.`,
+    });
+  }
 
   const handleAddResource = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -174,6 +191,7 @@ export default function InventoryPage() {
 
   return (
     <>
+      <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
@@ -181,8 +199,8 @@ export default function InventoryPage() {
             <p className="text-muted-foreground">Pamahalaan ang mga pataba, binhi, kasangkapan, at iba pang rekurso ng barangay.</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline"><Upload /> Mag-import</Button>
-            <Button variant="outline"><Download /> I-export</Button>
+            <Button variant="outline" onClick={() => importRef.current?.click()}><Upload /> Mag-import</Button>
+            <Button variant="outline" onClick={handleExport}><Download /> I-export</Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button><PlusCircle /> Magdagdag ng Rekurso</Button>
