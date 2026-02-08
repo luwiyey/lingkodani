@@ -14,3 +14,14 @@ export const farmerRegistrationSchema = z.object({
 });
 
 export type FarmerRegistrationValues = z.infer<typeof farmerRegistrationSchema>;
+
+
+export const userManagementSchema = z.object({
+  name: z.string().min(1, { message: "Ang buong pangalan ay kinakailangan." }),
+  email: z.string().email({ message: "Mangyaring maglagay ng wastong email address." }),
+  role: z.enum(['barangay', 'developer'], {
+    required_error: "Mangyaring pumili ng role.",
+  }),
+});
+
+export type UserManagementValues = z.infer<typeof userManagementSchema>;

@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog"
 import {
@@ -44,28 +44,8 @@ type User = {
 
 export default function DeveloperPage() {
     const [users, setUsers] = useState<User[]>(initialUsers);
-    const [isAddUserDialogOpen, setAddUserDialogOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const { toast } = useToast();
-
-    const handleAddUser = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const newUser: User = {
-            name: formData.get('name') as string,
-            email: formData.get('email') as string,
-            role: formData.get('role') as 'barangay' | 'developer',
-        };
-
-        if (users.some(u => u.email === newUser.email)) {
-            toast({ title: "Error", description: "Ang email ay kasalukuyan nang ginagamit.", variant: "destructive" });
-            return;
-        }
-
-        setUsers(prev => [newUser, ...prev]);
-        setAddUserDialogOpen(false);
-        toast({ title: "Tagumpay!", description: `Ang user na si ${newUser.name} ay naidagdag na.` });
-    };
 
     const handleEditUser = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -122,47 +102,13 @@ export default function DeveloperPage() {
                 <CardTitle>Listahan ng mga Awtorisadong User</CardTitle>
                 <CardDescription>Ito ang mga user na may access sa system.</CardDescription>
             </div>
-             <Dialog open={isAddUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
-                <DialogTrigger asChild>
-                  <HoverTooltip text="Magbukas ng form para magdagdag ng bagong user sa system.">
-                    <Button><PlusCircle /> Magdagdag ng User</Button>
-                  </HoverTooltip>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                    <DialogTitle>Magdagdag ng Bagong User</DialogTitle>
-                    <DialogDescription>Punan ang mga detalye ng bagong user.</DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleAddUser}>
-                        <div className="grid gap-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="add-name">Buong Pangalan</Label>
-                                <Input id="add-name" name="name" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="add-email">Email Address</Label>
-                                <Input id="add-email" name="email" type="email" required />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="add-role">Role</Label>
-                                <Select name="role" defaultValue="barangay" required>
-                                    <SelectTrigger id="add-role">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="barangay">Barangay Staff</SelectItem>
-                                        <SelectItem value="developer">Developer</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
-                            <Button type="submit">I-save</Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-             </Dialog>
+             <HoverTooltip text="Magbukas ng pahina para magdagdag ng bagong user sa system.">
+                <Button asChild>
+                    <Link href="/dashboard/developer/add-user">
+                        <PlusCircle /> Magdagdag ng User
+                    </Link>
+                </Button>
+              </HoverTooltip>
         </CardHeader>
         <CardContent>
           <div className="relative w-full overflow-auto">
