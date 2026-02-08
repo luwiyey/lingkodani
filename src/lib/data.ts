@@ -1,6 +1,6 @@
 
 import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog } from '@/lib/types';
-import { MessageSquare, Scan, Tractor, Shield, Wind, Flame, Sprout } from 'lucide-react';
+import { MessageSquare, Scan, Tractor, Shield, Wind, Flame, Sprout, Droplets, ShieldAlert, Sun } from 'lucide-react';
 
 export const farmers: Farmer[] = [
   {
@@ -204,6 +204,40 @@ export const smsMessages: SmsMessage[] = [
   },
 ];
 
+export const alerts = [
+    {
+        id: 'ALERT001',
+        icon: Droplets,
+        title: 'Panganib ng Baha (72 Oras)',
+        description: 'Posible ang malakas na pag-ulan sa susunod na 3 araw. Aabisuhan ang 24 na magsasaka sa mga lugar na mababa.',
+        severity: 'Kritikal',
+        affected: 24,
+    },
+    {
+        id: 'ALERT002',
+        icon: ShieldAlert,
+        title: 'Pagdami ng Peste',
+        description: 'May 5 ulat ng rice leaf blight sa Purok 3. Inirerekomenda ang agarang pag-inspeksyon.',
+        severity: 'Babala',
+        affected: 5,
+    },
+    {
+        id: 'ALERT003',
+        icon: Wind,
+        title: 'Babala ng Malakas na Hangin',
+        description: 'Inaasahan ang malakas na hangin bukas. I-secure ang mga pananim at istruktura ng bukid.',
+        severity: 'Babala',
+        affected: 347,
+    },
+    {
+        id: 'ALERT004',
+        icon: Sun,
+        title: 'Babala ng Matinding Init',
+        description: 'Inaasahan ang matinding init sa susunod na 48 oras. Tiyaking sapat ang patubig.',
+        severity: 'Babala',
+        affected: 150,
+    }
+];
 
 export const resources: Resource[] = [
     { id: 'RES001', name: 'Patabang Urea', category: 'Pataba', stock: 500, unit: 'sako (50kg)', lastUpdated: '2023-10-26' },

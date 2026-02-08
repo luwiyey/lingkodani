@@ -10,44 +10,9 @@ import { DailySmsChart } from "@/components/dashboard/daily-sms-chart";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { farmers as allFarmers, smsMessages, cropStageData, resources as allResources } from "@/lib/data";
+import { farmers as allFarmers, smsMessages, cropStageData, resources as allResources, alerts } from "@/lib/data";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
-
-const alerts = [
-    {
-        id: 'ALERT001',
-        icon: Droplets,
-        title: 'Panganib ng Baha (72 Oras)',
-        description: 'Posible ang malakas na pag-ulan sa susunod na 3 araw. Aabisuhan ang 24 na magsasaka sa mga lugar na mababa.',
-        severity: 'Kritikal',
-        affected: 24,
-    },
-    {
-        id: 'ALERT002',
-        icon: ShieldAlert,
-        title: 'Pagdami ng Peste',
-        description: 'May 5 ulat ng rice leaf blight sa Purok 3. Inirerekomenda ang agarang pag-inspeksyon.',
-        severity: 'Babala',
-        affected: 5,
-    },
-    {
-        id: 'ALERT003',
-        icon: Wind,
-        title: 'Babala ng Malakas na Hangin',
-        description: 'Inaasahan ang malakas na hangin bukas. I-secure ang mga pananim at istruktura ng bukid.',
-        severity: 'Babala',
-        affected: 347,
-    },
-    {
-        id: 'ALERT004',
-        icon: Sun,
-        title: 'Babala ng Matinding Init',
-        description: 'Inaasahan ang matinding init sa susunod na 48 oras. Tiyaking sapat ang patubig.',
-        severity: 'Babala',
-        affected: 150,
-    }
-]
 
 export default function DashboardPage() {
     const approvedFarmersCount = allFarmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
