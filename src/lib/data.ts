@@ -51,7 +51,6 @@ export const farmers: Farmer[] = [
     crops: ['Tubo'],
     registrationDate: '2023-10-03T10:00:00Z',
     lastSmsActivity: '2023-10-27T18:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/103/200/200',
     status: 'active'
   },
   {
@@ -66,7 +65,6 @@ export const farmers: Farmer[] = [
     crops: ['Tabako', 'Mais'],
     registrationDate: '2023-10-04T11:00:00Z',
     lastSmsActivity: '2023-10-26T12:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/106/200/200',
     status: 'inactive'
   },
   {
@@ -81,7 +79,6 @@ export const farmers: Farmer[] = [
     crops: ['Gulay'],
     registrationDate: '2023-10-29T13:00:00Z',
     lastSmsActivity: '2023-10-29T13:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/105/200/200',
     status: 'pending_approval'
   },
    {
@@ -96,7 +93,6 @@ export const farmers: Farmer[] = [
     crops: ['Okra'],
     registrationDate: '2023-10-28T15:00:00Z',
     lastSmsActivity: '2023-10-28T15:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/107/200/200',
     status: 'pending_approval'
   },
   {
@@ -111,7 +107,6 @@ export const farmers: Farmer[] = [
     crops: ['Palay'],
     registrationDate: '2023-10-27T16:00:00Z',
     lastSmsActivity: '2023-10-27T16:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/108/200/200',
     status: 'pending_approval'
   },
   {

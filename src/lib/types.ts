@@ -36,7 +36,7 @@ export type Farmer = {
   crops: string[];
   registrationDate: string;
   lastSmsActivity: string;
-  avatarUrl: string;
+  avatarUrl?: string;
   status: FarmerStatus;
 };
 

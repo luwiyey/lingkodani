@@ -7,7 +7,7 @@ import { farmers as initialFarmers, farmerLogbookEntries as initialLogbook } fro
 import type { LogbookEntry, Farmer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft } from 'lucide-react';
+import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 function TimelineItem({ entry }: { entry: LogbookEntry }) {
   const { icon: Icon, title, description, timestamp } = entry;
@@ -57,6 +58,29 @@ export default function FarmerLogbookPage() {
     if (!farmer) {
         notFound();
     }
+    
+    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        
+        reader.onloadend = () => {
+            const newAvatarUrl = reader.result as string;
+            setFarmer(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : undefined);
+            toast({
+                title: "Nai-upload na ang Larawan!",
+                description: `Ang profile picture para kay ${farmer.name} ay na-update na.`,
+            });
+        };
+        
+        reader.readAsDataURL(file);
+        
+        if (e.target) {
+            e.target.value = '';
+        }
+    };
+
 
      const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fileType: string) => {
         if (e.target.files && e.target.files[0]) {
@@ -111,7 +135,7 @@ export default function FarmerLogbookPage() {
   return (
     <div className="flex flex-col gap-6">
         <Input type="file" ref={docUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Dokumento')} />
-        <Input type="file" ref={photoUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Larawan')} accept="image/*"/>
+        <Input type="file" ref={photoUploadRef} className="hidden" onChange={handlePhotoSelect} accept="image/*"/>
         <Input type="file" ref={audioUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Audio')} accept="audio/*"/>
 
         <div className="flex items-center gap-4">
@@ -136,21 +160,35 @@ export default function FarmerLogbookPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 flex flex-col gap-6">
                 <Card>
-                    <CardHeader className="flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <Image src={farmer.avatarUrl} alt={farmer.name} width={64} height={64} className="rounded-full" />
-                            <div>
+                    <CardHeader>
+                        <div className="flex flex-col items-center pt-4 gap-4">
+                            <HoverTooltip text="Mag-click para mag-upload ng bagong larawan">
+                                <button onClick={() => photoUploadRef.current?.click()} className="relative group">
+                                    <Avatar className="h-24 w-24 border">
+                                        <AvatarImage src={farmer.avatarUrl} alt={farmer.name} />
+                                        <AvatarFallback className="bg-muted">
+                                            <User className="h-12 w-12 text-muted-foreground" />
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                        <Upload className="h-8 w-8 text-white" />
+                                    </div>
+                                </button>
+                            </HoverTooltip>
+                            <div className="text-center">
                                 <CardTitle className="text-2xl">{farmer.name}</CardTitle>
                                 <CardDescription>ID: {farmer.id}</CardDescription>
                             </div>
                         </div>
-                         <HoverTooltip text="I-edit ang profile ng magsasaka na ito.">
-                            <Button variant="outline" size="icon" onClick={() => setEditingFarmer(farmer)}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                        </HoverTooltip>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm">
+                         <div className="flex justify-end border-b pb-4 -mt-6">
+                            <HoverTooltip text="I-edit ang mga detalye ng profile">
+                                <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}>
+                                    <Edit className="mr-2 h-4 w-4" /> I-edit ang Profile
+                                </Button>
+                            </HoverTooltip>
+                        </div>
                         <p><strong>Telepono:</strong> {farmer.phone}</p>
                         <p><strong>Edad:</strong> {farmer.age}</p>
                         <p><strong>Kasarian:</strong> {farmer.gender}</p>
