@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Users, ShieldAlert, Sprout, Wheat, CheckCircle2, Wind, Sun, Droplets, UserPlus, Archive, ClipboardList } from "lucide-react";
@@ -50,13 +51,11 @@ const alerts = [
 
 export default function DashboardPage() {
     const approvedFarmersCount = allFarmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
-    const pendingFarmersCount = allFarmers.filter(f => f.status === 'pending_approval').length;
-    const pestAlertsCount = smsMessages.filter(m => m.parsedIntent === 'PEST_DISEASE' && m.status === 'pending_approval').length;
+    const activeFarmersCount = allFarmers.filter(f => f.status === 'active').length;
+    const activeIssuesCount = smsMessages.filter(m => m.status === 'pending_approval' && m.urgency === 'high').length;
     
-    const plantingCount = cropStageData.find(d => d.name === 'Pagtatanim')?.value ?? 0;
-    const growingCount = cropStageData.find(d => d.name === 'Paglago')?.value ?? 0;
-    const harvestingCount = cropStageData.find(d => d.name === 'Pag-aani')?.value ?? 0;
-
+    // Values for Priority Tasks card
+    const pendingFarmersCount = allFarmers.filter(f => f.status === 'pending_approval').length;
     const highUrgencySmsCount = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval').length;
     const criticalAlertsCount = alerts.filter(a => a.severity === 'Kritikal').length;
     const lowStockCount = allResources.filter(r => r.stock < 10).length;
@@ -76,73 +75,41 @@ export default function DashboardPage() {
         </div>
         <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
       </div>
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <HoverTooltip text="Tingnan ang lahat ng aprubadong magsasaka sa iyong database.">
           <Link href="/dashboard/farmers">
               <StatCard
               title="Kabuuang Magsasaka"
               value={String(approvedFarmersCount)}
               icon={Users}
-              description="Lahat ng aprubadong magsasaka"
+              description="Lahat ng aprubadong magsasaka sa database."
               iconBgClass="bg-primary/10"
               iconColorClass="text-primary"
               />
           </Link>
         </HoverTooltip>
-        <HoverTooltip text="Suriin at aprubahan ang mga bagong nagparehistrong magsasaka.">
-          <Link href="/dashboard/farmers/approvals">
+        <HoverTooltip text="Tingnan ang bilang ng mga aktibong sakahan.">
+          <Link href="/dashboard/farmers">
               <StatCard
-              title="Nakabinbing Pag-apruba"
-              value={String(pendingFarmersCount)}
-              icon={UserPlus}
-              description="Bagong rehistro para suriin"
-              iconBgClass="bg-yellow-500/10"
-              iconColorClass="text-yellow-500"
+              title="Aktibong Sakahan"
+              value={String(activeFarmersCount)}
+              icon={Sprout}
+              description="Mga sakahan na may kasalukuyang aktibidad."
+              iconBgClass="bg-green-500/10"
+              iconColorClass="text-green-500"
               />
           </Link>
         </HoverTooltip>
-        <HoverTooltip text="Tingnan ang mga kamakailang ulat ng peste na nangangailangan ng aksyon.">
+        <HoverTooltip text="Tingnan ang mga ulat na nangangailangan ng agarang aksyon.">
           <Link href="/dashboard/sms-feed">
               <StatCard
-              title="Mga Alertong Pang-peste"
-              value={String(pestAlertsCount)}
+              title="May Aktibong Isyu"
+              value={String(activeIssuesCount)}
               icon={ShieldAlert}
-              description="Mga aktibong ulat ng peste"
+              description="Mga ulat na nangangailangan ng agarang aksyon."
               iconBgClass="bg-destructive/10"
               iconColorClass="text-destructive"
               />
-          </Link>
-        </HoverTooltip>
-        <HoverTooltip text="Tingnan ang bilang ng mga sakahan na nasa yugto ng pagtatanim.">
-          <StatCard
-            title="Nasa Pagtatanim"
-            value={String(plantingCount)}
-            icon={Sprout}
-            description="Bilang ng mga sakahan sa yugto ng pagtatanim"
-            iconBgClass="bg-blue-500/10"
-            iconColorClass="text-blue-500"
-          />
-        </HoverTooltip>
-        <HoverTooltip text="Tingnan ang bilang ng mga sakahan na nasa yugto ng paglago.">
-          <StatCard
-            title="Nasa Paglago"
-            value={String(growingCount)}
-            icon={Wheat}
-            description="Bilang ng mga sakahan sa yugto ng paglago"
-            iconBgClass="bg-amber-500/10"
-            iconColorClass="text-amber-500"
-          />
-        </HoverTooltip>
-        <HoverTooltip text="Tingnan ang mga rekurso na mababa na ang stock.">
-          <Link href="/dashboard/inventory">
-            <StatCard
-              title="Mababang Stock"
-              value={String(lowStockCount)}
-              icon={Archive}
-              description="Mga item na kailangang i-restock"
-              iconBgClass="bg-indigo-500/10"
-              iconColorClass="text-indigo-500"
-            />
           </Link>
         </HoverTooltip>
       </div>
