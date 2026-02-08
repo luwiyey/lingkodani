@@ -159,14 +159,14 @@ export function Header() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Aking Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="cursor-pointer">
               <Link href="/dashboard/account">
                 <User className="mr-2" />
                 Account
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="cursor-pointer">
               <Link href="/">
                 <LogOut className="mr-2" />
                 Mag-logout

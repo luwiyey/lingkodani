@@ -1,14 +1,32 @@
-
 'use client';
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AccountSettingsPage() {
+  const { toast } = useToast();
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Tagumpay!",
+      description: "Nai-save na ang iyong bagong password.",
+    });
+  }
+  
+  const handleChangeEmail = () => {
+      toast({
+          title: "Kahilingan Ipinadala",
+          description: "Isang verification link ang ipinadala sa iyong bagong email address.",
+      })
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -16,13 +34,14 @@ export default function AccountSettingsPage() {
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Mga Setting ng Account</h1>
             <HelpDialog title="Mga Setting ng Account">
-                <p>Dito mo maaaring i-update ang iyong personal na impormasyon tulad ng iyong pangalan. Ang iyong email ay read-only at hindi maaaring baguhin.</p>
-                <p>Ang seksyon ng Data Privacy ay nagbibigay ng impormasyon tungkol sa kung paano pinoprotektahan ng sistema ang data ng mga magsasaka, alinsunod sa mga batas ng Pilipinas.</p>
+                <p>Dito mo maaaring i-update ang iyong profile picture at mga setting ng seguridad. Ang iyong pangalan at email ay naka-lock at hindi maaaring baguhin nang direkta para sa mga kadahilanang pang-seguridad.</p>
+                <p><strong>Profile:</strong> I-update ang iyong larawan at tingnan ang iyong personal na impormasyon.</p>
+                <p><strong>Pag-login at Seguridad:</strong> Baguhin ang iyong password o humiling na palitan ang iyong email address.</p>
+                <p><strong>Mga Pananggalang sa Privacy ng Data:</strong> Alamin ang tungkol sa mga feature ng privacy ng system.</p>
             </HelpDialog>
         </div>
-        <p className="text-muted-foreground">Pamahalaan ang iyong profile at mga setting ng privacy.</p>
+        <p className="text-muted-foreground">Pamahalaan ang iyong profile, seguridad, at mga setting ng privacy.</p>
       </div>
-
 
        <Card>
         <CardHeader className="flex-row items-start justify-between">
@@ -30,35 +49,93 @@ export default function AccountSettingsPage() {
             <div className="flex items-center">
                 <CardTitle>Profile</CardTitle>
                 <HelpDialog title="Profile">
-                    <p>I-update ang iyong display name dito. Tandaan na ang iyong email address ay hindi maaaring palitan.</p>
-                    <p><strong>Pangalan:</strong> Ito ang pangalan na makikita ng ibang mga user sa sistema.</p>
-                    <p><strong>Email:</strong> Ito ang iyong login email at hindi maaaring baguhin.</p>
-                    <p><strong>I-update ang Profile:</strong> Pindutin ito upang i-save ang mga pagbabago sa iyong pangalan.</p>
+                    <p>Dito mo maaaring i-update ang iyong profile picture. Ang iyong pangalan at email ay naka-lock para sa mga layuning pang-seguridad.</p>
+                    <p><strong>Mag-upload ng Larawan:</strong> Pindutin ito upang pumili ng bagong larawan mula sa iyong computer.</p>
                 </HelpDialog>
             </div>
             <CardDescription>
-              Pamahalaan ang iyong mga personal na setting.
+              Pamahalaan ang iyong personal na impormasyon at larawan.
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-            <HoverTooltip text="I-edit ang iyong display name.">
-                <div className="space-y-2">
-                    <Label htmlFor="displayName">Pangalan</Label>
-                    <Input id="displayName" defaultValue="Brgy Admin" />
-                </div>
-            </HoverTooltip>
-            <HoverTooltip text="Ang iyong email address ay hindi maaaring baguhin.">
-                 <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue="brgy-admin@lingkodani.gov.ph" readOnly />
-                </div>
-            </HoverTooltip>
-            <HoverTooltip text="I-save ang mga pagbabago sa iyong pangalan.">
-                 <Button>I-update ang Profile</Button>
-            </HoverTooltip>
+        <CardContent className="space-y-6">
+            <div className="flex items-center gap-6">
+                <HoverTooltip text="Ito ang iyong kasalukuyang larawan sa profile.">
+                    <Avatar className="h-24 w-24">
+                        <AvatarImage src="https://picsum.photos/seed/admin/200/200" alt="Admin" />
+                        <AvatarFallback>AD</AvatarFallback>
+                    </Avatar>
+                </HoverTooltip>
+                <HoverTooltip text="Pumili ng bagong larawan mula sa iyong device.">
+                    <Button variant="outline">Mag-upload ng Bagong Larawan</Button>
+                </HoverTooltip>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <HoverTooltip text="Ang iyong display name ay naka-lock at hindi maaaring baguhin.">
+                    <div className="space-y-2">
+                        <Label htmlFor="displayName">Pangalan</Label>
+                        <Input id="displayName" defaultValue="Brgy Admin" readOnly />
+                    </div>
+                </HoverTooltip>
+                <HoverTooltip text="Ang iyong email address ay hindi maaaring baguhin nang direkta. Gamitin ang seksyon ng seguridad upang humiling ng pagbabago.">
+                     <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" defaultValue="brgy-admin@lingkodani.gov.ph" readOnly />
+                    </div>
+                </HoverTooltip>
+            </div>
         </CardContent>
       </Card>
+      
+       <Card>
+        <CardHeader>
+          <div className="flex items-center">
+            <CardTitle>Pag-login at Seguridad</CardTitle>
+             <HelpDialog title="Pag-login at Seguridad">
+                <p>Panatilihing secure ang iyong account.</p>
+                <p><strong>Baguhin ang Password:</strong> Regular na palitan ang iyong password para mapanatiling ligtas ang iyong account. Ilagay ang iyong kasalukuyan at bagong password.</p>
+                <p><strong>Baguhin ang Email:</strong> Kung kailangan mong i-update ang iyong email, pindutin ang button na ito. Isang email ng kumpirmasyon ang ipapadala sa iyong bagong address.</p>
+             </HelpDialog>
+          </div>
+          <CardDescription>I-update ang iyong password at pamahalaan ang iyong email sa pag-login.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
+            <HoverTooltip text="Ilagay ang iyong kasalukuyang password.">
+                <div className="space-y-2">
+                    <Label htmlFor="current-password">Kasalukuyang Password</Label>
+                    <Input id="current-password" type="password" required />
+                </div>
+            </HoverTooltip>
+            <HoverTooltip text="Ilagay ang iyong nais na bagong password.">
+                <div className="space-y-2">
+                    <Label htmlFor="new-password">Bagong Password</Label>
+                    <Input id="new-password" type="password" required />
+                </div>
+            </HoverTooltip>
+             <HoverTooltip text="Kumpirmahin ang iyong bagong password.">
+                 <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Kumpirmahin ang Bagong Password</Label>
+                    <Input id="confirm-password" type="password" required />
+                </div>
+            </HoverTooltip>
+            <HoverTooltip text="I-save ang mga pagbabago sa iyong password.">
+                <Button type="submit">I-save ang Bagong Password</Button>
+            </HoverTooltip>
+          </form>
+          <Separator className="my-6" />
+          <div className="space-y-2">
+            <Label>Baguhin ang Email Address</Label>
+            <div className="flex items-center justify-between p-3 border rounded-md">
+                <p className="text-sm text-muted-foreground">brgy-admin@lingkodani.gov.ph</p>
+                <HoverTooltip text="Simulan ang proseso ng pagbabago ng iyong email address.">
+                    <Button variant="outline" onClick={handleChangeEmail}>Baguhin ang Email</Button>
+                </HoverTooltip>
+            </div>
+          </div>
+        </CardContent>
+       </Card>
       
        <Card>
         <CardHeader className="flex-row items-start justify-between">
