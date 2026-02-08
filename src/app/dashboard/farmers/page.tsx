@@ -363,24 +363,32 @@ export default function FarmersPage() {
                       <TableCell className="break-words">{farmer.crops.join(', ')}</TableCell>
                       <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
                       <TableCell className="text-right">
-                          <div className="flex flex-wrap justify-end gap-2">
-                              <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
+                          <div className="flex flex-wrap justify-end gap-1">
+                              <HoverTooltip text="I-edit">
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingFarmer(farmer)}><Edit className="h-4 w-4"/></Button>
+                              </HoverTooltip>
                               <AlertDialog>
-                              <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                  <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
-                                  </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                  <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
+                                <AlertDialogTrigger asChild>
+                                    <HoverTooltip text="Alisin">
+                                        <Button variant="destructive" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
+                                    </HoverTooltip>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
                               </AlertDialog>
-                              <Button variant="outline" size="sm" onClick={() => generateQr(farmer.id)}><QrCode /></Button>
+                              <HoverTooltip text="I-print ang QR ID">
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => generateQr(farmer.id)}><QrCode className="h-4 w-4"/></Button>
+                              </HoverTooltip>
                           </div>
                       </TableCell>
                     </TableRow>

@@ -63,28 +63,30 @@ export default function AuditLogPage() {
 
       <Card>
         <CardContent>
-          <Table className="table-fixed">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Gumagamit</TableHead>
-                <TableHead>Aksyon</TableHead>
-                <TableHead>Mga Detalye</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="break-words">{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
-                  <TableCell className="font-medium break-words">{log.user}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{log.action}</Badge>
-                  </TableCell>
-                  <TableCell className="break-words">{log.details}</TableCell>
+          <div className="relative w-full overflow-auto">
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Gumagamit</TableHead>
+                    <TableHead>Aksyon</TableHead>
+                    <TableHead>Mga Detalye</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                {filteredLogs.map((log) => (
+                    <TableRow key={log.id}>
+                    <TableCell className="break-words">{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
+                    <TableCell className="font-medium break-words">{log.user}</TableCell>
+                    <TableCell>
+                        <Badge variant="secondary">{log.action}</Badge>
+                    </TableCell>
+                    <TableCell className="break-words">{log.details}</TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

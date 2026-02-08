@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Upload, Search } from 'lucide-react';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 export default function ApprovalsPage() {
   const { farmers, setFarmers } = useData();
@@ -138,12 +139,16 @@ export default function ApprovalsPage() {
                       <TableCell>{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button size="sm" onClick={() => handleApproval(farmer.id, true)}>
-                            <Check className="mr-2 h-4 w-4" /> Aprubahan
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleApproval(farmer.id, false)}>
-                            <X className="mr-2 h-4 w-4" /> Tanggihan
-                          </Button>
+                            <HoverTooltip text="Aprubahan">
+                                <Button size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, true)}>
+                                    <Check className="h-4 w-4" />
+                                </Button>
+                            </HoverTooltip>
+                            <HoverTooltip text="Tanggihan">
+                                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, false)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </HoverTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
