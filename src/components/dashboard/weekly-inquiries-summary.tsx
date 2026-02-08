@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Bar, BarChart, ResponsiveContainer, XAxis } from 'recharts';
@@ -51,7 +52,7 @@ export function WeeklyInquiriesSummary() {
               accessibilityLayer
               data={weeklyInquiriesData}
               margin={{
-                left: -20,
+                left: 0,
                 right: 0,
                 top: 5,
                 bottom: 5,
