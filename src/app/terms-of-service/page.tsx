@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
            <h2 className="text-2xl font-semibold">Makipag-ugnayan sa Amin</h2>
           <p>Kung mayroon kang anumang mga katanungan tungkol sa mga Tuntunin at Kundisyon na ito, maaari kang makipag-ugnayan sa amin: sa pamamagitan ng email: contact@lingkodani.gov.ph</p>
 
-          <Link href="/" className="text-primary hover:underline mt-8 block">Bumalik sa Home</Link>
+          <Link href="/dashboard" className="text-primary hover:underline mt-8 block">Bumalik sa Dashboard</Link>
         </div>
       </main>
     </div>
