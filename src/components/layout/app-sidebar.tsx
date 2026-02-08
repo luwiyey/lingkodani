@@ -22,6 +22,7 @@ import {
   Sprout,
   Shield,
   Ticket,
+  Siren,
 } from "lucide-react";
 import {
   Sidebar,
@@ -144,6 +145,7 @@ export function AppSidebar() {
   const barangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { title: "Live SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
+      { title: "Pamamahala ng Alerto", href: "/dashboard/alerts", icon: Siren },
       { title: "Mga Aktibong Isyu", href: "/dashboard/active-issues", icon: ShieldAlert },
       {
         title: "Magsasaka",
