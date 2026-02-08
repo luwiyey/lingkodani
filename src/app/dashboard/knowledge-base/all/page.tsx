@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { knowledgeArticles as initialArticles } from '@/lib/data';
 import type { KnowledgeArticle } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +16,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from "@/hooks/use-toast";
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { useData } from '@/context/data-context';
+
 
 export default function AllKnowledgeArticlesPage() {
-  const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>(initialArticles);
+  const { knowledgeArticles, addKnowledgeArticle } = useData();
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
@@ -34,25 +35,16 @@ export default function AllKnowledgeArticlesPage() {
     const summary = formData.get('summary') as string;
     const keywords = (formData.get('keywords') as string).split(',').map(kw => kw.trim()).filter(Boolean);
     const type = formData.get('type') as KnowledgeArticle['type'];
+    const content = type === 'article' ? formData.get('content') as string : '';
+
 
     if (!title || !summary || !keywords.length) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
     }
-
-    const newEntry: KnowledgeArticle = {
-        id: `KB${Date.now()}`,
-        title,
-        summary,
-        content: type === 'article' ? formData.get('content') as string : '',
-        audioUrl: type === 'audio' ? '/placeholder-audio.mp3' : undefined,
-        keywords,
-        type,
-        author: 'Admin',
-        lastUpdated: new Date().toISOString(),
-    };
-
-    setKnowledgeArticles(prev => [newEntry, ...prev]);
+    
+    addKnowledgeArticle({ title, summary, keywords, type, content });
+    
     setNewEntryDialogOpen(false);
     toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
   };

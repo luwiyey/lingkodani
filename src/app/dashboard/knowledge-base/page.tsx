@@ -2,7 +2,6 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { knowledgeArticles as initialArticles, smsMessages } from '@/lib/data';
 import type { KnowledgeArticle } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { useData } from '@/context/data-context';
 
 type SuggestedArticle = {
     title: string;
@@ -27,7 +27,7 @@ type SuggestedArticle = {
 }
 
 export default function KnowledgeBasePage() {
-  const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>(initialArticles);
+  const { knowledgeArticles, addKnowledgeArticle, smsMessages } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ directAnswer: string; articles: KnowledgeArticle[] } | null>(null);
@@ -46,25 +46,15 @@ export default function KnowledgeBasePage() {
     const summary = formData.get('summary') as string;
     const keywords = (formData.get('keywords') as string).split(',').map(kw => kw.trim()).filter(Boolean);
     const type = formData.get('type') as KnowledgeArticle['type'];
+    const content = type === 'article' ? formData.get('content') as string : '';
 
     if (!title || !summary || !keywords.length) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
     }
+    
+    addKnowledgeArticle({ title, summary, keywords, type, content });
 
-    const newEntry: KnowledgeArticle = {
-        id: `KB${Date.now()}`,
-        title,
-        summary,
-        content: type === 'article' ? formData.get('content') as string : '',
-        audioUrl: type === 'audio' ? '/placeholder-audio.mp3' : undefined,
-        keywords,
-        type,
-        author: 'Admin',
-        lastUpdated: new Date().toISOString(),
-    };
-
-    setKnowledgeArticles(prev => [newEntry, ...prev]);
     setNewEntryDialogOpen(false);
     toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
   };

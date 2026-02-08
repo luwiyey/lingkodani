@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User } from '@/lib/types';
+import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType } from '@/lib/types';
 import { 
     farmers as initialFarmers, 
     smsMessages as initialSmsMessages,
@@ -14,6 +14,14 @@ import {
 } from '@/lib/data';
 import type { FarmerRegistrationValues } from '@/lib/schemas';
 
+export type NewKnowledgeArticleData = {
+  title: string;
+  summary: string;
+  keywords: string[];
+  type: KnowledgeArticleType;
+  content: string;
+};
+
 interface DataContextType {
   farmers: Farmer[];
   setFarmers: React.Dispatch<React.SetStateAction<Farmer[]>>;
@@ -21,6 +29,7 @@ interface DataContextType {
   resources: Resource[];
   setResources: React.Dispatch<React.SetStateAction<Resource[]>>;
   knowledgeArticles: KnowledgeArticle[];
+  addKnowledgeArticle: (data: NewKnowledgeArticleData) => void;
   setKnowledgeArticles: React.Dispatch<React.SetStateAction<KnowledgeArticle[]>>;
   logbook: LogbookEntry[];
   setLogbook: React.Dispatch<React.SetStateAction<LogbookEntry[]>>;
@@ -74,6 +83,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
     setFarmers(prev => [...prev, newFarmer]);
   };
+  
+  const addKnowledgeArticle = (data: NewKnowledgeArticleData) => {
+    const newArticle: KnowledgeArticle = {
+        id: `KB${Date.now()}`,
+        title: data.title,
+        summary: data.summary,
+        content: data.content,
+        keywords: data.keywords,
+        type: data.type,
+        author: 'Admin',
+        lastUpdated: new Date().toISOString(),
+        audioUrl: data.type === 'audio' ? '/placeholder-audio.mp3' : undefined,
+    };
+    setKnowledgeArticles(prev => [newArticle, ...prev]);
+  };
+
 
   const value = {
     farmers,
@@ -83,6 +108,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setResources,
     knowledgeArticles,
     setKnowledgeArticles,
+    addKnowledgeArticle,
     logbook,
     setLogbook,
     auditLogs,
