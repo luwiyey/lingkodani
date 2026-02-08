@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-type Theme = "dark" | "light" | "contrast"
+type Theme = "dark" | "light" | "contrast-light" | "contrast-dark"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -38,9 +38,12 @@ export function ThemeProvider({
   React.useEffect(() => {
     const root = window.document.documentElement
 
-    root.classList.remove("light", "dark", "contrast")
+    root.classList.remove("light", "dark", "contrast-light", "contrast-dark")
 
     root.classList.add(theme)
+    if (theme === 'contrast-dark') {
+      root.classList.add('dark');
+    }
   }, [theme])
 
   const value = {
