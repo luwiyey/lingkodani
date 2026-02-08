@@ -124,7 +124,7 @@ export default function DeveloperPage() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell><Badge variant={user.role === 'developer' ? 'destructive' : 'secondary'}>{user.role}</Badge></TableCell>
                     <TableCell className="text-right">
-                       <div className="flex gap-2 justify-end">
+                       <div className="flex flex-wrap gap-2 justify-end">
                           <HoverTooltip text="I-edit ang mga detalye ng user na ito.">
                              <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}><Edit /> I-edit</Button>
                           </HoverTooltip>

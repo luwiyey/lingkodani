@@ -126,7 +126,7 @@ export default function DisasterInventoryPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-6 h-full">
+      <div className="flex flex-col gap-6">
          <div className="flex items-center justify-between p-4 rounded-lg bg-destructive text-destructive-foreground">
             <div className='flex items-center gap-4'>
                 <AlertTriangle className="h-6 w-6" />
@@ -153,8 +153,7 @@ export default function DisasterInventoryPage() {
                 </Button>
             </HoverTooltip>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 md:px-0">
-          <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <HoverTooltip text="Mag-type dito upang mabilis na mahanap ang isang partikular na rekurso.">
                 <div className="relative flex-1 min-w-[240px]">
@@ -315,7 +314,6 @@ export default function DisasterInventoryPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
       </div>
 
        {editingResource && (

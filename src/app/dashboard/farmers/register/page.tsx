@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { farmerRegistrationSchema, type FarmerRegistrationValues } from '@/lib/schemas';
 import { useData } from '@/context/data-context';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 
 export default function RegisterFarmerPage() {
   const router = useRouter();
@@ -47,9 +48,11 @@ export default function RegisterFarmerPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
-          <ArrowLeft />
-        </Button>
+        <HoverTooltip text="Bumalik sa pahina ng mga magsasaka">
+            <Button variant="outline" size="icon" onClick={() => router.back()}>
+                <ArrowLeft />
+            </Button>
+        </HoverTooltip>
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Magrehistro ng Bagong Magsasaka</h1>
           <p className="text-muted-foreground">Manu-manong magdagdag ng bagong magsasaka sa sistema. Sila ay lilitaw sa pahina ng pag-apruba.</p>

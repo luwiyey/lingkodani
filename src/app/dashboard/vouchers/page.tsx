@@ -188,54 +188,56 @@ export default function VouchersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{isClient ? new Date(voucher.issueDate).toLocaleDateString() : ''}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                        {voucher.status === 'issued' && (
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button size="sm"><Check className="mr-2"/> Mark as Redeemed</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Kumpirmahin ang Pag-redeem</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Sigurado ka bang na-redeem na ni {farmer?.name} ang voucher na ito?
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => {
-                                            updateVoucherStatus(voucher.id, 'redeemed');
-                                            toast({title: 'Tagumpay!', description: 'Nakatatak na bilang "redeemed" ang voucher.'});
-                                        }}>Ituloy</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                        {voucher.status === 'issued' && (
-                           <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                     <Button variant="destructive" size="sm"><X className="mr-2"/> Void</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Kanselahin ang Voucher?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Ang aksyon na ito ay gagawing 'voided' ang voucher at hindi na ito maaaring gamitin.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Bumalik</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => {
-                                            updateVoucherStatus(voucher.id, 'voided');
-                                            toast({title: 'Tagumpay!', description: 'Nakatatak na bilang "voided" ang voucher.', variant: 'destructive'});
-                                        }}>Kanselahin</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                         {voucher.status !== 'issued' && (
-                           <span className="text-xs text-muted-foreground">Walang aksyon</span>
-                        )}
+                    <TableCell>
+                        <div className="flex flex-wrap justify-end gap-2">
+                            {voucher.status === 'issued' && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="sm"><Check className="mr-2"/> Mark as Redeemed</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Kumpirmahin ang Pag-redeem</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Sigurado ka bang na-redeem na ni {farmer?.name} ang voucher na ito?
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => {
+                                                updateVoucherStatus(voucher.id, 'redeemed');
+                                                toast({title: 'Tagumpay!', description: 'Nakatatak na bilang "redeemed" ang voucher.'});
+                                            }}>Ituloy</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
+                            {voucher.status === 'issued' && (
+                            <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="sm"><X className="mr-2"/> Void</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Kanselahin ang Voucher?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Ang aksyon na ito ay gagawing 'voided' ang voucher at hindi na ito maaaring gamitin.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Bumalik</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => {
+                                                updateVoucherStatus(voucher.id, 'voided');
+                                                toast({title: 'Tagumpay!', description: 'Nakatatak na bilang "voided" ang voucher.', variant: 'destructive'});
+                                            }}>Kanselahin</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
+                            {voucher.status !== 'issued' && (
+                            <span className="text-xs text-muted-foreground">Walang aksyon</span>
+                            )}
+                        </div>
                     </TableCell>
                   </TableRow>
                 )
