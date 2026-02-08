@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Shield } from "lucide-react";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import { MobileFooter } from "@/components/layout/mobile-footer";
 
 export default function DashboardLayout({
   children,
@@ -50,12 +51,13 @@ export default function DashboardLayout({
       {!isDisasterPath && <AppSidebar />}
       <SidebarInset>
         <Header />
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
           {children}
         </div>
-        <footer className="p-6 pt-0 text-center text-xs text-muted-foreground">
+        <footer className="hidden p-6 pt-0 text-center text-xs text-muted-foreground md:block">
           <Link href="/terms-of-service" className="hover:underline">Terms of Service</Link> | <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
         </footer>
+        {!isDisasterPath && <MobileFooter />}
       </SidebarInset>
     </SidebarProvider>
   );
