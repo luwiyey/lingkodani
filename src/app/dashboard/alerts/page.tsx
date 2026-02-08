@@ -129,7 +129,7 @@ export default function AlertsPage() {
         <div className="flex items-center">
           <Siren className="mr-2 h-6 w-6"/>
           <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng Alerto</h1>
-          <HelpDialog title="Pamamahala ng Alerto">
+          <HelpDialog title="Pamamahala ng Alerto" tooltipText="Bumuo at subaybayan ang mga alerto sa komunidad.">
             <p>Ito ang iyong command center para sa paglikha at pagsubaybay ng mga alerto sa buong komunidad.</p>
             <p><strong>Bumuo ng Alerto gamit ang AI:</strong> Gamitin ang tool na ito para sa proaktibong pag-alerto. Mag-input ng data, tulad ng buod ng mga SMS o ulat ng panahon, at hahayaan ang AI na bumuo ng isang structured na mensahe ng alerto at rekomendasyon.</p>
             <p><strong>Kasaysayan ng mga Alerto:</strong> Tingnan ang isang talaan ng lahat ng mga nakaraang alerto na ipinadala. Nakakatulong ito sa pagsusuri ng mga nakaraang kaganapan at pag-unawa sa mga pattern.</p>

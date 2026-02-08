@@ -129,7 +129,7 @@ export default function AiToolkitPage() {
       <div className="space-y-1">
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">AI Toolkit</h1>
-            <HelpDialog title="AI Toolkit">
+            <HelpDialog title="AI Toolkit" tooltipText="Gumamit ng mga tool ng AI para sa pagsusuri.">
               <p>Ito ay isang koleksyon ng mga espesyal na tool na pinapagana ng AI upang tulungan ka sa mga karaniwang kalkulasyon at pagsusuri sa agrikultura.</p>
               <p><strong>Plant-MD:</strong> Mag-upload ng larawan ng may sakit na halaman at ilarawan ang mga sintomas. Gagamitin ng AI ang impormasyong ito upang magbigay ng diagnosis at mga hakbang sa paggamot.</p>
               <p><strong>Mga Calculator:</strong> Mabilis na kalkulahin ang mga rekomendasyon para sa pataba, pestisidyo, at tantyahin ang potensyal na kita batay sa ani at presyo sa merkado.</p>
@@ -144,7 +144,7 @@ export default function AiToolkitPage() {
               <div className="flex-1">
                 <div className="flex items-center">
                     <CardTitle className="flex items-center gap-2"><BrainCircuit /> Plant-MD: Pagsusuri ng Halaman gamit ang AI</CardTitle>
-                    <HelpDialog title="Plant-MD: Pagsusuri ng Halaman">
+                    <HelpDialog title="Plant-MD: Pagsusuri ng Halaman" tooltipText="Suriin ang mga sakit ng halaman gamit ang isang larawan.">
                       <p>Gamitin ang tool na ito upang makakuha ng mabilis na pagsusuri ng AI para sa mga problema sa halaman.</p>
                       <ol className="list-decimal pl-5 space-y-2">
                         <li><strong>Mag-upload ng Larawan:</strong> Pumili ng malinaw na larawan ng apektadong bahagi ng halaman.</li>
@@ -225,7 +225,7 @@ export default function AiToolkitPage() {
                 <div className="flex-1">
                   <div className="flex items-center">
                     <CardTitle className="text-lg">Calculator ng Pataba</CardTitle>
-                    <HelpDialog title="Calculator ng Pataba">
+                    <HelpDialog title="Calculator ng Pataba" tooltipText="Kalkulahin ang tamang dami ng pataba.">
                       <p>Gamitin ito para makakuha ng mabilis na rekomendasyon sa pataba na nasa Filipino.</p>
                       <p>Ilagay ang sukat ng lupa sa ektarya (hectares) at ang uri ng pananim. Ang AI ay magbibigay ng simpleng rekomendasyon batay sa mga karaniwang kasanayan.</p>
                     </HelpDialog>
@@ -263,7 +263,7 @@ export default function AiToolkitPage() {
                 <div className="flex-1">
                   <div className="flex items-center">
                     <CardTitle className="text-lg">Dosis ng Pestisidyo</CardTitle>
-                    <HelpDialog title="Dosis ng Pestisidyo">
+                    <HelpDialog title="Dosis ng Pestisidyo" tooltipText="Tukuyin ang tamang halo ng pestisidyo.">
                       <p>Gamitin ito para makakuha ng rekomendasyon sa tamang pag-halo ng pestisidyo.</p>
                        <p>Ilagay ang sukat ng lupa na i-ispreyan at ang pangalan ng pestisidyo. Ang AI ay magbibigay ng rekomendasyon sa Filipino, tulad ng "X ml bawat 16L na tubig".</p>
                     </HelpDialog>
@@ -301,7 +301,7 @@ export default function AiToolkitPage() {
               <div className="flex-1">
                 <div className="flex items-center">
                     <CardTitle className="text-lg">Pagsusuri sa Kita</CardTitle>
-                    <HelpDialog title="Pagsusuri sa Kita">
+                    <HelpDialog title="Pagsusuri sa Kita" tooltipText="Tantyahin ang potensyal na kita mula sa ani.">
                       <p>Isang simpleng calculator para matantya ang potensyal na kita mula sa iyong ani.</p>
                        <p>Ilagay ang inaasahang ani sa kilo (kg) at ang kasalukuyang presyo sa merkado bawat kilo. Ang AI ay magbibigay ng isang pangungusap na pagsusuri sa Filipino, kasama ang tinatayang kita at break-even point.</p>
                     </HelpDialog>

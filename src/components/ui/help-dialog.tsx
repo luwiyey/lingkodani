@@ -21,10 +21,11 @@ import {
 
 interface HelpDialogProps {
   title: string;
+  tooltipText?: string;
   children: React.ReactNode;
 }
 
-export function HelpDialog({ title, children }: HelpDialogProps) {
+export function HelpDialog({ title, tooltipText, children }: HelpDialogProps) {
   return (
     <Dialog>
         <TooltipProvider>
@@ -38,7 +39,7 @@ export function HelpDialog({ title, children }: HelpDialogProps) {
                     </DialogTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>Tulong para sa: {title}</p>
+                    <p>{tooltipText || title}</p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>

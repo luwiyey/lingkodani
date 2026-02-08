@@ -56,7 +56,7 @@ export default function DashboardPage() {
        <div className="space-y-1">
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
-            <HelpDialog title="Dashboard ng Barangay">
+            <HelpDialog title="Dashboard ng Barangay" tooltipText="Tingnan ang buod ng mga aktibidad at alerto.">
                 <p>Ito ang iyong pangunahing command center. Dito mo makikita ang isang mabilis na pangkalahatang-ideya ng lahat ng nangyayari sa iyong barangay, na nagbibigay-daan sa iyo na mabilis na matukoy ang mga prayoridad.</p>
                 <p><strong>Mga Stat Card:</strong> Ang mga card sa itaas ay nagbibigay ng mahahalagang numero tulad ng kabuuang bilang ng mga magsasaka, mga nakabinbing pag-apruba, at mga bagong alerto. Ang pag-click sa mga ito ay magdadala sa iyo sa mga kaugnay na pahina para sa mas detalyadong impormasyon.</p>
                 <p><strong>Sentro ng Panganib:</strong> Ang seksyon na ito ay awtomatikong sinusuri ang mga papasok na data (mula sa SMS at panahon) upang matukoy ang mga potensyal na panganib. Maaari kang magpadala ng abiso sa mga apektadong magsasaka nang direkta mula dito.</p>
@@ -162,7 +162,7 @@ export default function DashboardPage() {
             <div className="flex-1">
                 <div className="flex items-center">
                     <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>
-                    <HelpDialog title="Sentro ng Panganib at Alerto">
+                    <HelpDialog title="Sentro ng Panganib at Alerto" tooltipText="Unawain ang mga awtomatikong nabuong alerto.">
                         <p>Ang seksyon na ito ay ang iyong "early warning system." Awtomatiko nitong sinusuri ang mga papasok na data (mula sa SMS ng magsasaka at mga ulat ng panahon) upang matukoy ang mga potensyal na panganib sa agrikultura.</p>
                         <p>Bawat card ay kumakatawan sa isang aktibong alerto. Ipinapakita nito ang uri ng panganib, isang maikling paglalarawan, at kung gaano karaming magsasaka ang maaaring maapektuhan. Ang layunin ay bigyan ka ng mabilis na kamalayan sa mga umuusbong na problema.</p>
                         <p><strong>Magpadala ng Abiso:</strong> Pindutin ang button na ito upang mag-broadcast ng isang babala sa lahat ng mga magsasaka na nasa panganib. Ito ay isang mabilis na paraan upang magbigay ng maagang babala at mga tagubilin sa pag-iwas.</p>

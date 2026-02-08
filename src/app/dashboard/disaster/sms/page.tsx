@@ -248,7 +248,7 @@ export default function DisasterSmsPage() {
                     <AlertTriangle className="h-6 w-6" />
                     <div className="flex items-center">
                         <h1 className="text-xl font-bold tracking-tight">Disaster SMS Feed</h1>
-                        <HelpDialog title="Disaster SMS Feed">
+                        <HelpDialog title="Disaster SMS Feed" tooltipText="Tumugon sa mga emergency na komunikasyon.">
                             <p>Ito ang iyong command center para sa mga komunikasyon sa panahon ng sakuna. Nakatuon ito sa mabilis na pagtugon sa mga emergency na ulat mula sa mga magsasaka.</p>
                             <p>Ang mga mensahe na may kaugnayan sa emerhensiya (hal. ulat ng pinsala, kahilingan para sa tulong) ay awtomatikong binibigyan ng mas mataas na priyoridad at ipinapakita dito.</p>
                              <p><strong>Mga Aksyon:</strong></p>

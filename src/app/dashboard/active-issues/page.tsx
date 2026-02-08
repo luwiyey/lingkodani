@@ -198,7 +198,7 @@ export default function ActiveIssuesPage() {
                 <div className="flex items-center">
                     <ShieldAlert className="mr-2 h-6 w-6 text-destructive"/>
                     <h1 className="text-2xl font-bold tracking-tight">Mga Aktibong Isyu at Alerto</h1>
-                    <HelpDialog title="Mga Aktibong Isyu at Alerto">
+                    <HelpDialog title="Mga Aktibong Isyu at Alerto" tooltipText="Tumugon sa mga urgent na ulat at alerto.">
                         <p>Ito ang iyong "triage center." Pinagsasama-sama ng pahinang ito ang lahat ng item na may mataas na priyoridad mula sa iba't ibang bahagi ng sistema upang matulungan kang tumuon sa mga pinaka-urgent na problema.</p>
                         <p><strong>Mga Seksyon:</strong></p>
                         <ul className="list-disc pl-5 space-y-1">

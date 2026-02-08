@@ -148,7 +148,7 @@ export default function SmsFeedPage() {
       <div className="mb-6 space-y-1">
           <div className="flex items-center">
               <h1 className="text-2xl font-bold tracking-tight">Live na Feed ng SMS</h1>
-              <HelpDialog title="Live na Feed ng SMS">
+              <HelpDialog title="Live na Feed ng SMS" tooltipText="Suriin at tumugon sa mga papasok na SMS.">
                 <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang papasok na SMS na kailangan ng iyong atensyon.</p>
                 <p><strong>Daloy ng Trabaho:</strong> Ang isang bagong SMS ay papasok at agad na susuriin ng AI. Ang AI ay magbibigay ng paunang pagsusuri sa layunin (intent), tono, at panganib ng mensahe, at magmumungkahi ng isang tugon. Ang iyong gawain ay suriin ang mungkahi ng AI at aprubahan o i-edit ito.</p>
                 <p><strong>Mga Aksyon sa Card:</strong></p>

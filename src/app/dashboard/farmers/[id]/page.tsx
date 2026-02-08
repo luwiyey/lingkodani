@@ -123,7 +123,7 @@ export default function FarmerLogbookPage() {
             <div className="space-y-1">
                 <div className="flex items-center">
                     <h1 className="text-2xl font-bold tracking-tight">Profile ng Magsasaka</h1>
-                    <HelpDialog title="Profile ng Magsasaka">
+                    <HelpDialog title="Profile ng Magsasaka" tooltipText="Tingnan ang kumpletong profile at kasaysayan ng magsasaka.">
                         <p>Ito ang detalyadong view para sa isang partikular na magsasaka. Dito mo makikita ang lahat ng impormasyong may kaugnayan sa kanila sa isang lugar.</p>
                         <p><strong>Profile Card:</strong> Naglalaman ito ng lahat ng personal at impormasyon sa bukid ng magsasaka. Maaari mong i-edit ang impormasyon sa pamamagitan ng pag-click sa "Edit" (lapis) na button.</p>
                         <p><strong>Logbook:</strong> Ito ang pinakamahalagang bahagi. Ito ay isang kumpletong timeline ng lahat ng interaksyon sa magsasaka, kabilang ang kanilang mga SMS, payo ng AI, mga tala mula sa field, at iba pang mahahalagang kaganapan. Nakakatulong ito para maunawaan ang buong kasaysayan ng isang magsasaka.</p>

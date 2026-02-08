@@ -81,7 +81,7 @@ export default function VouchersPage() {
         <div className="space-y-1">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng Voucher</h1>
-             <HelpDialog title="Pamamahala ng Voucher">
+             <HelpDialog title="Pamamahala ng Voucher" tooltipText="Mag-isyu at subaybayan ang mga SMS voucher.">
                 <p>Ito ang sentro para sa pamamahagi ng tulong tulad ng binhi o pataba sa pamamagitan ng mga SMS voucher. Tinitiyak nito na ang mga rekurso ay naibibigay sa tamang tao sa isang organisadong paraan.</p>
                 <p><strong>Daloy ng Trabaho:</strong></p>
                 <ol className="list-decimal pl-5 space-y-2">

@@ -31,7 +31,7 @@ export default function AuditLogPage() {
       <div className="space-y-1">
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Log ng Pagsusuri</h1>
-            <HelpDialog title="Log ng Pagsusuri">
+            <HelpDialog title="Log ng Pagsusuri" tooltipText="Suriin ang mga mahahalagang aksyon na ginawa sa system.">
                 <p>Ang pahinang ito ay naglalaman ng isang kumpletong talaan (log) ng lahat ng mahahalagang aksyon na ginawa ng mga user sa sistema. Ito ay isang "read-only" na view para sa layunin ng seguridad, pananagutan (accountability), at pag-troubleshoot.</p>
                 <p><strong>Mga Tampok:</strong></p>
                 <ul className="list-disc pl-5 space-y-1">

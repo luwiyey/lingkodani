@@ -126,7 +126,7 @@ function DisasterInventory() {
             <div className="space-y-1">
                 <div className="flex items-center">
                     <h1 className="text-2xl font-bold tracking-tight">Imbentaryo (Disaster Mode)</h1>
-                    <HelpDialog title="Disaster Inventory">
+                    <HelpDialog title="Disaster Inventory" tooltipText="Pamahalaan ang mga kritikal na suplay sa panahon ng sakuna.">
                         <p>Ito ay isang simplified na bersyon ng imbentaryo, na nakatuon sa mabilis na pag-access at pamamahala ng mga kritikal na suplay sa panahon ng sakuna (hal. relief goods, gamot, kagamitan sa pag-rescue).</p>
                         <p><strong>Mga Aksyon:</strong></p>
                         <ul className="list-disc pl-5 space-y-1">
@@ -369,7 +369,7 @@ export default function DisasterInventoryPage() {
                     <AlertTriangle className="h-6 w-6" />
                      <div className="flex items-center">
                         <h1 className="text-xl font-bold tracking-tight">Disaster Inventory Management</h1>
-                        <HelpDialog title="Disaster Inventory Management">
+                        <HelpDialog title="Disaster Inventory Management" tooltipText="Pamahalaan ang imbentaryo sa panahon ng sakuna.">
                             <p>Nasa Disaster Mode ka. Ang pahinang ito ay nagpapakita ng isang nakatuong view para sa pamamahala ng imbentaryo sa panahon ng mga emerhensiya.</p>
                             <p>Ito ay isang mas simpleng bersyon ng normal na imbentaryo, na nakatuon sa bilis at kahusayan. Lahat ng pagbabago na gagawin mo dito ay makikita rin sa regular na pahina ng imbentaryo.</p>
                             <p>Pindutin ang 'Bumalik sa Disaster Dashboard' upang bumalik sa pangunahing command center para sa disaster response.</p>

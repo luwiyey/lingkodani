@@ -53,7 +53,7 @@ export default function AccountSettingsPage() {
       <div className="space-y-1">
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Mga Setting ng Account</h1>
-            <HelpDialog title="Mga Setting ng Account">
+            <HelpDialog title="Mga Setting ng Account" tooltipText="Pamahalaan ang iyong profile at seguridad.">
                 <p>Dito mo maaaring i-update ang iyong profile picture at mga setting ng seguridad. Ang iyong pangalan at email ay naka-lock at hindi maaaring baguhin nang direkta para sa mga kadahilanang pang-seguridad.</p>
                 <p><strong>Profile:</strong> I-update ang iyong larawan at tingnan ang iyong personal na impormasyon.</p>
                 <p><strong>Pag-login at Seguridad:</strong> Baguhin ang iyong password o humiling na palitan ang iyong email address.</p>
@@ -68,7 +68,7 @@ export default function AccountSettingsPage() {
           <div className="flex-1">
             <div className="flex items-center">
                 <CardTitle>Profile</CardTitle>
-                <HelpDialog title="Profile">
+                <HelpDialog title="Profile" tooltipText="I-update ang iyong larawan sa profile.">
                     <p>Dito mo maaaring i-update ang iyong profile picture. Ang iyong pangalan at email ay naka-lock para sa mga layuning pang-seguridad.</p>
                     <p><strong>Mag-upload ng Larawan:</strong> Pindutin ito upang pumili ng bagong larawan mula sa iyong computer.</p>
                 </HelpDialog>
@@ -112,7 +112,7 @@ export default function AccountSettingsPage() {
         <CardHeader>
           <div className="flex items-center">
             <CardTitle>Pag-login at Seguridad</CardTitle>
-             <HelpDialog title="Pag-login at Seguridad">
+             <HelpDialog title="Pag-login at Seguridad" tooltipText="Baguhin ang iyong password o email.">
                 <p>Panatilihing secure ang iyong account.</p>
                 <p><strong>Baguhin ang Password:</strong> Regular na palitan ang iyong password para mapanatiling ligtas ang iyong account. Ilagay ang iyong kasalukuyan at bagong password.</p>
                 <p><strong>Baguhin ang Email:</strong> Kung kailangan mong i-update ang iyong email, pindutin ang button na ito. Isang email ng kumpirmasyon ang ipapadala sa iyong bagong address.</p>
@@ -171,7 +171,7 @@ export default function AccountSettingsPage() {
           <div className="flex-1">
             <div className="flex items-center">
                 <CardTitle>Mga Pananggalang sa Privacy ng Data</CardTitle>
-                <HelpDialog title="Privacy ng Data">
+                <HelpDialog title="Privacy ng Data" tooltipText="Alamin ang tungkol sa proteksyon ng data.">
                     <p>Ang sistemang ito ay idinisenyo upang sumunod sa Data Privacy Act of 2012 ng Pilipinas.</p>
                     <p>Kabilang sa mga feature na ipapatupad sa hinaharap ang:</p>
                     <ul className="list-disc pl-5 space-y-1">

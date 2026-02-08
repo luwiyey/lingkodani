@@ -82,7 +82,7 @@ export default function DeveloperPage() {
         <div className="flex items-center">
             <Shield className="mr-2 h-6 w-6"/>
             <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng User (Developer)</h1>
-            <HelpDialog title="Pamamahala ng User">
+            <HelpDialog title="Pamamahala ng User" tooltipText="Pamahalaan kung sino ang maaaring maka-access sa system.">
                 <p>Ang pahinang ito ay para sa developer upang pamahalaan kung sino ang maaaring maka-access sa Lingkod-Ani system para sa isang partikular na barangay.</p>
                 <p><strong>Magdagdag ng User:</strong> Gamitin ang button na ito upang mag-rehistro ng isang bagong user (hal., ang Barangay Captain, Secretary, o AEW). Sila ay magkakaroon ng access sa system pagkatapos maidagdag dito.</p>
                 <p><strong>I-edit:</strong> I-update ang pangalan, email, o role ng isang kasalukuyang user.</p>

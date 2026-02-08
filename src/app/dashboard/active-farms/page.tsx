@@ -60,7 +60,7 @@ export default function ActiveFarmsPage() {
                 <div className="flex items-center">
                     <Sprout className="mr-2 h-6 w-6"/>
                     <h1 className="text-2xl font-bold tracking-tight">Mga Aktibong Sakahan</h1>
-                    <HelpDialog title="Mga Aktibong Sakahan">
+                    <HelpDialog title="Mga Aktibong Sakahan" tooltipText="Subaybayan ang mga yugto ng pananim sa buong barangay.">
                         <p>Ang pahinang ito ay nagbibigay ng isang pangkalahatang-ideya ng lahat ng mga sakahan na kasalukuyang may aktibong tanim (crop cycle). Ito ay nagbibigay-daan sa iyo na subaybayan ang pag-unlad ng mga pananim sa buong barangay.</p>
                         <p><strong>Talahanayan ng mga Aktibong Sakahan:</strong></p>
                         <ul className="list-disc pl-5 space-y-1">

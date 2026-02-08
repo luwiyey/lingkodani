@@ -49,7 +49,7 @@ export default function TrainingPage() {
       <div className="space-y-1">
         <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Pagsasanay at Feedback para sa AEW</h1>
-            <HelpDialog title="Pagsasanay at Feedback">
+            <HelpDialog title="Pagsasanay at Feedback" tooltipText="Pagbutihin ang kasanayan at turuan ang AI.">
                 <p>Ang pahinang ito ay idinisenyo para sa mga Agricultural Extension Workers (AEWs) upang mapabuti ang kanilang mga kasanayan at, higit sa lahat, magbigay ng feedback para "turuan" ang AI.</p>
                 <p><strong>Mga Modyul sa Pagsasanay:</strong> Ito ay mga interactive na aralin na tumutulong sa mga AEW na mas maunawaan ang sistema at ang mga karaniwang kaso na kanilang hinaharap. Ang bawat modyul ay naglalaman ng mga pagsusulit o mga simulation ng totoong sitwasyon.</p>
                 <p><strong>Feedback sa AI:</strong> Ito ang pinakamahalagang bahagi ng pagpapabuti ng sistema. Dito mo maaaring direktang turuan ang AI sa pamamagitan ng pagbibigay ng mga tamang halimbawa. Kapag nagbigay ka ng feedback, natututo ang AI mula sa iyong input at nagiging mas mahusay sa pag-unawa sa mga lokal na diyalekto, terminolohiya, at konteksto.</p>
@@ -73,7 +73,7 @@ export default function TrainingPage() {
                     <div className="flex-1">
                       <div className="flex items-center">
                           <CardTitle>{module.title}</CardTitle>
-                          <HelpDialog title={module.title}>
+                          <HelpDialog title={module.title} tooltipText="Alamin ang tungkol sa modyul ng pagsasanay na ito.">
                             <p>{module.description}</p>
                             <p>Ang pag-click sa "Simulan ang Modyul" ay magbubukas ng isang interactive na aralin para sa pagsasanay na ito, na maaaring may kasamang mga tanong at mga halimbawa ng totoong sitwasyon.</p>
                           </HelpDialog>
@@ -95,7 +95,7 @@ export default function TrainingPage() {
             <div className="flex-1">
               <div className="flex items-center">
                 <CardTitle className="flex items-center gap-2"><BrainCircuit /> Feedback sa AI</CardTitle>
-                <HelpDialog title="Paano Magbigay ng Feedback sa AI">
+                <HelpDialog title="Paano Magbigay ng Feedback sa AI" tooltipText="Alamin ang mga hakbang sa pagbibigay ng feedback sa AI.">
                     <p>Ito ay isang paraan para direktang turuan ang AI. Sundin ang mga hakbang na ito:</p>
                     <ol className="list-decimal pl-5 space-y-2">
                         <li><strong>Halimbawang SMS:</strong> Maglagay ng isang aktwal na SMS mula sa isang magsasaka na sa tingin mo ay mahirap o mali ang interpretasyon ng AI. Halimbawa, isang mensahe na may halo-halong diyalekto.</li>

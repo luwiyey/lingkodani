@@ -68,7 +68,7 @@ export default function DisasterModePage() {
                       <CardTitle className="flex items-center gap-2">
                           <Megaphone /> Magpadala ng Emergency Broadcast
                       </CardTitle>
-                      <HelpDialog title="Emergency Broadcast">
+                      <HelpDialog title="Emergency Broadcast" tooltipText="Alamin kung paano magpadala ng emergency broadcast.">
                           <p>Ito ay isang napakahalagang tool para sa mabilis na pagpapakalat ng impormasyon sa panahon ng emerhensiya. Gamitin ang feature na ito upang magpadala ng agarang SMS alert sa LAHAT ng nakarehistrong magsasaka sa iyong barangay.</p>
                           <p><strong>Paano Gamitin:</strong></p>
                           <ul className="list-disc pl-5 space-y-1">

@@ -129,7 +129,7 @@ export default function KnowledgeBasePage() {
         <div className="space-y-1">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
-            <HelpDialog title="Base ng Kaalaman">
+            <HelpDialog title="Base ng Kaalaman" tooltipText="Maghanap ng impormasyon at pamahalaan ang mga artikulo.">
               <p>Ito ang iyong sentral na hub para sa lahat ng impormasyon sa pagsasaka. Dito mo maaaring hanapin ang mga sagot sa mga tanong ng magsasaka, pamahalaan ang mga umiiral na artikulo, at magdagdag ng mga bago.</p>
               <p><strong>Paghahanap gamit ang AI (itaas na search bar):</strong> Gamitin ito para sa mga kumplikadong tanong sa natural na wika (Tagalog/English), hal. "Paano ko masusugpo ang mga peste sa aking taniman ng kamatis?". Ang AI ay magbibigay ng direktang sagot at magmumungkahi ng mga kaugnay na artikulo mula sa iyong knowledge base at sa web.</p>
               <p><strong>Mga Mungkahing Artikulo ng AI:</strong> Sinusuri ng AI ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring kailanganin ng komunidad.</p>
@@ -178,7 +178,7 @@ export default function KnowledgeBasePage() {
                 <CardHeader>
                     <div className="flex items-center">
                       <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng AI</CardTitle>
-                      <HelpDialog title="Sagot ng AI">
+                      <HelpDialog title="Sagot ng AI" tooltipText="Unawain kung paano binuo ng AI ang sagot.">
                         <p>Ito ang sagot na binuo ng artificial intelligence batay sa iyong tanong. Sinusuri nito ang parehong internal na knowledge base (ang iyong mga artikulo) at mga resulta mula sa isang web search upang magbigay ng pinaka-komprehensibo at napapanahong sagot.</p>
                         <p>Ang layunin nito ay magbigay ng isang mabilis at direktang sagot na maaari mong ibahagi kaagad sa magsasaka.</p>
                       </HelpDialog>
@@ -222,7 +222,7 @@ export default function KnowledgeBasePage() {
                 <div className="flex items-center">
                     <div className="flex items-center">
                       <CardTitle className="flex items-center gap-2"><Bot className="h-6 w-6" />Mga Mungkahing Artikulo ng AI</CardTitle>
-                      <HelpDialog title="Mga Mungkahing Artikulo ng AI">
+                      <HelpDialog title="Mga Mungkahing Artikulo ng AI" tooltipText="Tingnan ang mga mungkahi ng AI para sa mga bagong artikulo.">
                         <p>Sinusuri ng AI ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend at mga karaniwang tanong. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring maging kapaki-pakinabang para sa komunidad.</p>
                         <p>Gamitin ito bilang inspirasyon para sa mga susunod na artikulo na iyong isusulat. Ito ay isang proaktibong paraan upang matugunan ang mga pangangailangan ng mga magsasaka bago pa man sila magtanong.</p>
                       </HelpDialog>
