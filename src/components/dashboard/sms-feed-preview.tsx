@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { smsMessages } from '@/lib/data';
 import type { SmsIntent } from '@/lib/types';
+import { HoverTooltip } from '../ui/hover-tooltip';
 
 const urgencyVariant = {
   high: 'destructive',
@@ -46,35 +47,39 @@ export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?
                   Mga papasok na ulat mula sa mga magsasaka na nangangailangan ng pagpapatunay.
                 </CardDescription>
               </div>
-              <Button asChild size="sm" className="gap-1 flex-shrink-0">
-                <Link href={feedHref}>
-                  Tingnan Lahat
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <HoverTooltip text="Tingnan ang lahat ng papasok na mensahe sa real-time.">
+                <Button asChild size="sm" className="gap-1 flex-shrink-0">
+                    <Link href={feedHref}>
+                    Tingnan Lahat
+                    <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                </Button>
+              </HoverTooltip>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
                 {recentMessages.map((message) => {
                     const TypeIcon = typeInfo[message.parsedIntent]?.icon || MessageCircle;
                     return (
-                    <div key={message.id} className="flex items-start gap-4">
-                        <TypeIcon className="h-5 w-5 text-muted-foreground mt-1" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-none truncate">
-                                {message.farmerName}
-                            </p>
-                            <p className="text-sm text-muted-foreground truncate">
-                                {message.message}
-                            </p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                            <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
-                            <div className="text-xs text-muted-foreground whitespace-nowrap">
-                            {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null}
+                    <HoverTooltip key={message.id} text={`Layunin ng AI: ${message.parsedIntent} | Kumpiyansa: ${(message.aiConfidence * 100).toFixed(0)}%`}>
+                        <div className="flex items-start gap-4">
+                            <TypeIcon className="h-5 w-5 text-muted-foreground mt-1" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium leading-none truncate">
+                                    {message.farmerName}
+                                </p>
+                                <p className="text-sm text-muted-foreground truncate">
+                                    {message.message}
+                                </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                <Badge variant={urgencyVariant[message.urgency]}>{message.urgency}</Badge>
+                                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {isClient ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </HoverTooltip>
                 )}
                 )}
                 </div>
