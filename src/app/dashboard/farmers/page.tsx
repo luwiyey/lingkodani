@@ -79,7 +79,7 @@ export default function FarmersPage() {
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
 
-  const activeFarmers = farmers.filter(f => f.status !== 'pending_approval');
+  const activeFarmers = farmers.filter(f => f.status === 'active' || f.status === 'inactive');
   const allSitios = [...new Set(farmers.map((f) => f.sitio))].sort();
   const allCrops = [...new Set(farmers.flatMap((f) => f.crops))];
   const allStatuses: Farmer['status'][] = ['active', 'inactive'];

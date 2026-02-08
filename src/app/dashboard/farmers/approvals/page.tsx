@@ -28,10 +28,12 @@ export default function ApprovalsPage() {
     const farmerToUpdate = farmers.find(f => f.id === farmerId);
     if (!farmerToUpdate) return;
 
+    const newStatus = isApproved ? 'active' : 'rejected';
+
     setFarmers(current =>
       current.map(f =>
         f.id === farmerId
-          ? { ...f, status: isApproved ? 'active' : 'rejected' }
+          ? { ...f, status: newStatus }
           : f
       )
     );

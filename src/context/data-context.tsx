@@ -72,7 +72,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   
   const addPendingFarmer = (farmerData: FarmerRegistrationValues) => {
     const newFarmer: Farmer = {
-        id: `FARM${String(farmers.length + 10).padStart(3, '0')}`,
+        id: `FARM${Date.now()}`,
         name: farmerData.name,
         phone: farmerData.phone,
         barangay: farmerData.barangay,
