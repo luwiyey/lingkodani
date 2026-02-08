@@ -46,7 +46,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
-import { Calendar } from "@/components/ui/calendar";
 
 type SortableKeys = keyof Omit<Resource, 'id' | 'category'>;
 
@@ -324,7 +323,7 @@ export default function InventoryPage() {
         <Card>
           <CardContent className="p-0">
             <div className="relative w-full overflow-auto">
-              <Table className="table-fixed">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>

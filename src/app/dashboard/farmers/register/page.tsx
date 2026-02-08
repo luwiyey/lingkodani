@@ -4,7 +4,6 @@
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Metadata } from 'next';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,13 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { farmerRegistrationSchema, type FarmerRegistrationValues } from '@/lib/schemas';
 import { useData } from '@/context/data-context';
-
-// This would ideally be in a layout if it's shared
-// export const metadata: Metadata = {
-//   title: 'Magrehistro ng Magsasaka | Lingkod-Ani',
-//   description: 'Manu-manong magdagdag ng bagong magsasaka sa sistema.',
-// };
-
 
 export default function RegisterFarmerPage() {
   const router = useRouter();

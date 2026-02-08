@@ -12,13 +12,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
-import type { Metadata } from 'next';
-
-// This would ideally be in a layout if it's shared
-// export const metadata: Metadata = {
-//   title: 'Mga Aktibong Sakahan | Lingkod-Ani',
-//   description: 'Subaybayan ang kasalukuyang yugto ng mga pananim sa buong barangay.',
-// };
 
 // In a real app, this data would likely come from a 'crop_cycles' collection in Firestore.
 // For this prototype, we'll generate it based on our mock farmers.

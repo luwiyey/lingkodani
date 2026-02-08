@@ -35,14 +35,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { resources } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import type { Metadata } from 'next';
-
-// This would ideally be in a layout if it's shared
-// export const metadata: Metadata = {
-//   title: 'Mga Aktibong Isyu | Lingkod-Ani',
-//   description: 'Triage center para sa mga urgent na ulat at alerto.',
-// };
-
 
 const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     REGISTER: { label: 'Pagpaparehistro', icon: User },
