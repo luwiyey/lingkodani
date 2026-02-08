@@ -25,10 +25,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-body antialiased`}>
         <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
+            defaultTheme="light"
         >
           {children}
           <Toaster />
