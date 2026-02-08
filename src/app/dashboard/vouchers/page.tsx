@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '@/context/data-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -43,6 +43,11 @@ export default function VouchersPage() {
   const [selectedResource, setSelectedResource] = useState('');
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleIssueVoucher = () => {
     if (!selectedFarmer || !selectedResource) {
@@ -182,7 +187,7 @@ export default function VouchersPage() {
                         {voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(voucher.issueDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{isClient ? new Date(voucher.issueDate).toLocaleDateString() : ''}</TableCell>
                     <TableCell className="text-right space-x-2">
                         {voucher.status === 'issued' && (
                              <AlertDialog>

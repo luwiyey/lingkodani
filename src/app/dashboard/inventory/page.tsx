@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { resources as initialResources } from '@/lib/data';
 import type { Resource, ResourceCategory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +57,11 @@ export default function InventoryPage() {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
   const { toast } = useToast();
   const importRef = React.useRef<HTMLInputElement>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const [filters, setFilters] = useState<{
     categories: ResourceCategory[];
@@ -369,7 +374,7 @@ export default function InventoryPage() {
                       <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
                       <TableCell>{resource.stock}</TableCell>
                       <TableCell className="break-words">{resource.unit}</TableCell>
-                      <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
+                      <TableCell className="break-words">{isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}</TableCell>
                       <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                              <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>

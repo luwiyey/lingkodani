@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
@@ -7,11 +8,17 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen, Volume2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
 export default function KnowledgeArticlePage() {
   const params = useParams();
   const router = useRouter();
   const articleId = params.id as string;
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const article = knowledgeArticles.find(a => a.id === articleId);
 
@@ -59,7 +66,7 @@ export default function KnowledgeArticlePage() {
           )}
         </CardContent>
         <CardFooter className="text-xs text-muted-foreground">
-          <p>May-akda: {article.author} | Huling Na-update: {new Date(article.lastUpdated).toLocaleDateString()}</p>
+          <p>May-akda: {article.author} | Huling Na-update: {isClient ? new Date(article.lastUpdated).toLocaleDateString() : ''}</p>
         </CardFooter>
       </Card>
 

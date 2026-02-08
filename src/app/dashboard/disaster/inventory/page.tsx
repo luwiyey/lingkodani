@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { resources as initialResources } from '@/lib/data';
@@ -48,6 +48,11 @@ export default function DisasterInventoryPage() {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const requestSort = (key: SortableKeys) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -276,7 +281,7 @@ export default function DisasterInventoryPage() {
                         <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
                         <TableCell>{resource.stock}</TableCell>
                         <TableCell className="break-words">{resource.unit}</TableCell>
-                        <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
+                        <TableCell className="break-words">{isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}</TableCell>
                         <TableCell className="text-right">
                             <div className="flex flex-wrap justify-end gap-1">
                               <HoverTooltip text="I-edit ang mga detalye ng rekurso na ito.">

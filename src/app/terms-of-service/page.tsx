@@ -13,7 +13,7 @@ export default function TermsOfServicePage() {
       <main className="container mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-6 text-primary">Mga Tuntunin ng Serbisyo para sa Lingkod-Ani</h1>
         <div className="prose dark:prose-invert max-w-none space-y-6">
-          <p>Huling na-update: Oktubre 29, 2023</p>
+          <p>Huling na-update: Enero 1, 2026</p>
           <p>Maligayang pagdating sa Lingkod-Ani. Ang mga tuntunin at kundisyon na ito ay naglilinaw ng mga patakaran para sa paggamit ng Lingkod-Ani platform. Sa pag-access o paggamit ng aming serbisyo, sumasang-ayon ka na susunod sa mga tuntuning ito.</p>
           
           <h2 className="text-2xl font-semibold">1. Paggamit ng Serbisyo</h2>

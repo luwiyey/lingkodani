@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
       <main className="container mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-6 text-primary">Patakaran sa Privacy para sa Lingkod-Ani</h1>
         <div className="prose dark:prose-invert max-w-none space-y-6">
-          <p>Huling na-update: Oktubre 29, 2023</p>
+          <p>Huling na-update: Enero 1, 2026</p>
           <p>Ang Patakaran sa Privacy na ito ay naglalayong ipaliwanag kung paano kinokolekta, ginagamit, at pinoprotektahan ng Lingkod-Ani ("kami") ang personal na impormasyon ng mga magsasaka at ng mga Agricultural Extension Worker (AEW) na gumagamit ng platform. Ang inyong tiwala ay aming pinahahalagahan, at kami ay nakatuon sa pagsunod sa Data Privacy Act of 2012 ng Pilipinas.</p>
           
           <h2 className="text-2xl font-semibold">Anong Impormasyon ang Kinokolekta Namin?</h2>

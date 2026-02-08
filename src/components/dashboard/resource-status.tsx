@@ -1,5 +1,9 @@
+
+'use client';
+
 import Link from 'next/link';
 import { ArrowUpRight, Tractor, Wheat, Droplets } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +21,11 @@ const iconMap: Record<ResourceCategory, React.ElementType> = {
 
 export function ResourceStatus({ manageHref = "/dashboard/inventory" }: { manageHref?: string }) {
     const keyResources = resources.filter(r => r.category !== 'Paggawa').slice(0, 3);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     return (
         <Card>
@@ -41,7 +50,7 @@ export function ResourceStatus({ manageHref = "/dashboard/inventory" }: { manage
                     const Icon = iconMap[resource.category] || Droplets;
                     const stockPercentage = resource.category === 'Kagamitan' ? resource.stock * 20 : resource.stock / 10;
                     return (
-                        <HoverTooltip key={resource.id} text={`Huling na-update noong ${new Date(resource.lastUpdated).toLocaleDateString()}`}>
+                        <HoverTooltip key={resource.id} text={`Huling na-update noong ${isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}`}>
                             <div className="flex items-center gap-4">
                                 <Icon className="h-6 w-6 text-muted-foreground" />
                                 <div className="grid gap-1 w-full">
