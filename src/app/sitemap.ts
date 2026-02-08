@@ -28,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/dashboard/settings',
     '/dashboard/sms-feed',
     '/dashboard/training',
+    '/dashboard/vouchers',
     '/privacy-policy',
     '/terms-of-service',
   ].map((route) => ({

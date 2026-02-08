@@ -1,5 +1,5 @@
 
-import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog } from '@/lib/types';
+import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, Voucher } from '@/lib/types';
 import { MessageSquare, Scan, Tractor, Shield, Wind, Flame, Sprout, Droplets, ShieldAlert, Sun } from 'lucide-react';
 
 // =================================================================================
@@ -349,11 +349,11 @@ export const farmerLogbookEntries: LogbookEntry[] = [
 ];
 
 export const registeredUsers = [
-    { email: 'brgy-admin@lingkodani.gov.ph', name: 'Brgy. Admin', role: 'barangay' },
-    { email: 'captain@lingkodani.gov.ph', name: 'Bgy. Captain Cruz', role: 'barangay' },
-    { email: 'secretary@lingkodani.gov.ph', name: 'Sec. Maria Clara', role: 'barangay' },
-    { email: 'aew@lingkodani.gov.ph', name: 'AEW Jose Rizal', role: 'barangay' },
-    { email: 'dev@lingkodani.gov.ph', name: 'Developer', role: 'developer' },
+    { email: 'brgy-admin@lingkodani.gov.ph', name: 'Brgy. Admin', role: 'barangay' as const },
+    { email: 'captain@lingkodani.gov.ph', name: 'Bgy. Captain Cruz', role: 'barangay' as const },
+    { email: 'secretary@lingkodani.gov.ph', name: 'Sec. Maria Clara', role: 'barangay' as const },
+    { email: 'aew@lingkodani.gov.ph', name: 'AEW Jose Rizal', role: 'barangay' as const },
+    { email: 'dev@lingkodani.gov.ph', name: 'Developer', role: 'developer' as const },
 ];
 
 export const auditLogs: AuditLog[] = [
@@ -364,6 +364,12 @@ export const auditLogs: AuditLog[] = [
     { id: 'AUD005', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), user: 'system', action: 'AUTO_ALERT_GENERATED', details: 'Bumuo ng alerto sa panganib ng baha batay sa data ng panahon.'},
 ];
 
+export const vouchers: Voucher[] = [
+  { id: 'VOUCH001', farmerId: 'FARM001', resourceId: 'RES001', quantity: 2, code: 'UR-1A2B3C', status: 'issued', issueDate: '2023-10-25T10:00:00Z' },
+  { id: 'VOUCH002', farmerId: 'FARM002', resourceId: 'RES002', quantity: 5, code: 'SE-4D5E6F', status: 'redeemed', issueDate: '2023-10-22T11:00:00Z', redemptionDate: '2023-10-24T14:00:00Z' },
+  { id: 'VOUCH003', farmerId: 'FARM003', resourceId: 'RES005', quantity: 10, code: 'NO-7G8H9I', status: 'expired', issueDate: '2023-09-01T09:00:00Z' },
+  { id: 'VOUCH004', farmerId: 'FARM004', resourceId: 'RES001', quantity: 1, code: 'UR-J1K2L3', status: 'voided', issueDate: '2023-10-28T16:00:00Z' },
+];
 
 // =================================================================================
 // CHART DATA (Derived from Base Data)

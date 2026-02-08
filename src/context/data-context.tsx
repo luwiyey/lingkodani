@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType } from '@/lib/types';
+import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType, Voucher, VoucherStatus } from '@/lib/types';
 import { 
     farmers as initialFarmers, 
     smsMessages as initialSmsMessages,
@@ -10,7 +10,8 @@ import {
     knowledgeArticles as initialKnowledgeArticles,
     farmerLogbookEntries as initialLogbookEntries,
     auditLogs as initialAuditLogs,
-    registeredUsers as initialUsers
+    registeredUsers as initialUsers,
+    vouchers as initialVouchers
 } from '@/lib/data';
 import type { FarmerRegistrationValues } from '@/lib/schemas';
 
@@ -40,6 +41,9 @@ interface DataContextType {
   updateUser: (email: string, updatedUser: User) => void;
   deleteUser: (email: string) => void;
   addPendingFarmer: (farmerData: FarmerRegistrationValues) => void;
+  vouchers: Voucher[];
+  addVoucher: (voucher: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => void;
+  updateVoucherStatus: (voucherId: string, status: VoucherStatus) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -52,6 +56,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [logbook, setLogbook] = useState<LogbookEntry[]>(initialLogbookEntries);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [users, setUsers] = useState<User[]>(initialUsers);
+  const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
 
   const addUser = (user: User) => {
     setUsers(prev => [...prev, user]);
@@ -98,6 +103,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
     setKnowledgeArticles(prev => [newArticle, ...prev]);
   };
+  
+  const addVoucher = (voucherData: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => {
+    const newVoucher: Voucher = {
+      ...voucherData,
+      id: `VOUCH${Date.now()}`,
+      code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+      status: 'issued',
+      issueDate: new Date().toISOString(),
+    };
+    setVouchers(prev => [newVoucher, ...prev]);
+  };
+
+  const updateVoucherStatus = (voucherId: string, status: VoucherStatus) => {
+    setVouchers(prev =>
+      prev.map(v =>
+        v.id === voucherId
+          ? { ...v, status, redemptionDate: status === 'redeemed' ? new Date().toISOString() : v.redemptionDate }
+          : v
+      )
+    );
+  };
 
 
   const value = {
@@ -118,6 +144,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     updateUser,
     deleteUser,
     addPendingFarmer,
+    vouchers,
+    addVoucher,
+    updateVoucherStatus,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

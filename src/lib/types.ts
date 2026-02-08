@@ -116,3 +116,16 @@ export type AuditLog = {
     action: string;
     details: string;
 }
+
+export type VoucherStatus = 'issued' | 'redeemed' | 'expired' | 'voided';
+
+export type Voucher = {
+    id: string;
+    farmerId: string;
+    resourceId: string;
+    quantity: number;
+    code: string;
+    status: VoucherStatus;
+    issueDate: string;
+    redemptionDate?: string;
+};
