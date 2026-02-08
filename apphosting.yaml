@@ -1,7 +1,16 @@
-# Settings to manage and configure a Firebase App Hosting backend.
+# Mga setting para sa pamamahala at pag-configure ng Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# Kinakailangan: Ang bersyon ng spec. Huwag baguhin.
+specVersion: v1alpha1
+
+# Opsyonal: I-configure ang environment variables para sa iyong runConfig.
+# Ang mga sikreto ay ligtas na iniimbak sa Google Secret Manager.
+env:
+  - variable: GEMINI_API_KEY
+    secret: lingkod-ani-gemini-key
+
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
+  # Opsyonal: Taasan ang halagang ito para awtomatikong mag-spin up
+  # ng mas maraming instance bilang tugon sa tumataas na trapiko.
   maxInstances: 1

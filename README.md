@@ -28,6 +28,7 @@ Ang **Lingkod-Ani** ay isang Next.js application na idinisenyo para sa mga Baran
 
 - Node.js (v18+)
 - `pnpm` (o `npm`/`yarn`)
+- Firebase CLI (para sa deployment)
 
 ### Pag-install
 
@@ -42,7 +43,11 @@ Ang **Lingkod-Ani** ay isang Next.js application na idinisenyo para sa mga Baran
     pnpm install
     ```
 
-3.  I-setup ang environment variables. Kopyahin ang `.env.example` at palitan ang pangalan nito ng `.env` at ilagay ang iyong Gemini API key:
+3.  **I-setup ang Environment Variables.** Kopyahin ang `.env.example` sa isang bagong file na pinangalanang `.env`:
+    ```bash
+    cp .env.example .env
+    ```
+    Buksan ang `.env` file at ilagay ang iyong Gemini API key:
     ```
     GEMINI_API_KEY=iyong_api_key_dito
     ```
@@ -56,6 +61,34 @@ pnpm dev
 ```
 
 Buksan ang [http://localhost:3000](http://localhost:3000) sa iyong browser upang makita ang resulta.
+
+## Deployment
+
+Ang proyektong ito ay naka-configure para sa madaling deployment sa **Firebase App Hosting**.
+
+### Environment Variables para sa Production
+
+Para sa production, ang mga sikreto tulad ng `GEMINI_API_KEY` ay dapat na ligtas na pamahalaan gamit ang **Google Secret Manager**. Ang `apphosting.yaml` file ay naka-setup na upang gamitin ito.
+
+1.  **I-save ang iyong sikreto sa Secret Manager:**
+    ```bash
+    gcloud secrets create lingkod-ani-gemini-key --replication-policy="automatic"
+    printf "iyong_api_key_dito" | gcloud secrets versions add lingkod-ani-gemini-key --data-file=-
+    ```
+
+2.  **Payagan ang App Hosting na i-access ito:** Bigyan ng "Secret Manager Secret Accessor" role ang iyong App Hosting service account.
+
+Ang `apphosting.yaml` ay awtomatikong kukunin ang sikretong ito sa panahon ng deployment.
+
+### Pag-deploy sa Firebase
+
+Upang i-deploy ang iyong app, gamitin ang Firebase CLI:
+
+```bash
+firebase deploy --only hosting
+```
+
+Awtomatikong bubuuin ng Firebase ang iyong Next.js app at i-de-deploy ito.
 
 ## Scripts
 
