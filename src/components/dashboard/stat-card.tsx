@@ -8,15 +8,16 @@ type StatCardProps = {
   icon: LucideIcon;
   description?: string;
   iconBgClass?: string;
+  iconColorClass?: string;
 };
 
-export function StatCard({ title, value, icon: Icon, description, iconBgClass }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, description, iconBgClass, iconColorClass }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <div className={cn("p-2 rounded-md", iconBgClass || "bg-primary/10")}>
-            <Icon className="h-4 w-4 text-primary" />
+            <Icon className={cn("h-4 w-4", iconColorClass || "text-primary")} />
         </div>
       </CardHeader>
       <CardContent>

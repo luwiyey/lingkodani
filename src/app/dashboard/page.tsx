@@ -85,6 +85,7 @@ export default function DashboardPage() {
               icon={Users}
               description="Lahat ng aprubadong magsasaka"
               iconBgClass="bg-primary/10"
+              iconColorClass="text-primary"
               />
           </Link>
         </HoverTooltip>
@@ -96,6 +97,7 @@ export default function DashboardPage() {
               icon={UserPlus}
               description="Bagong rehistro para suriin"
               iconBgClass="bg-yellow-500/10"
+              iconColorClass="text-yellow-500"
               />
           </Link>
         </HoverTooltip>
@@ -107,6 +109,7 @@ export default function DashboardPage() {
               icon={ShieldAlert}
               description="Mga aktibong ulat ng peste"
               iconBgClass="bg-destructive/10"
+              iconColorClass="text-destructive"
               />
           </Link>
         </HoverTooltip>
@@ -117,6 +120,7 @@ export default function DashboardPage() {
             icon={Sprout}
             description="Bilang ng mga sakahan sa yugto ng pagtatanim"
             iconBgClass="bg-blue-500/10"
+            iconColorClass="text-blue-500"
           />
         </HoverTooltip>
         <HoverTooltip text="Tingnan ang bilang ng mga sakahan na nasa yugto ng paglago.">
@@ -126,6 +130,7 @@ export default function DashboardPage() {
             icon={Wheat}
             description="Bilang ng mga sakahan sa yugto ng paglago"
             iconBgClass="bg-amber-500/10"
+            iconColorClass="text-amber-500"
           />
         </HoverTooltip>
         <HoverTooltip text="Tingnan ang mga rekurso na mababa na ang stock.">
@@ -135,7 +140,8 @@ export default function DashboardPage() {
               value={String(lowStockCount)}
               icon={Archive}
               description="Mga item na kailangang i-restock"
-              iconBgClass="bg-blue-500/10"
+              iconBgClass="bg-indigo-500/10"
+              iconColorClass="text-indigo-500"
             />
           </Link>
         </HoverTooltip>
