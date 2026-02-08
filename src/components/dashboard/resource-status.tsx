@@ -20,7 +20,7 @@ export function ResourceStatus({ manageHref = "/dashboard/inventory" }: { manage
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center">
+            <CardHeader className="flex flex-row items-start">
               <div className="grid gap-2">
                 <CardTitle>Katayuan ng Rekurso</CardTitle>
                 <CardDescription>
