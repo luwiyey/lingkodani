@@ -111,19 +111,19 @@ export default function DeveloperPage() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Pangalan</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead className="text-right">Mga Aksyon</TableHead>
+                    <TableHead className="px-2 md:px-4">Pangalan</TableHead>
+                    <TableHead className="px-2 md:px-4">Email</TableHead>
+                    <TableHead className="px-2 md:px-4">Role</TableHead>
+                    <TableHead className="text-right px-2 md:px-4">Mga Aksyon</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {users.map((user) => (
                     <TableRow key={user.email}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell><Badge variant={user.role === 'developer' ? 'destructive' : 'secondary'}>{user.role}</Badge></TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="font-medium px-2 py-4 md:px-4">{user.name}</TableCell>
+                    <TableCell className="px-2 py-4 md:px-4">{user.email}</TableCell>
+                    <TableCell className="px-2 py-4 md:px-4"><Badge variant={user.role === 'developer' ? 'destructive' : 'secondary'}>{user.role}</Badge></TableCell>
+                    <TableCell className="text-right px-2 py-4 md:px-4">
                        <div className="flex flex-wrap gap-2 justify-end">
                           <HoverTooltip text="I-edit ang mga detalye ng user na ito.">
                              <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}><Edit /> I-edit</Button>

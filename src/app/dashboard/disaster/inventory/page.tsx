@@ -127,7 +127,7 @@ export default function DisasterInventoryPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-         <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg bg-destructive text-destructive-foreground">
+         <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-lg bg-destructive text-destructive-foreground">
             <div className='flex items-center gap-4'>
                 <AlertTriangle className="h-6 w-6" />
                  <div className="flex items-center">
@@ -231,7 +231,7 @@ export default function DisasterInventoryPage() {
                     <TableHeader>
                       <TableRow>
                           <HoverTooltip text="Pindutin upang i-sort ayon sa pangalan (A-Z o Z-A).">
-                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                              <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('name')}>
                                   <div className="flex items-center">
                                       Pangalan ng Rekurso
                                       <div className="w-8 flex-shrink-0 flex justify-center">
@@ -240,9 +240,9 @@ export default function DisasterInventoryPage() {
                                   </div>
                               </TableHead>
                           </HoverTooltip>
-                        <TableHead>Kategorya</TableHead>
+                        <TableHead className="px-2 md:px-4">Kategorya</TableHead>
                         <HoverTooltip text="Pindutin upang i-sort ayon sa dami (pataas o pababa).">
-                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
+                              <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('stock')}>
                                   <div className="flex items-center">
                                       Kasalukuyang Stak
                                       <div className="w-8 flex-shrink-0 flex justify-center">
@@ -252,7 +252,7 @@ export default function DisasterInventoryPage() {
                               </TableHead>
                           </HoverTooltip>
                           <HoverTooltip text="Pindutin upang i-sort ayon sa yunit (A-Z o Z-A).">
-                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
+                              <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('unit')}>
                                   <div className="flex items-center">
                                       Yunit
                                       <div className="w-8 flex-shrink-0 flex justify-center">
@@ -262,7 +262,7 @@ export default function DisasterInventoryPage() {
                               </TableHead>
                           </HoverTooltip>
                           <HoverTooltip text="Pindutin upang i-sort ayon sa petsa (bago o luma).">
-                              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
+                              <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('lastUpdated')}>
                                   <div className="flex items-center">
                                       Huling Na-update
                                       <div className="w-8 flex-shrink-0 flex justify-center">
@@ -271,18 +271,18 @@ export default function DisasterInventoryPage() {
                                   </div>
                               </TableHead>
                           </HoverTooltip>
-                        <TableHead className="text-right">Mga Aksyon</TableHead>
+                        <TableHead className="text-right px-2 md:px-4">Mga Aksyon</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sortedResources.map((resource) => (
                         <TableRow key={resource.id}>
-                          <TableCell className="font-medium break-words">{resource.name}</TableCell>
-                          <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
-                          <TableCell>{resource.stock}</TableCell>
-                          <TableCell className="break-words">{resource.unit}</TableCell>
-                          <TableCell className="break-words">{isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="font-medium break-words px-2 py-4 md:px-4">{resource.name}</TableCell>
+                          <TableCell className="px-2 py-4 md:px-4"><Badge variant="secondary">{resource.category}</Badge></TableCell>
+                          <TableCell className="px-2 py-4 md:px-4">{resource.stock}</TableCell>
+                          <TableCell className="break-words px-2 py-4 md:px-4">{resource.unit}</TableCell>
+                          <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}</TableCell>
+                          <TableCell className="text-right px-2 py-4 md:px-4">
                               <div className="flex flex-wrap justify-end gap-1">
                                 <HoverTooltip text="I-edit ang mga detalye ng rekurso na ito.">
                                   <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>

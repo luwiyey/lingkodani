@@ -310,45 +310,45 @@ export default function FarmersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('name')}>
                           <div className="flex items-center">
-                              Pangalan
+                              <span>Pangalan</span>
                                <div className="w-8 flex-shrink-0 flex justify-center">
                                   {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                               </div>
                           </div>
                       </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('location')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('location')}>
                           <div className="flex items-center">
-                              Lokasyon
+                              <span>Lokasyon</span>
                               <div className="w-8 flex-shrink-0 flex justify-center">
                                   {sortConfig?.key === 'location' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                               </div>
                           </div>
                       </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('crops')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('crops')}>
                           <div className="flex items-center">
-                              Mga Pananim
+                              <span>Mga Pananim</span>
                               <div className="w-8 flex-shrink-0 flex justify-center">
                                   {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                               </div>
                           </div>
                       </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('status')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('status')}>
                           <div className="flex items-center">
-                              Katayuan
+                              <span>Katayuan</span>
                               <div className="w-8 flex-shrink-0 flex justify-center">
                                   {sortConfig?.key === 'status' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
                               </div>
                           </div>
                       </TableHead>
-                      <TableHead className="text-right">Mga Aksyon</TableHead>
+                      <TableHead className="text-right px-2 md:px-4"><span>Mga Aksyon</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedFarmers.map((farmer) => (
                     <TableRow key={farmer.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium px-2 py-4 md:px-4">
                         <div className="flex items-center gap-3">
                            <Avatar className="h-8 w-8 flex-shrink-0">
                                 {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
@@ -359,10 +359,10 @@ export default function FarmersPage() {
                           <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline min-w-0 break-words">{farmer.name}</Link>
                         </div>
                       </TableCell>
-                      <TableCell className="break-words">{farmer.sitio}, {farmer.barangay}</TableCell>
-                      <TableCell className="break-words">{farmer.crops.join(', ')}</TableCell>
-                      <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="break-words px-2 py-4 md:px-4">{farmer.sitio}, {farmer.barangay}</TableCell>
+                      <TableCell className="break-words px-2 py-4 md:px-4">{farmer.crops.join(', ')}</TableCell>
+                      <TableCell className="px-2 py-4 md:px-4"><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
+                      <TableCell className="text-right px-2 py-4 md:px-4">
                           <div className="flex flex-wrap justify-end gap-1">
                               <HoverTooltip text="I-edit">
                                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingFarmer(farmer)}><Edit className="h-4 w-4"/></Button>

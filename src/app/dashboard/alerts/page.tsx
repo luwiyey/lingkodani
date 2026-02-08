@@ -37,7 +37,7 @@ import { generateAlert, type GenerateAlertOutput } from '@/ai/flows/generate-ale
 const historicalAlerts = [
   {
     id: 'HIST001',
-    timestamp: '2023-10-25T10:00:00Z',
+    timestamp: '2026-01-25T10:00:00Z',
     type: 'pest',
     severity: 'Warning',
     message: 'Babala: May mga ulat ng pagdami ng rice-black bug sa Zone 2. Suriin ang inyong mga pananim.',
@@ -45,7 +45,7 @@ const historicalAlerts = [
   },
   {
     id: 'HIST002',
-    timestamp: '2023-10-15T18:00:00Z',
+    timestamp: '2026-01-15T18:00:00Z',
     type: 'wind',
     severity: 'Warning',
     message: 'Malakas na hangin ang inaasahan sa susunod na 24 oras. Mag-ingat sa mga posibleng pinsala sa mga istruktura.',
@@ -53,7 +53,7 @@ const historicalAlerts = [
   },
   {
     id: 'HIST003',
-    timestamp: '2023-10-05T09:00:00Z',
+    timestamp: '2026-01-05T09:00:00Z',
     type: 'heat',
     severity: 'Warning',
     message: 'Posible ang heat wave. Tiyaking may sapat na tubig ang mga pananim.',
@@ -228,10 +228,10 @@ export default function AlertsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Petsa</TableHead>
-                <TableHead>Uri</TableHead>
-                <TableHead>Lala</TableHead>
-                <TableHead>Mensahe</TableHead>
+                <TableHead className="px-2 md:px-4">Petsa</TableHead>
+                <TableHead className="px-2 md:px-4">Uri</TableHead>
+                <TableHead className="px-2 md:px-4">Lala</TableHead>
+                <TableHead className="px-2 md:px-4">Mensahe</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -239,14 +239,14 @@ export default function AlertsPage() {
                 const Icon = alertIcons[alert.type] || Siren;
                 return (
                   <TableRow key={alert.id}>
-                    <TableCell>{isClient ? new Date(alert.timestamp).toLocaleDateString() : ''}</TableCell>
-                    <TableCell className="capitalize">
+                    <TableCell className="px-2 py-4 md:px-4">{isClient ? new Date(alert.timestamp).toLocaleDateString() : ''}</TableCell>
+                    <TableCell className="capitalize px-2 py-4 md:px-4">
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4"/> {alert.type}
                       </div>
                     </TableCell>
-                    <TableCell><Badge variant={severityVariant[alert.severity]}>{alert.severity}</Badge></TableCell>
-                    <TableCell>{alert.message}</TableCell>
+                    <TableCell className="px-2 py-4 md:px-4"><Badge variant={severityVariant[alert.severity]}>{alert.severity}</Badge></TableCell>
+                    <TableCell className="px-2 py-4 md:px-4">{alert.message}</TableCell>
                   </TableRow>
                 )
               })}

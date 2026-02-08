@@ -76,25 +76,25 @@ export default function ActiveFarmsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Pangalan ng Magsasaka</TableHead>
-                <TableHead>Pananim</TableHead>
-                <TableHead>Kasalukuyang Yugto</TableHead>
-                <TableHead>Huling Update</TableHead>
-                <TableHead className="text-right">Profile</TableHead>
+                <TableHead className="px-2 md:px-4">Pangalan ng Magsasaka</TableHead>
+                <TableHead className="px-2 md:px-4">Pananim</TableHead>
+                <TableHead className="px-2 md:px-4">Kasalukuyang Yugto</TableHead>
+                <TableHead className="px-2 md:px-4">Huling Update</TableHead>
+                <TableHead className="text-right px-2 md:px-4">Profile</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {activeFarms.map((farm) => (
                 <TableRow key={farm.id}>
-                  <TableCell className="font-medium">{farm.farmerName}</TableCell>
-                  <TableCell>{farm.crop}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium px-2 py-4 md:px-4">{farm.farmerName}</TableCell>
+                  <TableCell className="px-2 py-4 md:px-4">{farm.crop}</TableCell>
+                  <TableCell className="px-2 py-4 md:px-4">
                     <Badge variant="outline" className={stageColors[farm.stage as keyof typeof stageColors] || ''}>
                       {farm.stage}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(farm.lastUpdate).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="px-2 py-4 md:px-4">{new Date(farm.lastUpdate).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-right px-2 py-4 md:px-4">
                     <Button asChild variant="outline" size="sm">
                         <Link href={`/dashboard/farmers/${farm.farmerId}`}>
                             Tingnan <ArrowUpRight className="ml-2 h-4 w-4" />

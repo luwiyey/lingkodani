@@ -69,17 +69,17 @@ export default function OversightPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Pangalan ng Zone</TableHead>
-                <TableHead>Bilang ng Magsasaka</TableHead>
-                <TableHead>Mga Aktibong Isyu</TableHead>
+                <TableHead className="px-2 md:px-4">Pangalan ng Zone</TableHead>
+                <TableHead className="px-2 md:px-4">Bilang ng Magsasaka</TableHead>
+                <TableHead className="px-2 md:px-4">Mga Aktibong Isyu</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {zoneData.map((zone) => (
                 <TableRow key={zone.id}>
-                  <TableCell className="font-medium">{zone.name}</TableCell>
-                  <TableCell>{zone.farmerCount}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium px-2 py-4 md:px-4">{zone.name}</TableCell>
+                  <TableCell className="px-2 py-4 md:px-4">{zone.farmerCount}</TableCell>
+                  <TableCell className="px-2 py-4 md:px-4">
                     <Badge variant={zone.activeIssues > 1 ? "destructive" : "secondary"}>
                       {zone.activeIssues}
                     </Badge>

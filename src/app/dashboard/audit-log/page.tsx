@@ -67,21 +67,21 @@ export default function AuditLogPage() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Gumagamit</TableHead>
-                    <TableHead>Aksyon</TableHead>
-                    <TableHead>Mga Detalye</TableHead>
+                    <TableHead className="px-2 md:px-4">Timestamp</TableHead>
+                    <TableHead className="px-2 md:px-4">Gumagamit</TableHead>
+                    <TableHead className="px-2 md:px-4">Aksyon</TableHead>
+                    <TableHead className="px-2 md:px-4">Mga Detalye</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {filteredLogs.map((log) => (
                     <TableRow key={log.id}>
-                    <TableCell className="break-words">{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
-                    <TableCell className="font-medium break-words">{log.user}</TableCell>
-                    <TableCell>
+                    <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
+                    <TableCell className="font-medium break-words px-2 py-4 md:px-4">{log.user}</TableCell>
+                    <TableCell className="px-2 py-4 md:px-4">
                         <Badge variant="secondary">{log.action}</Badge>
                     </TableCell>
-                    <TableCell className="break-words">{log.details}</TableCell>
+                    <TableCell className="break-words px-2 py-4 md:px-4">{log.details}</TableCell>
                     </TableRow>
                 ))}
                 </TableBody>
