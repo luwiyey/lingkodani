@@ -86,7 +86,7 @@ export function MobileFooter() {
                         <Link href={subItem.href}>
                           <Button
                             variant={
-                              pathname.startsWith(subItem.href)
+                              pathname === subItem.href
                                 ? 'default'
                                 : 'outline'
                             }
