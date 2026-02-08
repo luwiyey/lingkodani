@@ -12,17 +12,10 @@ import {
   MessageSquare,
   Settings,
   Users,
-  Sparkles,
   History,
   ChevronRight,
-  LayoutGrid,
-  GraduationCap,
   Leaf,
   ShieldAlert,
-  Sprout,
-  Shield,
-  Ticket,
-  Siren,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,24 +28,32 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   useSidebar,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { NavItem } from "@/lib/types";
 import { useData } from "@/context/data-context";
 
 function NavMenu({ items }: { items: NavItem[] }) {
     const pathname = usePathname();
     const { farmers } = useData();
+    const { state } = useSidebar();
+    const isCollapsed = state === 'collapsed';
     const pendingApprovalsCount = farmers.filter(f => f.status === 'pending_approval').length;
 
     const isParentActive = (item: NavItem) => {
         if (item.subItems) {
-            // Updated logic to ensure parent is active even for href that is also a subitem href
             const isActive = item.subItems.some(sub => pathname.startsWith(sub.href));
             if (item.href === '/dashboard/farmers' && pathname === '/dashboard/farmers') {
                 return true;
@@ -71,47 +72,79 @@ function NavMenu({ items }: { items: NavItem[] }) {
                 return (
                  <SidebarMenuItem key={item.title}>
                   {item.subItems ? (
-                    <Collapsible defaultOpen={isParentActive(item)}>
-                      <CollapsibleTrigger asChild>
-                         <SidebarMenuButton
-                            isActive={isParentActive(item)}
-                            tooltip={{ children: item.title, side: "right" }}
-                            className="w-full justify-start group"
-                          >
-                            <item.icon />
-                            <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
-                              <span className="truncate">{item.title}</span>
-                              {effectiveLabel && (
-                                <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
-                                  {effectiveLabel}
-                                </span>
-                              )}
-                              <ChevronRight className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
-                            </div>
-                          </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
-                        <SidebarMenuSub>
-                          {item.subItems.map((subItem) => {
-                             const subItemLabel = subItem.href === '/dashboard/farmers/approvals' && pendingApprovalsCount > 0 ? String(pendingApprovalsCount) : subItem.label;
-                             return (
-                                <SidebarMenuSubItem key={subItem.title}>
-                                   <Link href={subItem.href}>
-                                    <SidebarMenuSubButton isActive={pathname === subItem.href}>
-                                      <span>{subItem.title}</span>
-                                      {subItemLabel && (
-                                        <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
-                                          {subItemLabel}
-                                        </span>
-                                      )}
-                                    </SidebarMenuSubButton>
-                                  </Link>
-                                </SidebarMenuSubItem>
-                             )
-                          })}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </Collapsible>
+                    isCollapsed ? (
+                       <DropdownMenu>
+                         <DropdownMenuTrigger asChild>
+                            <SidebarMenuButton
+                                isActive={isParentActive(item)}
+                                tooltip={{ children: item.title, side: "right" }}
+                                className="w-full justify-center"
+                            >
+                                <item.icon />
+                            </SidebarMenuButton>
+                         </DropdownMenuTrigger>
+                          <DropdownMenuContent side="right" align="start" className="w-48">
+                            <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                             {item.subItems.map((subItem) => {
+                                const subItemLabel = subItem.href === '/dashboard/farmers/approvals' && pendingApprovalsCount > 0 ? String(pendingApprovalsCount) : subItem.label;
+                                return (
+                                    <Link key={subItem.title} href={subItem.href} passHref>
+                                        <DropdownMenuItem className="flex justify-between cursor-pointer">
+                                            <span>{subItem.title}</span>
+                                            {subItemLabel && (
+                                                <span className="ml-auto text-xs font-bold text-primary-foreground bg-primary rounded-full px-1.5 py-0.5">
+                                                    {subItemLabel}
+                                                </span>
+                                            )}
+                                        </DropdownMenuItem>
+                                    </Link>
+                                )
+                            })}
+                          </DropdownMenuContent>
+                       </DropdownMenu>
+                    ) : (
+                        <Collapsible defaultOpen={isParentActive(item)}>
+                        <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                                isActive={isParentActive(item)}
+                                className="w-full justify-start group"
+                            >
+                                <item.icon />
+                                <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
+                                <span className="truncate">{item.title}</span>
+                                {effectiveLabel && (
+                                    <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
+                                    {effectiveLabel}
+                                    </span>
+                                )}
+                                <ChevronRight className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
+                                </div>
+                            </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
+                            <SidebarMenuSub>
+                            {item.subItems.map((subItem) => {
+                                const subItemLabel = subItem.href === '/dashboard/farmers/approvals' && pendingApprovalsCount > 0 ? String(pendingApprovalsCount) : subItem.label;
+                                return (
+                                    <SidebarMenuSubItem key={subItem.title}>
+                                    <Link href={subItem.href}>
+                                        <SidebarMenuSubButton isActive={pathname === subItem.href}>
+                                        <span>{subItem.title}</span>
+                                        {subItemLabel && (
+                                            <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
+                                            {subItemLabel}
+                                            </span>
+                                        )}
+                                        </SidebarMenuSubButton>
+                                    </Link>
+                                    </SidebarMenuSubItem>
+                                )
+                            })}
+                            </SidebarMenuSub>
+                        </CollapsibleContent>
+                        </Collapsible>
+                    )
                   ) : (
                     <Link href={item.href} passHref>
                       <SidebarMenuButton
@@ -138,7 +171,6 @@ function NavMenu({ items }: { items: NavItem[] }) {
 }
 
 export function AppSidebar() {
-  const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   
