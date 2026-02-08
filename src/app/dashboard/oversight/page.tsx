@@ -4,24 +4,31 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { farmers } from '@/lib/data';
+import { farmers, smsMessages } from '@/lib/data';
 import { HelpDialog } from "@/components/ui/help-dialog";
 
 // Helper function to get stats per zone
 const getZoneStats = () => {
-    const zones: { [key: string]: { farmers: number, issues: number } } = {};
+    const zones: { [key: string]: { farmers: Set<string>, issues: number } } = {};
 
+    // Initialize zones from farmer data to include all zones
     farmers.forEach(farmer => {
         if (!zones[farmer.sitio]) {
-            zones[farmer.sitio] = { farmers: 0, issues: 0 };
+            zones[farmer.sitio] = { farmers: new Set(), issues: 0 };
         }
-        if (farmer.status !== 'pending_approval') {
-            zones[farmer.sitio].farmers++;
+    });
+
+    // Populate farmer counts
+    farmers.forEach(farmer => {
+        if (farmer.status !== 'pending_approval' && zones[farmer.sitio]) {
+            zones[farmer.sitio].farmers.add(farmer.id);
         }
-        
-        // Mock issue count based on farmer status or other logic
-        // Using a deterministic check based on farmer ID to avoid hydration errors from Math.random()
-        if (farmer.status === 'inactive' || (parseInt(farmer.id.replace('FARM', '')) % 4 === 0)) {
+    });
+    
+    // Populate issue counts from high-urgency SMS
+    smsMessages.forEach(sms => {
+        const farmer = farmers.find(f => f.id === sms.farmerId);
+        if (farmer && zones[farmer.sitio] && sms.urgency === 'high') {
             zones[farmer.sitio].issues++;
         }
     });
@@ -29,7 +36,7 @@ const getZoneStats = () => {
     return Object.entries(zones).map(([name, stats]) => ({
         id: name,
         name,
-        farmerCount: stats.farmers,
+        farmerCount: stats.farmers.size,
         activeIssues: stats.issues,
     })).sort((a,b) => a.name.localeCompare(b.name));
 };

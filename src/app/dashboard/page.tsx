@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Users, ShieldAlert, Sprout, CheckCircle2, Wind, Sun, Droplets, UserPlus, Archive, ClipboardList, Wheat } from "lucide-react";
@@ -9,7 +10,7 @@ import { DailySmsChart } from "@/components/dashboard/daily-sms-chart";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { farmers as allFarmers, smsMessages, cropStageData, resources as allResources, alerts } from "@/lib/data";
+import { farmers as allFarmers, smsMessages, resources as allResources, alerts as initialAlerts } from "@/lib/data";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import {
@@ -32,6 +33,8 @@ export default function DashboardPage() {
     
     const pendingFarmersCount = allFarmers.filter(f => f.status === 'pending_approval').length;
     const highUrgencySmsCount = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval').length;
+    
+    const [alerts, setAlerts] = useState(initialAlerts);
     const criticalAlertsCount = alerts.filter(a => a.severity === 'Kritikal').length;
     const lowStockCount = allResources.filter(r => r.stock < 10).length;
 
@@ -194,6 +197,9 @@ export default function DashboardPage() {
                     </Card>
                 )
             })}
+             {alerts.length === 0 && (
+                <p className="text-sm text-muted-foreground col-span-full text-center py-4">Walang aktibong alerto sa ngayon.</p>
+            )}
         </CardContent>
       </Card>
 

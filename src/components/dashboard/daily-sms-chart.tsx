@@ -29,7 +29,7 @@ export function DailySmsChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
-            <BarChart data={smsVolumeData}>
+            <BarChart data={smsVolumeData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <XAxis
                 dataKey="name"
                 stroke="hsl(var(--foreground))"
@@ -55,5 +55,3 @@ export function DailySmsChart() {
     </Card>
   )
 }
-
-    

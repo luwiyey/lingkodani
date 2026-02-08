@@ -13,14 +13,25 @@ import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 
-// Mock data for active farms/crop cycles
-const activeFarms = [
-    { id: 'CROP001', farmerId: 'FARM001', farmerName: 'Juan dela Cruz', crop: 'Palay', stage: 'Paglago', lastUpdate: '2023-10-25' },
-    { id: 'CROP002', farmerId: 'FARM002', farmerName: 'Maria Clara', crop: 'Kamatis', stage: 'Pamumulaklak', lastUpdate: '2023-10-28' },
-    { id: 'CROP003', farmerId: 'FARM003', farmerName: 'Jose Rizal', crop: 'Tubo', stage: 'Paglago', lastUpdate: '2023-10-22' },
-];
+// In a real app, this data would likely come from a 'crop_cycles' collection in Firestore.
+// For this prototype, we'll generate it based on our mock farmers.
+const activeFarms = farmers.filter(f => f.status === 'active').map((farmer, index) => {
+    // This logic is just for creating varied mock data
+    const stages = ['Paglago', 'Pamumulaklak', 'Pagtatanim', 'Pag-aani'];
+    const crops = farmer.crops.length > 0 ? farmer.crops : ['Unknown'];
+    const stage = stages[index % stages.length];
+    return {
+        id: `CROP${String(index + 1).padStart(3, '0')}`,
+        farmerId: farmer.id,
+        farmerName: farmer.name,
+        crop: crops[0], // Show the first crop for simplicity
+        stage: stage,
+        lastUpdate: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString()
+    }
+});
 
-const stageColors = {
+
+const stageColors: { [key: string]: string } = {
     'Pagtatanim': 'bg-blue-500/10 text-blue-500',
     'Paglago': 'bg-green-500/10 text-green-500',
     'Pamumulaklak': 'bg-yellow-500/10 text-yellow-500',
