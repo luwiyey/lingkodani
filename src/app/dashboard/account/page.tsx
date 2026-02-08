@@ -79,7 +79,7 @@ export default function AccountSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
                 <HoverTooltip text="Ito ang iyong kasalukuyang larawan sa profile.">
                     <Avatar className="h-24 w-24">
                         <AvatarImage src="https://picsum.photos/seed/admin/200/200" alt="Admin" />
@@ -155,7 +155,7 @@ export default function AccountSettingsPage() {
                  <Input id="current-email" type="email" defaultValue="brgy-admin@lingkodani.gov.ph" readOnly />
               </div>
                <div className="space-y-2">
-                <Label>Bagong Email Address</Label>
+                <Label htmlFor="new-email">Bagong Email Address</Label>
                 <Input id="new-email" type="email" placeholder="ilagay ang iyong bagong email address" />
               </div>
               <HoverTooltip text="Simulan ang proseso ng pagbabago ng iyong email address.">
@@ -193,3 +193,5 @@ export default function AccountSettingsPage() {
     </div>
   );
 }
+
+    

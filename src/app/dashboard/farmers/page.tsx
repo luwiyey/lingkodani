@@ -183,7 +183,7 @@ export default function FarmersPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between flex-wrap gap-2">
             <div className="flex items-center gap-4">
                 <HoverTooltip text="Bumalik sa Dashboard">
                     <Button variant="outline" size="icon" onClick={() => router.back()}>
@@ -195,7 +195,7 @@ export default function FarmersPage() {
                     <p className="text-muted-foreground">Tingnan, pamahalaan, at i-update ang mga profile ng lahat ng aprubadong magsasaka.</p>
                 </div>
             </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline"><Download className="mr-2" /> I-export</Button>
@@ -301,81 +301,83 @@ export default function FarmersPage() {
 
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
-                        <div className="flex items-center">
-                            Pangalan
-                             <div className="w-8 flex-shrink-0 flex justify-center">
-                                {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                            </div>
-                        </div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('location')}>
-                        <div className="flex items-center">
-                            Lokasyon
-                            <div className="w-8 flex-shrink-0 flex justify-center">
-                                {sortConfig?.key === 'location' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                            </div>
-                        </div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('crops')}>
-                        <div className="flex items-center">
-                            Mga Pananim
-                            <div className="w-8 flex-shrink-0 flex justify-center">
-                                {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                            </div>
-                        </div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('status')}>
-                        <div className="flex items-center">
-                            Katayuan
-                            <div className="w-8 flex-shrink-0 flex justify-center">
-                                {sortConfig?.key === 'status' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                            </div>
-                        </div>
-                    </TableHead>
-                    <TableHead className="text-right">Mga Aksyon</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedFarmers.map((farmer) => (
-                  <TableRow key={farmer.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <Image src={farmer.avatarUrl} alt={farmer.name} width={32} height={32} className="rounded-full object-cover" />
-                        <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline break-words">{farmer.name}</Link>
-                      </div>
-                    </TableCell>
-                    <TableCell className="break-words">{farmer.sitio}, {farmer.barangay}</TableCell>
-                    <TableCell className="break-words">{farmer.crops.join(', ')}</TableCell>
-                    <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
-                    <TableCell className="text-right">
-                        <div className="flex flex-wrap justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
-                            <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                            </AlertDialog>
-                            <Button variant="outline" size="sm" onClick={() => generateQr(farmer.id)}><QrCode /></Button>
-                        </div>
-                    </TableCell>
+            <div className="relative w-full overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                          <div className="flex items-center">
+                              Pangalan
+                               <div className="w-8 flex-shrink-0 flex justify-center">
+                                  {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                              </div>
+                          </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('location')}>
+                          <div className="flex items-center">
+                              Lokasyon
+                              <div className="w-8 flex-shrink-0 flex justify-center">
+                                  {sortConfig?.key === 'location' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                              </div>
+                          </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('crops')}>
+                          <div className="flex items-center">
+                              Mga Pananim
+                              <div className="w-8 flex-shrink-0 flex justify-center">
+                                  {sortConfig?.key === 'crops' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                              </div>
+                          </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('status')}>
+                          <div className="flex items-center">
+                              Katayuan
+                              <div className="w-8 flex-shrink-0 flex justify-center">
+                                  {sortConfig?.key === 'status' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                              </div>
+                          </div>
+                      </TableHead>
+                      <TableHead className="text-right">Mga Aksyon</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sortedFarmers.map((farmer) => (
+                    <TableRow key={farmer.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <Image src={farmer.avatarUrl} alt={farmer.name} width={32} height={32} className="rounded-full object-cover" />
+                          <Link href={`/dashboard/farmers/${farmer.id}`} className="hover:underline break-words">{farmer.name}</Link>
+                        </div>
+                      </TableCell>
+                      <TableCell className="break-words">{farmer.sitio}, {farmer.barangay}</TableCell>
+                      <TableCell className="break-words">{farmer.crops.join(', ')}</TableCell>
+                      <TableCell><Badge variant={farmer.status === 'active' ? 'default' : 'secondary'}>{farmer.status}</Badge></TableCell>
+                      <TableCell className="text-right">
+                          <div className="flex flex-wrap justify-end gap-2">
+                              <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}><Edit /></Button>
+                              <AlertDialog>
+                              <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                  <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
+                                  </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                  <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                              </AlertDialog>
+                              <Button variant="outline" size="sm" onClick={() => generateQr(farmer.id)}><QrCode /></Button>
+                          </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -458,3 +460,5 @@ export default function FarmersPage() {
     </>
   );
 }
+
+    

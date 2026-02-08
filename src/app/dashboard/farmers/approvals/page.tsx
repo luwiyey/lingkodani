@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -68,12 +69,12 @@ export default function ApprovalsPage() {
   return (
     <div className="flex flex-col gap-6">
       <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-2">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Pag-apruba ng Magsasaka</h1>
           <p className="text-muted-foreground">Suriin at aprubahan ang mga bagong magsasaka na nagparehistro sa pamamagitan ng SMS o manu-manong pag-input.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
             <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Mag-import</Button>
             <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
         </div>
@@ -100,47 +101,51 @@ export default function ApprovalsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pangalan</TableHead>
-                <TableHead>Numero ng Telepono</TableHead>
-                <TableHead>Lokasyon</TableHead>
-                <TableHead>Oras at Petsa ng Pagpaparehistro</TableHead>
-                <TableHead className="text-right">Mga Aksyon</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredFarmers.length > 0 ? (
-                filteredFarmers.map((farmer) => (
-                  <TableRow key={farmer.id}>
-                    <TableCell className="font-medium">{farmer.name}</TableCell>
-                    <TableCell>{farmer.phone}</TableCell>
-                    <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
-                    <TableCell>{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col space-y-2 items-end">
-                        <Button size="sm" onClick={() => handleApproval(farmer.id, true)} className="w-[120px]">
-                          <Check className="mr-2 h-4 w-4" /> Aprubahan
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleApproval(farmer.id, false)} className="w-[120px]">
-                          <X className="mr-2 h-4 w-4" /> Tanggihan
-                        </Button>
-                      </div>
+          <div className="relative w-full overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Pangalan</TableHead>
+                  <TableHead>Numero ng Telepono</TableHead>
+                  <TableHead>Lokasyon</TableHead>
+                  <TableHead>Oras at Petsa ng Pagpaparehistro</TableHead>
+                  <TableHead className="text-right">Mga Aksyon</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredFarmers.length > 0 ? (
+                  filteredFarmers.map((farmer) => (
+                    <TableRow key={farmer.id}>
+                      <TableCell className="font-medium">{farmer.name}</TableCell>
+                      <TableCell>{farmer.phone}</TableCell>
+                      <TableCell>{farmer.sitio}, {farmer.barangay}</TableCell>
+                      <TableCell>{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" onClick={() => handleApproval(farmer.id, true)}>
+                            <Check className="mr-2 h-4 w-4" /> Aprubahan
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleApproval(farmer.id, false)}>
+                            <X className="mr-2 h-4 w-4" /> Tanggihan
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      {searchTerm ? `Walang nahanap na magsasaka para sa "${searchTerm}".` : "Walang nakabinbing pag-apruba sa kasalukuyan."}
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    {searchTerm ? `Walang nahanap na magsasaka para sa "${searchTerm}".` : "Walang nakabinbing pag-apruba sa kasalukuyan."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

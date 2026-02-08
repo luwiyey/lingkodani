@@ -193,12 +193,12 @@ export default function InventoryPage() {
     <>
       <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between flex-wrap gap-2">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight">Imbentaryo ng Rekurso</h1>
             <p className="text-muted-foreground">Pamahalaan ang mga pataba, binhi, kasangkapan, at iba pang rekurso ng barangay.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <Button variant="outline" onClick={() => importRef.current?.click()}><Upload /> Mag-import</Button>
             <Button variant="outline" onClick={handleExport}><Download /> I-export</Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
@@ -323,77 +323,79 @@ export default function InventoryPage() {
 
         <Card>
           <CardContent className="p-0">
-            <Table className="table-fixed">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
-                     <div className="flex items-center">
-                        Pangalan ng Rekurso
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
-                  <TableHead>Kategorya</TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
-                    <div className="flex items-center">
-                        Kasalukuyang Stak
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
-                    <div className="flex items-center">
-                        Yunit
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'unit' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
-                    <div className="flex items-center">
-                        Huling Na-update
-                        <div className="w-8 flex-shrink-0 flex justify-center">
-                            {sortConfig?.key === 'lastUpdated' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-                        </div>
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-right">Mga Aksyon</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedResources.map((resource) => (
-                  <TableRow key={resource.id}>
-                    <TableCell className="font-medium break-words">{resource.name}</TableCell>
-                    <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
-                    <TableCell>{resource.stock}</TableCell>
-                    <TableCell className="break-words">{resource.unit}</TableCell>
-                    <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                           <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang rekurso.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </TableCell>
+            <div className="relative w-full overflow-auto">
+              <Table className="table-fixed">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
+                       <div className="flex items-center">
+                          Pangalan ng Rekurso
+                          <div className="w-8 flex-shrink-0 flex justify-center">
+                              {sortConfig?.key === 'name' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                          </div>
+                      </div>
+                    </TableHead>
+                    <TableHead>Kategorya</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
+                      <div className="flex items-center">
+                          Kasalukuyang Stak
+                          <div className="w-8 flex-shrink-0 flex justify-center">
+                              {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                          </div>
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('unit')}>
+                      <div className="flex items-center">
+                          Yunit
+                          <div className="w-8 flex-shrink-0 flex justify-center">
+                              {sortConfig?.key === 'unit' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                          </div>
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('lastUpdated')}>
+                      <div className="flex items-center">
+                          Huling Na-update
+                          <div className="w-8 flex-shrink-0 flex justify-center">
+                              {sortConfig?.key === 'lastUpdated' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                          </div>
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Mga Aksyon</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sortedResources.map((resource) => (
+                    <TableRow key={resource.id}>
+                      <TableCell className="font-medium break-words">{resource.name}</TableCell>
+                      <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
+                      <TableCell>{resource.stock}</TableCell>
+                      <TableCell className="break-words">{resource.unit}</TableCell>
+                      <TableCell className="break-words">{new Date(resource.lastUpdated).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                             <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 /></Button></AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang rekurso.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                          </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -459,3 +461,5 @@ export default function InventoryPage() {
     </>
   );
 }
+
+    
