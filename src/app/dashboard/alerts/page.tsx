@@ -234,7 +234,11 @@ export default function AlertsPage() {
                 return (
                   <TableRow key={alert.id}>
                     <TableCell>{new Date(alert.timestamp).toLocaleDateString()}</TableCell>
-                    <TableCell className="capitalize flex items-center gap-2"><Icon className="h-4 w-4"/> {alert.type}</TableCell>
+                    <TableCell className="capitalize">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4"/> {alert.type}
+                      </div>
+                    </TableCell>
                     <TableCell><Badge variant={severityVariant[alert.severity]}>{alert.severity}</Badge></TableCell>
                     <TableCell>{alert.message}</TableCell>
                   </TableRow>
