@@ -51,7 +51,7 @@ const alerts = [
 
 export default function DashboardPage() {
     const approvedFarmersCount = allFarmers.filter(f => f.status === 'active' || f.status === 'inactive').length;
-    const activeFarmersCount = allFarmers.filter(f => f.status === 'active').length;
+    const activeFarmsCount = allFarmers.filter(f => f.status === 'active').length;
     const activeIssuesCount = smsMessages.filter(m => m.status === 'pending_approval' && m.urgency === 'high').length;
     
     // Values for Priority Tasks card
@@ -89,10 +89,10 @@ export default function DashboardPage() {
           </Link>
         </HoverTooltip>
         <HoverTooltip text="Tingnan ang bilang ng mga aktibong sakahan.">
-          <Link href="/dashboard/farmers">
+          <Link href="/dashboard/active-farms">
               <StatCard
               title="Aktibong Sakahan"
-              value={String(activeFarmersCount)}
+              value={String(activeFarmsCount)}
               icon={Sprout}
               description="Mga sakahan na may kasalukuyang aktibidad."
               iconBgClass="bg-green-500/10"
@@ -101,7 +101,7 @@ export default function DashboardPage() {
           </Link>
         </HoverTooltip>
         <HoverTooltip text="Tingnan ang mga ulat na nangangailangan ng agarang aksyon.">
-          <Link href="/dashboard/sms-feed">
+          <Link href="/dashboard/active-issues">
               <StatCard
               title="May Aktibong Isyu"
               value={String(activeIssuesCount)}

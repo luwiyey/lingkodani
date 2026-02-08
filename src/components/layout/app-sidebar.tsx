@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -17,6 +18,8 @@ import {
   LayoutGrid,
   GraduationCap,
   Leaf,
+  ShieldAlert,
+  Sprout
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +43,7 @@ import type { NavItem } from "@/lib/types";
 const barangayNavItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Live SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
+  { title: "Mga Aktibong Isyu", href: "/dashboard/active-issues", icon: ShieldAlert },
   {
     title: "Magsasaka",
     href: "/dashboard/farmers",
@@ -48,6 +52,7 @@ const barangayNavItems: NavItem[] = [
       { title: "Pagpaparehistro", href: "/dashboard/farmers/register" },
       { title: "Pag-apruba", href: "/dashboard/farmers/approvals", label: '3' },
       { title: "Database", href: "/dashboard/farmers" },
+      { title: "Aktibong Sakahan", href: "/dashboard/active-farms" },
       { title: "Pangkalahatang-ideya", href: "/dashboard/oversight" },
     ],
   },
