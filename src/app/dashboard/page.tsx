@@ -9,6 +9,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { farmers as allFarmers, smsMessages, cropStageData } from "@/lib/data";
+import { HelpDialog } from "@/components/ui/help-dialog";
+import { HoverTooltip } from "@/components/ui/hover-tooltip";
 
 const alerts = [
     {
@@ -56,64 +58,91 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
-        <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
+       <div className="flex items-center">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard ng Barangay</h1>
+          <p className="text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
+        </div>
+        <HelpDialog title="Dashboard ng Barangay">
+            <p>Ito ang iyong pangunahing command center. Dito mo makikita ang isang mabilis na pangkalahatang-ideya ng lahat ng nangyayari sa iyong barangay.</p>
+            <p><strong>Mga Stat Card:</strong> Nagbibigay ito ng mga mahahalagang numero tulad ng kabuuang bilang ng magsasaka at mga bagong alerto. Ang pag-click sa mga ito ay magdadala sa iyo sa mga kaugnay na pahina.</p>
+            <p><strong>Sentro ng Panganib:</strong> Nagpapakita ito ng mga awtomatikong nabuong alerto batay sa mga ulat ng magsasaka at data ng panahon. Maaari kang magpadala ng abiso mula dito.</p>
+            <p><strong>Live na Feed ng SMS & Katayuan ng Rekurso:</strong> Mga shortcut para sa iyong mga pang-araw-araw na gawain.</p>
+        </HelpDialog>
       </div>
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <Link href="/dashboard/farmers">
-            <StatCard
-            title="Kabuuang Magsasaka"
-            value={String(approvedFarmersCount)}
-            icon={Users}
-            description="Lahat ng aprubadong magsasaka"
-            iconBgClass="bg-primary/10"
-            />
-        </Link>
-        <Link href="/dashboard/farmers/approvals">
-            <StatCard
-            title="Nakabinbing Pag-apruba"
-            value={String(pendingFarmersCount)}
-            icon={UserPlus}
-            description="Bagong rehistro para suriin"
-            iconBgClass="bg-yellow-500/10"
-            />
-        </Link>
-        <Link href="/dashboard/sms-feed">
-            <StatCard
-            title="Mga Alertong Pang-peste"
-            value={String(pestAlertsCount)}
-            icon={ShieldAlert}
-            description="Mga aktibong ulat ng peste"
-            iconBgClass="bg-destructive/10"
-            />
-        </Link>
-        <StatCard
-          title="Nasa Pagtatanim"
-          value={String(plantingCount)}
-          icon={Sprout}
-          description="Bilang ng mga sakahan sa yugto ng pagtatanim"
-          iconBgClass="bg-blue-500/10"
-        />
-        <StatCard
-          title="Nasa Paglago"
-          value={String(growingCount)}
-          icon={Wheat}
-          description="Bilang ng mga sakahan sa yugto ng paglago"
-          iconBgClass="bg-amber-500/10"
-        />
-        <StatCard
-          title="Handa nang Anihin"
-          value={String(harvestingCount)}
-          icon={CheckCircle2}
-          description="Bilang ng mga sakahan na malapit nang mag-ani"
-          iconBgClass="bg-green-500/10"
-        />
+        <HoverTooltip text="Tingnan ang lahat ng aprubadong magsasaka sa iyong database.">
+          <Link href="/dashboard/farmers">
+              <StatCard
+              title="Kabuuang Magsasaka"
+              value={String(approvedFarmersCount)}
+              icon={Users}
+              description="Lahat ng aprubadong magsasaka"
+              iconBgClass="bg-primary/10"
+              />
+          </Link>
+        </HoverTooltip>
+        <HoverTooltip text="Suriin at aprubahan ang mga bagong nagparehistrong magsasaka.">
+          <Link href="/dashboard/farmers/approvals">
+              <StatCard
+              title="Nakabinbing Pag-apruba"
+              value={String(pendingFarmersCount)}
+              icon={UserPlus}
+              description="Bagong rehistro para suriin"
+              iconBgClass="bg-yellow-500/10"
+              />
+          </Link>
+        </HoverTooltip>
+        <HoverTooltip text="Tingnan ang mga kamakailang ulat ng peste na nangangailangan ng aksyon.">
+          <Link href="/dashboard/sms-feed">
+              <StatCard
+              title="Mga Alertong Pang-peste"
+              value={String(pestAlertsCount)}
+              icon={ShieldAlert}
+              description="Mga aktibong ulat ng peste"
+              iconBgClass="bg-destructive/10"
+              />
+          </Link>
+        </HoverTooltip>
+        <HoverTooltip text="Tingnan ang bilang ng mga sakahan na nasa yugto ng pagtatanim.">
+          <StatCard
+            title="Nasa Pagtatanim"
+            value={String(plantingCount)}
+            icon={Sprout}
+            description="Bilang ng mga sakahan sa yugto ng pagtatanim"
+            iconBgClass="bg-blue-500/10"
+          />
+        </HoverTooltip>
+        <HoverTooltip text="Tingnan ang bilang ng mga sakahan na nasa yugto ng paglago.">
+          <StatCard
+            title="Nasa Paglago"
+            value={String(growingCount)}
+            icon={Wheat}
+            description="Bilang ng mga sakahan sa yugto ng paglago"
+            iconBgClass="bg-amber-500/10"
+          />
+        </HoverTooltip>
+        <HoverTooltip text="Tingnan ang bilang ng mga sakahan na malapit nang mag-ani.">
+          <StatCard
+            title="Handa nang Anihin"
+            value={String(harvestingCount)}
+            icon={CheckCircle2}
+            description="Bilang ng mga sakahan na malapit nang mag-ani"
+            iconBgClass="bg-green-500/10"
+          />
+        </HoverTooltip>
       </div>
 
        <Card className="border-destructive/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>
+        <CardHeader className="flex-row items-start justify-between">
+          <div className="flex items-center">
+            <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> Sentro ng Panganib at Alerto ng Barangay</CardTitle>
+             <HelpDialog title="Sentro ng Panganib at Alerto">
+                <p>Ang seksyon na ito ay awtomatikong sinusuri ang mga papasok na data (mula sa SMS at panahon) upang matukoy ang mga potensyal na panganib.</p>
+                <p>Bawat card ay kumakatawan sa isang aktibong alerto. Ipinapakita nito ang uri ng panganib, isang maikling paglalarawan, at kung gaano karaming magsasaka ang maaaring maapektuhan.</p>
+                <p><strong>Magpadala ng Abiso:</strong> Pindutin ang button na ito upang mag-broadcast ng isang babala sa lahat ng mga magsasaka na nasa panganib.</p>
+              </HelpDialog>
+          </div>
           <CardDescription>Mga awtomatikong nabuong alerto batay sa data ng panahon at mga ulat sa bukid.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
@@ -135,7 +164,9 @@ export default function DashboardPage() {
                                 <Badge variant={alert.severity === 'Kritikal' ? 'destructive' : 'secondary'}>{alert.severity}</Badge>
                                 <span className="text-muted-foreground">{alert.affected} magsasaka ang apektado</span>
                             </div>
-                            <Button className="w-full">Magpadala ng Abiso</Button>
+                             <HoverTooltip text="Magpadala ng SMS broadcast sa mga apektadong magsasaka tungkol sa alertong ito.">
+                                <Button className="w-full">Magpadala ng Abiso</Button>
+                            </HoverTooltip>
                         </CardContent>
                     </Card>
                 )

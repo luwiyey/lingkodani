@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { farmers } from '@/lib/data';
+import { HelpDialog } from "@/components/ui/help-dialog";
 
 // Helper function to get stats per zone
 const getZoneStats = () => {
@@ -38,9 +39,16 @@ export default function OversightPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Pangkalahatang-ideya ng Barangay</h1>
-        <p className="text-muted-foreground">Pinagsama-samang pagtingin sa aktibidad ng agrikultura sa lahat ng zone (sitio/purok).</p>
+      <div className="flex items-center">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Pangkalahatang-ideya ng Barangay</h1>
+          <p className="text-muted-foreground">Pinagsama-samang pagtingin sa aktibidad ng agrikultura sa lahat ng zone (sitio/purok).</p>
+        </div>
+         <HelpDialog title="Pangkalahatang-ideya ng Barangay">
+            <p>Ang pahinang ito ay nagbibigay ng isang "bird's-eye view" ng buong barangay, na pinaghiwa-hiwalay sa bawat zone o purok.</p>
+            <p>Mabilis mong makikita kung aling mga zone ang may pinakamaraming magsasaka at kung saan nagkukumpol-kumpol ang mga aktibong isyu (tulad ng mga ulat ng peste o sakit).</p>
+            <p>Ang badge para sa "Mga Aktibong Isyu" ay magiging pula kung mayroong higit sa isang isyu, na nagpapahiwatig na maaaring kailanganin ng lugar na iyon ang iyong atensyon.</p>
+        </HelpDialog>
       </div>
       <Card>
         <CardHeader>
