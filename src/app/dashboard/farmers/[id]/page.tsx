@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -61,15 +62,16 @@ export default function FarmerLogbookPage() {
       setIsClient(true);
     }, []);
 
+    const avatarUploadRef = useRef<HTMLInputElement>(null);
     const docUploadRef = useRef<HTMLInputElement>(null);
-    const photoUploadRef = useRef<HTMLInputElement>(null);
+    const fieldPhotoUploadRef = useRef<HTMLInputElement>(null);
     const audioUploadRef = useRef<HTMLInputElement>(null);
 
     if (!farmer) {
         notFound();
     }
     
-    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0]) return;
         
         const file = e.target.files[0];
@@ -144,8 +146,9 @@ export default function FarmerLogbookPage() {
 
   return (
     <div className="flex flex-col gap-6">
+        <Input type="file" ref={avatarUploadRef} className="hidden" onChange={handleAvatarSelect} accept="image/*"/>
         <Input type="file" ref={docUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Dokumento')} />
-        <Input type="file" ref={photoUploadRef} className="hidden" onChange={handlePhotoSelect} accept="image/*"/>
+        <Input type="file" ref={fieldPhotoUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Larawan sa Bukid')} accept="image/*"/>
         <Input type="file" ref={audioUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Audio')} accept="audio/*"/>
 
         <div className="flex items-center gap-4">
@@ -173,7 +176,7 @@ export default function FarmerLogbookPage() {
                     <CardHeader>
                         <div className="flex flex-col items-center pt-4 gap-4">
                             <HoverTooltip text="Mag-click para mag-upload ng bagong larawan">
-                                <button onClick={() => photoUploadRef.current?.click()} className="relative group">
+                                <button onClick={() => avatarUploadRef.current?.click()} className="relative group">
                                     <Avatar className="h-24 w-24 border">
                                         {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
                                         <AvatarFallback className="bg-muted">
@@ -237,7 +240,7 @@ export default function FarmerLogbookPage() {
                         </HoverTooltip>
                         <div className="flex gap-4">
                              <HoverTooltip text="Mag-upload ng larawan mula sa iyong pagbisita.">
-                                <Button variant="outline" className="flex-1" onClick={() => photoUploadRef.current?.click()}><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
+                                <Button variant="outline" className="flex-1" onClick={() => fieldPhotoUploadRef.current?.click()}><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
                             </HoverTooltip>
                              <HoverTooltip text="Mag-record ng audio note o panayam sa magsasaka.">
                                 <Button variant="outline" className="flex-1" onClick={() => audioUploadRef.current?.click()}><Mic className="mr-2"/> Mag-record ng Audio</Button>

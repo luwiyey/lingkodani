@@ -59,14 +59,11 @@ function NavMenu({ items }: { items: NavItem[] }) {
     };
 
     const isParentActive = (item: NavItem) => {
+        if (pathname === item.href) return true;
         if (item.subItems) {
-            const isActive = item.subItems.some(sub => pathname.startsWith(sub.href));
-            if (item.href === '/dashboard/farmers' && pathname === '/dashboard/farmers') {
-                return true;
-            }
-            return isActive;
+            return item.subItems.some(sub => pathname.startsWith(sub.href));
         }
-        return item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
+        return false;
     }
 
 
