@@ -1,7 +1,6 @@
 
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
-import { resources as initialResources } from '@/lib/data';
 import type { Resource, ResourceCategory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -46,11 +45,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
+import { useData } from '@/context/data-context';
 
 type SortableKeys = keyof Omit<Resource, 'id' | 'category'>;
 
 export default function InventoryPage() {
-  const [resources, setResources] = useState<Resource[]>(initialResources);
+  const { resources, addResource, updateResource, deleteResource } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
@@ -118,15 +118,13 @@ export default function InventoryPage() {
   const handleAddResource = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const newResource: Resource = {
-      id: `RES${String(resources.length + 1).padStart(3, '0')}`,
+    const newResourceData = {
       name: formData.get('name') as string,
       category: formData.get('category') as ResourceCategory,
       stock: Number(formData.get('stock') as string),
       unit: formData.get('unit') as string,
-      lastUpdated: new Date().toISOString(),
     };
-    setResources([newResource, ...resources]);
+    addResource(newResourceData);
     setAddDialogOpen(false);
     toast({ title: "Tagumpay!", description: "Matagumpay na naidagdag ang rekurso." });
   };
@@ -135,21 +133,19 @@ export default function InventoryPage() {
     event.preventDefault();
     if (!editingResource) return;
     const formData = new FormData(event.currentTarget);
-    const updatedResource: Resource = {
-      ...editingResource,
+    const updatedData = {
       name: formData.get('name') as string,
       category: formData.get('category') as ResourceCategory,
       stock: Number(formData.get('stock') as string),
       unit: formData.get('unit') as string,
-      lastUpdated: new Date().toISOString(),
     };
-    setResources(resources.map(r => r.id === updatedResource.id ? updatedResource : r));
+    updateResource(editingResource.id, updatedData);
     setEditingResource(null);
     toast({ title: "Tagumpay!", description: "Nai-update na ang rekurso." });
   };
 
   const handleDeleteResource = (resourceId: string) => {
-    setResources(resources.filter(r => r.id !== resourceId));
+    deleteResource(resourceId);
     toast({ title: "Tagumpay!", description: "Natanggal na ang rekurso sa imbentaryo.", variant: 'destructive' });
   };
 

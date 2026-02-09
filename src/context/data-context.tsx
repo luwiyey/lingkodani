@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType, Voucher, VoucherStatus } from '@/lib/types';
+import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType, Voucher, VoucherStatus, ResourceCategory } from '@/lib/types';
 import { 
     farmers as initialFarmers, 
     smsMessages as initialSmsMessages,
@@ -23,12 +23,16 @@ export type NewKnowledgeArticleData = {
   content: string;
 };
 
+export type NewResourceData = Omit<Resource, 'id' | 'lastUpdated'>;
+
 interface DataContextType {
   farmers: Farmer[];
   setFarmers: React.Dispatch<React.SetStateAction<Farmer[]>>;
   smsMessages: SmsMessage[];
   resources: Resource[];
-  setResources: React.Dispatch<React.SetStateAction<Resource[]>>;
+  addResource: (data: NewResourceData) => void;
+  updateResource: (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => void;
+  deleteResource: (resourceId: string) => void;
   knowledgeArticles: KnowledgeArticle[];
   addKnowledgeArticle: (data: NewKnowledgeArticleData) => void;
   setKnowledgeArticles: React.Dispatch<React.SetStateAction<KnowledgeArticle[]>>;
@@ -162,6 +166,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       )
     );
   };
+  
+  const addResource = (data: NewResourceData) => {
+    const newResource: Resource = {
+      ...data,
+      id: `RES${Date.now()}`,
+      lastUpdated: new Date().toISOString(),
+    };
+    setResources(prev => [newResource, ...prev]);
+  };
+
+  const updateResource = (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => {
+    setResources(prev =>
+      prev.map(r =>
+        r.id === resourceId ? { ...r, ...data, lastUpdated: new Date().toISOString() } : r
+      )
+    );
+  };
+  
+  const deleteResource = (resourceId: string) => {
+    setResources(prev => prev.filter(r => r.id !== resourceId));
+  };
 
 
   const value = {
@@ -169,7 +194,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setFarmers,
     smsMessages,
     resources,
-    setResources,
+    addResource,
+    updateResource,
+    deleteResource,
     knowledgeArticles,
     setKnowledgeArticles,
     addKnowledgeArticle,
