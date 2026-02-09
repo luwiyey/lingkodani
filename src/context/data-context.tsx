@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType, Voucher, VoucherStatus } from '@/lib/types';
 import { 
     farmers as initialFarmers, 
@@ -49,6 +49,8 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
+  const [hydrated, setHydrated] = useState(false);
+  
   const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers);
   const [smsMessages, setSmsMessages] = useState<SmsMessage[]>(initialSmsMessages);
   const [resources, setResources] = useState<Resource[]>(initialResources);
@@ -57,6 +59,42 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
+
+  // Load state from localStorage on initial client-side render
+  useEffect(() => {
+    const loadState = <T,>(key: string, setter: React.Dispatch<React.SetStateAction<T[]>>, initialValue: T[]) => {
+      try {
+        const item = localStorage.getItem(key);
+        if (item) {
+          setter(JSON.parse(item));
+        }
+      } catch (error) {
+        console.error(`Error loading ${key} from localStorage`, error);
+      }
+    };
+    
+    loadState('farmers', setFarmers, initialFarmers);
+    loadState('smsMessages', setSmsMessages, initialSmsMessages);
+    loadState('resources', setResources, initialResources);
+    loadState('knowledgeArticles', setKnowledgeArticles, initialKnowledgeArticles);
+    loadState('logbook', setLogbook, initialLogbookEntries);
+    loadState('auditLogs', setAuditLogs, initialAuditLogs);
+    loadState('users', setUsers, initialUsers);
+    loadState('vouchers', setVouchers, initialVouchers);
+    
+    setHydrated(true);
+  }, []);
+
+  // Save state to localStorage whenever it changes, but only after initial hydration
+  useEffect(() => { if (hydrated) localStorage.setItem('farmers', JSON.stringify(farmers)); }, [farmers, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem('smsMessages', JSON.stringify(smsMessages)); }, [smsMessages, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem('resources', JSON.stringify(resources)); }, [resources, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem('knowledgeArticles', JSON.stringify(knowledgeArticles)); }, [knowledgeArticles, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem('logbook', JSON.stringify(logbook)); }, [logbook, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem('auditLogs', JSON.stringify(auditLogs)); }, [auditLogs, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem('users', JSON.stringify(users)); }, [users, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem('vouchers', JSON.stringify(vouchers)); }, [vouchers, hydrated]);
+
 
   const addUser = (user: User) => {
     setUsers(prev => [...prev, user]);
