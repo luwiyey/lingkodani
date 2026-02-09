@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType, Voucher, VoucherStatus, ResourceCategory } from '@/lib/types';
+import type { Farmer, SmsMessage, Resource, KnowledgeArticle, LogbookEntry, AuditLog, User, KnowledgeArticleType, Voucher, VoucherStatus } from '@/lib/types';
 import { 
     farmers as initialFarmers, 
     smsMessages as initialSmsMessages,
@@ -13,7 +13,9 @@ import {
     registeredUsers as initialUsers,
     vouchers as initialVouchers
 } from '@/lib/data';
-import type { FarmerRegistrationValues } from '@/lib/schemas';
+import type { FarmerRegistrationValues, UserManagementValues } from '@/lib/schemas';
+import type { NewResourceData } from '@/app/dashboard/inventory/page';
+
 
 export type NewKnowledgeArticleData = {
   title: string;
@@ -22,8 +24,6 @@ export type NewKnowledgeArticleData = {
   type: KnowledgeArticleType;
   content: string;
 };
-
-export type NewResourceData = Omit<Resource, 'id' | 'lastUpdated'>;
 
 interface DataContextType {
   farmers: Farmer[];
@@ -41,7 +41,7 @@ interface DataContextType {
   auditLogs: AuditLog[];
   setAuditLogs: React.Dispatch<React.SetStateAction<AuditLog[]>>;
   users: User[];
-  addUser: (user: User) => void;
+  addUser: (user: UserManagementValues) => void;
   updateUser: (email: string, updatedUser: User) => void;
   deleteUser: (email: string) => void;
   addPendingFarmer: (farmerData: FarmerRegistrationValues) => void;
@@ -64,32 +64,38 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
 
-  // Load state from localStorage on initial client-side render
   useEffect(() => {
-    const loadState = <T,>(key: string, setter: React.Dispatch<React.SetStateAction<T[]>>, initialValue: T[]) => {
-      try {
-        const item = localStorage.getItem(key);
-        if (item) {
-          setter(JSON.parse(item));
-        }
-      } catch (error) {
-        console.error(`Error loading ${key} from localStorage`, error);
-      }
-    };
-    
-    loadState('farmers', setFarmers, initialFarmers);
-    loadState('smsMessages', setSmsMessages, initialSmsMessages);
-    loadState('resources', setResources, initialResources);
-    loadState('knowledgeArticles', setKnowledgeArticles, initialKnowledgeArticles);
-    loadState('logbook', setLogbook, initialLogbookEntries);
-    loadState('auditLogs', setAuditLogs, initialAuditLogs);
-    loadState('users', setUsers, initialUsers);
-    loadState('vouchers', setVouchers, initialVouchers);
-    
+    try {
+      const storedFarmers = localStorage.getItem('farmers');
+      if (storedFarmers) setFarmers(JSON.parse(storedFarmers));
+
+      const storedSms = localStorage.getItem('smsMessages');
+      if (storedSms) setSmsMessages(JSON.parse(storedSms));
+
+      const storedResources = localStorage.getItem('resources');
+      if (storedResources) setResources(JSON.parse(storedResources));
+
+      const storedKnowledge = localStorage.getItem('knowledgeArticles');
+      if (storedKnowledge) setKnowledgeArticles(JSON.parse(storedKnowledge));
+      
+      const storedLogbook = localStorage.getItem('logbook');
+      if (storedLogbook) setLogbook(JSON.parse(storedLogbook));
+
+      const storedAudit = localStorage.getItem('auditLogs');
+      if (storedAudit) setAuditLogs(JSON.parse(storedAudit));
+      
+      const storedUsers = localStorage.getItem('users');
+      if (storedUsers) setUsers(JSON.parse(storedUsers));
+      
+      const storedVouchers = localStorage.getItem('vouchers');
+      if (storedVouchers) setVouchers(JSON.parse(storedVouchers));
+
+    } catch (error) {
+      console.error("Error loading data from localStorage", error);
+    }
     setHydrated(true);
   }, []);
 
-  // Save state to localStorage whenever it changes, but only after initial hydration
   useEffect(() => { if (hydrated) localStorage.setItem('farmers', JSON.stringify(farmers)); }, [farmers, hydrated]);
   useEffect(() => { if (hydrated) localStorage.setItem('smsMessages', JSON.stringify(smsMessages)); }, [smsMessages, hydrated]);
   useEffect(() => { if (hydrated) localStorage.setItem('resources', JSON.stringify(resources)); }, [resources, hydrated]);
@@ -100,8 +106,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (hydrated) localStorage.setItem('vouchers', JSON.stringify(vouchers)); }, [vouchers, hydrated]);
 
 
-  const addUser = (user: User) => {
-    setUsers(prev => [...prev, user]);
+  const addUser = (userData: UserManagementValues) => {
+    const newUser: User = {
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+    };
+    setUsers(prev => [...prev, newUser]);
   };
 
   const updateUser = (email: string, updatedUser: User) => {
