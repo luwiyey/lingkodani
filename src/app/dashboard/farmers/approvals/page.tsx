@@ -119,7 +119,7 @@ export default function ApprovalsPage() {
         </CardHeader>
         <CardContent>
           <div className="relative w-full overflow-auto">
-            <Table className="table-fixed">
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="px-2 md:px-4">Pangalan</TableHead>
