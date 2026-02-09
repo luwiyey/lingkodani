@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -177,9 +176,18 @@ export default function RegisterFarmerPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Kasarian</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pumili ng kasarian" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Babae">Babae</SelectItem>
+                                <SelectItem value="Lalaki">Lalaki</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
                          <FormMessage />
                       </FormItem>
                     )}

@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -289,7 +288,16 @@ export default function FarmerLogbookPage() {
                       </div>
                        <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="edit-gender" className="text-right">Kasarian</Label>
-                        <Input id="edit-gender" name="gender" defaultValue={editingFarmer.gender} className="col-span-3" />
+                        <Select name="gender" defaultValue={editingFarmer.gender}>
+                          <SelectTrigger id="edit-gender" className="col-span-3">
+                              <SelectValue placeholder="Pumili ng kasarian" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="Babae">Babae</SelectItem>
+                              <SelectItem value="Lalaki">Lalaki</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="edit-barangay" className="text-right">Barangay</Label>
