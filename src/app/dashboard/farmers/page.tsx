@@ -136,7 +136,7 @@ export default function FarmersPage() {
   };
 
   const handleDeleteFarmer = (farmerId: string) => {
-    setFarmers(farmers.filter(f => f.id !== farmerId));
+    setFarmers(current => current.filter(f => f.id !== farmerId));
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
   };
 

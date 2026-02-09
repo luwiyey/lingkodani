@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Leaf } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,10 @@ export default function LoginPage() {
   const { users } = useData();
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
   const [showNotRegisteredDialog, setShowNotRegisteredDialog] = useState(false);
+
+  useEffect(() => {
+    localStorage.clear();
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
