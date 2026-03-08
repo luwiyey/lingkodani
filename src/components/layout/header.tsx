@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -103,7 +104,7 @@ export function Header() {
             <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
             <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
-                3
+                4
             </span>
             <span className="sr-only">I-toggle ang mga notipikasyon</span>
             </Button>
@@ -111,6 +112,16 @@ export function Header() {
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Mga Notipikasyon</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push('/dashboard/sms-feed')} className="cursor-pointer">
+              <div className="flex flex-col">
+                <span className="font-semibold">
+                  Bagong SMS mula kay Felipe M. Macedonio
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Kapurpuran: Mataas. Kailangan ng pesticide supply.
+                </span>
+              </div>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/dashboard/sms-feed')} className="cursor-pointer">
               <div className="flex flex-col">
                 <span className="font-semibold">
@@ -125,7 +136,7 @@ export function Header() {
               <div className="flex flex-col">
                 <span className="font-semibold">Handa na ang Lingguhang Ulat</span>
                 <span className="text-xs text-muted-foreground">
-                  Available na ang analytics para sa Okt 22-29.
+                  Available na ang analytics para sa demo session.
                 </span>
               </div>
             </DropdownMenuItem>
@@ -133,7 +144,7 @@ export function Header() {
               <div className="flex flex-col">
                 <span className="font-semibold">Alerto sa Imbentaryo</span>
                 <span className="text-xs text-muted-foreground">
-                  Mababa na ang stock ng Urea Fertilizer.
+                  Mababa na ang stock ng Pamatay-peste.
                 </span>
               </div>
             </DropdownMenuItem>
