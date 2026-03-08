@@ -128,7 +128,7 @@ export function Header() {
                   Bagong SMS mula kay Maria Clara
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Kapurpuran: Mataas. Kailangan ng pag-apruba.
+                  Oras: 11:00 AM. May ulat ng peste sa kamatis.
                 </span>
               </div>
             </DropdownMenuItem>

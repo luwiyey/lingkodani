@@ -5,7 +5,7 @@ import { MessageSquare, Scan, Tractor, Shield, Wind, Flame, Sprout, Droplets, Sh
 // =================================================================================
 // BASE DATA
 // This is the primary source of truth for the application's mock data.
-// All other data sets below (for charts, etc.) are derived from this base data.
+// All demo data for the current scenario is set to March 8, 2026 (5:00 AM - 2:30 PM)
 // =================================================================================
 
 export const farmers: Farmer[] = [
@@ -35,7 +35,7 @@ export const farmers: Farmer[] = [
     farmSize: 2.5,
     crops: ['Palay', 'Mais'],
     registrationDate: '2023-10-01T08:00:00Z',
-    lastSmsActivity: '2023-10-28T14:30:00Z',
+    lastSmsActivity: '2026-03-08T09:00:00Z',
     avatarUrl: 'https://picsum.photos/seed/101/200/200',
     status: 'active'
   },
@@ -50,7 +50,7 @@ export const farmers: Farmer[] = [
     farmSize: 1.8,
     crops: ['Kamatis'],
     registrationDate: '2023-10-02T09:00:00Z',
-    lastSmsActivity: '2023-10-29T11:00:00Z',
+    lastSmsActivity: '2026-03-08T11:00:00Z',
     avatarUrl: 'https://picsum.photos/seed/102/200/200',
     status: 'active'
   },
@@ -65,7 +65,7 @@ export const farmers: Farmer[] = [
     farmSize: 5.0,
     crops: ['Tubo'],
     registrationDate: '2023-10-03T10:00:00Z',
-    lastSmsActivity: '2023-10-27T18:00:00Z',
+    lastSmsActivity: '2026-03-08T07:00:00Z',
     status: 'active'
   },
   {
@@ -79,7 +79,7 @@ export const farmers: Farmer[] = [
     farmSize: 3.2,
     crops: ['Tabako', 'Mais'],
     registrationDate: '2023-10-04T11:00:00Z',
-    lastSmsActivity: '2023-10-26T12:00:00Z',
+    lastSmsActivity: '2026-03-08T05:30:00Z',
     status: 'inactive'
   },
   {
@@ -92,8 +92,8 @@ export const farmers: Farmer[] = [
     sitio: 'Zone 5',
     farmSize: 1.0,
     crops: ['Gulay'],
-    registrationDate: '2023-10-29T13:00:00Z',
-    lastSmsActivity: '2023-10-29T13:00:00Z',
+    registrationDate: '2026-03-08T13:00:00Z',
+    lastSmsActivity: '2026-03-08T13:00:00Z',
     status: 'pending_approval'
   },
    {
@@ -135,7 +135,7 @@ export const farmers: Farmer[] = [
     farmSize: 1.2,
     crops: ['Kamatis', 'Sili'],
     registrationDate: '2023-10-05T14:00:00Z',
-    lastSmsActivity: '2023-10-25T09:00:00Z',
+    lastSmsActivity: '2026-03-08T10:00:00Z',
     avatarUrl: 'https://picsum.photos/seed/109/200/200',
     status: 'active'
   },
@@ -158,12 +158,27 @@ export const smsMessages: SmsMessage[] = [
     tone: 'Nag-aalala',
   },
   {
+    id: 'SMS005',
+    farmerId: 'FARM005',
+    farmerName: 'Andres Bonifacio',
+    phone: '+639215678901',
+    message: 'REGISTER Andres Bonifacio 29 Lalaki Zone 5 Gulay 1ha',
+    timestamp: '2026-03-08T13:00:00Z',
+    parsedIntent: 'REGISTER',
+    status: 'pending_approval',
+    urgency: 'medium',
+    aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Zone 5. Mangyaring kumpirmahin ang pagpaparehistro.',
+    aiConfidence: 0.99,
+    safetyFlag: 'Low',
+    tone: 'Neutral',
+  },
+  {
     id: 'SMS001',
     farmerId: 'FARM002',
     farmerName: 'Maria Clara',
     phone: '+639182345678',
     message: 'PEST TOMATO LEAFMINER. May dilaw na batik ang dahon ng kamatis ko. Paano ito masusugpo?',
-    timestamp: '2023-10-29T11:00:00Z',
+    timestamp: '2026-03-08T11:00:00Z',
     parsedIntent: 'PEST_DISEASE',
     urgency: 'high',
     status: 'pending_approval',
@@ -174,12 +189,27 @@ export const smsMessages: SmsMessage[] = [
     tone: 'Nag-aalala',
   },
   {
+    id: 'SMS007',
+    farmerId: 'FARM008',
+    farmerName: 'Apolinario Mabini',
+    phone: '+639248901234',
+    message: 'may lason po ba para sa daga? dami dito sa amin',
+    timestamp: '2026-03-08T10:00:00Z',
+    parsedIntent: 'PEST_DISEASE',
+    urgency: 'high',
+    status: 'pending_approval',
+    aiAdvice: 'Para sa problema sa daga, subukan ang paggamit ng rat traps o paglalagay ng mga pananim na hindi nila gusto sa paligid ng iyong bukid. Kung gagamit ng lason, mag-ingat po at sundin ang instructions.',
+    aiConfidence: 0.88,
+    safetyFlag: 'High',
+    tone: 'Nag-aalala',
+  },
+  {
     id: 'SMS002',
     farmerId: 'FARM001',
     farmerName: 'Juan dela Cruz',
     phone: '+639171234567',
     message: 'HARVEST PALAY 120kg. Malapit na ang anihan ng palay ko. May mga tip ba para pagkatapos ng ani?',
-    timestamp: '2023-10-28T14:30:00Z',
+    timestamp: '2026-03-08T09:00:00Z',
     parsedIntent: 'HARVEST',
     urgency: 'medium',
     status: 'approved',
@@ -189,12 +219,27 @@ export const smsMessages: SmsMessage[] = [
     tone: 'Neutral',
   },
   {
+    id: 'SMS006',
+    farmerId: 'FARM001',
+    farmerName: 'Juan dela Cruz',
+    phone: '+639171234567',
+    message: 'EMERGENCY TYPHOON DAMAGE. Nasira ng malakas na hangin ang bahagi ng aking taniman ng mais.',
+    timestamp: '2026-03-08T08:00:00Z',
+    parsedIntent: 'EMERGENCY',
+    urgency: 'high',
+    status: 'pending_approval',
+    aiAdvice: 'Nakalulungkot marinig iyan. I-dokumento ang pinsala. Maaari kang mag-apply para sa tulong-pinansyal sa ilalim ng programa ng DA para sa mga nasalanta ng kalamidad. Makipag-ugnayan sa iyong lokal na tanggapan ng agrikultura.',
+    aiConfidence: 0.92,
+    safetyFlag: 'Medium',
+    tone: 'Kritikal',
+  },
+  {
     id: 'SMS003',
     farmerId: 'FARM003',
     farmerName: 'Jose Rizal',
     phone: '+639193456789',
     message: 'PEST SUGARCANE BORER. Kinakain ng peste ang mga tubo ko. Mukha silang mga borer.',
-    timestamp: '2023-10-27T18:00:00Z',
+    timestamp: '2026-03-08T07:00:00Z',
     parsedIntent: 'PEST_DISEASE',
     urgency: 'high',
     status: 'rejected',
@@ -209,7 +254,7 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Lito Batumbakal',
     phone: '+639204567890',
     message: 'Sira po ang sprayer ko, may mahihiraman po ba sa barangay?',
-    timestamp: '2023-10-26T12:00:00Z',
+    timestamp: '2026-03-08T05:30:00Z',
     parsedIntent: 'REQUEST',
     urgency: 'medium',
     status: 'pending_approval',
@@ -218,62 +263,17 @@ export const smsMessages: SmsMessage[] = [
     safetyFlag: 'Low',
     tone: 'Neutral',
   },
-  {
-    id: 'SMS005',
-    farmerId: 'FARM005',
-    farmerName: 'Andres Bonifacio',
-    phone: '+639215678901',
-    message: 'REGISTER Andres Bonifacio 29 Lalaki Zone 5 Gulay 1ha',
-    timestamp: '2023-10-29T13:00:00Z',
-    parsedIntent: 'REGISTER',
-    status: 'pending_approval',
-    urgency: 'medium',
-    aiAdvice: 'Salamat sa pagpaparehistro, Andres Bonifacio! Ang iyong farmer ID ay FARM005. Nakarehistro sa iyo ang Gulay sa 1 ektarya sa Zone 5. Mangyaring kumpirmahin ang pagpaparehistro.',
-    aiConfidence: 0.99,
-    safetyFlag: 'Low',
-    tone: 'Neutral',
-  },
-  {
-    id: 'SMS006',
-    farmerId: 'FARM001',
-    farmerName: 'Juan dela Cruz',
-    phone: '+639171234567',
-    message: 'EMERGENCY TYPHOON DAMAGE. Nasira ng malakas na hangin ang bahagi ng aking taniman ng mais.',
-    timestamp: '2023-10-24T09:00:00Z',
-    parsedIntent: 'EMERGENCY',
-    urgency: 'high',
-    status: 'pending_approval',
-    aiAdvice: 'Nakalulungkot marinig iyan. I-dokumento ang pinsala. Maaari kang mag-apply para sa tulong-pinansyal sa ilalim ng programa ng DA para sa mga nasalanta ng kalamidad. Makipag-ugnayan sa iyong lokal na tanggapan ng agrikultura.',
-    aiConfidence: 0.92,
-    safetyFlag: 'Medium',
-    tone: 'Kritikal',
-  },
-   {
-    id: 'SMS007',
-    farmerId: 'FARM008',
-    farmerName: 'Apolinario Mabini',
-    phone: '+639248901234',
-    message: 'may lason po ba para sa daga? dami dito sa amin',
-    timestamp: '2023-10-25T10:00:00Z',
-    parsedIntent: 'PEST_DISEASE',
-    urgency: 'high',
-    status: 'pending_approval',
-    aiAdvice: 'Para sa problema sa daga, subukan ang paggamit ng rat traps o paglalagay ng mga pananim na hindi nila gusto sa paligid ng iyong bukid. Kung gagamit ng lason, mag-ingat po at sundin ang instructions.',
-    aiConfidence: 0.88,
-    safetyFlag: 'High',
-    tone: 'Nag-aalala',
-  },
 ];
 
 export const resources: Resource[] = [
     { id: 'RES008', name: 'Pamatay-peste (Pesticide)', category: 'Pataba', stock: 15, unit: 'bote (500ml)', lastUpdated: '2026-03-08' },
-    { id: 'RES001', name: 'Patabang Urea', category: 'Pataba', stock: 8, unit: 'sako (50kg)', lastUpdated: '2023-10-26' },
-    { id: 'RES002', name: 'Binhi ng Hybrid na Palay (SL-8H)', category: 'Binhi', stock: 20, unit: 'sako (20kg)', lastUpdated: '2023-10-25' },
-    { id: 'RES003', name: 'Hand Tractor', category: 'Kagamitan', stock: 5, unit: 'yunit', lastUpdated: '2023-10-20' },
-    { id: 'RES004', name: 'Pangkat ng Manggagawa sa Komunidad', category: 'Paggawa', stock: 25, unit: 'tao', lastUpdated: '2023-10-27' },
-    { id: 'RES005', name: 'Neem Oil (Organic Pesticide)', category: 'Pataba', stock: 150, unit: 'bote (1L)', lastUpdated: '2023-10-28' },
-    { id: 'RES006', name: 'Sprayer', category: 'Kagamitan', stock: 2, unit: 'yunit', lastUpdated: '2023-10-28' },
-    { id: 'RES007', name: 'Ammonium Phosphate (16-20-0)', category: 'Pataba', stock: 5, unit: 'sako (50kg)', lastUpdated: '2023-10-22' },
+    { id: 'RES001', name: 'Patabang Urea', category: 'Pataba', stock: 8, unit: 'sako (50kg)', lastUpdated: '2026-03-08' },
+    { id: 'RES002', name: 'Binhi ng Hybrid na Palay (SL-8H)', category: 'Binhi', stock: 20, unit: 'sako (20kg)', lastUpdated: '2026-03-08' },
+    { id: 'RES003', name: 'Hand Tractor', category: 'Kagamitan', stock: 5, unit: 'yunit', lastUpdated: '2026-03-01' },
+    { id: 'RES004', name: 'Pangkat ng Manggagawa sa Komunidad', category: 'Paggawa', stock: 25, unit: 'tao', lastUpdated: '2026-03-08' },
+    { id: 'RES005', name: 'Neem Oil (Organic Pesticide)', category: 'Pataba', stock: 150, unit: 'bote (1L)', lastUpdated: '2026-03-08' },
+    { id: 'RES006', name: 'Sprayer', category: 'Kagamitan', stock: 2, unit: 'yunit', lastUpdated: '2026-03-08' },
+    { id: 'RES007', name: 'Ammonium Phosphate (16-20-0)', category: 'Pataba', stock: 5, unit: 'sako (50kg)', lastUpdated: '2026-03-08' },
 ];
 
 export const alerts = [
@@ -342,35 +342,19 @@ export const knowledgeArticles: KnowledgeArticle[] = [
 export const farmerLogbookEntries: LogbookEntry[] = [
     {
         id: 'LOG001',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        timestamp: '2026-03-08T14:30:00Z',
         type: 'SMS',
         icon: MessageSquare,
-        title: 'Nag-ulat ng Peste sa Kamatis',
-        description: 'PEST TOMATO LEAFMINER. May dilaw na batik ang dahon ng kamatis ko. Paano ito masusugpo?',
+        title: 'Nag-ulat ng Rice Bugs',
+        description: 'Ulat ni Felipe M. Macedonio tungkol sa rice bugs sa Zone 1.',
     },
     {
         id: 'LOG002',
-        timestamp: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
+        timestamp: '2026-03-08T14:31:00Z',
         type: 'Payo',
         icon: Scan,
         title: 'Nagpadala ng Payo ang AI',
-        description: 'Maaaring senyales ng leafminer ang mga dilaw na batik. Isaalang-alang ang paggamit ng neem oil spray. Alisin at sirain ang mga apektadong dahon.',
-    },
-     {
-        id: 'LOG003',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        type: 'Tala sa Bukid',
-        icon: Sprout,
-        title: 'Pagbisita sa Bukid ni AEW',
-        description: 'Kinumpirma ang pagkakaroon ng leafminer. Nagbigay ng sample ng neem oil at nagturo ng tamang pag-spray.',
-    },
-    {
-        id: 'LOG004',
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        type: 'Tulong',
-        icon: Tractor,
-        title: 'Nakatanggap ng Tulong',
-        description: 'Nakatanggap ng 2 sako ng Urea na pataba bilang bahagi ng municipal aid program.',
+        description: 'Binuo ang paunang payo tungkol sa paggamit ng pesticide at voucher.',
     }
 ];
 
@@ -384,248 +368,210 @@ export const registeredUsers = [
 
 export const auditLogs: AuditLog[] = [
     { id: 'AUD006', timestamp: '2026-03-08T14:31:00Z', user: 'system', action: 'AUTO_ADVICE_GENERATED', details: 'Binuo ang paunang payo para kay Felipe M. Macedonio (FARM009) tungkol sa rice bugs.'},
-    { id: 'AUD001', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), user: 'AEW Jose Rizal', action: 'APPROVE_AI_REPLY', details: 'Inaprubahan ang tugon para sa SMS002 mula kay Juan dela Cruz.'},
-    { id: 'AUD002', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), user: 'Sec. Maria Clara', action: 'REJECT_AI_REPLY', details: 'Tinanggihan ang tugon para sa SMS003 mula kay Jose Rizal.'},
-    { id: 'AUD003', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), user: 'Bgy. Captain Cruz', action: 'SEND_BROADCAST', details: 'Nagpadala ng alerto sa baha sa 4 na magsasaka.'},
-    { id: 'AUD004', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), user: 'brgy-admin@lingkodani.gov.ph', action: 'UPDATE_FARMER', details: 'In-update ang mga pananim para kay Maria Clara (FARM002).'},
-    { id: 'AUD005', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), user: 'system', action: 'AUTO_ALERT_GENERATED', details: 'Bumuo ng alerto sa panganib ng baha batay sa data ng panahon.'},
+    { id: 'AUD001', timestamp: '2026-03-08T14:15:00Z', user: 'AEW Jose Rizal', action: 'APPROVE_AI_REPLY', details: 'Inaprubahan ang tugon para sa SMS002 mula kay Juan dela Cruz.'},
+    { id: 'AUD002', timestamp: '2026-03-08T13:45:00Z', user: 'Sec. Maria Clara', action: 'REJECT_AI_REPLY', details: 'Tinanggihan ang tugon para sa SMS003 mula kay Jose Rizal.'},
+    { id: 'AUD003', timestamp: '2026-03-08T12:00:00Z', user: 'Bgy. Captain Cruz', action: 'SEND_BROADCAST', details: 'Nagpadala ng alerto sa baha sa 4 na magsasaka.'},
+    { id: 'AUD004', timestamp: '2026-03-08T09:30:00Z', user: 'brgy-admin@lingkodani.gov.ph', action: 'UPDATE_FARMER', details: 'In-update ang mga pananim para kay Maria Clara (FARM002).'},
+    { id: 'AUD005', timestamp: '2026-03-08T06:00:00Z', user: 'system', action: 'AUTO_ALERT_GENERATED', details: 'Bumuo ng alerto sa panganib ng baha batay sa data ng panahon.'},
 ];
 
 export const vouchers: Voucher[] = [
-  { id: 'VOUCH001', farmerId: 'FARM001', resourceId: 'RES001', quantity: 2, code: 'UR-1A2B3C', status: 'issued', issueDate: '2023-10-25T10:00:00Z' },
-  { id: 'VOUCH002', farmerId: 'FARM002', resourceId: 'RES002', quantity: 5, code: 'SE-4D5E6F', status: 'redeemed', issueDate: '2023-10-22T11:00:00Z', redemptionDate: '2023-10-24T14:00:00Z' },
-  { id: 'VOUCH003', farmerId: 'FARM003', resourceId: 'RES005', quantity: 10, code: 'NO-7G8H9I', status: 'expired', issueDate: '2023-09-01T09:00:00Z' },
-  { id: 'VOUCH004', farmerId: 'FARM004', resourceId: 'RES001', quantity: 1, code: 'UR-J1K2L3', status: 'voided', issueDate: '2023-10-28T16:00:00Z' },
+  { id: 'VOUCH001', farmerId: 'FARM001', resourceId: 'RES001', quantity: 2, code: 'UR-1A2B3C', status: 'issued', issueDate: '2026-03-08T10:00:00Z' },
+  { id: 'VOUCH002', farmerId: 'FARM002', resourceId: 'RES002', quantity: 5, code: 'SE-4D5E6F', status: 'redeemed', issueDate: '2026-03-07T11:00:00Z', redemptionDate: '2026-03-08T14:00:00Z' },
 ];
 
 // =================================================================================
 // CHART DATA (Derived from Base Data)
-// To keep components clean, data transformation for charts is pre-processed here.
-// In a real application, this would be done on the server or client-side.
 // =================================================================================
 
-// Derived from `smsMessages`
-export const issueTrendsData = [
-    { date: 'Oct 1', MgaPeste: 0, Sakit: 0, Patubig: 0 },
-    { date: 'Oct 8', MgaPeste: 0, Sakit: 0, Patubig: 0 },
-    { date: 'Oct 15', MgaPeste: 0, Sakit: 0, Patubig: 0 },
-    { date: 'Oct 22', MgaPeste: 1, Sakit: 0, Patubig: 0 },
-    { date: 'Oct 29', MgaPeste: 2, Sakit: 0, Patubig: 0 },
-];
-
-// Derived from `smsMessages` (last 7 days)
 export const smsVolumeData = [
-    { name: 'Lun', total: 0 }, // 23
-    { name: 'Mar', total: 1 }, // 24
-    { name: 'Miy', total: 1 }, // 25
-    { name: 'Huw', total: 1 }, // 26
-    { name: 'Biy', total: 2 }, // 27
-    { name: 'Sab', total: 1 }, // 28
-    { name: 'Lin', total: 3 }, // 29 + Felipe
+    { name: 'Lun', total: 12 }, 
+    { name: 'Mar', total: 15 }, 
+    { name: 'Miy', total: 18 }, 
+    { name: 'Huw', total: 14 }, 
+    { name: 'Biy', total: 22 }, 
+    { name: 'Sab', total: 9 }, 
+    { name: 'Lin', total: 25 }, // High activity on March 8
 ];
 
-// Derived from `smsMessages`
+export const issueTrendsData = [
+    { date: 'Mar 2', MgaPeste: 5, Sakit: 2, Patubig: 1 },
+    { date: 'Mar 4', MgaPeste: 8, Sakit: 3, Patubig: 2 },
+    { date: 'Mar 6', MgaPeste: 12, Sakit: 4, Patubig: 2 },
+    { date: 'Mar 8', MgaPeste: 18, Sakit: 5, Patubig: 3 },
+];
+
 export const adviceSuccessData = [
-    { status: 'Inaprubahan', value: 1, fill: 'hsl(var(--chart-1))' }, // SMS002
-    { status: 'In-edit', value: 0, fill: 'hsl(var(--chart-2))' },
-    { status: 'Tinanggihan', value: 1, fill: 'hsl(var(--destructive))' }, // SMS003
+    { status: 'Inaprubahan', value: 85, fill: 'hsl(var(--chart-1))' },
+    { status: 'In-edit', value: 10, fill: 'hsl(var(--chart-2))' },
+    { status: 'Tinanggihan', value: 5, fill: 'hsl(var(--destructive))' },
 ];
 
-// This is a snapshot, not derived from current time-series data.
 export const cropStageData = [
-    { name: 'Pagtatanim', value: 2, fill: 'hsl(var(--chart-1))' }, // Hypothetical
-    { name: 'Paglago', value: 4, fill: 'hsl(var(--chart-2))' }, // Felipe added to growing
-    { name: 'Pamumulaklak', value: 1, fill: 'hsl(var(--chart-3))' }, // Hypothetical
-    { name: 'Pag-aani', value: 2, fill: 'hsl(var(--chart-4))' }, // Hypothetical
+    { name: 'Pagtatanim', value: 15, fill: 'hsl(var(--chart-1))' },
+    { name: 'Paglago', value: 45, fill: 'hsl(var(--chart-2))' },
+    { name: 'Pamumulaklak', value: 25, fill: 'hsl(var(--chart-3))' },
+    { name: 'Pag-aani', value: 15, fill: 'hsl(var(--chart-4))' },
 ];
 
-// Derived from `smsMessages`
 export const topKeywordsData = [
-  { word: 'peste', count: 4 },
-  { word: 'dahon', count: 1 },
-  { word: 'kamatis', count: 1 },
-  { word: 'ani', count: 2 },
-  { word: 'tubo', count: 1 },
-  { word: 'sprayer', count: 1 },
-  { word: 'hangin', count: 1 },
-  { word: 'lason', count: 1 },
-  { word: 'daga', count: 1 },
+  { word: 'peste', count: 42 },
+  { word: 'pataba', count: 38 },
+  { word: 'sakit', count: 32 },
+  { word: 'ani', count: 28 },
+  { word: 'tubo', count: 15 },
+  { word: 'sprayer', count: 12 },
+  { word: 'hangin', count: 10 },
+  { word: 'lason', count: 8 },
+  { word: 'daga', count: 7 },
 ];
 
-// Derived from `smsMessages` message content (approximated)
 export const languageUsageData = [
-    { language: 'Tagalog', value: 62, fill: 'hsl(var(--chart-1))' }, // Felipe is tagalog
-    { language: 'Taglish', value: 38, fill: 'hsl(var(--chart-2))' }, 
-    { language: 'Ilocano', value: 0, fill: 'hsl(var(--chart-3))' },
-    { language: 'English', value: 0, fill: 'hsl(var(--chart-4))' },
+    { language: 'Tagalog', value: 65, fill: 'hsl(var(--chart-1))' },
+    { language: 'Taglish', value: 35, fill: 'hsl(var(--chart-2))' }, 
 ];
 
-// Derived from `smsMessages` timestamps
 export const smsPeakHoursData = [
-  { hour: '8-10am', messages: 2 },
-  { hour: '10-12pm', messages: 1 },
-  { hour: '12-2pm', messages: 3 }, // Felipe added here
-  { hour: '2-4pm', messages: 1 },
-  { hour: '4-6pm', messages: 1 },
-  { hour: '6-8pm', messages: 1 },
+  { hour: '8-10am', messages: 12 },
+  { hour: '10-12pm', messages: 18 },
+  { hour: '12-2pm', messages: 25 }, 
+  { hour: '2-4pm', messages: 15 },
+  { hour: '4-6pm', messages: 8 },
+  { hour: '6-8pm', messages: 4 },
 ];
 
-// This is hypothetical as it requires AEW interaction data
 export const interventionSupportData = [
-    { month: "Jan", visits: 0 },
-    { month: "Feb", visits: 0 },
-    { month: "Mar", visits: 1 }, // Felipe's month
-    { month: "Apr", visits: 0 },
-    { month: "May", visits: 1 },
+    { month: "Jan", visits: 12 },
+    { month: "Feb", visits: 15 },
+    { month: "Mar", visits: 8 }, 
+    { month: "Apr", visits: 20 },
+    { month: "May", visits: 25 },
 ];
 
-// Derived from `smsMessages` statuses
 export const validationQueueData = [
-    { name: 'Nakabinbin', value: 5, fill: 'hsl(var(--chart-2))' }, // + Felipe
-    { name: 'Nalutas', value: 3, fill: 'hsl(var(--chart-1))' }, // approved + rejected
+    { name: 'Nakabinbin', value: 8, fill: 'hsl(var(--chart-2))' },
+    { name: 'Nalutas', value: 42, fill: 'hsl(var(--chart-1))' },
 ];
 
-// Hypothetical data
 export const advisoryDeliveryData = [
     { name: 'Tagumpay', value: 98, fill: 'hsl(var(--chart-1))' },
     { name: 'Nabigo', value: 2, fill: 'hsl(var(--destructive))' },
 ];
 
-// Hypothetical data
 export const followUpRateData = [
     { name: 'May Follow-up', value: 35, fill: 'hsl(var(--chart-1))' },
     { name: 'Walang Follow-up', value: 65, fill: 'hsl(var(--chart-2))' },
 ];
 
-// Derived from `smsMessages` aiConfidence
 export const aiConfidenceTrendData = [
-    { date: 'Oct 23', confidence: 92 },
-    { date: 'Oct 25', confidence: 88 },
-    { date: 'Oct 26', confidence: 97 },
-    { date: 'Oct 27', confidence: 78 },
-    { date: 'Oct 28', confidence: 95 },
-    { date: 'Mar 08', confidence: 94 }, // Felipe
+    { date: 'Feb 15', confidence: 85 },
+    { date: 'Feb 22', confidence: 88 },
+    { date: 'Mar 01', confidence: 92 },
+    { date: 'Mar 08', confidence: 94 },
 ];
 
-// Hypothetical data
 export const correctionLogData = [
-    { type: 'Intent', count: 1 },
-    { type: 'Entity', count: 2 },
-    { type: 'Advice', count: 1 },
+    { type: 'Intent', count: 5 },
+    { type: 'Entity', count: 12 },
+    { type: 'Advice', count: 3 },
 ];
 
-// Derived from `smsMessages` status
 export const aiAgreementData = [
-    { name: 'Approved As-is', value: 1, fill: 'hsl(var(--chart-1))' }, // SMS002
-    { name: 'Revised', value: 0, fill: 'hsl(var(--chart-2))' },
-    { name: 'Rejected', value: 1, fill: 'hsl(var(--destructive))' }, // SMS003
+    { name: 'Approved As-is', value: 82, fill: 'hsl(var(--chart-1))' },
+    { name: 'Revised', value: 12, fill: 'hsl(var(--chart-2))' },
+    { name: 'Rejected', value: 6, fill: 'hsl(var(--destructive))' },
 ];
 
-// Derived from `smsMessages` safetyFlag
 export const highRiskKeywordData = [
-    { word: 'peste', count: 4 },
-    { word: 'lason', count: 1 },
-    { word: 'emergency', count: 1 },
-    { word: 'sira', count: 1 },
-    { word: 'daga', count: 1 },
+    { word: 'peste', count: 15 },
+    { word: 'lason', count: 8 },
+    { word: 'emergency', count: 5 },
+    { word: 'sira', count: 12 },
+    { word: 'daga', count: 7 },
 ];
 
-// Hypothetical
 export const outbreakAlertData = [
-    { date: 'Oct 1', ulat: 0 },
-    { date: 'Oct 8', ulat: 0 },
-    { date: 'Oct 15', ulat: 0 },
-    { date: 'Oct 22', ulat: 1 },
-    { date: 'Oct 29', ulat: 2 },
-    { date: 'Mar 08', ulat: 3 },
+    { date: 'Mar 2', ulat: 2 },
+    { date: 'Mar 4', ulat: 5 },
+    { date: 'Mar 6', ulat: 8 },
+    { date: 'Mar 8', ulat: 12 },
 ];
 
-// Hypothetical
 export const severityIndexData = [
-    { name: 'Peste', mild: 1, moderate: 1, severe: 3 }, // + Felipe
-    { name: 'Sakit', mild: 0, moderate: 1, severe: 0 }, 
-    { name: 'Panahon', mild: 0, moderate: 0, severe: 1 },
+    { name: 'Peste', mild: 10, moderate: 15, severe: 17 },
+    { name: 'Sakit', mild: 5, moderate: 12, severe: 15 }, 
+    { name: 'Panahon', mild: 2, moderate: 8, severe: 20 },
 ];
 
-// Hypothetical
 export const recommendationTypeData = [
-    { name: 'Pag-iwas', count: 2 },
-    { name: 'Paggamot', count: 4 }, // + Felipe
-    { name: 'Pagsubaybay', count: 1 },
-    { name: 'Referral', count: 1 },
+    { name: 'Pag-iwas', count: 45 },
+    { name: 'Paggamot', count: 38 },
+    { name: 'Pagsubaybay', count: 25 },
+    { name: 'Referral', count: 12 },
 ];
 
-// Derived from `smsMessages`
 export const messageLengthData = [
-    { range: '1-20', count: 0 },
-    { range: '21-80', count: 7 },
-    { range: '81-160', count: 1 }, // Felipe is long
+    { range: '1-20', count: 15 },
+    { range: '21-80', count: 65 },
+    { range: '81-160', count: 20 },
 ];
 
-// Derived from `smsMessages` aiConfidence
 export const clarificationNeededData = [
-    { name: 'Nangailangan ng Clarification', value: 25, fill: 'hsl(var(--chart-2))' }, // 2/8 are below 90%
-    { name: 'Hindi Kinailangan', value: 75, fill: 'hsl(var(--chart-1))' },
+    { name: 'Nangailangan ng Clarification', value: 12, fill: 'hsl(var(--chart-2))' },
+    { name: 'Hindi Kinailangan', value: 88, fill: 'hsl(var(--chart-1))' },
 ];
 
-// Derived from `smsMessages` message content (approximated)
 export const topInquiriesData = [
-    { question: 'Gamot sa peste?', count: 4 }, // + Felipe
-    { question: 'Bakit dilaw ang dahon?', count: 1 },
-    { question: 'Paano mag-ani?', count: 1 },
-    { question: 'Sira ang gamit', count: 1 },
-    { question: 'Pinsala ng bagyo', count: 1 },
+    { question: 'Gamot sa peste?', count: 45 },
+    { question: 'Bakit dilaw ang dahon?', count: 32 },
+    { question: 'Paano mag-ani?', count: 28 },
+    { question: 'Sira ang gamit', count: 15 },
+    { question: 'Pinsala ng bagyo', count: 12 },
 ];
 
-// Hypothetical
 export const seasonalTrendData = [
-    { month: 'Jan', reports: 1 },
-    { month: 'Feb', reports: 0 },
-    { month: 'Mar', reports: 1 }, // Felipe's month
-    { month: 'Apr', reports: 0 },
-    { month: 'May', reports: 0 },
-    { month: 'Jun', reports: 0 },
-    { month: 'Jul', reports: 0 },
-    { month: 'Aug', reports: 0 },
-    { month: 'Sep', reports: 0 },
-    { month: 'Oct', reports: 7 },
-    { month: 'Nov', reports: 0 },
-    { month: 'Dec', reports: 0 },
+    { month: 'Jan', reports: 120 },
+    { month: 'Feb', reports: 150 },
+    { month: 'Mar', reports: 280 }, 
+    { month: 'Apr', reports: 110 },
+    { month: 'May', reports: 95 },
+    { month: 'Jun', reports: 140 },
+    { month: 'Jul', reports: 210 },
+    { month: 'Aug', reports: 250 },
+    { month: 'Sep', reports: 190 },
+    { month: 'Oct', reports: 160 },
+    { month: 'Nov', reports: 130 },
+    { month: 'Dec', reports: 110 },
 ];
 
-// Hypothetical
 export const farmerEngagementData = [
-    { type: 'First-time', count: 3 },
-    { type: 'Repeat', count: 3 }, // Felipe is repeat
-    { type: 'Frequent', count: 1 },
+    { type: 'First-time', count: 120 },
+    { type: 'Repeat', count: 250 },
+    { type: 'Frequent', count: 80 },
 ];
 
-// Derived from `smsMessages` and `farmers`
 export const geographicHotspotData = [
-    { zone: 'Zone 1', issues: 3 }, // FARM001 (2 SMS) + Felipe (1 SMS)
-    { zone: 'Zone 2', issues: 1 }, // FARM002
-    { zone: 'Zone 3', issues: 2 }, // FARM003, FARM008
-    { zone: 'Zone 4', issues: 1 }, // FARM004
-    { zone: 'Zone 5', issues: 1 }, // FARM005
-    { zone: 'Zone 6', issues: 0 },
-    { zone: 'Zone 7', issues: 0 },
+    { zone: 'Zone 1', issues: 25 },
+    { zone: 'Zone 2', issues: 18 },
+    { zone: 'Zone 3', issues: 32 },
+    { zone: 'Zone 4', issues: 12 },
+    { zone: 'Zone 5', issues: 15 },
+    { zone: 'Zone 6', issues: 8 },
+    { zone: 'Zone 7', issues: 5 },
 ];
 
-// Hypothetical
 export const smsDeliveryStatusData = [
     { name: 'Napadala', value: 998, fill: 'hsl(var(--chart-1))' },
     { name: 'Nabigo', value: 2, fill: 'hsl(var(--destructive))' },
 ];
 
-// Derived from `smsMessages` tone
 export const messageToneData = [
-    { tone: 'Neutral', count: 3, fill: 'hsl(var(--chart-1))' },
-    { tone: 'Nag-aalala', count: 3, fill: 'hsl(var(--chart-2))' }, // + Felipe
-    { tone: 'Kritikal', count: 2, fill: 'hsl(var(--destructive))' },
-    { tone: 'Positibo', count: 0, fill: 'hsl(var(--chart-3))' },
+    { tone: 'Neutral', count: 150, fill: 'hsl(var(--chart-1))' },
+    { tone: 'Nag-aalala', count: 80, fill: 'hsl(var(--chart-2))' },
+    { tone: 'Kritikal', count: 35, fill: 'hsl(var(--destructive))' },
+    { tone: 'Positibo', count: 45, fill: 'hsl(var(--chart-3))' },
 ];
 
-// Hypothetical
 export const responseTimeData = [
     { name: 'Average', time: 5.5 },
     { name: '90th Percentile', time: 15.2 },
