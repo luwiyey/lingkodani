@@ -118,7 +118,7 @@ export function Header() {
                   Bagong SMS mula kay Felipe M. Macedonio
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Kapurpuran: Mataas. Kailangan ng pesticide supply.
+                  Oras: 2:30 PM. Kailangan ng pesticide supply.
                 </span>
               </div>
             </DropdownMenuItem>

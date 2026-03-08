@@ -20,7 +20,7 @@ export const farmers: Farmer[] = [
     farmSize: 3.5,
     crops: ['Palay'],
     registrationDate: '2023-10-20T08:00:00Z',
-    lastSmsActivity: '2026-03-08T01:20:00Z',
+    lastSmsActivity: '2026-03-08T14:30:00Z',
     avatarUrl: 'https://picsum.photos/seed/felipe/200/200',
     status: 'active'
   },
@@ -148,9 +148,9 @@ export const smsMessages: SmsMessage[] = [
     farmerName: 'Felipe M. Macedonio',
     phone: '+639159876543',
     message: 'Maraming rice bugs sa aking palayan sa Zone 1. Nakakaalarma na ang dami nila. Kailangan ko po ng pamatay-peste o pesticide supply para hindi masira ang aking ani.',
-    timestamp: '2026-03-08T01:20:00Z',
+    timestamp: '2026-03-08T14:30:00Z',
     parsedIntent: 'PEST_DISEASE',
-    urgency: 'high',
+    urgency: 'medium',
     status: 'pending_approval',
     aiAdvice: 'Base sa inyong ulat, mukhang may outbreak ng rice bugs. Inirerekomenda ang paggamit ng Malathion o katulad na pesticide. Mayroon kaming stock sa barangay hall. Maaari kayong bigyan ng voucher para dito.',
     aiConfidence: 0.94,
@@ -383,7 +383,7 @@ export const registeredUsers = [
 ];
 
 export const auditLogs: AuditLog[] = [
-    { id: 'AUD006', timestamp: '2026-03-08T01:21:00Z', user: 'system', action: 'AUTO_ADVICE_GENERATED', details: 'Binuo ang paunang payo para kay Felipe M. Macedonio (FARM009) tungkol sa rice bugs.'},
+    { id: 'AUD006', timestamp: '2026-03-08T14:31:00Z', user: 'system', action: 'AUTO_ADVICE_GENERATED', details: 'Binuo ang paunang payo para kay Felipe M. Macedonio (FARM009) tungkol sa rice bugs.'},
     { id: 'AUD001', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), user: 'AEW Jose Rizal', action: 'APPROVE_AI_REPLY', details: 'Inaprubahan ang tugon para sa SMS002 mula kay Juan dela Cruz.'},
     { id: 'AUD002', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), user: 'Sec. Maria Clara', action: 'REJECT_AI_REPLY', details: 'Tinanggihan ang tugon para sa SMS003 mula kay Jose Rizal.'},
     { id: 'AUD003', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), user: 'Bgy. Captain Cruz', action: 'SEND_BROADCAST', details: 'Nagpadala ng alerto sa baha sa 4 na magsasaka.'},
