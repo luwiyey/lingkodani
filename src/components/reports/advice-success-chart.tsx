@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { adviceSuccessData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,8 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function AdviceSuccessChart() {
-  const [timeframe, setTimeframe] = useState('Lingguhan');
+  const { adviceSuccessData } = useAnalytics();
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
 
   const total = adviceSuccessData.reduce((acc, curr) => acc + curr.value, 0);
@@ -136,3 +137,7 @@ export function AdviceSuccessChart() {
     </Dialog>
   )
 }
+
+
+
+

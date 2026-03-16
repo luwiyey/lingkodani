@@ -1,0 +1,120 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function userId() {
+      return request.auth.uid;
+    }
+
+    function hasUserProfile() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(userId()));
+    }
+
+    function currentUserRole() {
+      return hasUserProfile()
+        ? get(/databases/$(database)/documents/users/$(userId())).data.role
+        : null;
+    }
+
+    function isDeveloper() {
+      return currentUserRole() == 'developer';
+    }
+
+    function isAuthorizedStaff() {
+      return currentUserRole() == 'barangay' || isDeveloper();
+    }
+
+    function isSelf(uid) {
+      return isAuthenticated() && userId() == uid;
+    }
+
+    match /users/{uid} {
+      allow get: if isDeveloper() || isSelf(uid);
+      allow list: if isDeveloper();
+      allow create: if isDeveloper() &&
+        request.resource.data.id == uid &&
+        request.resource.data.uid == uid;
+      allow update: if isDeveloper() || (
+        isSelf(uid) &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.status == resource.data.status
+      );
+      allow delete: if isDeveloper();
+    }
+
+    match /systemSettings/{document=**} {
+      allow read: if isAuthorizedStaff();
+      allow create, update: if isAuthorizedStaff();
+      allow delete: if isDeveloper();
+    }
+
+    match /farmers/{document=**} {
+      allow read: if isAuthorizedStaff();
+      allow create, update: if isAuthorizedStaff();
+      allow delete: if isDeveloper();
+    }
+
+    match /smsMessages/{document=**} {
+      allow read: if isAuthorizedStaff();
+      allow create, update: if isAuthorizedStaff();
+      allow delete: if isDeveloper();
+    }
+
+    match /auditLogs/{document=**} {
+      allow read: if isAuthorizedStaff();
+      allow create: if isAuthorizedStaff();
+      allow update, delete: if isDeveloper();
+    }
+
+    match /outboundMessages/{document=**} {
+      allow read: if isAuthorizedStaff();
+      allow create, update: if isAuthorizedStaff();
+      allow delete: if isDeveloper();
+    }
+
+    match /resources/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /marketPrices/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /alertHistory/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /assistanceRecords/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /fieldVisitTasks/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /knowledgeArticles/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /vouchers/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /logbookEntries/{document=**} {
+      allow read: if isAuthorizedStaff();
+      allow create, update: if isAuthorizedStaff();
+      allow delete: if isDeveloper();
+    }
+
+    match /smsTrainingExamples/{document=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+  }
+}

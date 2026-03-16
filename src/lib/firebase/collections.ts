@@ -1,0 +1,17 @@
+export const firebaseCollections = {
+  smsMessages: "smsMessages",
+  farmers: "farmers",
+  auditLogs: "auditLogs",
+  outboundMessages: "outboundMessages",
+  resources: "resources",
+  marketPrices: "marketPrices",
+  alertHistory: "alertHistory",
+  assistanceRecords: "assistanceRecords",
+  fieldVisitTasks: "fieldVisitTasks",
+  knowledgeArticles: "knowledgeArticles",
+  vouchers: "vouchers",
+  users: "users",
+  systemSettings: "systemSettings",
+  logbookEntries: "logbookEntries",
+  smsTrainingExamples: "smsTrainingExamples",
+} as const;

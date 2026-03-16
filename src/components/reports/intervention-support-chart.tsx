@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { interventionSupportData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -24,12 +24,13 @@ import { useToast } from "@/hooks/use-toast";
 
 const chartConfig = {
   visits: {
-    label: "Farm Visits",
+    label: "Interventions",
     color: "hsl(var(--chart-1))",
   },
 } satisfies ChartConfig
 
 export function InterventionSupportChart() {
+  const { interventionSupportData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Taunan');
   const { toast } = useToast();
 
@@ -92,25 +93,25 @@ export function InterventionSupportChart() {
               </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
-                <CardTitle>Mga Pagbisita sa Bukid</CardTitle>
-                <CardDescription>Mga kaso na nangailangan ng pisikal na pagbisita.</CardDescription>
+                <CardTitle>Intervention Support</CardTitle>
+                <CardDescription>Pinagsamang field visits at assistance actions ng barangay.</CardDescription>
             </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
             <div className="flex flex-col items-center gap-2">
                 <p className="text-5xl font-bold text-chart-1">{totalVisits}</p>
-                <p className="text-sm text-muted-foreground">Kabuuang Pagbisita</p>
+                <p className="text-sm text-muted-foreground">Kabuuang Intervention</p>
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamarami ang kinakailangang pagbisita noong Mayo, posibleng dahil sa pagsisimula ng panahon ng pagtatanim.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: Pinagsasama nito ang onsite visits at assistance work para makita ang totoong field workload ng barangay team.</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Mga Pagbisita sa Bukid ({timeframe})</DialogTitle>
+            <DialogTitle>Intervention Support ({timeframe})</DialogTitle>
             <DialogDescription>
-              Ipinapakita ng ulat na ito ang bilang ng mga kaso na minarkahan bilang nangangailangan ng direktang interbensyon mula sa isang Agricultural Extension Worker (AEW).
+              Ipinapakita ng ulat na ito ang pinagsamang bilang ng field visits at assistance actions na minarkahan bilang nangangailangan ng direktang interbensyon mula sa barangay team.
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
@@ -120,8 +121,8 @@ export function InterventionSupportChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang bilang ng mga pagbisita sa bukid ay nagbibigay ng sukatan para sa workload ng mga AEW. Ang pinakamataas na bilang ay naitala noong Mayo, na karaniwang kasabay ng pagsisimula ng panahon ng pagtatanim para sa maraming pananim, kung kailan mas maraming isyu ang lumalabas. Ito ay nagpapakita ng seasonal na katangian ng pangangailangan para sa suporta.</p>
-                <p><strong>Rekomendasyon:</strong> Gamitin ang data na ito para sa pagpaplano ng workforce. Sa mga buwan na may mataas na bilang ng kinakailangang pagbisita, tiyaking may sapat na tauhan at mapagkukunan ang mga AEW. Maaari ring mag-iskedyul ng mga proyektong pagsasanay o administratibo sa mga buwan na may mas mababang demand.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Ang bilang ng intervention support ay nagbibigay ng mas kumpletong sukatan para sa workload ng barangay team dahil kasama rito ang onsite visits at assistance follow-through. Mas malinaw nitong naipapakita kung aktuwal bang may kasunod na aksyon matapos ang isang ulat.</p>
+                <p><strong>Rekomendasyon:</strong> Gamitin ang data na ito para sa pagpaplano ng workforce at resource allocation. Kapag mataas ang bilang ng interventions, tiyaking may sapat na AEW time, transport support, at inventory para sa field response.</p>
             </div>
         </div>
         <DialogFooter className="pt-4 border-t">
@@ -133,3 +134,4 @@ export function InterventionSupportChart() {
     </Dialog>
   )
 }
+

@@ -51,11 +51,22 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatFarmerRegistrationsAsCsv } from '@/lib/data-portability';
 
 type SortableKeys = keyof Farmer | 'location';
 
+function downloadFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function FarmersPage() {
-  const { farmers, setFarmers } = useData();
+  const { farmers, updateFarmerRecord, deleteFarmerRecord } = useData();
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
@@ -104,11 +115,25 @@ export default function FarmersPage() {
     setSortConfig({ key, direction });
   };
 
-  const handleExport = (format: 'JSON' | 'Excel') => {
+  const handleExport = (format: 'json' | 'csv') => {
+    if (format === 'json') {
+      downloadFile(
+        `lingkod-ani-farmers-${new Date().toISOString().slice(0, 10)}.json`,
+        JSON.stringify(sortedFarmers, null, 2),
+        'application/json'
+      );
+    } else {
+      downloadFile(
+        `lingkod-ani-farmers-${new Date().toISOString().slice(0, 10)}.csv`,
+        formatFarmerRegistrationsAsCsv(sortedFarmers),
+        'text/csv;charset=utf-8'
+      );
+    }
+
     toast({
-        title: "Inihahanda ang Export...",
-        description: `Ang data ng magsasaka ay ie-export bilang ${format} file.`,
-    })
+      title: 'Na-export ang farmer database',
+      description: `${sortedFarmers.length} farmer profiles ang naisama sa ${format.toUpperCase()} file.`,
+    });
   };
 
   const generateQr = (farmerId: string) => {
@@ -130,13 +155,13 @@ export default function FarmersPage() {
       farmSize: Number(formData.get('farm-size') as string),
     };
 
-    setFarmers(current => current.map(f => f.id === editingFarmer!.id ? { ...f, ...updatedData } : f));
+    updateFarmerRecord(editingFarmer.id, updatedData);
     setEditingFarmer(null);
     toast({ title: "Tagumpay!", description: "Nai-update na ang datos ng magsasaka." });
   };
 
   const handleDeleteFarmer = (farmerId: string) => {
-    setFarmers(current => current.filter(f => f.id !== farmerId));
+    deleteFarmerRecord(farmerId);
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
   };
 
@@ -158,7 +183,8 @@ export default function FarmersPage() {
     let sortableItems = [...filteredFarmers];
     if (sortConfig !== null) {
         sortableItems.sort((a, b) => {
-            let aValue, bValue;
+            let aValue: string | number = '';
+            let bValue: string | number = '';
             
             const key = sortConfig.key;
 
@@ -169,8 +195,8 @@ export default function FarmersPage() {
                 aValue = a.crops.join(', ');
                 bValue = b.crops.join(', ');
             } else {
-                 aValue = a[key as keyof Farmer];
-                 bValue = b[key as keyof Farmer];
+                 aValue = (a[key as keyof Farmer] as string | number | undefined) ?? '';
+                 bValue = (b[key as keyof Farmer] as string | number | undefined) ?? '';
             }
 
             if (aValue < bValue) {
@@ -206,8 +232,8 @@ export default function FarmersPage() {
                     <Button variant="outline"><Download className="mr-2 h-4 w-4" />I-export</Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleExport('JSON')}>Export as JSON</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('Excel')}>Export as Excel</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('json')}>Export JSON</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('csv')}>Export CSV</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button onClick={() => router.push('/dashboard/farmers/register')}><PlusCircle /> Magrehistro ng Magsasaka</Button>

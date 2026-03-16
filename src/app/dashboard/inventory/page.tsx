@@ -1,6 +1,7 @@
 
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { Suspense, useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Resource, ResourceCategory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -46,11 +47,36 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
 import { useData } from '@/context/data-context';
+import {
+  extractResourcesFromJson,
+  formatResourcesAsCsv,
+  parseResourcesCsv,
+} from '@/lib/data-portability';
+import { cn } from '@/lib/utils';
 
 type SortableKeys = keyof Omit<Resource, 'id' | 'category'>;
 
-export default function InventoryPage() {
+function downloadFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function getFileExtension(filename: string) {
+  return filename.split('.').pop()?.toLowerCase() ?? '';
+}
+
+function normalizeResourceKey(name: string, category: ResourceCategory) {
+  return `${category}:${name.trim().toLowerCase()}`;
+}
+
+function InventoryPageContent() {
   const { resources, addResource, updateResource, deleteResource } = useData();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
@@ -58,10 +84,28 @@ export default function InventoryPage() {
   const { toast } = useToast();
   const importRef = React.useRef<HTMLInputElement>(null);
   const [isClient, setIsClient] = useState(false);
+  const focusedResourceId = searchParams.get('resource');
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (!focusedResourceId) {
+      return;
+    }
+
+    const target = document.getElementById(`resource-row-${focusedResourceId}`);
+
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [focusedResourceId, resources.length]);
   
   const [filters, setFilters] = useState<{
     categories: ResourceCategory[];
@@ -99,21 +143,88 @@ export default function InventoryPage() {
     setSortConfig({ key, direction });
   };
   
-  const handleImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-        toast({
-            title: "Nagsisimula ang Pag-import...",
-            description: `Ang file na "${e.target.files[0].name}" ay pinoproseso para sa imbentaryo.`,
-        });
+  const handleImportSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const extension = getFileExtension(file.name);
+      const importedResources = extension === 'csv'
+        ? parseResourcesCsv(text)
+        : extension === 'json'
+          ? extractResourcesFromJson(JSON.parse(text))
+          : [];
+
+      if (importedResources.length === 0) {
+        throw new Error('Walang valid na resource records sa napiling file. Gumamit ng JSON o CSV export mula sa Lingkod-Ani.');
+      }
+
+      const knownKeys = new Set(resources.map((resource) => normalizeResourceKey(resource.name, resource.category)));
+      let createdCount = 0;
+      let updatedCount = 0;
+      let skippedCount = 0;
+
+      for (const importedResource of importedResources) {
+        const resourceKey = normalizeResourceKey(importedResource.name, importedResource.category);
+        const existingResource = resources.find((resource) => (
+          normalizeResourceKey(resource.name, resource.category) === resourceKey
+        ));
+
+        if (existingResource) {
+          updateResource(existingResource.id, importedResource);
+          updatedCount += 1;
+          continue;
+        }
+
+        if (knownKeys.has(resourceKey)) {
+          skippedCount += 1;
+          continue;
+        }
+
+        addResource(importedResource);
+        createdCount += 1;
+        knownKeys.add(resourceKey);
+      }
+
+      toast({
+        title: 'Na-import ang imbentaryo',
+        description: `${createdCount} bagong rekurso at ${updatedCount} update ang na-process mula sa "${file.name}".${skippedCount > 0 ? ` ${skippedCount} duplicate rows ang nilaktawan.` : ''}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Hindi ma-import ang imbentaryo',
+        description: error instanceof Error ? error.message : 'Hindi mabasa ang import file.',
+        variant: 'destructive',
+      });
+    } finally {
+      event.target.value = '';
     }
   };
 
-  const handleExport = () => {
-     toast({
-        title: "Inihahanda ang Iyong File...",
-        description: `Ang data ng imbentaryo ay ini-export.`,
+  const handleExport = (format: 'csv' | 'json') => {
+    if (format === 'json') {
+      downloadFile(
+        `lingkod-ani-inventory-${new Date().toISOString().slice(0, 10)}.json`,
+        JSON.stringify(sortedResources, null, 2),
+        'application/json'
+      );
+    } else {
+      downloadFile(
+        `lingkod-ani-inventory-${new Date().toISOString().slice(0, 10)}.csv`,
+        formatResourcesAsCsv(sortedResources),
+        'text/csv;charset=utf-8'
+      );
+    }
+
+    toast({
+      title: 'Na-export ang imbentaryo',
+      description: `${sortedResources.length} resource records ang naisama sa ${format.toUpperCase()} file.`,
     });
-  }
+  };
 
   const handleAddResource = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -191,7 +302,7 @@ export default function InventoryPage() {
 
   return (
     <>
-      <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
+      <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".json,.csv,application/json,text/csv" />
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between flex-wrap gap-2">
           <div className="space-y-1">
@@ -200,7 +311,15 @@ export default function InventoryPage() {
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
             <Button variant="outline" onClick={() => importRef.current?.click()}><Upload /> Mag-import</Button>
-            <Button variant="outline" onClick={handleExport}><Download /> I-export</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline"><Download /> I-export</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')}>Export CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>Export JSON</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button><PlusCircle /> Magdagdag ng Rekurso</Button>
@@ -365,7 +484,13 @@ export default function InventoryPage() {
                 </TableHeader>
                 <TableBody>
                   {sortedResources.map((resource) => (
-                    <TableRow key={resource.id}>
+                    <TableRow
+                      key={resource.id}
+                      id={`resource-row-${resource.id}`}
+                      className={cn(
+                        focusedResourceId === resource.id && 'bg-primary/5 outline outline-2 outline-primary/40',
+                      )}
+                    >
                       <TableCell className="font-medium break-words">{resource.name}</TableCell>
                       <TableCell><Badge variant="secondary">{resource.category}</Badge></TableCell>
                       <TableCell>{resource.stock}</TableCell>
@@ -461,4 +586,11 @@ export default function InventoryPage() {
     </>
   );
 }
-    
+
+export default function InventoryPage() {
+  return (
+    <Suspense fallback={<div className="flex flex-col gap-6" />}>
+      <InventoryPageContent />
+    </Suspense>
+  );
+}

@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import {
@@ -14,8 +15,8 @@ import {
   Users,
   History,
   ChevronRight,
-  Leaf,
   ShieldAlert,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
@@ -44,6 +45,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { NavItem } from "@/lib/types";
 import { useData } from "@/context/data-context";
+import { useAuth } from "@/context/auth-context";
+import { getPreferredDashboardRoute, getPreferredWorkspace } from "@/lib/user-workspace";
 
 function NavMenu({ items }: { items: NavItem[] }) {
     const pathname = usePathname();
@@ -86,7 +89,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                                 <item.icon />
                             </SidebarMenuButton>
                          </DropdownMenuTrigger>
-                          <DropdownMenuContent side="right" align="start" className="w-48">
+                            <DropdownMenuContent side="right" align="start" className="w-48">
                             <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                              {item.subItems.map((subItem) => {
@@ -96,7 +99,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                                         <DropdownMenuItem onClick={handleLinkClick} className="flex justify-between cursor-pointer">
                                             <span>{subItem.title}</span>
                                             {subItemLabel && (
-                                                <span className="ml-auto text-xs font-bold text-primary-foreground bg-primary rounded-full px-1.5 py-0.5">
+                                                <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
                                                     {subItemLabel}
                                                 </span>
                                             )}
@@ -116,12 +119,12 @@ function NavMenu({ items }: { items: NavItem[] }) {
                                 <item.icon />
                                 <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
                                 <span className="truncate">{item.title}</span>
+                                <ChevronRight className="ml-2 h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
                                 {effectiveLabel && (
-                                    <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
+                                    <span className="ml-2 inline-flex items-center justify-center rounded-full bg-primary px-2 py-1 text-[10px] font-semibold leading-none text-primary-foreground">
                                     {effectiveLabel}
                                     </span>
                                 )}
-                                <ChevronRight className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
                                 </div>
                             </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -135,7 +138,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                                         <SidebarMenuSubButton isActive={pathname === subItem.href}>
                                         <span>{subItem.title}</span>
                                         {subItemLabel && (
-                                            <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
+                                            <span className="ml-auto inline-flex items-center justify-center rounded-full bg-primary px-2 py-1 text-[10px] font-semibold leading-none text-primary-foreground">
                                             {subItemLabel}
                                             </span>
                                         )}
@@ -159,7 +162,7 @@ function NavMenu({ items }: { items: NavItem[] }) {
                         <div className="flex flex-1 min-w-0 items-center group-data-[collapsible=icon]:hidden">
                           <span className="truncate">{item.title}</span>
                           {effectiveLabel && (
-                            <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-foreground bg-primary rounded-full">
+                            <span className="ml-auto inline-flex items-center justify-center rounded-full bg-primary px-2 py-1 text-[10px] font-semibold leading-none text-primary-foreground">
                               {effectiveLabel}
                             </span>
                           )}
@@ -177,10 +180,14 @@ function NavMenu({ items }: { items: NavItem[] }) {
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const { currentUserProfile } = useAuth();
+  const homeHref = getPreferredDashboardRoute(currentUserProfile);
+  const activeWorkspace = getPreferredWorkspace(currentUserProfile);
   
-  const barangayNavItems: NavItem[] = [
+  const detailedBarangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Live SMS", href: "/dashboard/sms-feed", icon: MessageSquare },
+      { title: "Operations Center", href: "/dashboard/operations", icon: ClipboardList },
+      { title: "SMS Feed", href: "/dashboard/sms-feed", icon: MessageSquare },
       {
         title: "Panganib at Alerto",
         href: "/dashboard/active-issues",
@@ -198,6 +205,7 @@ export function AppSidebar() {
           { title: "Pagpaparehistro", href: "/dashboard/farmers/register" },
           { title: "Pag-apruba", href: "/dashboard/farmers/approvals" },
           { title: "Database", href: "/dashboard/farmers" },
+          { title: "Follow-up Queue", href: "/dashboard/follow-up" },
           { title: "Aktibong Sakahan", href: "/dashboard/active-farms" },
           { title: "Pangkalahatang-ideya", href: "/dashboard/oversight" },
         ],
@@ -209,6 +217,7 @@ export function AppSidebar() {
         subItems: [
           { title: "Imbentaryo", href: "/dashboard/inventory" },
           { title: "Mga Voucher", href: "/dashboard/vouchers" },
+          { title: "Price Watch", href: "/dashboard/price-watch" },
         ],
       },
       {
@@ -226,21 +235,59 @@ export function AppSidebar() {
       { title: "Mga Setting ng Brgy.", href: "/dashboard/settings", icon: Settings },
     ];
 
+  const simpleBarangayNavItems: NavItem[] = [
+      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { title: "Operations Center", href: "/dashboard/operations", icon: ClipboardList },
+      {
+        title: "Magsasaka",
+        href: "/dashboard/farmers",
+        icon: Users,
+        subItems: [
+          { title: "Follow-up Queue", href: "/dashboard/follow-up" },
+          { title: "Pag-apruba", href: "/dashboard/farmers/approvals" },
+          { title: "Database", href: "/dashboard/farmers" },
+        ],
+      },
+      {
+        title: "Panganib at Alerto",
+        href: "/dashboard/active-issues",
+        icon: ShieldAlert,
+        subItems: [
+          { title: "Mga Aktibong Isyu", href: "/dashboard/active-issues" },
+          { title: "Pamamahala ng Alerto", href: "/dashboard/alerts" },
+        ],
+      },
+      {
+        title: "Rekurso",
+        href: "/dashboard/inventory",
+        icon: Archive,
+        subItems: [
+          { title: "Imbentaryo", href: "/dashboard/inventory" },
+          { title: "Mga Voucher", href: "/dashboard/vouchers" },
+          { title: "Price Watch", href: "/dashboard/price-watch" },
+        ],
+      },
+      { title: "Mga Setting ng Brgy.", href: "/dashboard/settings", icon: Settings },
+    ];
+
+  const barangayNavItems = currentUserProfile?.role === 'barangay' && activeWorkspace === 'simple'
+    ? simpleBarangayNavItems
+    : detailedBarangayNavItems;
+
   return (
     <Sidebar collapsible="icon">
-      <div className="flex h-20 items-center px-4">
+      <div className="flex h-16 items-center border-b border-sidebar-border px-4">
         {!isCollapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="bg-sidebar-primary rounded-lg p-2 text-sidebar-primary-foreground">
-                  <Leaf className="h-5 w-5" />
+          <Link href={homeHref} className="flex items-center gap-3 rounded-xl transition-colors hover:bg-sidebar-accent/70">
+              <Image src="/logo.png" width={36} height={36} alt="Lingkod-Ani Logo" style={{ height: 'auto' }} />
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold tracking-tight text-sidebar-foreground">Lingkod-Ani</p>
+                <p className="truncate text-[11px] text-muted-foreground">Kaagapay ng Magsasaka</p>
               </div>
-              <span className="font-semibold text-lg text-sidebar-foreground truncate">
-                  Lingkod-Ani
-              </span>
           </Link>
         )}
       </div>
-      <SidebarContent className="pt-0 flex-1 flex flex-col">
+      <SidebarContent className="flex flex-1 flex-col pt-3">
         <div className="flex-1">
             <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
             <NavMenu items={barangayNavItems} />

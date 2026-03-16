@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { smsVolumeData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,8 @@ const chartConfig = {
 
 
 export function SmsVolumeChart() {
-  const [timeframe, setTimeframe] = useState('Lingguhan');
+  const { smsVolumeData } = useAnalytics();
+  const { timeframe, setTimeframe } = useReportsTimeframe();
 
   const totalSms = smsVolumeData.reduce((acc, item) => acc + item.total, 0);
   const peakDay = smsVolumeData.reduce((prev, current) => (prev.total > current.total) ? prev : current);
@@ -127,3 +128,7 @@ export function SmsVolumeChart() {
     </Dialog>
   )
 }
+
+
+
+

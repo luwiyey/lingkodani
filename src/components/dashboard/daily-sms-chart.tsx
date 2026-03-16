@@ -10,7 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { smsVolumeData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
+import { smsVolumeData as fallbackSmsVolumeData } from "@/lib/data"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 
 const chartConfig = {
@@ -21,6 +22,9 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function DailySmsChart() {
+  const { smsVolumeData } = useAnalytics();
+  const chartData = smsVolumeData.some((item) => item.total > 0) ? smsVolumeData : fallbackSmsVolumeData;
+
   return (
     <Card>
       <CardHeader>
@@ -29,7 +33,7 @@ export function DailySmsChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
-            <BarChart data={smsVolumeData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+            <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <XAxis
                 dataKey="name"
                 stroke="hsl(var(--foreground))"
@@ -55,3 +59,4 @@ export function DailySmsChart() {
     </Card>
   )
 }
+

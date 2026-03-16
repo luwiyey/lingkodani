@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { severityIndexData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function SeverityIndexChart() {
+  const { severityIndexData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Buwanan');
   
   const mostSevereCategory = severityIndexData.reduce((prev, current) => ((prev.severe / (prev.mild + prev.moderate + prev.severe)) > (current.severe / (current.mild + current.moderate + current.severe))) ? prev : current);
@@ -126,3 +127,4 @@ export function SeverityIndexChart() {
     </Dialog>
   )
 }
+

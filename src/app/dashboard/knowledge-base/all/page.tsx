@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
+import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
 
 
 export default function AllKnowledgeArticlesPage() {
@@ -24,11 +25,12 @@ export default function AllKnowledgeArticlesPage() {
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
+  const [isSavingEntry, setIsSavingEntry] = useState(false);
   
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleAddNewEntry = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddNewEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const title = formData.get('title') as string;
@@ -36,17 +38,37 @@ export default function AllKnowledgeArticlesPage() {
     const keywords = (formData.get('keywords') as string).split(',').map(kw => kw.trim()).filter(Boolean);
     const type = formData.get('type') as KnowledgeArticle['type'];
     const content = type === 'article' ? formData.get('content') as string : '';
-
+    const audioFile = formData.get('audioFile');
 
     if (!title || !summary || !keywords.length) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
     }
-    
-    addKnowledgeArticle({ title, summary, keywords, type, content });
-    
-    setNewEntryDialogOpen(false);
-    toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
+
+    if (type === 'audio' && (!(audioFile instanceof File) || audioFile.size === 0)) {
+      toast({ title: "Kulang ang Audio File", description: "Pumili ng audio file para sa knowledge audio entry.", variant: "destructive" });
+      return;
+    }
+
+    setIsSavingEntry(true);
+
+    try {
+      const audioUrl = type === 'audio' && audioFile instanceof File
+        ? await uploadKnowledgeAudioFile(audioFile, title)
+        : undefined;
+
+      addKnowledgeArticle({ title, summary, keywords, type, content, audioUrl });
+      setNewEntryDialogOpen(false);
+      toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
+    } catch (error) {
+      toast({
+        title: "Hindi ma-save ang knowledge entry",
+        description: error instanceof Error ? error.message : "Nagkaroon ng problema sa pag-upload ng knowledge file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingEntry(false);
+    }
   };
 
   const filteredArticles = knowledgeArticles.filter(article => {
@@ -137,7 +159,7 @@ export default function AllKnowledgeArticlesPage() {
                             ) : (
                                 <div className="space-y-2">
                                     <Label htmlFor="audio-file">Mag-upload ng Audio File</Label>
-                                    <Input id="audio-file" type="file" accept="audio/*" className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer" />
+                                    <Input id="audio-file" name="audioFile" type="file" accept="audio/*" className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer" />
                                 </div>
                             )}
                             <div className="space-y-2">
@@ -147,7 +169,7 @@ export default function AllKnowledgeArticlesPage() {
                         </div>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="outline">Kanselahin</Button></DialogClose>
-                            <Button type="submit">I-save ang Entry</Button>
+                            <Button type="submit" disabled={isSavingEntry}>{isSavingEntry ? 'Nagse-save...' : 'I-save ang Entry'}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

@@ -6,13 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { auditLogs as initialLogs } from '@/lib/data';
-import type { AuditLog } from '@/lib/types';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { useData } from '@/context/data-context';
 
 export default function AuditLogPage() {
-    const [logs, setLogs] = useState<AuditLog[]>(initialLogs);
+    const { auditLogs } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [isClient, setIsClient] = useState(false);
 
@@ -20,7 +19,7 @@ export default function AuditLogPage() {
         setIsClient(true);
     }, []);
 
-    const filteredLogs = logs.filter(log =>
+    const filteredLogs = auditLogs.filter(log =>
         log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.details.toLowerCase().includes(searchTerm.toLowerCase())
@@ -33,6 +32,7 @@ export default function AuditLogPage() {
             <h1 className="text-2xl font-bold tracking-tight">Log ng Pagsusuri</h1>
             <HelpDialog title="Log ng Pagsusuri" tooltipText="Suriin ang mga mahahalagang aksyon na ginawa sa system.">
                 <p>Ang pahinang ito ay naglalaman ng isang kumpletong talaan (log) ng lahat ng mahahalagang aksyon na ginawa ng mga user sa sistema. Ito ay isang "read-only" na view para sa layunin ng seguridad, pananagutan (accountability), at pag-troubleshoot.</p>
+                <p>Sa kasalukuyang build, ito ay isang named audit trail na naka-store sa app database. Hindi pa ito tunay na blockchain ledger.</p>
                 <p><strong>Mga Tampok:</strong></p>
                 <ul className="list-disc pl-5 space-y-1">
                     <li><strong>Maghanap:</strong> Gamitin ang search bar upang mabilis na mahanap ang mga partikular na log. Maaari kang maghanap ayon sa email ng user, uri ng aksyon (hal. 'APPROVE_AI_REPLY'), o anumang salita sa hanay ng "Mga Detalye".</li>
@@ -43,7 +43,7 @@ export default function AuditLogPage() {
                 </ul>
             </HelpDialog>
         </div>
-        <p className="text-muted-foreground">Isang detalyadong talaan ng lahat ng mahahalagang aksyon na ginawa sa sistema.</p>
+        <p className="text-muted-foreground">Isang detalyadong talaan ng lahat ng mahahalagang aksyon na ginawa sa sistema. Named audit trail ito; hindi pa blockchain-backed ledger ang kasalukuyang implementation.</p>
       </div>
 
        <div className="flex gap-4">

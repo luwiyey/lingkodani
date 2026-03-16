@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { aiConfidenceTrendData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function AIConfidenceTrendChart() {
+  const { aiConfidenceTrendData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Buwanan');
   const { toast } = useToast();
   
@@ -137,3 +138,4 @@ export function AIConfidenceTrendChart() {
     </Dialog>
   )
 }
+

@@ -44,6 +44,54 @@ export async function searchKnowledgeBase(
   return searchKnowledgeBaseFlow(input);
 }
 
+function tokenize(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((token) => token.length >= 3);
+}
+
+function buildFallbackSearchResult(input: SearchKnowledgeBaseInput): SearchKnowledgeBaseOutput {
+  const queryTokens = tokenize(input.query);
+
+  const scoredArticles = input.articles
+    .map((article) => {
+      const haystack = tokenize([
+        article.title,
+        article.summary,
+        article.keywords.join(' '),
+        article.type,
+      ].join(' '));
+
+      const matchCount = queryTokens.reduce((score, token) => {
+        return score + (haystack.includes(token) ? 1 : 0);
+      }, 0);
+
+      return {
+        article,
+        score: matchCount,
+      };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  const relevantArticleIds = scoredArticles.slice(0, 4).map((entry) => entry.article.id);
+  const topArticle = scoredArticles[0]?.article;
+
+  if (!topArticle) {
+    return {
+      directAnswer: `Wala pang eksaktong tugma sa lokal na knowledge base para sa "${input.query}". Subukang gumamit ng mas tiyak na keyword tulad ng pananim, peste, sintomas, o uri ng tulong na kailangan.`,
+      relevantArticleIds: [],
+    };
+  }
+
+  return {
+    directAnswer: `Batay sa lokal na knowledge base, pinakamalapit na sanggunian ang "${topArticle.title}". ${topArticle.summary} Maaari mong buksan ang kaugnay na artikulo sa ibaba para sa mas detalyadong gabay.`,
+    relevantArticleIds,
+  };
+}
+
 const prompt = ai.definePrompt({
   name: 'searchKnowledgeBasePrompt',
   input: {schema: SearchKnowledgeBaseInputSchema},
@@ -86,7 +134,16 @@ const searchKnowledgeBaseFlow = ai.defineFlow(
     outputSchema: SearchKnowledgeBaseOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+      const {output} = await prompt(input);
+
+      if (output) {
+        return output;
+      }
+    } catch (error) {
+      console.error('searchKnowledgeBaseFlow fallback triggered', error);
+    }
+
+    return buildFallbackSearchResult(input);
   }
 );

@@ -1,27 +1,76 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useData } from '@/context/data-context';
-import type { Farmer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Upload, Search } from 'lucide-react';
+import { Check, Download, Search, Upload, X } from 'lucide-react';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  extractFarmerRegistrationsFromJson,
+  formatFarmerRegistrationsAsCsv,
+  parseFarmerRegistrationsCsv,
+} from '@/lib/data-portability';
+import { cn } from '@/lib/utils';
 
-export default function ApprovalsPage() {
-  const { farmers, setFarmers } = useData();
+function downloadFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function getFileExtension(filename: string) {
+  return filename.split('.').pop()?.toLowerCase() ?? '';
+}
+
+function normalizePhone(phone: string) {
+  return phone.replace(/\D/g, '');
+}
+
+function ApprovalsPageContent() {
+  const { farmers, addPendingFarmer, updateFarmerStatus, updateManyFarmerStatuses } = useData();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const importRef = React.useRef<HTMLInputElement>(null);
+  const focusedFarmerId = searchParams.get('farmer');
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (!focusedFarmerId) {
+      return;
+    }
+
+    const target = document.getElementById(`farmer-row-${focusedFarmerId}`);
+
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [focusedFarmerId, farmers.length]);
 
   const pendingFarmers = farmers.filter(f => f.status === 'pending_approval');
 
@@ -31,13 +80,7 @@ export default function ApprovalsPage() {
 
     const newStatus = isApproved ? 'active' : 'rejected';
 
-    setFarmers(current =>
-      current.map(f =>
-        f.id === farmerId
-          ? { ...f, status: newStatus }
-          : f
-      )
-    );
+    updateFarmerStatus(farmerId, newStatus);
 
     toast({
       title: isApproved ? "Magsasaka Inaprubahan" : "Magsasaka Tinanggihan",
@@ -56,10 +99,9 @@ export default function ApprovalsPage() {
     }
     const count = pendingFarmers.length;
     
-    setFarmers(current => 
-        current.map(f => 
-            f.status === 'pending_approval' ? { ...f, status: 'active' } : f
-        )
+    updateManyFarmerStatuses(
+      pendingFarmers.map((farmer) => farmer.id),
+      'active'
     );
     
     toast({
@@ -68,13 +110,77 @@ export default function ApprovalsPage() {
     });
   };
 
-  const handleImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-        toast({
-            title: "Nagsisimula ang Pag-import...",
-            description: `Ang file na "${e.target.files[0].name}" ay pinoproseso na.`,
-        });
+  const handleImportSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
     }
+
+    try {
+      const text = await file.text();
+      const extension = getFileExtension(file.name);
+      const importedFarmers = extension === 'csv'
+        ? parseFarmerRegistrationsCsv(text)
+        : extension === 'json'
+          ? extractFarmerRegistrationsFromJson(JSON.parse(text))
+          : [];
+
+      if (importedFarmers.length === 0) {
+        throw new Error('Walang valid na farmer registration records sa napiling file. Gumamit ng JSON o CSV export mula sa Lingkod-Ani.');
+      }
+
+      const existingPhones = new Set(farmers.map((farmer) => normalizePhone(farmer.phone)));
+      let importedCount = 0;
+      let skippedCount = 0;
+
+      for (const importedFarmer of importedFarmers) {
+        const normalizedPhone = normalizePhone(importedFarmer.phone);
+
+        if (existingPhones.has(normalizedPhone)) {
+          skippedCount += 1;
+          continue;
+        }
+
+        addPendingFarmer(importedFarmer);
+        existingPhones.add(normalizedPhone);
+        importedCount += 1;
+      }
+
+      toast({
+        title: 'Natapos ang farmer import',
+        description: `${importedCount} bagong pending registrations ang naidagdag.${skippedCount > 0 ? ` ${skippedCount} duplicate records ang nilaktawan.` : ''}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Hindi ma-import ang farmer registrations',
+        description: error instanceof Error ? error.message : 'Hindi mabasa ang import file.',
+        variant: 'destructive',
+      });
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const handleExport = (format: 'csv' | 'json') => {
+    if (format === 'json') {
+      downloadFile(
+        `lingkod-ani-pending-farmers-${new Date().toISOString().slice(0, 10)}.json`,
+        JSON.stringify(filteredFarmers, null, 2),
+        'application/json'
+      );
+    } else {
+      downloadFile(
+        `lingkod-ani-pending-farmers-${new Date().toISOString().slice(0, 10)}.csv`,
+        formatFarmerRegistrationsAsCsv(filteredFarmers),
+        'text/csv;charset=utf-8'
+      );
+    }
+
+    toast({
+      title: 'Na-export ang pending registrations',
+      description: `${filteredFarmers.length} pending farmer records ang naisama sa ${format.toUpperCase()} file.`,
+    });
   };
 
   const filteredFarmers = pendingFarmers.filter(farmer =>
@@ -85,7 +191,7 @@ export default function ApprovalsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
+      <Input type="file" ref={importRef} className="hidden" onChange={handleImportSelect} accept=".json,.csv,application/json,text/csv" />
       <div className="flex items-start justify-between flex-wrap gap-2">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Pag-apruba ng Magsasaka</h1>
@@ -93,6 +199,15 @@ export default function ApprovalsPage() {
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
             <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Mag-import</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline"><Download className="mr-2 h-4 w-4" /> I-export</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')}>Export CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>Export JSON</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
         </div>
       </div>
@@ -132,7 +247,13 @@ export default function ApprovalsPage() {
               <TableBody>
                 {filteredFarmers.length > 0 ? (
                   filteredFarmers.map((farmer) => (
-                    <TableRow key={farmer.id}>
+                    <TableRow
+                      key={farmer.id}
+                      id={`farmer-row-${farmer.id}`}
+                      className={cn(
+                        focusedFarmerId === farmer.id && 'bg-primary/5 outline outline-2 outline-primary/40',
+                      )}
+                    >
                       <TableCell className="font-medium px-2 py-4 md:px-4 break-words">{farmer.name}</TableCell>
                       <TableCell className="break-all px-2 py-4 md:px-4">{farmer.phone}</TableCell>
                       <TableCell className="break-words px-2 py-4 md:px-4">{farmer.sitio}, {farmer.barangay}</TableCell>
@@ -166,5 +287,13 @@ export default function ApprovalsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ApprovalsPage() {
+  return (
+    <Suspense fallback={<div className="flex flex-col gap-6" />}>
+      <ApprovalsPageContent />
+    </Suspense>
   );
 }

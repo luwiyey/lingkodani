@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { responseTimeData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,8 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function ResponseTimeChart() {
-  const [timeframe, setTimeframe] = useState('Lingguhan');
+  const { responseTimeData } = useAnalytics();
+  const { timeframe, setTimeframe } = useReportsTimeframe();
 
   const averageTime = responseTimeData.find(d => d.name === 'Average')?.time ?? 0;
 
@@ -124,3 +125,7 @@ export function ResponseTimeChart() {
     </Dialog>
   )
 }
+
+
+
+

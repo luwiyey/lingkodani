@@ -1,141 +1,231 @@
-
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Leaf } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ArrowRight, BookOpen, Check, MessageSquare, ShieldAlert } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { HoverTooltip } from "@/components/ui/hover-tooltip";
-import { useData } from "@/context/data-context";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 
+const featureRows = [
+  {
+    icon: MessageSquare,
+    title: "Pinag-isang Komunikasyon",
+    description:
+      "Pamahalaan ang lahat ng SMS mula sa mga magsasaka sa isang live feed, na may pagsusuri ng AI para sa layunin, tono, at pagka-apurahan.",
+    points: [
+      "Isang feed para sa lahat ng papasok na mensahe",
+      "Mas mabilis na triage gamit ang AI intent at urgency detection",
+      "Mas malinaw na coordination para sa field response",
+    ],
+  },
+  {
+    icon: BookOpen,
+    title: "Base ng Kaalaman na may AI",
+    description:
+      "Maghanap ng mga sagot sa kumplikadong tanong gamit ang AI na natututo mula sa lokal na gabay, ulat, at barangay knowledge files.",
+    points: [
+      "Mas mabilis na retrieval ng advisories",
+      "Mas kaunting manual lookup sa documentation",
+    ],
+  },
+  {
+    icon: ShieldAlert,
+    title: "Pamamahala ng Alerto",
+    description:
+      "Awtomatikong tukuyin ang mga panganib tulad ng peste at baha, at magpadala ng mga alerto sa komunidad sa ilang click lang.",
+    points: [
+      "Mas maagang pag-detect ng risk signals",
+      "Mas mabilis na broadcast sa komunidad",
+    ],
+  },
+];
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { users } = useData();
-  const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
-  const [showNotRegisteredDialog, setShowNotRegisteredDialog] = useState(false);
-
-  useEffect(() => {
-    localStorage.clear();
-  }, []);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const emailInput = form.elements.namedItem('email') as HTMLInputElement;
-    const email = emailInput.value;
-
-    const user = users.find(u => u.email === email);
-
-    if (user) {
-      router.push(`/verify?email=${encodeURIComponent(email)}`);
-    } else {
-      setShowNotRegisteredDialog(true);
-    }
-  };
-
+export default function LandingPage() {
   return (
-    <div className="w-full h-screen relative flex flex-col">
-      <div className="absolute inset-0">
-        {loginBg && (
-           <Image
-              src={loginBg.imageUrl}
-              alt={loginBg.description}
+    <div className="flex min-h-screen flex-col bg-background">
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur-xl">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/logo.png" width={34} height={34} alt="Lingkod-Ani Logo" className="h-[34px] w-[34px]" />
+            <div className="flex flex-col">
+              <span className="text-lg font-semibold tracking-tight text-foreground">Lingkod-Ani</span>
+              <span className="text-[11px] text-muted-foreground">Kaagapay ng Magsasaka</span>
+            </div>
+          </Link>
+          <Link href="/login" className={buttonVariants()}>
+            Mag Log-in
+          </Link>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <section className="relative w-full py-24 md:py-32 lg:py-36">
+          <div className="absolute inset-0">
+            <Image
+              src="/hero-farm.png"
+              alt="Rice field landscape for the Lingkod-Ani landing page"
               fill
               className="object-cover"
-              data-ai-hint={loginBg.imageHint}
-           />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-primary/40" />
-      </div>
-      <div className="relative z-10 flex flex-1 items-center justify-center h-full p-4">
-        <Card className="w-full max-w-md mx-auto shadow-2xl">
-          <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-2 mb-2">
-                <Leaf className="w-8 h-8 text-primary" />
-                <h1 className="text-3xl font-bold text-primary">Lingkod-Ani</h1>
+              priority
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.68),rgba(15,23,42,0.52),rgba(47,111,62,0.24))]" />
+          </div>
+          <div className="container relative mx-auto px-4 text-center text-primary-foreground">
+            <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
+              Paghubog sa kinabukasan ng pagsasaka gamit ang mas malinaw na barangay response.
+            </h1>
+            <p className="mx-auto mt-6 max-w-3xl text-lg text-white/88 md:text-xl">
+              Ang Lingkod-Ani ay isang plataporma na pinapagana ng AI para sa mga Agricultural Extension Workers, na nagbibigay ng real-time na komunikasyon, barangay action tracking, at mas maayos na serbisyo para sa mga Pilipinong magsasaka.
+            </p>
+            <div className="mt-10 flex items-center justify-center">
+              <Button size="lg" asChild>
+                <Link href="/start">
+                  Magsimula Na
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
             </div>
-            <CardTitle className="text-2xl">Pag-login ng Administrator</CardTitle>
-            <CardDescription>
-              Ilagay ang iyong mga kredensyal upang ma-access ang dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <HoverTooltip text="Ilagay ang email address na nakarehistro sa iyong account.">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="admin@example.com"
-                    defaultValue="brgy-admin@lingkodani.gov.ph"
-                    required
-                  />
-                </div>
-              </HoverTooltip>
-              <HoverTooltip text="Ilagay ang iyong password.">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" defaultValue="password" required />
-                </div>
-              </HoverTooltip>
-               <HoverTooltip text="I-click upang mag-sign in sa iyong account.">
-                <Button type="submit" className="w-full mt-2">
-                  Mag-sign In
-                </Button>
-              </HoverTooltip>
-            </form>
-            <div className="mt-4 text-center text-sm">
-                <HoverTooltip text="Simulan ang proseso ng pag-reset ng iyong password.">
-                  <Link href="/reset-password" className="underline text-muted-foreground">
-                    Nakalimutan ang iyong password?
-                  </Link>
-                </HoverTooltip>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-       <footer className="relative z-10 p-4 text-center text-xs text-white">
-          <Link href="/terms-of-service" className="hover:underline">Terms of Service</Link> | <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
-        </footer>
+          </div>
+        </section>
 
-        <AlertDialog open={showNotRegisteredDialog} onOpenChange={setShowNotRegisteredDialog}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Hindi Nakarehistro</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa developer upang ma-access ang Lingkod-Ani.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setShowNotRegisteredDialog(false)}>Naiintindihan</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            <div className="mx-auto max-w-5xl space-y-4">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
+                Mga Pangunahing Tampok
+              </p>
+              <h2 className="max-w-4xl text-3xl font-semibold tracking-tight md:text-5xl">
+                Mga tool na nakaayos para sa aktwal na daloy ng trabaho sa bukid at opisina
+              </h2>
+              <p className="max-w-3xl text-lg text-muted-foreground md:text-[1.35rem]">
+                Sa halip na hiwa-hiwalay na module, ang Lingkod-Ani ay dinisenyo bilang iisang working surface para sa komunikasyon, kaalaman, alerts, at follow-through sa farmer support.
+              </p>
+            </div>
+
+            <div className="mx-auto mt-14 max-w-5xl">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
+                {(() => {
+                  const primaryFeature = featureRows[0];
+                  const Icon = primaryFeature.icon;
+
+                  return (
+                    <article className="rounded-[calc(var(--radius)+10px)] border border-border/90 bg-card p-8 shadow-sm transition-all duration-150 ease-out hover:-translate-y-px hover:border-primary/15 md:p-10">
+                      <div className="grid gap-10 2xl:grid-cols-[minmax(0,1fr)_320px] 2xl:items-start">
+                        <div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-[calc(var(--radius)+6px)] bg-primary text-primary-foreground shadow-sm">
+                              <Icon className="h-8 w-8" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-primary/80">Pangunahing kakayahan</p>
+                              <h3 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-4xl">
+                                {primaryFeature.title}
+                              </h3>
+                            </div>
+                          </div>
+                          <p className="mt-6 max-w-3xl text-lg text-muted-foreground">
+                            {primaryFeature.description}
+                          </p>
+                          <div className="mt-8 space-y-4">
+                            {primaryFeature.points.map((point) => (
+                              <div key={point} className="flex items-start gap-3">
+                                <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                  <Check className="h-4 w-4" />
+                                </div>
+                                <p className="text-sm leading-6 text-foreground/90 md:text-base">{point}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="rounded-[calc(var(--radius)+8px)] border border-border/80 bg-muted/35 p-5">
+                          <div className="flex items-center justify-between border-b border-border/70 pb-4">
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">Live SMS Feed</p>
+                              <p className="text-xs text-muted-foreground">Barangay field support preview</p>
+                            </div>
+                            <div className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
+                              3 active
+                            </div>
+                          </div>
+                          <div className="mt-4 space-y-3">
+                            <div className="rounded-[calc(var(--radius)+6px)] border border-border/80 bg-card p-4 shadow-sm">
+                              <p className="text-xs font-medium text-muted-foreground">8:12 AM - Magsasaka</p>
+                              <p className="mt-2 text-sm leading-6 text-foreground">
+                                "May dilaw na batik ang palay sa timog na bahagi ng bukid."
+                              </p>
+                            </div>
+                            <div className="rounded-[calc(var(--radius)+6px)] border border-primary/15 bg-primary/5 p-4">
+                              <p className="text-xs font-medium text-primary">AI triage</p>
+                              <p className="mt-2 text-sm leading-6 text-foreground">
+                                Posibleng disease issue. Mataas ang urgency. I-route sa crop protection advisory.
+                              </p>
+                            </div>
+                            <div className="rounded-[calc(var(--radius)+6px)] border border-border/80 bg-card p-4 shadow-sm">
+                              <p className="text-xs font-medium text-muted-foreground">8:15 AM - Draft reply</p>
+                              <p className="mt-2 text-sm leading-6 text-foreground">
+                                Magpadala ng litrato at lokasyon para makapagbigay ng agarang rekomendasyon.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })()}
+
+                <div className="grid gap-6">
+                  {featureRows.slice(1).map((feature) => {
+                    const Icon = feature.icon;
+
+                    return (
+                      <article
+                        key={feature.title}
+                        className="rounded-[calc(var(--radius)+10px)] border border-border/90 bg-card p-7 shadow-sm transition-all duration-150 ease-out hover:-translate-y-px hover:border-primary/15"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-[calc(var(--radius)+6px)] bg-muted text-primary shadow-sm">
+                            <Icon className="h-7 w-7" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-primary/80">
+                              {feature.title === "Base ng Kaalaman na may AI" ? "AI Knowledge Base" : "Alert Management"}
+                            </p>
+                            <h3 className="text-2xl font-semibold tracking-tight">{feature.title}</h3>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-base leading-7 text-muted-foreground">{feature.description}</p>
+                        <div className="mt-6 space-y-3">
+                          {feature.points.map((point) => (
+                            <div key={point} className="flex items-start gap-3">
+                              <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <Check className="h-4 w-4" />
+                              </div>
+                              <p className="text-sm leading-6 text-foreground/90">{point}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground md:flex-row">
+          <p>&copy; {new Date().getFullYear()} Lingkod-Ani. All rights reserved.</p>
+          <div className="flex gap-4">
+            <Link href="/terms-of-service" className="hover:underline">
+              Terms of Service
+            </Link>
+            <Link href="/privacy-policy" className="hover:underline">
+              Privacy Policy
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

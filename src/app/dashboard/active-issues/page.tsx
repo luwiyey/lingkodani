@@ -2,15 +2,14 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { alerts } from '@/lib/data';
-import { ShieldAlert, Droplets, Wind, Sun, User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, CloudCog, Tractor, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, Droplets, Wind, User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, CloudCog, Tractor, ArrowLeft } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import type { SmsMessage, SmsIntent, Resource, Farmer } from '@/lib/types';
 import * as React from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +34,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useData } from "@/context/data-context";
+import { useAnalytics, type RiskAlert } from '@/hooks/use-analytics';
+import { cn } from '@/lib/utils';
+
+const alertIconMap = {
+    flood: Wind,
+    pest: ShieldAlert,
+    inventory: Droplets,
+} as const;
 
 const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     REGISTER: { label: 'Pagpaparehistro', icon: User },
@@ -47,6 +54,8 @@ const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     EMERGENCY: { label: 'Emergency', icon: ShieldAlert },
     UNKNOWN: { label: 'Hindi Kilala', icon: MessageSquare },
 }
+
+const cardActionButtonClassName = 'h-auto min-h-11 whitespace-normal break-words px-3 py-3 text-center leading-snug';
 
 function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessage, onActionClick: (type: DialogState['type'], message: SmsMessage) => void, farmers: Farmer[] }) {
     const [isClient, setIsClient] = React.useState(false);
@@ -108,15 +117,15 @@ function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessa
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid gap-2 sm:grid-cols-2">
                         <HoverTooltip text="Suriin at i-edit ang tugon ng AI bago ipadala.">
-                            <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className="bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className={`bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary ${cardActionButtonClassName}`}>
                                 <MessageSquare className="mr-2 h-4 w-4" />
                                 Aprubahan
                             </Button>
                         </HoverTooltip>
                         <HoverTooltip text="Sumulat ng sarili mong tugon mula sa simula.">
-                            <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)} className={`bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
                                 <Send className="mr-2 h-4 w-4" />
                                 Manwal
                             </Button>
@@ -124,7 +133,7 @@ function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessa
                     </div>
                     {message.parsedIntent === 'REQUEST' && (
                          <HoverTooltip text="Tingnan kung may magagamit na kagamitan sa imbentaryo.">
-                            <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80 w-full">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className={`w-full bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
                                 <Wrench className="mr-2 h-4 w-4" />
                                 Maghanap ng Kagamitan
                             </Button>
@@ -141,17 +150,21 @@ type DialogState = {
   message: SmsMessage | null;
 }
 
-export default function ActiveIssuesPage() {
-    const { smsMessages, farmers, resources } = useData();
+function ActiveIssuesPageContent() {
+    const { smsMessages, farmers, resources, updateSmsMessage } = useData();
+    const { riskAlerts } = useAnalytics();
     const highUrgencySms = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval');
-    const criticalAlerts = alerts.filter(a => a.severity === 'Kritikal');
+    const criticalAlerts = riskAlerts.filter(a => a.severity === 'Kritikal');
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [editableResponse, setEditableResponse] = React.useState('');
     const { toast } = useToast();
     
-    const [confirmingAlert, setConfirmingAlert] = React.useState<(typeof alerts)[0] | null>(null);
+    const [confirmingAlert, setConfirmingAlert] = React.useState<RiskAlert | null>(null);
+    const focusedAlertId = searchParams.get('alert');
+    const focusedSmsId = searchParams.get('sms');
 
     const handleSendNotification = () => {
         if (!confirmingAlert) return;
@@ -174,13 +187,39 @@ export default function ActiveIssuesPage() {
         setEditableResponse('');
     };
     
-    const handleAction = (action: string) => {
+    const handleAction = (action: string, updates?: Partial<Pick<SmsMessage, 'status' | 'aiAdvice'>>) => {
+        if (dialogState.message && updates) {
+            updateSmsMessage(dialogState.message.id, updates);
+        }
         toast({
             title: "Aksyon naisagawa!",
             description: `Ang mensahe ay matagumpay na ${action}.`,
         });
         closeDialog();
     }
+
+    React.useEffect(() => {
+        const targetId = focusedAlertId
+          ? `alert-card-${focusedAlertId}`
+          : focusedSmsId
+            ? `issue-sms-card-${focusedSmsId}`
+            : null;
+
+        if (!targetId) {
+          return;
+        }
+
+        const target = document.getElementById(targetId);
+
+        if (!target) {
+          return;
+        }
+
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+    }, [criticalAlerts.length, focusedAlertId, focusedSmsId, highUrgencySms.length]);
 
   return (
     <>
@@ -215,9 +254,16 @@ export default function ActiveIssuesPage() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
             {criticalAlerts.map(alert => {
-                const Icon = alert.icon;
+                const Icon = alertIconMap[alert.kind];
                 return (
-                    <Card key={alert.id} className="bg-destructive/5">
+                    <Card
+                        key={alert.id}
+                        id={`alert-card-${alert.id}`}
+                        className={cn(
+                          'bg-destructive/5',
+                          focusedAlertId === alert.id && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg',
+                        )}
+                    >
                         <CardHeader className="flex-row items-start gap-4 space-y-0">
                             <div className="p-2 bg-destructive/10 rounded-md">
                                 <Icon className="w-5 h-5 text-destructive"/>
@@ -247,7 +293,15 @@ export default function ActiveIssuesPage() {
         <h2 className="text-xl font-semibold tracking-tight mb-4">Mga SMS na may Mataas na Urgency</h2>
          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {highUrgencySms.map(message => (
-              <SmsMessageCard key={message.id} message={message} onActionClick={openDialog} farmers={farmers} />
+              <div
+                key={message.id}
+                id={`issue-sms-card-${message.id}`}
+                className={cn(
+                  focusedSmsId === message.id && 'rounded-xl ring-2 ring-primary ring-offset-2 ring-offset-background',
+                )}
+              >
+                <SmsMessageCard message={message} onActionClick={openDialog} farmers={farmers} />
+              </div>
           ))}
            {highUrgencySms.length === 0 && (
                  <Card className="md:col-span-2 xl:col-span-3">
@@ -296,7 +350,7 @@ export default function ActiveIssuesPage() {
                 </DialogClose>
             </HoverTooltip>
             <HoverTooltip text="I-save ang iyong mga pag-edit at ipadala ang tugon sa magsasaka.">
-                <Button onClick={() => handleAction('na-edit at naipadala')}>I-save at Ipadala</Button>
+                <Button onClick={() => handleAction('na-edit at naipadala', { status: 'approved', aiAdvice: editableResponse })}>I-save at Ipadala</Button>
             </HoverTooltip>
           </DialogFooter>
         </DialogContent>
@@ -320,7 +374,7 @@ export default function ActiveIssuesPage() {
                 </DialogClose>
             </HoverTooltip>
              <HoverTooltip text="Ipadala ang iyong isinulat na mensahe sa magsasaka.">
-                <Button onClick={() => handleAction('naipadala')}>Ipadala ang Mensahe</Button>
+                <Button onClick={() => handleAction('naipadala', { status: 'replied' })}>Ipadala ang Mensahe</Button>
             </HoverTooltip>
           </DialogFooter>
         </DialogContent>
@@ -343,7 +397,7 @@ export default function ActiveIssuesPage() {
                             <p className="text-sm text-muted-foreground">{tool.stock} yunit ang magagamit</p>
                         </div>
                         <HoverTooltip text={`Ipadala ang isang SMS na nag-aalok ng ${tool.name} sa magsasaka.`}>
-                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`)}>Mag-alok</Button>
+                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`, { status: 'replied' })}>Mag-alok</Button>
                         </HoverTooltip>
                     </div>
                 ))}
@@ -359,5 +413,13 @@ export default function ActiveIssuesPage() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+export default function ActiveIssuesPage() {
+  return (
+    <React.Suspense fallback={<div className="flex flex-col gap-6" />}>
+      <ActiveIssuesPageContent />
+    </React.Suspense>
   );
 }

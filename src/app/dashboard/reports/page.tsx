@@ -1,6 +1,5 @@
 
 'use client';
-import { useState } from 'react';
 import { Bot, Calendar as CalendarIcon, Download, ArrowDownToLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalytics } from '@/hooks/use-analytics';
+import { ReportsTimeframeProvider, useReportsTimeframe } from '@/context/reports-timeframe-context';
 
 // Chart Imports
 import { IssueTrendsChart } from '@/components/reports/issue-trends-chart';
@@ -40,14 +41,67 @@ import { MessageToneChart } from '@/components/reports/message-tone-chart';
 import { ResponseTimeChart } from '@/components/reports/response-time-chart';
 
 
-export default function ReportsPage() {
-    const [timeframe, setTimeframe] = useState('Lingguhan');
+function ReportsPageContent() {
+    const { timeframe, setTimeframe } = useReportsTimeframe();
     const { toast } = useToast();
+    const {
+      topKeywordsData,
+      geographicHotspotData,
+      riskAlerts,
+      liveContextUpdatedAt,
+      highRiskCount,
+      completedFieldVisits,
+      scheduledFieldVisits,
+      completedAssistance,
+      openAssistance,
+      totalAlertBroadcasts,
+      broadcastRecipients,
+      failedBroadcastRecipients,
+      trackedMarketPrices,
+      stalePriceCount,
+    } = useAnalytics();
+    const topKeyword = topKeywordsData[0];
+    const topHotspot = geographicHotspotData[0];
+    const liveSyncLabel = `${liveContextUpdatedAt.slice(0, 19).replace('T', ' ')} UTC`;
 
     const handleExportSummary = () => {
+        const summaryLines = [
+          `Lingkod-Ani Report Summary`,
+          `Timeframe: ${timeframe}`,
+          `Live Context Updated At: ${liveContextUpdatedAt}`,
+          ``,
+          `High-priority SMS: ${highRiskCount}`,
+          `Risk alerts: ${riskAlerts.length}`,
+          `Alert broadcasts sent: ${totalAlertBroadcasts}`,
+          `Broadcast recipients reached: ${broadcastRecipients}`,
+          `Broadcast failures: ${failedBroadcastRecipients}`,
+          `Open assistance records: ${openAssistance}`,
+          `Completed assistance records: ${completedAssistance}`,
+          `Scheduled field visits: ${scheduledFieldVisits}`,
+          `Completed field visits: ${completedFieldVisits}`,
+          `Tracked market prices: ${trackedMarketPrices}`,
+          `Stale market prices: ${stalePriceCount}`,
+          `Top keyword: ${topKeyword?.word ?? 'wala'} (${topKeyword?.count ?? 0})`,
+          `Top hotspot: ${topHotspot?.zone ?? 'wala'} (${topHotspot?.issues ?? 0} ulat)`,
+          ``,
+          `Recommendations:`,
+          `- I-prioritize ang hotspot zone para sa field action.`,
+          `- Maghanda ng advisory content para sa top keyword concern.`,
+        ].join('\n');
+
+        const blob = new Blob([summaryLines], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `lingkod-ani-report-summary-${timeframe.toLowerCase().replace(/\s+/g, '-')}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
         toast({
-            title: "Inihahanda ang Iyong Ulat...",
-            description: `Ang buod ng AI para sa "${timeframe}" ay ini-export bilang PDF.`,
+            title: "Na-export ang ulat",
+            description: `Na-download ang buod para sa "${timeframe}" bilang text file.`,
         });
     };
 
@@ -65,6 +119,7 @@ export default function ReportsPage() {
             </HelpDialog>
           </div>
           <p className="text-muted-foreground">I-visualize ang mga trend, suriin ang data, at makakuha ng mga insight para sa paggawa ng desisyon.</p>
+          <p className="text-xs text-muted-foreground">Live context sync: {liveSyncLabel}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <HoverTooltip text="I-download ang buod ng ulat sa AI bilang PDF.">
@@ -87,7 +142,7 @@ export default function ReportsPage() {
                                 <p>Halimbawa, kung tumaas ang mga ulat ng peste at sabay na bumaba ang paggamit ng isang partikular na payo, maaaring i-highlight ito ng AI at magmungkahi ng posibleng aksyon. Ito ay idinisenyo upang makatipid ka ng oras sa pagsusuri ng data at mabilis na matukoy ang mga mahahalagang isyu.</p>
                             </HelpDialog>
                         </div>
-                        <CardDescription>Mga awtomatikong nabuong insight. Huling update: 7:00 PM.</CardDescription>
+                        <CardDescription>Mga awtomatikong nabuong insight mula sa live context. Huling sync: {liveSyncLabel}.</CardDescription>
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -110,12 +165,56 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-3 text-sm text-muted-foreground">
-                    <p>Ngayong linggo, nakita ang <strong>25% pagtaas</strong> sa mga ulat na may kaugnayan sa <strong className="text-foreground">mga peste</strong>, partikular ang mga stem borer sa tubo at leafminer sa kamatis.</p>
-                    <p>Ang mga alalahanin sa patubig ay nanatiling matatag, habang bumaba ang mga kahilingan para sa payo pagkatapos ng ani para sa palay, na nagpapahiwatig ng pagtatapos ng panahon ng pag-aani para sa marami. Ang Zone 3 ay nagpapakita ng pinakamataas na bilang ng mga ulat ng sakit.</p>
-                    <p><strong>Rekomendasyon:</strong> Isaalang-alang ang paglabas ng isang artikulo sa knowledge base tungkol sa organikong pagkontrol ng peste para sa mga karaniwang gulay at mag-iskedyul ng pagbisita ng AEW sa Zone 3.</p>
+                    <p>Batay sa live na data, may <strong>{highRiskCount}</strong> na high-priority SMS sa kasalukuyang dataset at <strong>{riskAlerts.length}</strong> aktibong alerto sa risk center.</p>
+                    <p>Ang pinakakaraniwang keyword ay <strong className="text-foreground">{topKeyword?.word ?? 'wala'}</strong> ({topKeyword?.count ?? 0} banggit), habang ang hotspot ngayon ay <strong>{topHotspot?.zone ?? 'wala'}</strong> na may {topHotspot?.issues ?? 0} ulat.</p>
+                    <p>May <strong>{openAssistance}</strong> open assistance records at <strong>{scheduledFieldVisits}</strong> scheduled field visits sa parehong timeframe, kaya mas malinaw na ngayon ang intervention load sa barangay.</p>
+                    <p><strong>Rekomendasyon:</strong> I-prioritize ang field action at advisory broadcast sa hotspot zone, i-monitor ang open assistance queue, at i-refresh ang stale market prices bago magbigay ng economic advice sa magsasaka.</p>
                 </div>
             </CardContent>
         </Card>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Interventions Completed</CardTitle>
+                    <CardDescription>Pinagsamang tulong at field visits na natapos.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{completedAssistance + completedFieldVisits}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{completedAssistance} assistance, {completedFieldVisits} field visits</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Open Follow-through</CardTitle>
+                    <CardDescription>Mga tulong at visit na hindi pa sarado.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{openAssistance + scheduledFieldVisits}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{openAssistance} assistance, {scheduledFieldVisits} visits</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Alert Reach</CardTitle>
+                    <CardDescription>Ilang recipients ang naabot ng broadcasts.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{broadcastRecipients}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{totalAlertBroadcasts} total broadcasts, {failedBroadcastRecipients} failures</p>
+                </CardContent>
+            </Card>
+            <Card className={stalePriceCount > 0 ? 'border-destructive/40' : ''}>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Price Watch Health</CardTitle>
+                    <CardDescription>Freshness ng local market references.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{trackedMarketPrices}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{stalePriceCount} stale entries na kailangang i-refresh</p>
+                </CardContent>
+            </Card>
+        </div>
 
         <Tabs defaultValue="sms" className="w-full">
             <TabsList className="grid w-full grid-cols-3 rounded-none border-b bg-transparent p-0">
@@ -165,5 +264,12 @@ export default function ReportsPage() {
         </Tabs>
     </div>
   );
+}
 
-    
+export default function ReportsPage() {
+    return (
+      <ReportsTimeframeProvider>
+        <ReportsPageContent />
+      </ReportsTimeframeProvider>
+    );
+}

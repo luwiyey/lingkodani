@@ -10,8 +10,6 @@ import { Bot, Search, Volume2, FileText, ArrowUpRight, PlusCircle } from 'lucide
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { suggestKnowledgeBaseArticles } from '@/ai/flows/suggest-knowledge-base-articles';
-import { searchKnowledgeBase } from '@/ai/flows/search-knowledge-base';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
+import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
+import { AiStatusBanner } from '@/components/shared/ai-status-banner';
+import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 
 type SuggestedArticle = {
     title: string;
@@ -26,8 +27,94 @@ type SuggestedArticle = {
     keywords: string[];
 }
 
+function tokenize(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((token) => token.length >= 3);
+}
+
+function searchArticlesLocally(query: string, articles: KnowledgeArticle[]) {
+  const queryTokens = tokenize(query);
+
+  const matches = articles
+    .map((article) => {
+      const haystack = tokenize([
+        article.title,
+        article.summary,
+        article.content ?? '',
+        article.keywords.join(' '),
+        article.type,
+      ].join(' '));
+
+      const score = queryTokens.reduce((total, token) => total + (haystack.includes(token) ? 1 : 0), 0);
+
+      return { article, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  const relevantArticles = matches.slice(0, 6).map((entry) => entry.article);
+  const topArticle = relevantArticles[0];
+
+  return {
+    directAnswer: topArticle
+      ? `Batay sa lokal na knowledge base, pinakamalapit na gabay ang "${topArticle.title}". ${topArticle.summary} Buksan ang kaugnay na artikulo sa ibaba para sa mas detalyadong paliwanag.`
+      : `Wala pang eksaktong tugma sa lokal na knowledge base para sa "${query}". Subukang gumamit ng mas tiyak na keyword gaya ng pananim, peste, sintomas, o uri ng tulong na kailangan.`,
+    articles: relevantArticles,
+  };
+}
+
+function buildSuggestedArticlesLocally(messages: string[]): SuggestedArticle[] {
+  const combined = messages.join(' ').toLowerCase();
+  const suggestions: SuggestedArticle[] = [];
+
+  if (combined.includes('peste') || combined.includes('leafminer') || combined.includes('daga')) {
+    suggestions.push({
+      title: 'Pangunang Gabay sa Karaniwang Peste sa Barangay',
+      summary: 'Mga unang hakbang sa pag-report, pag-dokumento, at pansamantalang pagsugpo sa mga karaniwang pesteng naiuulat ng mga magsasaka.',
+      keywords: ['peste', 'leafminer', 'daga', 'rice bugs'],
+    });
+  }
+
+  if (combined.includes('bagyo') || combined.includes('baha') || combined.includes('emergency')) {
+    suggestions.push({
+      title: 'Gabay sa Bagyo, Baha, at Emergency Reporting',
+      summary: 'Checklist para sa mabilis na pagreport ng pinsala at mga pangunahing susunod na hakbang ng barangay at magsasaka.',
+      keywords: ['bagyo', 'baha', 'emergency', 'pinsala'],
+    });
+  }
+
+  if (combined.includes('ani') || combined.includes('harvest') || combined.includes('presyo')) {
+    suggestions.push({
+      title: 'Post-Harvest at Price Watch Basics',
+      summary: 'Mga paunang payo sa post-harvest handling, price checking, at paghahanda bago ibenta ang ani.',
+      keywords: ['ani', 'harvest', 'presyo', 'price watch'],
+    });
+  }
+
+  if (suggestions.length === 0) {
+    suggestions.push(
+      {
+        title: 'Mga Madalas Itanong ng Magsasaka sa Barangay',
+        summary: 'Panimulang gabay para sa karaniwang concern sa peste, panahon, inputs, at barangay support.',
+        keywords: ['faq', 'magsasaka', 'barangay'],
+      },
+      {
+        title: 'Paano Mag-report ng Concern sa Lingkod-Ani',
+        summary: 'Maikling paliwanag kung paano magsumite ng malinaw na SMS report at anong detalye ang mahalaga.',
+        keywords: ['sms', 'ulat', 'report', 'lingkod-ani'],
+      },
+    );
+  }
+
+  return suggestions.slice(0, 4);
+}
+
 export default function KnowledgeBasePage() {
   const { knowledgeArticles, addKnowledgeArticle, smsMessages } = useData();
+  const { capabilities, capabilitiesLoading } = useRuntimeCapabilities();
   const [searchQuery, setSearchQuery] = useState('');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ directAnswer: string; articles: KnowledgeArticle[] } | null>(null);
@@ -36,10 +123,15 @@ export default function KnowledgeBasePage() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
+  const [isSavingEntry, setIsSavingEntry] = useState(false);
   
   const { toast } = useToast();
+  const audioUploadLocked = !capabilities.knowledgeAudioUploadConfigured;
+  const audioUploadLockMessage =
+    capabilities.reasons.knowledgeAudio ??
+    'Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.';
 
-  const handleAddNewEntry = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddNewEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const title = formData.get('title') as string;
@@ -47,16 +139,46 @@ export default function KnowledgeBasePage() {
     const keywords = (formData.get('keywords') as string).split(',').map(kw => kw.trim()).filter(Boolean);
     const type = formData.get('type') as KnowledgeArticle['type'];
     const content = type === 'article' ? formData.get('content') as string : '';
+    const audioFile = formData.get('audioFile');
+
+    if (type === 'audio' && audioUploadLocked) {
+      toast({
+        title: "Audio upload locked",
+        description: audioUploadLockMessage,
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!title || !summary || !keywords.length) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
     }
-    
-    addKnowledgeArticle({ title, summary, keywords, type, content });
 
-    setNewEntryDialogOpen(false);
-    toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
+    if (type === 'audio' && (!(audioFile instanceof File) || audioFile.size === 0)) {
+      toast({ title: "Kulang ang Audio File", description: "Pumili ng audio file para sa knowledge audio entry.", variant: "destructive" });
+      return;
+    }
+
+    setIsSavingEntry(true);
+
+    try {
+      const audioUrl = type === 'audio' && audioFile instanceof File
+        ? await uploadKnowledgeAudioFile(audioFile, title)
+        : undefined;
+
+      addKnowledgeArticle({ title, summary, keywords, type, content, audioUrl });
+      setNewEntryDialogOpen(false);
+      toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
+    } catch (error) {
+      toast({
+        title: "Hindi ma-save ang knowledge entry",
+        description: error instanceof Error ? error.message : "Nagkaroon ng problema sa pag-upload ng knowledge file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingEntry(false);
+    }
   };
 
   async function fetchSuggestions() {
@@ -64,8 +186,7 @@ export default function KnowledgeBasePage() {
     setSuggestedArticles([]);
     try {
         const smsReports = smsMessages.map(m => m.message).slice(0, 10);
-        const result = await suggestKnowledgeBaseArticles({ smsReports, farmerInquiries: [] });
-        setSuggestedArticles(result.suggestedArticles);
+        setSuggestedArticles(buildSuggestedArticlesLocally(smsReports));
     } catch (error) {
         console.error("Failed to fetch AI suggestions:", error);
         toast({
@@ -86,17 +207,8 @@ export default function KnowledgeBasePage() {
     setSearchResults(null);
 
     try {
-        const articlesForSearch = knowledgeArticles.map(({ id, title, summary, keywords, type }) => ({ id, title, summary, keywords, type: type === 'audio' ? 'audio' : 'article' as 'article' | 'audio' }));
-        const response = await searchKnowledgeBase({ query: searchQuery, articles: articlesForSearch });
-
-        const relevantArticles = knowledgeArticles.filter(article => 
-            response.relevantArticleIds.includes(article.id)
-        );
-
-        setSearchResults({
-            directAnswer: response.directAnswer,
-            articles: relevantArticles,
-        });
+        const response = searchArticlesLocally(searchQuery, knowledgeArticles);
+        setSearchResults(response);
 
     } catch (error) {
         console.error("Search failed:", error);
@@ -131,14 +243,25 @@ export default function KnowledgeBasePage() {
             <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
             <HelpDialog title="Base ng Kaalaman" tooltipText="Maghanap ng impormasyon at pamahalaan ang mga artikulo.">
               <p>Ito ang iyong sentral na hub para sa lahat ng impormasyon sa pagsasaka. Dito mo maaaring hanapin ang mga sagot sa mga tanong ng magsasaka, pamahalaan ang mga umiiral na artikulo, at magdagdag ng mga bago.</p>
-              <p><strong>Paghahanap gamit ang AI (itaas na search bar):</strong> Gamitin ito para sa mga kumplikadong tanong sa natural na wika (Tagalog/English), hal. "Paano ko masusugpo ang mga peste sa aking taniman ng kamatis?". Ang AI ay magbibigay ng direktang sagot at magmumungkahi ng mga kaugnay na artikulo mula sa iyong knowledge base at sa web.</p>
-              <p><strong>Mga Mungkahing Artikulo ng AI:</strong> Sinusuri ng AI ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring kailanganin ng komunidad.</p>
+              <p><strong>Search assistant (itaas na search bar):</strong> Sa preview, gumagamit muna ito ng lokal na article matching at guided fallback answers. Kapag naka-enable na ang live AI service, dito puwedeng pumasok ang mas advanced na semantic search at richer suggestions.</p>
+              <p><strong>Mga Mungkahing Artikulo:</strong> Sa kasalukuyang preview, ang mga suggestion ay binubuo mula sa mga recent SMS pattern at local heuristics para manatiling usable kahit wala pang live AI dependency.</p>
               <p><strong>Mga Bagong Dagdag na Artikulo:</strong> Nagpapakita ito ng mga pinakabagong artikulo. Mayroon itong sariling simpleng search bar para mabilis na mahanap ang mga artikulo ayon sa pamagat o keyword. Pindutin ang "Tingnan Lahat" para makita ang kumpletong listahan sa isang hiwalay na pahina.</p>
             </HelpDialog>
           </div>
           <p className="text-muted-foreground">Maghanap ng impormasyon at pamahalaan ang mga artikulo at audio.</p>
         </div>
       </div>
+
+      <AiStatusBanner
+        title="Preview search mode"
+        description="Sa local preview, ang search sa Knowledge Base ay gumagamit muna ng local article matching at safe fallback suggestions. Hindi pa ito full live AI semantic search, kaya malinaw muna ang sagot kaysa misleading na magkunwaring fully AI-powered."
+      />
+      {audioUploadLocked ? (
+        <AiStatusBanner
+          title="Audio upload locked"
+          description={audioUploadLockMessage}
+        />
+      ) : null}
       
       <form onSubmit={handleSearch}>
         <HoverTooltip text="Gamitin ito para sa mga tanong na parang nakikipag-usap sa isang eksperto. Hal. 'Paano ko masusugpo ang mga peste sa aking taniman ng kamatis?'">
@@ -177,10 +300,10 @@ export default function KnowledgeBasePage() {
             <Card className="bg-primary/5 border-primary/20">
                 <CardHeader>
                     <div className="flex items-center">
-                      <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng AI</CardTitle>
-                      <HelpDialog title="Sagot ng AI" tooltipText="Unawain kung paano binuo ng AI ang sagot.">
-                        <p>Ito ang sagot na binuo ng artificial intelligence batay sa iyong tanong. Sinusuri nito ang parehong internal na knowledge base (ang iyong mga artikulo) at mga resulta mula sa isang web search upang magbigay ng pinaka-komprehensibo at napapanahong sagot.</p>
-                        <p>Ang layunin nito ay magbigay ng isang mabilis at direktang sagot na maaari mong ibahagi kaagad sa magsasaka.</p>
+                      <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng Search Assistant</CardTitle>
+                      <HelpDialog title="Sagot ng Search Assistant" tooltipText="Unawain kung paano binuo ang sagot.">
+                        <p>Sa preview na ito, ang sagot ay binubuo muna mula sa lokal na knowledge base at keyword-based matching para manatiling matatag kahit wala pang full AI service sa runtime.</p>
+                        <p>Kapag naka-enable na ang live AI service, puwede itong palawakin sa mas advanced na semantic search at richer article suggestions.</p>
                       </HelpDialog>
                     </div>
                 </CardHeader>
@@ -221,9 +344,9 @@ export default function KnowledgeBasePage() {
             <div className="flex items-center justify-between">
                 <div className="flex items-center">
                     <div className="flex items-center">
-                      <CardTitle className="flex items-center gap-2"><Bot className="h-6 w-6" />Mga Mungkahing Artikulo ng AI</CardTitle>
-                      <HelpDialog title="Mga Mungkahing Artikulo ng AI" tooltipText="Tingnan ang mga mungkahi ng AI para sa mga bagong artikulo.">
-                        <p>Sinusuri ng AI ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend at mga karaniwang tanong. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring maging kapaki-pakinabang para sa komunidad.</p>
+                      <CardTitle className="flex items-center gap-2"><Bot className="h-6 w-6" />Mga Mungkahing Artikulo</CardTitle>
+                      <HelpDialog title="Mga Mungkahing Artikulo" tooltipText="Tingnan ang mga mungkahi para sa mga bagong artikulo.">
+                        <p>Sinusuri ng system ang mga kamakailang SMS mula sa mga magsasaka upang matukoy ang mga umuusbong na trend at mga karaniwang tanong. Batay dito, nagmumungkahi ito ng mga paksa para sa mga bagong artikulo na maaaring maging kapaki-pakinabang para sa komunidad.</p>
                         <p>Gamitin ito bilang inspirasyon para sa mga susunod na artikulo na iyong isusulat. Ito ay isang proaktibong paraan upang matugunan ang mga pangangailangan ng mga magsasaka bago pa man sila magtanong.</p>
                       </HelpDialog>
                     </div>
@@ -236,7 +359,7 @@ export default function KnowledgeBasePage() {
                 </HoverTooltip>
             </div>
             <CardDescription>
-                Pindutin ang button para hilingin sa AI na magmungkahi ng mga paksa para sa bagong artikulo batay sa mga kamakailang SMS.
+                Pindutin ang button para kumuha ng mga suggested topic batay sa mga kamakailang SMS at local knowledge patterns.
             </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 grid-cols-1 lg:grid-cols-2">
@@ -296,7 +419,7 @@ export default function KnowledgeBasePage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="article">Artikulo</SelectItem>
-                                        <SelectItem value="audio">Boses ng Magsasaka (Audio)</SelectItem>
+                                        <SelectItem value="audio" disabled={audioUploadLocked || capabilitiesLoading}>Boses ng Magsasaka (Audio)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -324,7 +447,7 @@ export default function KnowledgeBasePage() {
                                 <HoverTooltip text="Pumili ng audio file (hal. MP3) mula sa iyong computer.">
                                 <div className="space-y-2">
                                     <Label htmlFor="audio-file-main">Mag-upload ng Audio File</Label>
-                                    <Input id="audio-file-main" type="file" accept="audio/*" className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer" />
+                                    <Input id="audio-file-main" name="audioFile" type="file" accept="audio/*" className="h-auto p-0 file:p-2 file:mr-4 file:border-0 file:bg-muted file:rounded-sm cursor-pointer file:cursor-pointer" />
                                 </div>
                                 </HoverTooltip>
                             )}
@@ -340,7 +463,7 @@ export default function KnowledgeBasePage() {
                               <DialogClose asChild><Button type="button" variant="outline">Kanselahin</Button></DialogClose>
                             </HoverTooltip>
                             <HoverTooltip text="I-save ang bagong entry sa knowledge base.">
-                              <Button type="submit">I-save ang Entry</Button>
+                              <Button type="submit" disabled={isSavingEntry || (newEntryType === 'audio' && (audioUploadLocked || capabilitiesLoading))}>{isSavingEntry ? 'Nagse-save...' : 'I-save ang Entry'}</Button>
                             </HoverTooltip>
                         </DialogFooter>
                     </form>

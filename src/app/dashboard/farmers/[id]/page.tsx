@@ -1,13 +1,15 @@
 
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useData } from '@/context/data-context';
-import type { LogbookEntry, Farmer } from '@/lib/types';
+import type { Farmer, FarmerAssistanceRecord, FieldVisitTask, LogbookEntry, OutboundMessage, SmsMessage } from '@/lib/types';
+import { getLogbookEntryIcon } from '@/lib/logbook';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User } from 'lucide-react';
+import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User, MessageSquare, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
@@ -17,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 function TimelineItem({ entry }: { entry: LogbookEntry }) {
   const [isClient, setIsClient] = useState(false);
@@ -25,7 +28,8 @@ function TimelineItem({ entry }: { entry: LogbookEntry }) {
     setIsClient(true);
   }, []);
 
-  const { icon: Icon, title, description, timestamp } = entry;
+  const Icon = entry.icon ?? getLogbookEntryIcon(entry.type);
+  const { title, description, timestamp } = entry;
   return (
     <div className="flex items-start gap-4">
       <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
@@ -44,17 +48,105 @@ function TimelineItem({ entry }: { entry: LogbookEntry }) {
   );
 }
 
+function formatConversationTimestamp(value: string, isClient: boolean) {
+  if (!isClient) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 
 export default function FarmerLogbookPage() {
     const params = useParams();
     const router = useRouter();
     const farmerId = params.id as string;
     
-    const { farmers, setFarmers, logbook, setLogbook } = useData();
+    const {
+      farmers,
+      updateFarmerRecord,
+      logbook,
+      smsMessages,
+      outboundMessages,
+      addLogbookEntry,
+      assistanceRecords,
+      addAssistanceRecord,
+      updateAssistanceRecordStatus,
+      fieldVisitTasks,
+      scheduleFieldVisit,
+      updateFieldVisitTaskStatus,
+    } = useData();
     const farmer = farmers.find(f => f.id === farmerId);
+    const farmerLogbook = logbook.filter((entry) => entry.farmerId === farmerId);
+    const farmerAssistanceRecords = useMemo(
+      () => assistanceRecords
+        .filter((record) => record.farmerId === farmerId)
+        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()),
+      [assistanceRecords, farmerId]
+    );
+    const farmerFieldVisits = useMemo(
+      () => fieldVisitTasks
+        .filter((task) => task.farmerId === farmerId)
+        .sort((left, right) => new Date(left.scheduledFor).getTime() - new Date(right.scheduledFor).getTime()),
+      [farmerId, fieldVisitTasks]
+    );
+    const farmerConversation = useMemo(
+      () => smsMessages
+        .filter((message) => message.farmerId === farmerId)
+        .sort((left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime()),
+      [farmerId, smsMessages]
+    );
+    const outboundBySmsMessageId = useMemo(() => {
+      const grouped = new Map<string, OutboundMessage[]>();
+
+      outboundMessages.forEach((message) => {
+        const existing = grouped.get(message.smsMessageId) ?? [];
+        existing.push(message);
+        grouped.set(message.smsMessageId, existing);
+      });
+
+      grouped.forEach((records, key) => {
+        grouped.set(
+          key,
+          [...records].sort((left, right) => {
+            const leftTime = new Date(left.sentAt ?? left.createdAt).getTime();
+            const rightTime = new Date(right.sentAt ?? right.createdAt).getTime();
+            return leftTime - rightTime;
+          }),
+        );
+      });
+
+      return grouped;
+    }, [outboundMessages]);
     
     const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
     const [newNote, setNewNote] = useState('');
+    const [isAssistanceDialogOpen, setIsAssistanceDialogOpen] = useState(false);
+    const [isVisitDialogOpen, setIsVisitDialogOpen] = useState(false);
+    const [assistanceForm, setAssistanceForm] = useState({
+      type: 'Technical Advice' as FarmerAssistanceRecord['type'],
+      title: '',
+      details: '',
+      quantity: '',
+      nextAction: '',
+    });
+    const [visitForm, setVisitForm] = useState({
+      title: '',
+      purpose: '',
+      scheduledFor: '',
+      priority: 'medium' as FieldVisitTask['priority'],
+      assignedTo: '',
+    });
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
 
@@ -79,7 +171,7 @@ export default function FarmerLogbookPage() {
         
         reader.onloadend = () => {
             const newAvatarUrl = reader.result as string;
-            setFarmers(prev => prev.map(f => f.id === farmer.id ? { ...f, avatarUrl: newAvatarUrl } : f));
+            updateFarmerRecord(farmer.id, { avatarUrl: newAvatarUrl });
             toast({
                 title: "Nai-upload na ang Larawan!",
                 description: `Ang profile picture para kay ${farmer.name} ay na-update na.`,
@@ -124,24 +216,101 @@ export default function FarmerLogbookPage() {
             gender: formData.get('gender') as string,
         };
         
-        setFarmers(current => current.map(f => f.id === updatedFarmer.id ? updatedFarmer : f));
+        updateFarmerRecord(updatedFarmer.id, updatedFarmer);
         setEditingFarmer(null);
         toast({ title: "Tagumpay!", description: "Nai-update na ang datos ng magsasaka." });
     };
 
     const handleSaveNote = () => {
         if (!newNote.trim()) return;
-        const noteEntry: LogbookEntry = {
-            id: `LOG${logbook.length + 1}`,
-            timestamp: new Date().toISOString(),
+        const noteEntry: Omit<LogbookEntry, 'id' | 'timestamp'> = {
+            farmerId: farmer.id,
             type: 'Tala sa Bukid',
-            icon: FilePen,
             title: 'Nagdagdag ng Tala ang AEW',
             description: newNote,
         };
-        setLogbook([noteEntry, ...logbook]);
+        addLogbookEntry(noteEntry);
         setNewNote('');
         toast({ title: "Tagumpay!", description: "Nai-save na ang iyong tala." });
+    };
+
+    const getAssistanceBadgeVariant = (status: FarmerAssistanceRecord['status']) => {
+        if (status === 'completed') return 'secondary' as const;
+        if (status === 'in_progress') return 'default' as const;
+        return 'outline' as const;
+    };
+
+    const getVisitBadgeVariant = (status: FieldVisitTask['status']) => {
+        if (status === 'completed') return 'secondary' as const;
+        if (status === 'in_progress') return 'default' as const;
+        if (status === 'scheduled') return 'outline' as const;
+        return 'destructive' as const;
+    };
+
+    const handleCreateAssistance = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!assistanceForm.title.trim() || !assistanceForm.details.trim()) {
+            toast({ title: "Kulang ang detalye", description: "Lagyan ng pamagat at detalye ang assistance record.", variant: "destructive" });
+            return;
+        }
+
+        addAssistanceRecord({
+            farmerId: farmer.id,
+            type: assistanceForm.type,
+            title: assistanceForm.title.trim(),
+            details: assistanceForm.details.trim(),
+            quantity: assistanceForm.quantity.trim() || undefined,
+            nextAction: assistanceForm.nextAction.trim() || undefined,
+        });
+        setAssistanceForm({
+            type: 'Technical Advice',
+            title: '',
+            details: '',
+            quantity: '',
+            nextAction: '',
+        });
+        setIsAssistanceDialogOpen(false);
+        toast({ title: "Naidagdag ang tulong", description: `May bagong assistance record na para kay ${farmer.name}.` });
+    };
+
+    const handleScheduleVisit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!visitForm.title.trim() || !visitForm.purpose.trim() || !visitForm.scheduledFor) {
+            toast({ title: "Kulang ang detalye", description: "Punan ang title, purpose, at schedule ng field visit.", variant: "destructive" });
+            return;
+        }
+
+        scheduleFieldVisit({
+            farmerId: farmer.id,
+            title: visitForm.title.trim(),
+            purpose: visitForm.purpose.trim(),
+            scheduledFor: new Date(visitForm.scheduledFor).toISOString(),
+            priority: visitForm.priority,
+            assignedTo: visitForm.assignedTo.trim() || undefined,
+        });
+        setVisitForm({
+            title: '',
+            purpose: '',
+            scheduledFor: '',
+            priority: 'medium',
+            assignedTo: '',
+        });
+        setIsVisitDialogOpen(false);
+        toast({ title: "Naiskedyul ang pagbisita", description: `Naidagdag ang field visit para kay ${farmer.name}.` });
+    };
+
+    const handleAdvanceAssistance = (record: FarmerAssistanceRecord) => {
+        const nextStatus = record.status === 'planned' ? 'in_progress' : 'completed';
+        updateAssistanceRecordStatus(record.id, nextStatus);
+        toast({ title: "Na-update ang tulong", description: `${record.title} ay naka-${nextStatus}.` });
+    };
+
+    const handleAdvanceVisit = (task: FieldVisitTask) => {
+        const nextStatus = task.status === 'scheduled' ? 'in_progress' : 'completed';
+        updateFieldVisitTaskStatus(task.id, nextStatus);
+        toast({ title: "Na-update ang field visit", description: `${task.title} ay naka-${nextStatus}.` });
     };
 
   return (
@@ -238,12 +407,12 @@ export default function FarmerLogbookPage() {
                                 onChange={(e) => setNewNote(e.target.value)}
                             />
                         </HoverTooltip>
-                        <div className="flex gap-4">
+                        <div className="flex flex-col gap-4 sm:flex-row">
                              <HoverTooltip text="Mag-upload ng larawan mula sa iyong pagbisita.">
-                                <Button variant="outline" className="flex-1" onClick={() => fieldPhotoUploadRef.current?.click()}><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
+                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => fieldPhotoUploadRef.current?.click()}><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
                             </HoverTooltip>
                              <HoverTooltip text="Mag-record ng audio note o panayam sa magsasaka.">
-                                <Button variant="outline" className="flex-1" onClick={() => audioUploadRef.current?.click()}><Mic className="mr-2"/> Mag-record ng Audio</Button>
+                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => audioUploadRef.current?.click()}><Mic className="mr-2"/> Mag-record ng Audio</Button>
                             </HoverTooltip>
                         </div>
                     </CardContent>
@@ -254,20 +423,296 @@ export default function FarmerLogbookPage() {
                     </CardFooter>
                 </Card>
             </div>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
+                <Card>
+                    <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5 text-primary" />
+                                Usapang SMS at Mga Tugon
+                            </CardTitle>
+                            <CardDescription>
+                                Buong thread ng mga inquiry ni {farmer.name} at mga tugon ng system o barangay team.
+                            </CardDescription>
+                        </div>
+                        <Badge variant="outline" className="w-fit">
+                            {farmerConversation.length} {farmerConversation.length === 1 ? 'inquiry' : 'inquiries'}
+                        </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {farmerConversation.length > 0 ? farmerConversation.map((message: SmsMessage) => {
+                            const relatedReplies = outboundBySmsMessageId.get(message.id) ?? [];
+                            const hasSentReply = relatedReplies.length > 0;
+
+                            return (
+                                <div key={message.id} className="rounded-[10px] border border-border bg-muted/20 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <Avatar className="h-10 w-10 border border-border">
+                                            {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
+                                            <AvatarFallback>{farmer.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="min-w-0 max-w-[88%] space-y-2">
+                                            <div className="rounded-[18px] border border-border bg-background px-4 py-3 shadow-sm">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="text-sm font-semibold text-foreground">{farmer.name}</p>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {formatConversationTimestamp(message.timestamp, isClient)}
+                                                    </span>
+                                                </div>
+                                                <p className="mt-2 text-sm leading-6 text-foreground">{message.message}</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 pl-1">
+                                                <Badge variant="outline">{message.parsedIntent}</Badge>
+                                                <Badge variant="outline">{message.urgency} priority</Badge>
+                                                <Badge variant={message.safetyFlag === 'High' ? 'destructive' : 'outline'}>
+                                                    {message.safetyFlag} risk
+                                                </Badge>
+                                                <Badge variant="outline">AI {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 space-y-3">
+                                        {hasSentReply ? relatedReplies.map((reply) => (
+                                            <div key={reply.id} className="flex justify-end">
+                                                <div className="min-w-0 max-w-[88%] space-y-2">
+                                                    <div className="rounded-[18px] bg-primary px-4 py-3 text-primary-foreground shadow-sm">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 text-sm font-semibold">
+                                                                <Send className="h-4 w-4" />
+                                                                Tugon ng Lingkod-Ani
+                                                            </div>
+                                                            <span className="text-xs text-primary-foreground/80">
+                                                                {formatConversationTimestamp(reply.sentAt ?? reply.createdAt, isClient)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="mt-2 text-sm leading-6">{reply.body}</p>
+                                                    </div>
+                                                    <div className="flex flex-wrap justify-end gap-2 pr-1">
+                                                        <Badge
+                                                            variant={reply.status === 'failed' ? 'destructive' : 'secondary'}
+                                                            className={cn(reply.status !== 'failed' && 'bg-primary/10 text-primary')}
+                                                        >
+                                                            {reply.status}
+                                                        </Badge>
+                                                        {reply.attempts ? <Badge variant="outline">{reply.attempts} attempts</Badge> : null}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <div className="flex justify-end">
+                                                <div className="min-w-0 max-w-[88%] space-y-2">
+                                                    <div className="rounded-[18px] border border-primary/20 bg-primary/5 px-4 py-3">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                            <p className="text-sm font-semibold text-primary">Draft reply pa lang</p>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Hindi pa naipapadala
+                                                            </span>
+                                                        </div>
+                                                        <p className="mt-2 text-sm leading-6 text-foreground">{message.aiAdvice}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        }) : (
+                            <div className="rounded-[10px] border border-dashed border-border bg-muted/10 p-6 text-center">
+                                <p className="text-sm font-medium text-foreground">Wala pang SMS conversation thread para sa magsasakang ito.</p>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Kapag may papasok na inquiry at system reply, lilitaw dito ang buong usapan na parang phone conversation record.
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <div className="grid gap-6 xl:grid-cols-2">
+                    <Card>
+                        <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <CardTitle>Assistance Ledger</CardTitle>
+                                <CardDescription>Mga ibinigay at kasalukuyang tulong para kay {farmer.name}.</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setIsAssistanceDialogOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Magdagdag
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {farmerAssistanceRecords.length > 0 ? farmerAssistanceRecords.map((record) => (
+                                <div key={record.id} className="rounded-xl border p-4">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-medium">{record.title}</p>
+                                        <Badge variant="outline">{record.type}</Badge>
+                                        <Badge variant={getAssistanceBadgeVariant(record.status)}>{record.status}</Badge>
+                                    </div>
+                                    <p className="mt-2 text-sm text-muted-foreground">{record.details}</p>
+                                    {record.quantity ? <p className="mt-1 text-sm text-muted-foreground">Dami: {record.quantity}</p> : null}
+                                    {record.nextAction ? <p className="mt-1 text-sm text-muted-foreground">Next action: {record.nextAction}</p> : null}
+                                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                                        {record.status !== 'completed' ? (
+                                            <Button size="sm" className="h-auto min-h-11 whitespace-normal break-words px-4 py-3 text-center leading-snug" onClick={() => handleAdvanceAssistance(record)}>
+                                                {record.status === 'planned' ? 'Simulan' : 'Markahang tapos'}
+                                            </Button>
+                                        ) : null}
+                                        <span className="text-xs text-muted-foreground">
+                                            Updated: {isClient ? new Date(record.updatedAt).toLocaleString() : ''}
+                                        </span>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-sm text-muted-foreground">Wala pang assistance ledger entry para sa magsasakang ito.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <CardTitle>Field Visits at Follow-up</CardTitle>
+                                <CardDescription>Mga onsite visit at future check-in para kay {farmer.name}.</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setIsVisitDialogOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Schedule
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {farmerFieldVisits.length > 0 ? farmerFieldVisits.map((task) => (
+                                <div key={task.id} className="rounded-xl border p-4">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-medium">{task.title}</p>
+                                        <Badge variant="outline">{task.priority} priority</Badge>
+                                        <Badge variant={getVisitBadgeVariant(task.status)}>{task.status}</Badge>
+                                    </div>
+                                    <p className="mt-2 text-sm text-muted-foreground">{task.purpose}</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">Assigned to: {task.assignedTo}</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        Schedule: {isClient ? new Date(task.scheduledFor).toLocaleString() : ''}
+                                    </p>
+                                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                                        {task.status !== 'completed' && task.status !== 'cancelled' ? (
+                                            <Button size="sm" className="h-auto min-h-11 whitespace-normal break-words px-4 py-3 text-center leading-snug" onClick={() => handleAdvanceVisit(task)}>
+                                                {task.status === 'scheduled' ? 'Simulan' : 'Markahang tapos'}
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-sm text-muted-foreground">Wala pang nakaiskedyul na field visit para sa magsasakang ito.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
                 <Card>
                     <CardHeader>
                         <CardTitle>Logbook ng Magsasaka</CardTitle>
                         <CardDescription>Isang kumpletong timeline ng lahat ng interaksyon at aktibidad para kay {farmer.name}.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {logbook.map(entry => (
+                        {farmerLogbook.map(entry => (
                             <TimelineItem key={entry.id} entry={entry} />
                         ))}
                     </CardContent>
                 </Card>
             </div>
         </div>
+        <Dialog open={isAssistanceDialogOpen} onOpenChange={setIsAssistanceDialogOpen}>
+            <DialogContent className="sm:max-w-[520px]">
+                <DialogHeader>
+                    <DialogTitle>Magdagdag ng Assistance Record</DialogTitle>
+                    <DialogDescription>I-log ang tulong o intervention na ibibigay kay {farmer.name}.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateAssistance} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="assistance-type">Uri ng Tulong</Label>
+                        <Select value={assistanceForm.type} onValueChange={(value) => setAssistanceForm(current => ({ ...current, type: value as FarmerAssistanceRecord['type'] }))}>
+                            <SelectTrigger id="assistance-type">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Technical Advice">Technical Advice</SelectItem>
+                                <SelectItem value="Voucher">Voucher</SelectItem>
+                                <SelectItem value="Binhi">Binhi</SelectItem>
+                                <SelectItem value="Pataba">Pataba</SelectItem>
+                                <SelectItem value="Pesticide">Pesticide</SelectItem>
+                                <SelectItem value="Kagamitan">Kagamitan</SelectItem>
+                                <SelectItem value="Referral">Referral</SelectItem>
+                                <SelectItem value="Cash Relief">Cash Relief</SelectItem>
+                                <SelectItem value="Field Visit">Field Visit</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="assistance-title">Pamagat</Label>
+                        <Input id="assistance-title" value={assistanceForm.title} onChange={(event) => setAssistanceForm(current => ({ ...current, title: event.target.value }))} placeholder="hal. Pesticide support para sa rice bugs" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="assistance-details">Detalye</Label>
+                        <Textarea id="assistance-details" value={assistanceForm.details} onChange={(event) => setAssistanceForm(current => ({ ...current, details: event.target.value }))} placeholder="Ilagay ang intervention o support na ibibigay." />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="assistance-quantity">Dami o Saklaw</Label>
+                            <Input id="assistance-quantity" value={assistanceForm.quantity} onChange={(event) => setAssistanceForm(current => ({ ...current, quantity: event.target.value }))} placeholder="hal. 2 bote o 1 voucher" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="assistance-next">Next Action</Label>
+                            <Input id="assistance-next" value={assistanceForm.nextAction} onChange={(event) => setAssistanceForm(current => ({ ...current, nextAction: event.target.value }))} placeholder="hal. Follow-up sa March 20" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
+                        <Button type="submit">I-save ang Tulong</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+        <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
+            <DialogContent className="sm:max-w-[520px]">
+                <DialogHeader>
+                    <DialogTitle>Mag-schedule ng Field Visit</DialogTitle>
+                    <DialogDescription>Ilagay ang purpose at schedule ng pagbisita para kay {farmer.name}.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleScheduleVisit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="visit-title">Title</Label>
+                        <Input id="visit-title" value={visitForm.title} onChange={(event) => setVisitForm(current => ({ ...current, title: event.target.value }))} placeholder="hal. Follow-up sa tomato leafminer" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="visit-purpose">Purpose</Label>
+                        <Textarea id="visit-purpose" value={visitForm.purpose} onChange={(event) => setVisitForm(current => ({ ...current, purpose: event.target.value }))} placeholder="Ano ang gagawin o iche-check sa pagbisita?" />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="visit-schedule">Schedule</Label>
+                            <Input id="visit-schedule" type="datetime-local" value={visitForm.scheduledFor} onChange={(event) => setVisitForm(current => ({ ...current, scheduledFor: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="visit-priority">Priority</Label>
+                            <Select value={visitForm.priority} onValueChange={(value) => setVisitForm(current => ({ ...current, priority: value as FieldVisitTask['priority'] }))}>
+                                <SelectTrigger id="visit-priority">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="visit-assigned">Assigned To</Label>
+                        <Input id="visit-assigned" value={visitForm.assignedTo} onChange={(event) => setVisitForm(current => ({ ...current, assignedTo: event.target.value }))} placeholder="hal. AEW Jose Rizal" />
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="secondary">Kanselahin</Button></DialogClose>
+                        <Button type="submit">I-save ang Visit</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
         {editingFarmer && (
             <Dialog open={!!editingFarmer} onOpenChange={() => setEditingFarmer(null)}>
                 <DialogContent className="sm:max-w-[425px]">

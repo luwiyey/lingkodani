@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { correctionLogData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function CorrectionLogChart() {
+  const { correctionLogData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Buwanan');
   const { toast } = useToast();
 
@@ -133,3 +134,4 @@ export function CorrectionLogChart() {
     </Dialog>
   )
 }
+

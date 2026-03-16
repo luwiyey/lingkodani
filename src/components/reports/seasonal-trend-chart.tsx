@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { seasonalTrendData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function SeasonalTrendChart() {
+  const { seasonalTrendData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Taunan');
 
   const peakMonth = seasonalTrendData.reduce((prev, current) => (prev.reports > current.reports) ? prev : current);
@@ -125,3 +126,4 @@ export function SeasonalTrendChart() {
     </Dialog>
   )
 }
+

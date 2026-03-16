@@ -19,8 +19,19 @@ export type FarmerRegistrationValues = z.infer<typeof farmerRegistrationSchema>;
 export const userManagementSchema = z.object({
   name: z.string().min(1, { message: "Ang buong pangalan ay kinakailangan." }),
   email: z.string().email({ message: "Mangyaring maglagay ng wastong email address." }),
+  title: z.string().min(1, { message: "Ang tungkulin ay kinakailangan." }),
+  phone: z
+    .string()
+    .min(1, { message: "Ang mobile number ay kinakailangan." })
+    .regex(/^(\+63|0)9\d{9}$/, "Mangyaring maglagay ng wastong numero ng telepono sa Pilipinas."),
   role: z.enum(['barangay', 'developer'], {
     required_error: "Mangyaring pumili ng role.",
+  }),
+  status: z.enum(['active', 'pending_setup', 'disabled'], {
+    required_error: "Mangyaring pumili ng status.",
+  }),
+  preferredWorkspace: z.enum(['simple', 'detailed'], {
+    required_error: "Mangyaring pumili ng workspace.",
   }),
 });
 

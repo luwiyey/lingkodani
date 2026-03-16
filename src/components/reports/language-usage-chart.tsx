@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { languageUsageData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function LanguageUsageChart() {
+  const { languageUsageData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Buwanan');
   const { toast } = useToast();
   
@@ -136,3 +137,4 @@ export function LanguageUsageChart() {
     </Dialog>
   )
 }
+

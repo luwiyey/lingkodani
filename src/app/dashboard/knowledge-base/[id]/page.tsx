@@ -2,15 +2,16 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { knowledgeArticles } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen, Volume2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useData } from '@/context/data-context';
 
 export default function KnowledgeArticlePage() {
+  const { knowledgeArticles } = useData();
   const params = useParams();
   const router = useRouter();
   const articleId = params.id as string;
@@ -58,7 +59,7 @@ export default function KnowledgeArticlePage() {
             article.audioUrl && (
               <div className="py-4">
                 <audio controls className="w-full">
-                  <source src={article.audioUrl} type="audio/mpeg" />
+                  <source src={article.audioUrl} />
                   Your browser does not support the audio element.
                 </audio>
               </div>

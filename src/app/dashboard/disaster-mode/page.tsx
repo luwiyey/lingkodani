@@ -52,17 +52,16 @@ export default function DisasterModePage() {
   return (
     <>
     <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-center gap-4 p-4 rounded-lg bg-destructive text-destructive-foreground animate-pulse">
-            <AlertTriangle className="h-8 w-8" />
-            <div className="text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg bg-destructive p-4 text-center text-destructive-foreground animate-pulse sm:flex-row sm:text-left">
+            <AlertTriangle className="h-8 w-8 shrink-0" />
+            <div>
                 <h1 className="text-2xl font-bold tracking-tight">DISASTER MODE ACTIVATED</h1>
                 <p>Nakatutok ang system sa mga emergency response. Limitado ang ibang mga feature.</p>
             </div>
-            <AlertTriangle className="h-8 w-8" />
         </div>
 
         <Card className="border-destructive">
-            <CardHeader className="flex-row items-start justify-between">
+            <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex-1">
                   <div className="flex items-center">
                       <CardTitle className="flex items-center gap-2">

@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,68 +18,24 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-
-type Template = {
-  id: string;
-  text: string;
-  keywords: string[];
-};
-
-type TemplateCategory = {
-  label: string;
-  id: string;
-  templates: Template[];
-};
-
-const initialTemplateCategories: TemplateCategory[] = [
-    {
-        label: "Pagkumpirma",
-        id: "confirmation",
-        templates: [
-            { id: 't1', text: "Salamat sa iyong ulat. Pinoproseso na namin ito.", keywords: ['salamat', 'ulat', 'proseso'] },
-            { id: 't2', text: "Natanggap na namin ang iyong kahilingan at babalikan ka namin sa lalong madaling panahon.", keywords: ['kahilingan', 'natanggap'] }
-        ]
-    },
-    {
-        label: "Pagsisiyasat",
-        id: "investigation",
-        templates: [
-            { id: 't3', text: "Salamat sa ulat. Maaari mo bang ilarawan pa ang problema o magpadala ng larawan?", keywords: ['larawan', 'ilarawan', 'problema', 'magpadala'] }
-        ]
-    },
-    {
-        label: "Resolusyon",
-        id: "resolution",
-        templates: [
-             { id: 't4', text: "Ang iyong kahilingan para sa [Resource] ay naaprubahan na. Maaari mo nang kunin ang iyong voucher.", keywords: ['voucher', 'aprubado', 'kunin'] }
-        ]
-    },
-    {
-        label: "Emergency",
-        id: "emergency",
-        templates: [
-            { id: 't5', text: "Para sa mga emergency, mangyaring tumawag sa aming hotline sa [Numero ng Hotline].", keywords: ['emergency', 'hotline', 'tawag'] }
-        ]
-    }
-];
-
+import { useData } from '@/context/data-context';
+import type { SystemTemplate, SystemTemplateCategory } from '@/lib/types';
+import { defaultSystemSettings } from '@/lib/system-settings';
 
 export default function BarangaySettingsPage() {
     const { toast } = useToast();
-    const [brgyDescription, setBrgyDescription] = useState("Isang masiglang barangay na nakatuon sa pagpapabuti ng agrikultura at kapakanan ng mga magsasaka nito.");
-    const [zoneDescriptions, setZoneDescriptions] = useState(
-        Array.from({ length: 7 }, (_, i) => ({ zone: `Zone ${i + 1}`, description: `Paglalarawan para sa Zone ${i + 1}...` }))
-    );
-    const [replyStartTime, setReplyStartTime] = useState("08:00");
-    const [replyEndTime, setReplyEndTime] = useState("19:00");
-    const [adminPhone, setAdminPhone] = useState("+639123456789");
+    const { systemSettings, saveSystemSettings } = useData();
+    const [brgyDescription, setBrgyDescription] = useState(defaultSystemSettings.brgyDescription);
+    const [zoneDescriptions, setZoneDescriptions] = useState(defaultSystemSettings.zoneDescriptions);
+    const [replyStartTime, setReplyStartTime] = useState(defaultSystemSettings.replyStartTime);
+    const [replyEndTime, setReplyEndTime] = useState(defaultSystemSettings.replyEndTime);
+    const [adminPhone, setAdminPhone] = useState(defaultSystemSettings.adminPhone);
     
-    const [templateCategories, setTemplateCategories] = useState<TemplateCategory[]>(initialTemplateCategories);
+    const [templateCategories, setTemplateCategories] = useState<SystemTemplateCategory[]>(defaultSystemSettings.templateCategories);
     
     // State for Dialogs
     const [isAddDialogOpen, setAddDialogOpen] = useState(false);
-    const [editingTemplate, setEditingTemplate] = useState<{ categoryId: string; template: Template } | null>(null);
+    const [editingTemplate, setEditingTemplate] = useState<{ categoryId: string; template: SystemTemplate } | null>(null);
     const [deletingTemplate, setDeletingTemplate] = useState<{ categoryId: string; templateId: string } | null>(null);
 
     // State for controlled components in dialogs
@@ -90,12 +47,21 @@ export default function BarangaySettingsPage() {
     const [editedTemplateKeywords, setEditedTemplateKeywords] = useState('');
 
 
-    const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
-    const [autoReplyTimeout, setAutoReplyTimeout] = useState(3);
+    const [autoReplyEnabled, setAutoReplyEnabled] = useState(defaultSystemSettings.autoReplyEnabled);
+    const [autoReplyTimeout, setAutoReplyTimeout] = useState(defaultSystemSettings.autoReplyTimeoutMinutes);
     
-    const allTemplates = templateCategories.flatMap(c => c.templates);
+    useEffect(() => {
+        setBrgyDescription(systemSettings.brgyDescription);
+        setZoneDescriptions(systemSettings.zoneDescriptions);
+        setReplyStartTime(systemSettings.replyStartTime);
+        setReplyEndTime(systemSettings.replyEndTime);
+        setAdminPhone(systemSettings.adminPhone);
+        setTemplateCategories(systemSettings.templateCategories);
+        setAutoReplyEnabled(systemSettings.autoReplyEnabled);
+        setAutoReplyTimeout(systemSettings.autoReplyTimeoutMinutes);
+    }, [systemSettings]);
 
-    const handleOpenEditDialog = (categoryId: string, template: Template) => {
+    const handleOpenEditDialog = (categoryId: string, template: SystemTemplate) => {
         setEditingTemplate({ categoryId, template });
         setEditedTemplateText(template.text);
         setEditedTemplateKeywords(template.keywords.join(', '));
@@ -136,7 +102,7 @@ export default function BarangaySettingsPage() {
             return;
         }
 
-        const newTemplate: Template = {
+        const newTemplate: SystemTemplate = {
             id: `t${Date.now()}`,
             text: newTemplateText.trim(),
             keywords: newTemplateKeywords.split(',').map(kw => kw.trim()).filter(Boolean),
@@ -172,19 +138,33 @@ export default function BarangaySettingsPage() {
         setDeletingTemplate(null);
     };
 
-    const handleSaveChanges = () => {
-        // In a real app, you would save these settings to a database.
+    const handleSaveChanges = async () => {
+        await saveSystemSettings({
+            ...systemSettings,
+            brgyDescription,
+            zoneDescriptions,
+            replyStartTime,
+            replyEndTime,
+            adminPhone,
+            templateCategories,
+            autoReplyEnabled,
+            autoReplyTimeoutMinutes: Math.max(1, autoReplyTimeout),
+        });
         toast({
             title: "Tagumpay!",
-            description: "Matagumpay na nai-save ang mga setting ng barangay.",
+            description: "Nai-save na ang live runtime settings ng barangay.",
         });
     };
     
-    const handleNotify = () => {
-        // In a real app, this would trigger an SMS broadcast.
+    const handleNotify = async () => {
+        const advisoryNotice = `Advisory Notice: Ang oras ng serbisyo ng barangay agriculture team ay ${replyStartTime} hanggang ${replyEndTime}. Para sa after-hours concerns, makipag-ugnayan sa ${adminPhone}.`;
+
+        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(advisoryNotice);
+        }
         toast({
-            title: "Nagpapadala ng Abiso...",
-            description: `Ipinapadala ang mga bagong oras ng serbisyo sa lahat ng magsasaka. Ang mga mensahe sa labas ng ${replyStartTime} - ${replyEndTime} ay maaaring idirekta sa ${adminPhone}.`,
+            title: "Handa na ang Advisory Notice",
+            description: `Nakopya ang after-hours advisory notice para sa oras na ${replyStartTime} - ${replyEndTime}.`,
         });
     }
 
@@ -195,7 +175,7 @@ export default function BarangaySettingsPage() {
         <p className="text-muted-foreground">Pamahalaan ang mga detalye tungkol sa iyong barangay at i-configure ang mga setting ng system.</p>
       </div>
 
-       <Card>
+      <Card>
         <CardHeader>
           <CardTitle>Impormasyon ng Barangay</CardTitle>
           <CardDescription>
@@ -240,14 +220,14 @@ export default function BarangaySettingsPage() {
             <div className="space-y-4">
                  <div className="space-y-2">
                     <Label>Oras ng Serbisyo ng Auto-Reply</Label>
-                     <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
                         <Input 
                             id="reply-start-time" 
                             type="time" 
                             value={replyStartTime}
                             onChange={(e) => setReplyStartTime(e.target.value)}
                         />
-                        <span>hanggang</span>
+                        <span className="text-sm text-muted-foreground">hanggang</span>
                          <Input 
                             id="reply-end-time" 
                             type="time" 
@@ -256,7 +236,7 @@ export default function BarangaySettingsPage() {
                         />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        Sa labas ng mga oras na ito, aabisuhan ang mga magsasaka na makipag-ugnayan sa numero ng admin.
+                        Ito ang live service hours na ginagamit sa advisory notice at after-hours automation copy.
                     </p>
                 </div>
                  <div className="space-y-2">
@@ -267,15 +247,18 @@ export default function BarangaySettingsPage() {
                         onChange={(e) => setAdminPhone(e.target.value)}
                     />
                      <p className="text-sm text-muted-foreground">
-                        Ang numerong ito ay ibabahagi para sa mga katanungan pagkatapos ng oras ng opisina.
-                    </p>
+                        Ang numerong ito ay ilalagay sa after-hours advisory notice.
+                     </p>
                 </div>
             </div>
 
         </CardContent>
         <CardFooter className="justify-end gap-2">
-            <Button variant="outline" onClick={handleNotify}>I-abiso ang mga Magsasaka</Button>
-            <Button onClick={handleSaveChanges}>I-save ang mga Pagbabago</Button>
+            <Button variant="outline" asChild>
+                <Link href="/dashboard/data-center">Buksan ang Data Center</Link>
+            </Button>
+            <Button variant="outline" onClick={handleNotify}>Kopyahin ang Advisory Notice</Button>
+            <Button onClick={handleSaveChanges}>I-save ang Live Settings</Button>
         </CardFooter>
       </Card>
 
@@ -348,25 +331,18 @@ export default function BarangaySettingsPage() {
                       <Label htmlFor="auto-reply-timeout">Timeout para sa Admin (minuto)</Label>
                       <Input id="auto-reply-timeout" type="number" value={autoReplyTimeout} onChange={(e) => setAutoReplyTimeout(Number(e.target.value))} />
                       <p className="text-sm text-muted-foreground">
-                          Kung walang aksyon mula sa admin sa loob ng panahong ito, isang paunang abiso ang ipapadala.
+                          Ito ang live timeout na ginagamit ng inbound analysis at overdue SMS automation.
                       </p>
                   </div>
                   <div className="space-y-2">
-                      <Label htmlFor="auto-reply-template">Template para sa Auto-Reply</Label>
-                      <Select defaultValue={allTemplates.find(t => t.id === 't5')?.text}>
-                          <SelectTrigger id="auto-reply-template">
-                              <SelectValue placeholder="Pumili ng template na ipapadala..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                              {allTemplates.map((template) => (
-                                  <SelectItem key={template.id} value={template.text}>
-                                      {template.text}
-                                  </SelectItem>
-                              ))}
-                          </SelectContent>
-                      </Select>
+                      <Label>Template source para sa Auto-Reply</Label>
+                      <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                          Ginagamit ng system ang unang template sa kategoryang <strong>Emergency</strong> para sa urgent cases,
+                          <strong> Pagsisiyasat</strong> para sa clarification cases, at <strong>Pagkumpirma</strong> o
+                          <strong> Resolusyon</strong> para sa mga regular na fallback reply.
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                          Ito ang mensaheng awtomatikong ipapadala. Maaari kang magdagdag ng mga template sa itaas.
+                          Kapag in-edit at sinave ang mga template sa itaas, iyon din ang gagamitin ng automation sa live mode.
                       </p>
                   </div>
                 </>

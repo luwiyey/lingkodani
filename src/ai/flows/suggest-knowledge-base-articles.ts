@@ -49,6 +49,57 @@ export async function suggestKnowledgeBaseArticles(
   return suggestKnowledgeBaseArticlesFlow(input);
 }
 
+function buildFallbackSuggestions(input: SuggestKnowledgeBaseArticlesInput): SuggestKnowledgeBaseArticlesOutput {
+  const combinedText = [...input.smsReports, ...input.farmerInquiries]
+    .join(' ')
+    .toLowerCase();
+
+  const suggestions: SuggestKnowledgeBaseArticlesOutput['suggestedArticles'] = [];
+
+  if (combinedText.includes('peste') || combinedText.includes('leafminer') || combinedText.includes('daga')) {
+    suggestions.push({
+      title: 'Pangunang Gabay sa Karaniwang Peste sa Barangay',
+      summary: 'Mga unang hakbang sa pag-report, pag-dokumento, at pansamantalang pagsugpo sa karaniwang peste tulad ng leafminer, daga, at rice bugs.',
+      keywords: ['peste', 'leafminer', 'daga', 'rice bugs'],
+    });
+  }
+
+  if (combinedText.includes('bagyo') || combinedText.includes('baha') || combinedText.includes('emergency')) {
+    suggestions.push({
+      title: 'Gabay sa Pinsala ng Bagyo at Emergency Reporting',
+      summary: 'Checklist para sa barangay at magsasaka kapag may bagyo, baha, o agarang pinsala sa pananim.',
+      keywords: ['bagyo', 'baha', 'emergency', 'pinsala'],
+    });
+  }
+
+  if (combinedText.includes('presyo') || combinedText.includes('ani') || combinedText.includes('harvest')) {
+    suggestions.push({
+      title: 'Pagbabantay sa Presyo at Post-Harvest Tips',
+      summary: 'Mga batayang payo sa pag-check ng presyo, tamang oras ng bentahan, at pangunahing post-harvest handling.',
+      keywords: ['presyo', 'ani', 'harvest', 'post-harvest'],
+    });
+  }
+
+  if (suggestions.length === 0) {
+    suggestions.push(
+      {
+        title: 'Mga Madalas Itanong ng Magsasaka sa Barangay',
+        summary: 'Panimulang knowledge article para sa mga madalas na concern sa peste, panahon, inputs, at farmer assistance.',
+        keywords: ['faq', 'barangay', 'magsasaka'],
+      },
+      {
+        title: 'Paano Mag-report ng Concern sa Lingkod-Ani',
+        summary: 'Maikling paliwanag kung paano magsumite ng malinaw na ulat sa SMS at anong detalye ang dapat ilagay.',
+        keywords: ['sms', 'ulat', 'report', 'lingkod-ani'],
+      },
+    );
+  }
+
+  return {
+    suggestedArticles: suggestions.slice(0, 4),
+  };
+}
+
 const suggestKnowledgeBaseArticlesPrompt = ai.definePrompt({
   name: 'suggestKnowledgeBaseArticlesPrompt',
   input: {schema: SuggestKnowledgeBaseArticlesInputSchema},
@@ -79,7 +130,16 @@ const suggestKnowledgeBaseArticlesFlow = ai.defineFlow(
     outputSchema: SuggestKnowledgeBaseArticlesOutputSchema,
   },
   async input => {
-    const {output} = await suggestKnowledgeBaseArticlesPrompt(input);
-    return output!;
+    try {
+      const {output} = await suggestKnowledgeBaseArticlesPrompt(input);
+
+      if (output) {
+        return output;
+      }
+    } catch (error) {
+      console.error('suggestKnowledgeBaseArticlesFlow fallback triggered', error);
+    }
+
+    return buildFallbackSuggestions(input);
   }
 );

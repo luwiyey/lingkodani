@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 export default function PricesPage() {
-  return null;
+  redirect('/dashboard/price-watch');
 }

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip as RechartsTooltip } from 'recharts';
+import { Bar, BarChart, XAxis, Tooltip as RechartsTooltip } from 'recharts';
 import {
   Card,
   CardContent,
@@ -10,14 +10,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '../ui/chart';
-
-const weeklyInquiriesData = [
-  { question: 'Peste', count: 45 },
-  { question: 'Pataba', count: 38 },
-  { question: 'Sakit', count: 32 },
-  { question: 'Ani', count: 28 },
-  { question: 'Tubig', count: 25 },
-];
+import { useAnalytics } from '@/hooks/use-analytics';
+import { topInquiriesData as fallbackTopInquiriesData } from '@/lib/data';
 
 const chartConfig = {
   count: {
@@ -27,6 +21,10 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function WeeklyInquiriesSummary() {
+  const { topInquiriesData } = useAnalytics();
+  const weeklyInquiriesData = topInquiriesData.some((item) => item.count > 0)
+    ? topInquiriesData.slice(0, 5)
+    : fallbackTopInquiriesData.slice(0, 5);
   const topInquiry = [...weeklyInquiriesData].reduce(
     (prev, current) => (prev.count > current.count ? prev : current)
   );

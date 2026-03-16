@@ -34,6 +34,8 @@ const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     UNKNOWN: { label: 'Hindi Kilala', icon: MessageSquare },
 }
 
+const cardActionButtonClassName = 'h-auto min-h-11 whitespace-normal break-words px-3 py-3 text-center leading-snug';
+
 function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessage, onActionClick: (type: DialogState['type'], message: SmsMessage) => void, farmers: Farmer[] }) {
     const [isClient, setIsClient] = React.useState(false);
     React.useEffect(() => { setIsClient(true); }, []);
@@ -94,15 +96,15 @@ function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessa
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid gap-2 sm:grid-cols-2">
                         <HoverTooltip text="Suriin at i-edit ang tugon ng AI bago ipadala.">
-                            <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className="bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className={`bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary ${cardActionButtonClassName}`}>
                                 <MessageSquare className="mr-2 h-4 w-4" />
                                 Aprubahan
                             </Button>
                         </HoverTooltip>
                         <HoverTooltip text="Sumulat ng sarili mong tugon mula sa simula.">
-                            <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('manual', message)} className={`bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
                                 <Send className="mr-2 h-4 w-4" />
                                 Manwal
                             </Button>
@@ -110,7 +112,7 @@ function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessa
                     </div>
                     {message.parsedIntent === 'REQUEST' && (
                          <HoverTooltip text="Tingnan kung may magagamit na kagamitan sa imbentaryo.">
-                            <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className="bg-sidebar-accent hover:bg-sidebar-accent/80 w-full">
+                            <Button variant="outline" size="sm" onClick={() => onActionClick('find', message)} className={`w-full bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
                                 <Wrench className="mr-2 h-4 w-4" />
                                 Maghanap ng Kagamitan
                             </Button>
@@ -123,7 +125,7 @@ function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessa
 }
 
 function DisasterSmsFeed() {
-    const { smsMessages, farmers, resources } = useData();
+    const { smsMessages, farmers, resources, updateSmsMessage } = useData();
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [editableResponse, setEditableResponse] = React.useState('');
     const { toast } = useToast();
@@ -140,7 +142,10 @@ function DisasterSmsFeed() {
         setEditableResponse('');
     };
     
-    const handleAction = (action: string) => {
+    const handleAction = (action: string, updates?: Partial<Pick<SmsMessage, 'status' | 'aiAdvice'>>) => {
+        if (dialogState.message && updates) {
+            updateSmsMessage(dialogState.message.id, updates);
+        }
         toast({
             title: "Aksyon naisagawa!",
             description: `Ang mensahe ay matagumpay na ${action}.`,
@@ -179,7 +184,7 @@ function DisasterSmsFeed() {
                 </DialogClose>
             </HoverTooltip>
             <HoverTooltip text="I-save ang iyong mga pag-edit at ipadala ang tugon sa magsasaka.">
-                <Button onClick={() => handleAction('na-edit at naipadala')}>I-save at Ipadala</Button>
+                <Button onClick={() => handleAction('na-edit at naipadala', { status: 'approved', aiAdvice: editableResponse })}>I-save at Ipadala</Button>
             </HoverTooltip>
           </DialogFooter>
         </DialogContent>
@@ -203,7 +208,7 @@ function DisasterSmsFeed() {
                 </DialogClose>
             </HoverTooltip>
              <HoverTooltip text="Ipadala ang iyong isinulat na mensahe sa magsasaka.">
-                <Button onClick={() => handleAction('naipadala')}>Ipadala ang Mensahe</Button>
+                <Button onClick={() => handleAction('naipadala', { status: 'replied' })}>Ipadala ang Mensahe</Button>
             </HoverTooltip>
           </DialogFooter>
         </DialogContent>
@@ -226,7 +231,7 @@ function DisasterSmsFeed() {
                             <p className="text-sm text-muted-foreground">{tool.stock} yunit ang magagamit</p>
                         </div>
                         <HoverTooltip text={`Ipadala ang isang SMS na nag-aalok ng ${tool.name} sa magsasaka.`}>
-                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`)}>Mag-alok</Button>
+                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`, { status: 'replied' })}>Mag-alok</Button>
                         </HoverTooltip>
                     </div>
                 ))}

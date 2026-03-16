@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { outbreakAlertData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function OutbreakAlertChart() {
+  const { outbreakAlertData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Buwanan');
 
   const peak = outbreakAlertData.reduce((prev, current) => (prev.ulat > current.ulat) ? prev : current);
@@ -125,3 +126,4 @@ export function OutbreakAlertChart() {
     </Dialog>
   )
 }
+

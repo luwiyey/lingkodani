@@ -2,6 +2,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 import Image from "next/image";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,31 +18,53 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useToast } from "@/hooks/use-toast";
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
+import { isLiveMode } from '@/lib/config/app-mode';
+import { getPreferredDashboardRoute } from '@/lib/user-workspace';
 
-export default function VerifyPage() {
+function VerifyPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { users } = useData();
+  const { authLoading, currentUserProfile, startDemoSession } = useAuth();
   const { toast } = useToast();
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
 
+  useEffect(() => {
+    if (!authLoading && currentUserProfile) {
+      router.push(getPreferredDashboardRoute(currentUserProfile));
+    }
+  }, [authLoading, currentUserProfile, router]);
+
   const handleVerification = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isLiveMode) {
+      router.push(getPreferredDashboardRoute(currentUserProfile));
+      return;
+    }
     
     const email = searchParams.get('email');
     const user = users.find(u => u.email === email);
+
+    if (!user || user.status === 'disabled') {
+      toast({
+        title: "Hindi makapag-login",
+        description: "Ang account na ito ay hindi available o naka-disable.",
+        variant: "destructive",
+      });
+      router.push('/');
+      return;
+    }
 
     toast({
       title: "Pag-verify Nagtagumpay!",
       description: "Maligayang pagbabalik sa Lingkod-Ani.",
     });
 
-    if (user?.role === 'developer') {
-      router.push('/dashboard/developer');
-    } else {
-      router.push('/dashboard');
-    }
+    startDemoSession(user.email);
+    router.push(getPreferredDashboardRoute(user));
   };
 
   const handleResendCode = () => {
@@ -107,5 +130,13 @@ export default function VerifyPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="w-full h-screen bg-background" />}>
+      <VerifyPageContent />
+    </Suspense>
   );
 }

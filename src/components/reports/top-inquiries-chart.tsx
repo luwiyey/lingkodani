@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { topInquiriesData } from "@/lib/data";
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function TopInquiriesChart() {
+  const { topInquiriesData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Buwanan');
   
   const topInquiry = topInquiriesData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
@@ -131,3 +132,4 @@ export function TopInquiriesChart() {
     </Dialog>
   )
 }
+

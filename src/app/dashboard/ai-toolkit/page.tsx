@@ -18,6 +18,8 @@ import { calculateProfit } from "@/ai/flows/calculate-profit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import { AiStatusBanner } from "@/components/shared/ai-status-banner";
+import { useRuntimeCapabilities } from "@/hooks/use-runtime-capabilities";
 
 export default function AiToolkitPage() {
   const [fertResult, setFertResult] = useState('');
@@ -33,9 +35,26 @@ export default function AiToolkitPage() {
   const [diagnosisLoading, setDiagnosisLoading] = useState(false);
 
   const { toast } = useToast();
+  const { capabilities, capabilitiesLoading } = useRuntimeCapabilities();
+  const aiLocked = !capabilities.aiConfigured;
+  const aiLockMessage =
+    capabilities.reasons.ai ??
+    "Naka-lock muna ang AI tools habang hindi pa available ang Gemini/Genkit service sa build na ito.";
+
+  const showAiLockedToast = () => {
+    toast({
+      title: "AI tools locked",
+      description: aiLockMessage,
+      variant: "destructive",
+    });
+  };
 
   const handleFertilizerCalculation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (aiLocked) {
+      showAiLockedToast();
+      return;
+    }
     setFertLoading(true);
     setFertResult('');
     try {
@@ -55,6 +74,10 @@ export default function AiToolkitPage() {
   
   const handlePesticideCalculation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (aiLocked) {
+      showAiLockedToast();
+      return;
+    }
     setPestLoading(true);
     setPestResult('');
      try {
@@ -74,6 +97,10 @@ export default function AiToolkitPage() {
 
   const handleProfitCalculation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (aiLocked) {
+      showAiLockedToast();
+      return;
+    }
     setProfitLoading(true);
     setProfitResult('');
     try {
@@ -104,6 +131,10 @@ export default function AiToolkitPage() {
 
   const handlePlantDiagnosis = async (e: React.FormEvent) => {
       e.preventDefault();
+      if (aiLocked) {
+          showAiLockedToast();
+          return;
+      }
       if (!previewImage) {
           toast({ title: 'Kulang ng Larawan', description: 'Mangyaring mag-upload ng larawan ng halaman.', variant: 'destructive' });
           return;
@@ -137,6 +168,15 @@ export default function AiToolkitPage() {
         </div>
         <p className="text-muted-foreground">Mga tool para tulungan ang mga admin sa paggawa ng desisyon.</p>
       </div>
+
+      <AiStatusBanner
+        title={aiLocked ? "AI tools locked in this build" : "AI tools ready"}
+        description={
+          aiLocked
+            ? aiLockMessage
+            : "Available ang AI service para sa diagnosis at calculator actions sa build na ito."
+        }
+      />
       
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
         <Card>
@@ -211,8 +251,8 @@ export default function AiToolkitPage() {
             </CardContent>
             <CardFooter>
                 <HoverTooltip text="Simulan ang pagsusuri ng AI sa in-upload na larawan at deskripsyon.">
-                  <Button className="w-full" type="submit" disabled={diagnosisLoading}>
-                      {diagnosisLoading ? 'Nagsusuri...' : 'Suriin ang Halaman'}
+                  <Button className="w-full" type="submit" disabled={diagnosisLoading || aiLocked || capabilitiesLoading}>
+                      {diagnosisLoading ? 'Nagsusuri...' : aiLocked ? 'AI locked muna' : 'Suriin ang Halaman'}
                   </Button>
                 </HoverTooltip>
             </CardFooter>
@@ -251,7 +291,7 @@ export default function AiToolkitPage() {
             </CardContent>
             <CardFooter>
                 <HoverTooltip text="Kalkulahin ang rekomendasyon ng pataba.">
-                  <Button className="w-full" disabled={fertLoading}>{fertLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                  <Button className="w-full" disabled={fertLoading || aiLocked || capabilitiesLoading}>{fertLoading ? 'Kinakalkula...' : aiLocked ? 'AI locked muna' : 'Kalkulahin'}</Button>
                 </HoverTooltip>
             </CardFooter>
             </Card>
@@ -289,7 +329,7 @@ export default function AiToolkitPage() {
             </CardContent>
             <CardFooter>
                 <HoverTooltip text="Kalkulahin ang rekomendasyon sa dosis ng pestisidyo.">
-                  <Button className="w-full" disabled={pestLoading}>{pestLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                  <Button className="w-full" disabled={pestLoading || aiLocked || capabilitiesLoading}>{pestLoading ? 'Kinakalkula...' : aiLocked ? 'AI locked muna' : 'Kalkulahin'}</Button>
                 </HoverTooltip>
             </CardFooter>
             </Card>
@@ -327,7 +367,7 @@ export default function AiToolkitPage() {
             </CardContent>
             <CardFooter>
                 <HoverTooltip text="Kalkulahin ang tinatayang kita.">
-                  <Button className="w-full" disabled={profitLoading}>{profitLoading ? 'Kinakalkula...' : 'Kalkulahin'}</Button>
+                  <Button className="w-full" disabled={profitLoading || aiLocked || capabilitiesLoading}>{profitLoading ? 'Kinakalkula...' : aiLocked ? 'AI locked muna' : 'Kalkulahin'}</Button>
                 </HoverTooltip>
             </CardFooter>
             </Card>

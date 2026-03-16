@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Pie, PieChart, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { messageToneData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,8 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function MessageToneChart() {
-  const [timeframe, setTimeframe] = useState('Lingguhan');
+  const { messageToneData } = useAnalytics();
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   
   const concernedTone = messageToneData.find(d => d.tone === 'Nag-aalala')?.count ?? 0;
   const criticalTone = messageToneData.find(d => d.tone === 'Kritikal')?.count ?? 0;
@@ -129,3 +130,7 @@ export function MessageToneChart() {
     </Dialog>
   )
 }
+
+
+
+

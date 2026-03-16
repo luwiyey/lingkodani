@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { clarificationNeededData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,8 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function ClarificationNeededChart() {
-  const [timeframe, setTimeframe] = useState('Lingguhan');
+  const { clarificationNeededData } = useAnalytics();
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
 
   const neededClarification = clarificationNeededData.find(d => d.name === 'Nangailangan ng Clarification')?.value ?? 0;
@@ -134,3 +135,7 @@ export function ClarificationNeededChart() {
     </Dialog>
   )
 }
+
+
+
+

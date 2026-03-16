@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { followUpRateData } from "@/lib/data"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function FollowUpRateChart() {
+  const { followUpRateData } = useAnalytics();
   const [timeframe, setTimeframe] = useState('Buwanan');
   const { toast } = useToast();
 
@@ -136,3 +137,4 @@ export function FollowUpRateChart() {
     </Dialog>
   )
 }
+
