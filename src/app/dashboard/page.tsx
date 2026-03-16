@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from "next/link";
 import {
   Archive,
+  Clock3,
   ClipboardList,
   ShieldAlert,
   Sprout,
@@ -36,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { WeeklyInquiriesSummary } from '@/components/dashboard/weekly-inquiries-summary';
 import { useData } from '@/context/data-context';
 import { useAnalytics, type RiskAlert } from '@/hooks/use-analytics';
+import { isLiveMode } from '@/lib/config/app-mode';
 
 const alertIconMap = {
   flood: Wind,
@@ -142,6 +144,31 @@ export default function DashboardPage() {
           </div>
           <p className="text-sm text-muted-foreground">Buod ng mga aktibidad at alerto sa agrikultura sa iyong nasasakupan.</p>
         </div>
+
+        {isLiveMode ? (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Clock3 className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold tracking-tight text-foreground">
+                    Live automation status
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Automatic checks run while the live dashboard is open, or can be triggered manually by staff.
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" asChild className="sm:shrink-0">
+                <Link href="/dashboard/settings">
+                  Buksan ang Automation Controls
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <HoverTooltip text="Tingnan ang lahat ng aprubadong magsasaka sa iyong database.">
