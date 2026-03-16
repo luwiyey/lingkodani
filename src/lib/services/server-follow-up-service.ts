@@ -11,7 +11,7 @@ const liveServerSmsProvider: SmsProvider = {
   },
 };
 
-export async function processLiveFollowUpMessages() {
+export async function processLiveFollowUpMessages(actorName = "system") {
   const db = getServerFirestore();
   const snapshot = await db.collection(firebaseCollections.smsMessages).get();
   const messages = snapshot.docs.map((item) => item.data() as SmsMessage);
@@ -22,7 +22,7 @@ export async function processLiveFollowUpMessages() {
       message,
       provider: liveServerSmsProvider,
       providerName: `live-${process.env.LIVE_SMS_PROVIDER ?? "generic"}`,
-      actorName: "system",
+      actorName,
     });
 
     if (!result) {

@@ -1,20 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { isLiveMode } from "@/lib/config/app-mode";
+import { withAutomationLock } from "@/lib/server/automation-lock";
+import { authenticateAutomationRequest } from "@/lib/server/automation-request";
 import { processLiveFollowUpMessages } from "@/lib/services/server-follow-up-service";
-
-function isAuthorized(request: Request) {
-  const expectedToken = process.env.SYSTEM_AUTOMATION_TOKEN ?? process.env.CRON_SECRET;
-
-  if (!expectedToken) {
-    return false;
-  }
-
-  const header = request.headers.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
-
-  return token === expectedToken;
-}
 
 async function handle(request: Request) {
   if (!isLiveMode) {
@@ -24,15 +13,30 @@ async function handle(request: Request) {
     );
   }
 
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      { error: "Hindi awtorisado ang automation request." },
-      { status: 401 }
-    );
+  const auth = await authenticateAutomationRequest(request);
+
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   try {
-    const result = await processLiveFollowUpMessages();
+    const run = await withAutomationLock(
+      "process-follow-ups",
+      10 * 60 * 1000,
+      () => processLiveFollowUpMessages(auth.actorName)
+    );
+
+    if (!run.acquired) {
+      return NextResponse.json({
+        checked: 0,
+        processedCount: 0,
+        processed: [],
+        skipped: true,
+        reason: "already_running",
+      });
+    }
+
+    const result = run.result;
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(

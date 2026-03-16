@@ -11,20 +11,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, PlusCircle, FilePen } from 'lucide-react';
+import { Trash2, PlusCircle, FilePen, RefreshCcw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
+import { isLiveMode } from '@/lib/config/app-mode';
 import type { SystemTemplate, SystemTemplateCategory } from '@/lib/types';
 import { defaultSystemSettings } from '@/lib/system-settings';
 
 export default function BarangaySettingsPage() {
     const { toast } = useToast();
     const { systemSettings, saveSystemSettings } = useData();
+    const { currentUser } = useAuth();
     const [brgyDescription, setBrgyDescription] = useState(defaultSystemSettings.brgyDescription);
     const [zoneDescriptions, setZoneDescriptions] = useState(defaultSystemSettings.zoneDescriptions);
     const [replyStartTime, setReplyStartTime] = useState(defaultSystemSettings.replyStartTime);
@@ -49,6 +52,7 @@ export default function BarangaySettingsPage() {
 
     const [autoReplyEnabled, setAutoReplyEnabled] = useState(defaultSystemSettings.autoReplyEnabled);
     const [autoReplyTimeout, setAutoReplyTimeout] = useState(defaultSystemSettings.autoReplyTimeoutMinutes);
+    const [runningAutomation, setRunningAutomation] = useState<null | 'overdue' | 'followup'>(null);
     
     useEffect(() => {
         setBrgyDescription(systemSettings.brgyDescription);
@@ -168,6 +172,52 @@ export default function BarangaySettingsPage() {
         });
     }
 
+    const runAutomation = async (target: 'overdue' | 'followup') => {
+        if (!currentUser) {
+            toast({
+                title: "Walang live session",
+                description: "Mag-sign in muna sa live account bago magpatakbo ng automation.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setRunningAutomation(target);
+
+        try {
+            const token = await currentUser.getIdToken();
+            const path = target === 'overdue'
+                ? '/api/system/process-overdue-sms'
+                : '/api/system/process-follow-ups';
+            const response = await fetch(path, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(typeof payload.error === 'string' ? payload.error : 'Hindi natapos ang automation run.');
+            }
+
+            toast({
+                title: target === 'overdue' ? 'Natapos ang overdue SMS check' : 'Natapos ang follow-up check',
+                description: payload.skipped
+                    ? 'May kasalukuyang automation run na isinasagawa sa ibang session.'
+                    : `${payload.processedCount ?? 0} item ang naproseso sa batch na ito.`,
+            });
+        } catch (error) {
+            toast({
+                title: "Hindi natapos ang automation run",
+                description: error instanceof Error ? error.message : "Subukan muli pagkatapos ng ilang sandali.",
+                variant: "destructive",
+            });
+        } finally {
+            setRunningAutomation(null);
+        }
+    };
+
   return (
     <div className="flex flex-col gap-8">
       <div className="space-y-1">
@@ -262,8 +312,44 @@ export default function BarangaySettingsPage() {
         </CardFooter>
       </Card>
 
+      {isLiveMode ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle>Automation sa Free Hosting</CardTitle>
+            <CardDescription>
+              Gumagana pa rin ang overdue SMS at follow-up automation sa Vercel Hobby kahit walang paid cron jobs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Habang may naka-open na live dashboard, awtomatikong tatakbo ang overdue SMS checks kada 1 minuto at ang follow-up checks kada 30 minuto.
+            </p>
+            <p>
+              Kapag walang staff na naka-open sa dashboard, hindi tuloy-tuloy ang background run. Maaari mong gamitin ang mga button sa ibaba para mano-manong patakbuhin ang checks anumang oras.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => runAutomation('overdue')}
+              disabled={runningAutomation !== null}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {runningAutomation === 'overdue' ? 'Pinoproseso ang overdue SMS...' : 'Patakbuhin ang Overdue SMS Check'}
+            </Button>
+            <Button
+              onClick={() => runAutomation('followup')}
+              disabled={runningAutomation !== null}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {runningAutomation === 'followup' ? 'Pinoproseso ang follow-up...' : 'Patakbuhin ang Follow-up Check'}
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : null}
+      
         <Card>
-            <CardHeader>
+          <CardHeader>
                 <CardTitle>Mga Template ng Tugon</CardTitle>
                 <CardDescription>Pindutin ang isang kategorya para tingnan, i-edit, o tanggalin ang mga template.</CardDescription>
             </CardHeader>

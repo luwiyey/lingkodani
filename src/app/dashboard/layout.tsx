@@ -6,6 +6,7 @@ import Link from "next/link";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
+import { LiveAutomationRunner } from "@/components/layout/live-automation-runner";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Shield } from "lucide-react";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
@@ -75,6 +76,7 @@ export default function DashboardLayout({
     <SidebarProvider>
       {!isDisasterPath && <AppSidebar />}
       <SidebarInset>
+        <LiveAutomationRunner />
         <Header />
         <div className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 lg:p-8 md:pb-8">
           {children}

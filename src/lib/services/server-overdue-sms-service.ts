@@ -12,7 +12,7 @@ const liveServerSmsProvider: SmsProvider = {
   },
 };
 
-export async function processLiveOverdueSmsMessages() {
+export async function processLiveOverdueSmsMessages(actorName = "system") {
   const db = getServerFirestore();
   const systemSettings = await getServerSystemSettings();
   const snapshot = await db
@@ -28,7 +28,7 @@ export async function processLiveOverdueSmsMessages() {
       settings: systemSettings,
       provider: liveServerSmsProvider,
       providerName: `live-${process.env.LIVE_SMS_PROVIDER ?? "generic"}`,
-      actorName: "system",
+      actorName,
     });
 
     if (!result) {
