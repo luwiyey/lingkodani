@@ -14,11 +14,14 @@ import { registeredUsers as initialUsers } from "@/lib/data";
 import { getClientAuth } from "@/lib/firebase/auth-client";
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { hasFirebaseConfig } from "@/lib/firebase/shared";
 import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, readDemoPreviewUser, readOnboardingProfile } from "@/lib/onboarding";
 import type { User } from "@/lib/types";
 
 const DEMO_SESSION_KEY = "demoSessionEmail";
 const DEMO_SESSION_EVENT = "demo-session-change";
+const LIVE_FIREBASE_CONFIG_ERROR =
+  "Hindi pa kumpleto ang live Firebase web configuration ng deployment na ito. Idagdag ang lahat ng NEXT_PUBLIC_FIREBASE_* values sa Production environment variables.";
 
 type AuthContextType = {
   currentUser: FirebaseUser | null;
@@ -83,6 +86,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return () => {
         window.removeEventListener(DEMO_SESSION_EVENT, loadDemoProfile);
         window.removeEventListener("storage", loadDemoProfile);
+      };
+    }
+
+    if (!hasFirebaseConfig()) {
+      const syncPreviewProfile = () => {
+        setCurrentUser(null);
+        setCurrentUserProfile(readDemoPreviewUser());
+        setAuthError(LIVE_FIREBASE_CONFIG_ERROR);
+        setAuthLoading(false);
+      };
+
+      syncPreviewProfile();
+      window.addEventListener(DEMO_PREVIEW_EVENT, syncPreviewProfile);
+      window.addEventListener("storage", syncPreviewProfile);
+
+      return () => {
+        window.removeEventListener(DEMO_PREVIEW_EVENT, syncPreviewProfile);
+        window.removeEventListener("storage", syncPreviewProfile);
       };
     }
 
@@ -213,6 +234,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new Event(DEMO_SESSION_EVENT));
         return;
       }
+      if (!hasFirebaseConfig()) {
+        setAuthError(LIVE_FIREBASE_CONFIG_ERROR);
+        throw new Error(LIVE_FIREBASE_CONFIG_ERROR);
+      }
       clearDemoPreviewUser();
       const auth = getClientAuth();
       await signInWithEmailAndPassword(auth, email, password);
@@ -232,6 +257,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!currentUser && readDemoPreviewUser()) {
           clearDemoPreviewUser();
           setCurrentUserProfile(null);
+          return;
+        }
+        if (!hasFirebaseConfig()) {
+          setAuthError(LIVE_FIREBASE_CONFIG_ERROR);
           return;
         }
         const auth = getClientAuth();
