@@ -12,8 +12,18 @@ export type OnboardingProfile = {
   completedAt: string;
 };
 
+export type StartFlowDraft = {
+  selectedApplication: ApplicationChoice | null;
+  position: string;
+  age: string;
+  yearsInService: string;
+  preferredWorkspace: PreferredWorkspace;
+  workspaceTouched: boolean;
+};
+
 const ONBOARDING_STORAGE_KEY = "lingkodAniOnboardingProfile";
 const DEMO_PREVIEW_STORAGE_KEY = "lingkodAniDemoPreviewUser";
+const START_FLOW_DRAFT_STORAGE_KEY = "lingkodAniStartFlowDraft";
 
 export const DEMO_PREVIEW_EVENT = "lingkod-ani-demo-preview-change";
 
@@ -47,6 +57,30 @@ export function saveOnboardingProfile(profile: OnboardingProfile) {
   }
 
   window.localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(profile));
+}
+
+export function readStartFlowDraft() {
+  if (!canUseBrowserStorage()) {
+    return null;
+  }
+
+  return parseJson<StartFlowDraft>(window.localStorage.getItem(START_FLOW_DRAFT_STORAGE_KEY));
+}
+
+export function saveStartFlowDraft(draft: StartFlowDraft) {
+  if (!canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(START_FLOW_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+}
+
+export function clearStartFlowDraft() {
+  if (!canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(START_FLOW_DRAFT_STORAGE_KEY);
 }
 
 export function readDemoPreviewUser() {

@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 export default function IncidentsPage() {
-  return null;
+  redirect('/dashboard/active-issues');
 }

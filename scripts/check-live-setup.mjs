@@ -28,6 +28,55 @@ function isPresent(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function readLiveSmsProvider() {
+  const explicitProvider = (process.env.LIVE_SMS_PROVIDER ?? process.env.NEXT_PUBLIC_LIVE_SMS_PROVIDER ?? "").trim().toLowerCase();
+
+  if (["twilio", "semaphore", "smsgate"].includes(explicitProvider)) {
+    return explicitProvider;
+  }
+
+  if (
+    isPresent(process.env.SMSGATE_USERNAME) ||
+    isPresent(process.env.SMSGATE_PASSWORD) ||
+    isPresent(process.env.SMSGATE_DEVICE_ID) ||
+    isPresent(process.env.SMS_USERNAME) ||
+    isPresent(process.env.SMS_PASSWORD) ||
+    isPresent(process.env.SMS_DEVICE_ID) ||
+    isPresent(process.env.SMS_API_URL)
+  ) {
+    return "smsgate";
+  }
+
+  if (
+    isPresent(process.env.TWILIO_ACCOUNT_SID) ||
+    isPresent(process.env.TWILIO_AUTH_TOKEN) ||
+    isPresent(process.env.TWILIO_FROM_NUMBER)
+  ) {
+    return "twilio";
+  }
+
+  if (
+    isPresent(process.env.SEMAPHORE_API_KEY) ||
+    isPresent(process.env.SEMAPHORE_SENDER_NAME)
+  ) {
+    return "semaphore";
+  }
+
+  return "generic";
+}
+
+function readSmsgateUsername() {
+  return process.env.SMSGATE_USERNAME ?? process.env.SMS_USERNAME ?? "";
+}
+
+function readSmsgatePassword() {
+  return process.env.SMSGATE_PASSWORD ?? process.env.SMS_PASSWORD ?? "";
+}
+
+function readSmsgateDeviceId() {
+  return process.env.SMSGATE_DEVICE_ID ?? process.env.SMS_DEVICE_ID ?? "";
+}
+
 function printStatus(label, passed, details) {
   console.log(`${passed ? "[ok]" : "[missing]"} ${label}: ${details}`);
 }
@@ -74,26 +123,26 @@ printStatus(
 );
 printStatus(
   "Live SMS provider",
-  isPresent(process.env.LIVE_SMS_PROVIDER),
-  process.env.LIVE_SMS_PROVIDER ?? "not set"
+  true,
+  readLiveSmsProvider()
 );
 
-if (process.env.LIVE_SMS_PROVIDER === "smsgate") {
+if (readLiveSmsProvider() === "smsgate") {
   printStatus(
     "SMSGate credentials",
-    isPresent(process.env.SMSGATE_USERNAME) && isPresent(process.env.SMSGATE_PASSWORD),
-    isPresent(process.env.SMSGATE_USERNAME) && isPresent(process.env.SMSGATE_PASSWORD)
+    isPresent(readSmsgateUsername()) && isPresent(readSmsgatePassword()),
+    isPresent(readSmsgateUsername()) && isPresent(readSmsgatePassword())
       ? "ready"
-      : "missing SMSGATE_USERNAME or SMSGATE_PASSWORD"
+      : "missing SMSGATE_USERNAME/SMS_USERNAME or SMSGATE_PASSWORD/SMS_PASSWORD"
   );
   printStatus(
     "SMSGate device",
-    isPresent(process.env.SMSGATE_DEVICE_ID),
-    process.env.SMSGATE_DEVICE_ID ?? "missing SMSGATE_DEVICE_ID"
+    isPresent(readSmsgateDeviceId()),
+    readSmsgateDeviceId() || "missing SMSGATE_DEVICE_ID/SMS_DEVICE_ID"
   );
 }
 
-if (process.env.LIVE_SMS_PROVIDER === "generic") {
+if (readLiveSmsProvider() === "generic") {
   printStatus(
     "Generic SMS webhook URL",
     isPresent(process.env.GENERIC_SMS_WEBHOOK_URL),

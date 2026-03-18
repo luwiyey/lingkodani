@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
 import type { RuntimeCapabilities } from "@/lib/runtime-capabilities";
+import {
+  readLiveSmsProvider,
+  readSmsgateDeviceId,
+  readSmsgatePassword,
+  readSmsgateUsername,
+} from "@/lib/providers/sms/live-sms-config";
 
 function isPresent(value: string | undefined) {
   return typeof value === "string" && value.trim().length > 0;
@@ -43,19 +49,19 @@ function resolveLiveSmsStatus(mode: "demo" | "live", realSmsEnabled: boolean) {
     };
   }
 
-  const provider = (process.env.LIVE_SMS_PROVIDER ?? process.env.NEXT_PUBLIC_LIVE_SMS_PROVIDER ?? "generic").toLowerCase();
+  const provider = readLiveSmsProvider(process.env);
 
   if (provider === "smsgate") {
     const configured =
-      isPresent(process.env.SMSGATE_USERNAME) &&
-      isPresent(process.env.SMSGATE_PASSWORD) &&
-      isPresent(process.env.SMSGATE_DEVICE_ID);
+      isPresent(readSmsgateUsername(process.env)) &&
+      isPresent(readSmsgatePassword(process.env)) &&
+      isPresent(readSmsgateDeviceId(process.env));
 
     return {
       configured,
       reason: configured
         ? ""
-        : "Kailangan muna ang SMSGATE_USERNAME, SMSGATE_PASSWORD, at SMSGATE_DEVICE_ID bago i-enable ang live SMS.",
+        : "Kailangan muna ang SMSGATE_USERNAME/SMS_USERNAME, SMSGATE_PASSWORD/SMS_PASSWORD, at SMSGATE_DEVICE_ID/SMS_DEVICE_ID bago i-enable ang live SMS.",
     };
   }
 

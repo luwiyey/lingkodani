@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { getStringAtPaths, type WebhookPayloadRecord } from "@/lib/webhook-request";
+import { readSmsgateBaseUrl } from "@/lib/providers/sms/live-sms-config";
 
 export const SMSGATE_DEFAULT_BASE_URL = "https://api.sms-gate.app/3rdparty/v1";
 
@@ -13,7 +14,7 @@ export function getSmsgateAuthHeader(username: string, password: string) {
 }
 
 export function getSmsgateBaseUrl() {
-  const configured = process.env.SMSGATE_BASE_URL?.trim();
+  const configured = readSmsgateBaseUrl(process.env);
   return (configured && configured.length > 0 ? configured : SMSGATE_DEFAULT_BASE_URL).replace(/\/+$/, "");
 }
 

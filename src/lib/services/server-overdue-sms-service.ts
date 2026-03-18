@@ -1,6 +1,7 @@
 import type { SmsProvider } from "@/lib/providers/sms/types";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import { getServerSystemSettings } from "@/lib/server/system-settings";
 import { processOverdueSmsMessage } from "@/lib/services/overdue-sms-service";
 import { sendLiveSms } from "@/lib/services/server-live-outbound-sms-service";
@@ -27,7 +28,7 @@ export async function processLiveOverdueSmsMessages(actorName = "system") {
       message,
       settings: systemSettings,
       provider: liveServerSmsProvider,
-      providerName: `live-${process.env.LIVE_SMS_PROVIDER ?? "generic"}`,
+      providerName: `live-${readLiveSmsProvider(process.env)}`,
       actorName,
     });
 

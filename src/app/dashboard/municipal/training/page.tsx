@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 export default function TrainingPage() {
-  return null;
+  redirect('/dashboard/training');
 }

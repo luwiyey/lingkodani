@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 export default function OversightPage() {
-  return null;
+  redirect('/dashboard/oversight');
 }

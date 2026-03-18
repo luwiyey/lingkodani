@@ -1,18 +1,18 @@
 import { randomUUID } from "node:crypto";
 
+import {
+  readLiveSmsProvider,
+  readSmsgateDeviceId,
+  readSmsgatePassword,
+  readSmsgateUsername,
+} from "@/lib/providers/sms/live-sms-config";
 import { getSmsgateAuthHeader, getSmsgateBaseUrl } from "@/lib/providers/sms/smsgate";
 import type { SendSmsInput, SendSmsResult } from "@/lib/providers/sms/types";
 
 type SupportedProvider = "twilio" | "semaphore" | "generic" | "smsgate";
 
 function getProvider(): SupportedProvider {
-  const provider = (process.env.LIVE_SMS_PROVIDER ?? "generic").toLowerCase();
-
-  if (provider === "twilio" || provider === "semaphore" || provider === "smsgate") {
-    return provider;
-  }
-
-  return "generic";
+  return readLiveSmsProvider(process.env);
 }
 
 export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
@@ -87,8 +87,8 @@ export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
   }
 
   if (provider === "smsgate") {
-    const username = process.env.SMSGATE_USERNAME;
-    const password = process.env.SMSGATE_PASSWORD;
+    const username = readSmsgateUsername(process.env);
+    const password = readSmsgatePassword(process.env);
     const sendEndpoint =
       process.env.SMSGATE_SEND_ENDPOINT?.trim() ||
       `${getSmsgateBaseUrl()}/messages`;
@@ -110,7 +110,7 @@ export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
       phoneNumbers: [input.to],
       withDeliveryReport: true,
     };
-    const deviceId = process.env.SMSGATE_DEVICE_ID?.trim();
+    const deviceId = readSmsgateDeviceId(process.env);
     const simNumber = process.env.SMSGATE_SIM_NUMBER?.trim();
     const deviceActiveWithin = process.env.SMSGATE_DEVICE_ACTIVE_WITHIN?.trim();
     const skipPhoneValidation = process.env.SMSGATE_SKIP_PHONE_VALIDATION?.trim();

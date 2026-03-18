@@ -1,6 +1,7 @@
 import type { SmsProvider } from "@/lib/providers/sms/types";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import { processDueFollowUpMessage } from "@/lib/services/follow-up-service";
 import { sendLiveSms } from "@/lib/services/server-live-outbound-sms-service";
 import type { SmsMessage } from "@/lib/types";
@@ -21,7 +22,7 @@ export async function processLiveFollowUpMessages(actorName = "system") {
     const result = await processDueFollowUpMessage({
       message,
       provider: liveServerSmsProvider,
-      providerName: `live-${process.env.LIVE_SMS_PROVIDER ?? "generic"}`,
+      providerName: `live-${readLiveSmsProvider(process.env)}`,
       actorName,
     });
 
