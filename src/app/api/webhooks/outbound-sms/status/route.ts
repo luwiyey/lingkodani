@@ -1,29 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { isLiveMode } from "@/lib/config/app-mode";
-import { firebaseCollections } from "@/lib/firebase/collections";
-import { getServerFirestore } from "@/lib/firebase/server";
+import { applyOutboundStatusPayload } from "@/lib/outbound-status-webhook";
 import { verifyTextbeeWebhookSignature } from "@/lib/providers/sms/textbee";
 import { verifySmsgateWebhookSignature } from "@/lib/providers/sms/smsgate";
-import type { OutboundMessageStatus } from "@/lib/types";
-import { getStringAtPaths, readWebhookRequest, type WebhookPayloadRecord } from "@/lib/webhook-request";
-
-function normalizeStatus(value: string | undefined): OutboundMessageStatus | null {
-  const status = (value ?? "").toLowerCase();
-
-  if (["message_sent"].includes(status)) return "sent";
-  if (["message_delivered"].includes(status)) return "delivered";
-  if (["message_failed"].includes(status)) return "failed";
-  if (["delivered", "delivery_report_delivered", "success"].includes(status)) return "delivered";
-  if (["sent", "accepted"].includes(status)) return "sent";
-  if (["queued", "buffered"].includes(status)) return "queued";
-  if (["failed", "undelivered", "error"].includes(status)) return "failed";
-  if (["sms:sent"].includes(status)) return "sent";
-  if (["sms:delivered"].includes(status)) return "delivered";
-  if (["sms:failed"].includes(status)) return "failed";
-
-  return null;
-}
+import { readWebhookRequest } from "@/lib/webhook-request";
 
 function isAuthorized(
   request: Request,
@@ -64,37 +45,6 @@ function isAuthorized(
   return !isLiveMode;
 }
 
-function parseStatusPayload(rawBody: WebhookPayloadRecord) {
-  const providerMessageId = getStringAtPaths(
-    rawBody,
-    ["providerMessageId"],
-    ["messageId"],
-    ["MessageSid"],
-    ["message_id"],
-    ["smsId"],
-    ["id"],
-    ["payload", "messageId"]
-  );
-  const eventOrStatus = getStringAtPaths(
-    rawBody,
-    ["webhookEvent"],
-    ["status"],
-    ["MessageStatus"],
-    ["delivery_status"],
-    ["event"]
-  );
-  const status = normalizeStatus(eventOrStatus);
-  const errorMessage = getStringAtPaths(
-    rawBody,
-    ["error"],
-    ["errorMessage"],
-    ["payload", "failureReason"],
-    ["payload", "reason"]
-  );
-
-  return { providerMessageId, status, errorMessage };
-}
-
 export async function POST(request: Request) {
   const webhookRequest = await readWebhookRequest(request);
 
@@ -102,49 +52,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized webhook request." }, { status: 401 });
   }
 
-  const { providerMessageId, status, errorMessage } = parseStatusPayload(webhookRequest.body);
+  const result = await applyOutboundStatusPayload(webhookRequest.body);
 
-  if (!providerMessageId || !status) {
+  if (!result.ok) {
     return NextResponse.json(
-      { error: "Hindi mabasa ang outbound status payload." },
-      { status: 400 }
+      { error: result.error },
+      { status: result.code }
     );
   }
-
-  const db = getServerFirestore();
-  const snapshot = await db
-    .collection(firebaseCollections.outboundMessages)
-    .where("providerMessageId", "==", providerMessageId)
-    .limit(1)
-    .get();
-  const target = snapshot.docs[0];
-
-  if (!target) {
-    return NextResponse.json(
-      { error: "Walang outbound record na tumugma sa provider message ID." },
-      { status: 404 }
-    );
-  }
-
-  const timestamp = new Date().toISOString();
-  const updates: Record<string, string> = {
-    status,
-    lastStatusAt: timestamp,
-  };
-
-  if (errorMessage) {
-    updates.errorMessage = errorMessage;
-  }
-
-  if (status === "delivered") {
-    updates.deliveryReceivedAt = timestamp;
-  }
-
-  await target.ref.update(updates);
 
   return NextResponse.json({
     updated: true,
-    outboundId: target.id,
-    status,
+    outboundId: result.outboundId,
+    status: result.status,
   });
 }

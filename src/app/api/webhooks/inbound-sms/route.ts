@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isLiveMode } from "@/lib/config/app-mode";
 import { parseInboundWebhookRequest } from "@/lib/inbound-webhook";
+import { applyOutboundStatusPayload, parseOutboundStatusPayload } from "@/lib/outbound-status-webhook";
 import { verifyTextbeeWebhookSignature } from "@/lib/providers/sms/textbee";
 import { verifySmsgateWebhookSignature } from "@/lib/providers/sms/smsgate";
 import { enqueueInboundWebhook, peekInboundWebhookCount } from "@/lib/server/inbound-sms-queue";
@@ -52,6 +53,34 @@ export async function POST(request: Request) {
 
   if (!isAuthorized(request, webhookRequest.rawBody, webhookRequest.body)) {
     return NextResponse.json({ error: "Unauthorized webhook request." }, { status: 401 });
+  }
+
+  const outboundStatus = parseOutboundStatusPayload(webhookRequest.body);
+
+  if (outboundStatus.providerMessageId && outboundStatus.status) {
+    if (!isLiveMode) {
+      return NextResponse.json({
+        accepted: true,
+        ignored: true,
+        reason: "Outbound status callbacks are ignored in demo mode.",
+      });
+    }
+
+    const result = await applyOutboundStatusPayload(webhookRequest.body);
+
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.code }
+      );
+    }
+
+    return NextResponse.json({
+      accepted: true,
+      updated: true,
+      outboundId: result.outboundId,
+      status: result.status,
+    });
   }
 
   const inbound = await parseInboundWebhookRequest(webhookRequest);
