@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
         </form>
         <div className="mt-4 text-center text-sm">
             <HoverTooltip text="Bumalik sa pahina ng pag-login.">
-                <Link href="/" className="underline text-muted-foreground">
+                <Link href="/login" className="underline text-muted-foreground">
                     Bumalik sa Pag-login
                 </Link>
             </HoverTooltip>

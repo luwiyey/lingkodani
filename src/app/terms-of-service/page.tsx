@@ -1,6 +1,6 @@
 
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { LegalBackLink } from '@/components/legal/legal-back-link';
 
 export const metadata: Metadata = {
   title: 'Mga Tuntunin ng Serbisyo | Lingkod-Ani',
@@ -31,8 +31,7 @@ export default function TermsOfServicePage() {
 
            <h2 className="text-2xl font-semibold">Makipag-ugnayan sa Amin</h2>
           <p>Kung mayroon kang anumang mga katanungan tungkol sa mga Tuntunin at Kundisyon na ito, maaari kang makipag-ugnayan sa amin: sa pamamagitan ng email: contact@lingkodani.gov.ph</p>
-
-          <Link href="/dashboard" className="text-primary hover:underline mt-8 block">Bumalik sa Dashboard</Link>
+          <LegalBackLink />
         </div>
       </main>
     </div>

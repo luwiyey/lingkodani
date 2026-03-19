@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 
+import { DEMO_PREVIEW_ACCESS_COOKIE_NAME } from "@/lib/demo-preview-access";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
 import type { User } from "@/lib/types";
@@ -60,4 +61,9 @@ export async function readServerSessionProfile(): Promise<ServerSessionProfile |
   } catch {
     return null;
   }
+}
+
+export async function hasServerDemoPreviewAccess() {
+  const cookieStore = await cookies();
+  return cookieStore.get(DEMO_PREVIEW_ACCESS_COOKIE_NAME)?.value === "1";
 }

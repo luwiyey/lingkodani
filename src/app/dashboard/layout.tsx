@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { isLiveMode } from "@/lib/config/app-mode";
-import { readServerSessionProfile } from "@/lib/server/session-auth";
+import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
 import { DashboardShell } from "./dashboard-shell";
 
 export default async function DashboardLayout({
@@ -11,7 +11,9 @@ export default async function DashboardLayout({
 }) {
   if (isLiveMode) {
     const session = await readServerSessionProfile();
-    if (!session) {
+    const hasDemoPreviewAccess = await hasServerDemoPreviewAccess();
+
+    if (!session && !hasDemoPreviewAccess) {
       redirect("/login");
     }
   }

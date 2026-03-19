@@ -1,4 +1,5 @@
 import { registeredUsers as initialUsers } from "@/lib/data";
+import { clearDemoPreviewAccessCookie, enableDemoPreviewAccessCookie } from "@/lib/demo-preview-access";
 import type { PreferredWorkspace, User } from "@/lib/types";
 
 export type ApplicationChoice = "demo" | "live";
@@ -103,6 +104,7 @@ export function saveDemoPreviewUser(user: User) {
   }
 
   window.localStorage.setItem(DEMO_PREVIEW_STORAGE_KEY, JSON.stringify(user));
+  enableDemoPreviewAccessCookie();
   window.dispatchEvent(new Event(DEMO_PREVIEW_EVENT));
 }
 
@@ -112,6 +114,7 @@ export function clearDemoPreviewUser() {
   }
 
   window.localStorage.removeItem(DEMO_PREVIEW_STORAGE_KEY);
+  clearDemoPreviewAccessCookie();
   window.dispatchEvent(new Event(DEMO_PREVIEW_EVENT));
 }
 

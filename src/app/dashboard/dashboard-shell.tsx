@@ -11,6 +11,7 @@ import { LiveAutomationRunner } from "@/components/layout/live-automation-runner
 import { MobileFooter } from "@/components/layout/mobile-footer";
 import { useAuth } from "@/context/auth-context";
 import { isLiveMode } from "@/lib/config/app-mode";
+import { buildLegalPageHref } from "@/lib/legal-links";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 
 const developerAllowedPrefixes = [
@@ -84,7 +85,7 @@ export function DashboardShell({
           {children}
         </div>
         <footer className="hidden px-8 pb-8 pt-0 text-center text-xs text-muted-foreground md:block">
-          <span>Lingkod-Ani v1.0</span> | <span>Barangay Agricultural Advisory System</span> | <Link href="/terms-of-service" className="hover:underline">Terms of Service</Link> | <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
+          <span>Lingkod-Ani v1.0</span> | <span>Barangay Agricultural Advisory System</span> | <Link href={buildLegalPageHref("/terms-of-service", "dashboard")} className="hover:underline">Terms of Service</Link> | <Link href={buildLegalPageHref("/privacy-policy", "dashboard")} className="hover:underline">Privacy Policy</Link>
         </footer>
         {!isDisasterPath && <MobileFooter />}
       </SidebarInset>

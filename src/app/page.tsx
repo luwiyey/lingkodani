@@ -3,37 +3,38 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Check, MessageSquare, ShieldAlert } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { buildLegalPageHref } from "@/lib/legal-links";
 
 const featureRows = [
   {
     icon: MessageSquare,
     title: "Pinag-isang Komunikasyon",
     description:
-      "Pamahalaan ang lahat ng SMS mula sa mga magsasaka sa isang live feed, na may pagsusuri ng AI para sa layunin, tono, at pagka-apurahan.",
+      "Pamahalaan ang lahat ng SMS mula sa mga magsasaka sa iisang live feed, na may AI analysis para sa layunin, tono, at antas ng pagkaapurahan.",
     points: [
       "Isang feed para sa lahat ng papasok na mensahe",
-      "Mas mabilis na triage gamit ang AI intent at urgency detection",
-      "Mas malinaw na coordination para sa field response",
+      "Mas mabilis na pag-triage gamit ang AI intent at urgency detection",
+      "Mas malinaw na koordinasyon para sa field response",
     ],
   },
   {
     icon: BookOpen,
     title: "Base ng Kaalaman na may AI",
     description:
-      "Maghanap ng mga sagot sa kumplikadong tanong gamit ang AI na natututo mula sa lokal na gabay, ulat, at barangay knowledge files.",
+      "Maghanap ng sagot sa mga kumplikadong tanong gamit ang AI na natututo mula sa lokal na gabay, mga ulat, at barangay knowledge files.",
     points: [
-      "Mas mabilis na retrieval ng advisories",
-      "Mas kaunting manual lookup sa documentation",
+      "Mas mabilis na pagkuha ng advisories",
+      "Mas kaunting manu-manong paghahanap sa documentation",
     ],
   },
   {
     icon: ShieldAlert,
     title: "Pamamahala ng Alerto",
     description:
-      "Awtomatikong tukuyin ang mga panganib tulad ng peste at baha, at magpadala ng mga alerto sa komunidad sa ilang click lang.",
+      "Awtomatikong tukuyin ang mga panganib tulad ng peste at baha, at magpadala ng alerto sa komunidad sa loob lamang ng ilang click.",
     points: [
-      "Mas maagang pag-detect ng risk signals",
-      "Mas mabilis na broadcast sa komunidad",
+      "Mas maagang pagtukoy ng mga senyales ng panganib",
+      "Mas mabilis na pagpapadala ng abiso sa komunidad",
     ],
   },
 ];
@@ -73,7 +74,7 @@ export default function LandingPage() {
               Paghubog sa kinabukasan ng pagsasaka gamit ang mas malinaw na barangay response.
             </h1>
             <p className="mx-auto mt-6 max-w-3xl text-lg text-white/88 md:text-xl">
-              Ang Lingkod-Ani ay isang plataporma na pinapagana ng AI para sa mga Agricultural Extension Workers, na nagbibigay ng real-time na komunikasyon, barangay action tracking, at mas maayos na serbisyo para sa mga Pilipinong magsasaka.
+              Ang Lingkod-Ani ay isang plataporma para sa mga Agricultural Extension Workers na, sa tulong ng AI, ay nagbibigay ng real-time na komunikasyon, pagsubaybay sa mga aksyon sa barangay, at mas maayos na serbisyo para sa mga magsasakang Pilipino.
             </p>
             <div className="mt-10 flex items-center justify-center">
               <Button size="lg" asChild>
@@ -90,13 +91,13 @@ export default function LandingPage() {
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-5xl space-y-4">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
-                Mga Pangunahing Tampok
+                Mga Pangunahing Kakayahan
               </p>
               <h2 className="max-w-4xl text-3xl font-semibold tracking-tight md:text-5xl">
-                Mga tool na nakaayos para sa aktwal na daloy ng trabaho sa bukid at opisina
+                Mga tool na nakaayon sa tunay na daloy ng trabaho sa bukid at opisina
               </h2>
               <p className="max-w-3xl text-lg text-muted-foreground md:text-[1.35rem]">
-                Sa halip na hiwa-hiwalay na module, ang Lingkod-Ani ay dinisenyo bilang iisang working surface para sa komunikasyon, kaalaman, alerts, at follow-through sa farmer support.
+                Sa halip na hiwa-hiwalay na mga module, ang Lingkod-Ani ay dinisenyo bilang isang iisang working surface para sa komunikasyon, kaalaman, alerts, at follow-through sa farmer support.
               </p>
             </div>
 
@@ -217,10 +218,10 @@ export default function LandingPage() {
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground md:flex-row">
           <p>&copy; {new Date().getFullYear()} Lingkod-Ani. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="/terms-of-service" className="hover:underline">
+                            <Link href={buildLegalPageHref("/terms-of-service", "startup")} className="hover:underline">
               Terms of Service
             </Link>
-            <Link href="/privacy-policy" className="hover:underline">
+            <Link href={buildLegalPageHref("/privacy-policy", "startup")} className="hover:underline">
               Privacy Policy
             </Link>
           </div>

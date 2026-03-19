@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 import {
   AlertDialog,
@@ -28,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useData } from "@/context/data-context";
 import { isDemoMode, isLiveMode } from "@/lib/config/app-mode";
+import { buildLegalPageHref } from "@/lib/legal-links";
 import { readOnboardingProfile } from "@/lib/onboarding";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
@@ -71,6 +73,7 @@ function LoginPageContent() {
   const [onboardingProfile, setOnboardingProfile] = useState<ReturnType<typeof readOnboardingProfile>>(null);
   const [showNotRegisteredDialog, setShowNotRegisteredDialog] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [accessErrorMessage, setAccessErrorMessage] = useState(
     "Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa developer upang ma-access ang Lingkod-Ani."
   );
@@ -153,18 +156,18 @@ function LoginPageContent() {
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-1 items-center justify-center px-4 py-8">
-        <Card className="mx-auto w-full max-w-md border-white/80 bg-white text-foreground shadow-[0_30px_80px_-36px_rgba(15,23,42,0.55)]">
-          <CardHeader className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(248,251,248,0.98),rgba(255,255,255,0.98))] text-center">
-            <div className="mb-2 flex items-center justify-center gap-3">
+        <Card className="mx-auto w-full max-w-md overflow-hidden border border-slate-200/80 bg-white text-foreground shadow-[0_24px_72px_-40px_rgba(15,23,42,0.32)]">
+          <CardHeader className="pb-4 pt-8 text-center sm:pb-5 sm:pt-9">
+            <div className="mb-3 flex items-center justify-center gap-3">
               <Image src="/logo.png" width={34} height={34} alt="Lingkod-Ani Logo" className="h-[34px] w-[34px]" />
               <h1 className="text-3xl font-semibold tracking-tight text-primary">Lingkod-Ani</h1>
             </div>
             <CardTitle className="text-2xl text-foreground">Pag-login ng Administrator</CardTitle>
-            <CardDescription className="text-muted-foreground">
+            <CardDescription className="mx-auto mt-1 max-w-[26rem] text-[14px] leading-7 text-muted-foreground/90">
               Ilagay ang iyong mga kredensyal upang ma-access ang dashboard.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6 pt-2 sm:px-7 sm:pb-7">
             {cameFromStart && onboardingProfile ? (
               <div className="mb-4 rounded-[calc(var(--radius)+6px)] border border-border/80 bg-[linear-gradient(180deg,#f9fbf9_0%,#f5f8f5_100%)] p-4 text-left">
                 <p className="text-sm font-semibold text-primary">
@@ -196,10 +199,10 @@ function LoginPageContent() {
               </div>
             ) : null}
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="mt-2 space-y-5">
               <HoverTooltip text="Ilagay ang email address na nakarehistro sa iyong account.">
-                <div className="space-y-2">
-                  <Label htmlFor="email">
+                <div className="space-y-2.5">
+                  <Label htmlFor="email" className="text-[15px] font-medium text-foreground">
                     Email
                   </Label>
                   <Input
@@ -208,37 +211,52 @@ function LoginPageContent() {
                     type="email"
                     placeholder="admin@example.com"
                     defaultValue={isDemoMode ? "brgy-admin@lingkodani.gov.ph" : ""}
+                    autoComplete="username"
                     required
                     disabled={loading}
+                    className="h-12 rounded-xl border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0 [&:-webkit-autofill]:[-webkit-text-fill-color:#111827] [&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_white]"
                   />
                 </div>
               </HoverTooltip>
 
               <HoverTooltip text="Ilagay ang iyong password.">
-                <div className="space-y-2">
-                  <Label htmlFor="password">
+                <div className="space-y-2.5">
+                  <Label htmlFor="password" className="text-[15px] font-medium text-foreground">
                     Password
                   </Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    defaultValue={isDemoMode ? "password" : ""}
-                    placeholder="password"
-                    required
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      defaultValue={isDemoMode ? "password" : ""}
+                      placeholder="password"
+                      autoComplete="current-password"
+                      required
+                      disabled={loading}
+                      className="h-12 rounded-xl border-slate-200 bg-white px-4 pr-12 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      disabled={loading}
+                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed"
+                      aria-label={showPassword ? "Itago ang password" : "Ipakita ang password"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               </HoverTooltip>
 
               <HoverTooltip text="I-click upang mag-sign in sa iyong account.">
-                <Button type="submit" className="mt-2 w-full" disabled={loading}>
+                <Button type="submit" className="mt-3 h-12 w-full text-base font-semibold" disabled={loading}>
                   {loading ? "Nagsa-sign in..." : "Mag-sign In"}
                 </Button>
               </HoverTooltip>
             </form>
 
-            <div className="mt-4 space-y-2 text-center text-sm">
+            <div className="mt-5 space-y-2 text-center text-sm">
               <HoverTooltip text="Simulan ang proseso ng pag-reset ng iyong password.">
                 <Link href="/reset-password" className="text-muted-foreground underline hover:text-foreground">
                   Nakalimutan ang iyong password?
@@ -255,11 +273,11 @@ function LoginPageContent() {
       </div>
 
       <footer className="relative z-10 p-4 text-center text-xs text-white/90">
-        <Link href="/terms-of-service" className="hover:underline">
+        <Link href={buildLegalPageHref("/terms-of-service", "login")} className="hover:underline">
           Terms of Service
         </Link>{" "}
         |{" "}
-        <Link href="/privacy-policy" className="hover:underline">
+        <Link href={buildLegalPageHref("/privacy-policy", "login")} className="hover:underline">
           Privacy Policy
         </Link>
       </footer>
