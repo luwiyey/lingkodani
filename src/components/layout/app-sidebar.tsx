@@ -8,10 +8,13 @@ import * as React from "react";
 import {
   Archive,
   BarChart,
+  BrainCircuit,
   Book,
+  Database,
   LayoutDashboard,
   MessageSquare,
   Settings,
+  Shield,
   Users,
   History,
   ChevronRight,
@@ -183,6 +186,7 @@ export function AppSidebar() {
   const { currentUserProfile } = useAuth();
   const homeHref = getPreferredDashboardRoute(currentUserProfile);
   const activeWorkspace = getPreferredWorkspace(currentUserProfile);
+  const isDeveloper = currentUserProfile?.role === 'developer';
   
   const detailedBarangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -273,6 +277,16 @@ export function AppSidebar() {
   const barangayNavItems = currentUserProfile?.role === 'barangay' && activeWorkspace === 'simple'
     ? simpleBarangayNavItems
     : detailedBarangayNavItems;
+  const developerNavItems: NavItem[] = [
+      { title: "Developer Home", href: "/dashboard/developer", icon: Shield },
+      { title: "Magdagdag ng User", href: "/dashboard/developer/add-user", icon: Users },
+      { title: "Training Data", href: "/dashboard/developer/training-data", icon: BrainCircuit },
+      { title: "Data Center", href: "/dashboard/data-center", icon: Database },
+      { title: "Aking Account", href: "/dashboard/account", icon: Settings },
+    ];
+  const navItems = isDeveloper ? developerNavItems : barangayNavItems;
+  const sidebarTitle = isDeveloper ? "Developer Console" : "Kaagapay ng Magsasaka";
+  const menuLabel = isDeveloper ? "Menu ng Developer" : "Menu ng Barangay";
 
   return (
     <Sidebar collapsible="icon">
@@ -282,15 +296,15 @@ export function AppSidebar() {
               <Image src="/logo.png" width={36} height={36} alt="Lingkod-Ani Logo" style={{ height: 'auto' }} />
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold tracking-tight text-sidebar-foreground">Lingkod-Ani</p>
-                <p className="truncate text-[11px] text-muted-foreground">Kaagapay ng Magsasaka</p>
+                <p className="truncate text-[11px] text-muted-foreground">{sidebarTitle}</p>
               </div>
           </Link>
         )}
       </div>
       <SidebarContent className="flex flex-1 flex-col pt-3">
         <div className="flex-1">
-            <SidebarGroupLabel>Menu ng Barangay</SidebarGroupLabel>
-            <NavMenu items={barangayNavItems} />
+            <SidebarGroupLabel>{menuLabel}</SidebarGroupLabel>
+            <NavMenu items={navItems} />
         </div>
       </SidebarContent>
     </Sidebar>

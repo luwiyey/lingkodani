@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  BrainCircuit,
+  Database,
   LayoutDashboard,
   MessageSquare,
+  Shield,
   Users,
   ShieldAlert,
   ChevronUp,
@@ -23,7 +26,17 @@ import { Button } from '../ui/button';
 import { useAuth } from '@/context/auth-context';
 import { getPreferredWorkspace } from '@/lib/user-workspace';
 
-const detailedNavItems = [
+type FooterNavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  subItems?: {
+    title: string;
+    href: string;
+  }[];
+};
+
+const detailedNavItems: FooterNavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/operations', label: 'Operations', icon: ClipboardList },
   { href: '/dashboard/sms-feed', label: 'SMS Feed', icon: MessageSquare },
@@ -52,7 +65,7 @@ const detailedNavItems = [
   },
 ];
 
-const simpleNavItems = [
+const simpleNavItems: FooterNavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/operations', label: 'Operations', icon: ClipboardList },
   {
@@ -78,13 +91,22 @@ const simpleNavItems = [
   },
 ];
 
+const developerNavItems: FooterNavItem[] = [
+  { href: '/dashboard/developer', label: 'Developer', icon: Shield },
+  { href: '/dashboard/developer/add-user', label: 'Users', icon: Users },
+  { href: '/dashboard/developer/training-data', label: 'Training', icon: BrainCircuit },
+  { href: '/dashboard/data-center', label: 'Data', icon: Database },
+];
+
 export function MobileFooter() {
   const pathname = usePathname();
   const { currentUserProfile } = useAuth();
   const activeWorkspace = getPreferredWorkspace(currentUserProfile);
-  const navItems = currentUserProfile?.role === 'barangay' && activeWorkspace === 'simple'
-    ? simpleNavItems
-    : detailedNavItems;
+  const navItems = currentUserProfile?.role === 'developer'
+    ? developerNavItems
+    : currentUserProfile?.role === 'barangay' && activeWorkspace === 'simple'
+      ? simpleNavItems
+      : detailedNavItems;
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 block border-t border-border/80 bg-background/95 shadow-[0_-8px_24px_-18px_rgba(15,23,42,0.35)] backdrop-blur-sm md:hidden">

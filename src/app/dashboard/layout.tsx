@@ -7,9 +7,6 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
 import { LiveAutomationRunner } from "@/components/layout/live-automation-runner";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield } from "lucide-react";
-import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import { MobileFooter } from "@/components/layout/mobile-footer";
 import { useAuth } from "@/context/auth-context";
 import { isLiveMode } from "@/lib/config/app-mode";
@@ -22,9 +19,11 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { authLoading, currentUser, currentUserProfile, signOutUser } = useAuth();
+  const { authLoading, currentUser, currentUserProfile } = useAuth();
   const isDisasterPath = pathname.startsWith('/dashboard/disaster');
   const isDeveloperPage = pathname.startsWith('/dashboard/developer');
+  const shouldRedirectDeveloperHome =
+    pathname === '/dashboard' && currentUserProfile?.role === 'developer';
 
   useEffect(() => {
     if (isLiveMode && !authLoading && !currentUser && !currentUserProfile) {
@@ -43,31 +42,20 @@ export default function DashboardLayout({
     }
   }, [authLoading, currentUserProfile, isDeveloperPage, router]);
 
+  useEffect(() => {
+    if (!authLoading && shouldRedirectDeveloperHome) {
+      router.replace('/dashboard/developer');
+    }
+  }, [authLoading, router, shouldRedirectDeveloperHome]);
+
   if (isLiveMode && authLoading) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Sinusuri ang session...</div>;
   }
 
-  if (isDeveloperPage) {
+  if (!authLoading && shouldRedirectDeveloperHome) {
     return (
-      <div className="p-6 md:p-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-                <div className="rounded-xl bg-primary/10 p-3">
-                    <Shield className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                    <h1 className="text-[28px] font-semibold tracking-tight">Developer Panel</h1>
-                    <p className="text-muted-foreground">User Access Management</p>
-                </div>
-            </div>
-            <HoverTooltip text="Bumalik sa Pag-login">
-                <Button variant="outline" onClick={async () => { await signOutUser(); router.replace("/"); }}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Mag-logout
-                </Button>
-            </HoverTooltip>
-        </div>
-        {children}
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Binubuksan ang developer dashboard...
       </div>
     );
   }
