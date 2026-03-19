@@ -66,7 +66,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { users } = useData();
-  const { authLoading, authError, currentUserProfile, signIn } = useAuth();
+  const { authLoading, authError, currentUser, currentUserProfile, signIn } = useAuth();
   const loginBg = PlaceHolderImages.find((img) => img.id === "login-bg");
   const selectedApplication = searchParams.get("application");
   const cameFromStart = searchParams.get("fromStart") === "1";
@@ -79,10 +79,15 @@ function LoginPageContent() {
   );
 
   useEffect(() => {
-    if (!authLoading && currentUserProfile) {
-      router.push(getPreferredDashboardRoute(currentUserProfile));
+    const shouldRedirectToDashboard =
+      !authLoading &&
+      currentUserProfile &&
+      (!isLiveMode || Boolean(currentUser));
+
+    if (shouldRedirectToDashboard) {
+      router.replace(getPreferredDashboardRoute(currentUserProfile));
     }
-  }, [authLoading, currentUserProfile, router]);
+  }, [authLoading, currentUser, currentUserProfile, router]);
 
   useEffect(() => {
     if (!authError) {
