@@ -269,6 +269,7 @@ export default function AccountSettingsPage() {
     .join('')
     .slice(0, 2)
     .toUpperCase();
+  const assignmentLabel = profile.role === 'developer' ? 'Area / Assignment' : 'Barangay / Assignment';
 
   return (
     <div className="flex flex-col gap-8">
@@ -344,28 +345,41 @@ export default function AccountSettingsPage() {
                       <Input id="phone" name="phone" defaultValue={profile.phone ?? ''} placeholder="+63917..." />
                   </div>
                   <div className="space-y-2">
-                      <Label htmlFor="barangay">Barangay / Assignment</Label>
+                      <Label htmlFor="barangay">{assignmentLabel}</Label>
                       <Input id="barangay" name="barangay" defaultValue={profile.barangay ?? ''} />
                   </div>
-                  <div className="space-y-3 md:col-span-2">
+                  {profile.role === 'developer' ? (
+                    <div className="space-y-3 md:col-span-2">
                       <Label>Workspace sa Dashboard</Label>
-                      <RadioGroup value={workspacePreference ?? 'simple'} onValueChange={(value) => setWorkspacePreference(value as User['preferredWorkspace'])} className="grid gap-3 md:grid-cols-2">
-                        <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
-                          <RadioGroupItem value="simple" id="workspace-simple" className="mt-1" />
-                          <div>
-                            <p className="font-medium">Simple</p>
-                            <p className="text-sm text-muted-foreground">Mas mabilis maintindihan at mas kaunting choices sa screen.</p>
-                          </div>
-                        </label>
-                        <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
-                          <RadioGroupItem value="detailed" id="workspace-detailed" className="mt-1" />
-                          <div>
-                            <p className="font-medium">Detalyado</p>
-                            <p className="text-sm text-muted-foreground">Mas maraming controls at mas kumpletong analysis tools.</p>
-                          </div>
-                        </label>
-                      </RadioGroup>
-                  </div>
+                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground">Developer Console</p>
+                        <p className="mt-1">
+                          Ang developer accounts ay laging binubuksan sa developer console para sa user management,
+                          data oversight, at platform administration.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 md:col-span-2">
+                        <Label>Workspace sa Dashboard</Label>
+                        <RadioGroup value={workspacePreference ?? 'simple'} onValueChange={(value) => setWorkspacePreference(value as User['preferredWorkspace'])} className="grid gap-3 md:grid-cols-2">
+                          <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
+                            <RadioGroupItem value="simple" id="workspace-simple" className="mt-1" />
+                            <div>
+                              <p className="font-medium">Simple</p>
+                              <p className="text-sm text-muted-foreground">Mas mabilis maintindihan at mas kaunting choices sa screen.</p>
+                            </div>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
+                            <RadioGroupItem value="detailed" id="workspace-detailed" className="mt-1" />
+                            <div>
+                              <p className="font-medium">Detalyado</p>
+                              <p className="text-sm text-muted-foreground">Mas maraming controls at mas kumpletong analysis tools.</p>
+                            </div>
+                          </label>
+                        </RadioGroup>
+                    </div>
+                  )}
                   <div className="space-y-2">
                       <Label>Huling Login</Label>
                       <Input value={formatDateTime(profile.lastLoginAt ?? currentUser?.metadata.lastSignInTime ?? null)} readOnly />

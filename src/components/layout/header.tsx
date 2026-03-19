@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   Bell,
+  BadgeCheck,
   Flame,
   LogOut,
   PanelLeft,
@@ -109,6 +110,7 @@ export function Header() {
   const { riskAlerts } = useAnalytics();
 
   const isDisasterModeActive = pathname.startsWith('/dashboard/disaster');
+  const isDeveloperView = currentUserProfile?.role === 'developer';
   const [showDisasterDialog, setShowDisasterDialog] = useState(false);
   const [showSidebarNoticeDialog, setShowSidebarNoticeDialog] = useState(false);
   const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([]);
@@ -377,7 +379,9 @@ export function Header() {
               <Image src="/logo.png" width={36} height={36} alt="Lingkod-Ani Logo" style={{ height: 'auto' }} />
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold leading-tight tracking-tight">Lingkod-Ani</p>
-                <p className="truncate text-[11px] text-muted-foreground">Kaagapay ng Magsasaka</p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {isDeveloperView ? 'Developer Console' : 'Kaagapay ng Magsasaka'}
+                </p>
               </div>
             </Link>
           )}
@@ -385,73 +389,82 @@ export function Header() {
 
         <div className="flex-1" />
 
-        <HoverTooltip text={isDisasterModeActive ? 'I-deactivate ang Disaster Mode' : 'I-activate ang Disaster Mode'}>
-          <div className="flex items-center gap-2 rounded-full border border-border/90 bg-card px-3 py-2 shadow-sm">
-            <Label htmlFor="disaster-mode" className="flex cursor-pointer items-center gap-2 text-[13px] font-medium tracking-tight">
-              <Flame className="h-4 w-4 text-destructive" />
-              <span className="hidden sm:inline">Disaster Mode</span>
-            </Label>
-            <Switch
-              id="disaster-mode"
-              checked={isDisasterModeActive}
-              onCheckedChange={handleSwitchChange}
-              className="data-[state=checked]:bg-destructive"
-            />
+        {isDeveloperView ? (
+          <div className="hidden items-center gap-2 rounded-full border border-border/90 bg-card px-3 py-2 text-[13px] font-medium tracking-tight text-muted-foreground shadow-sm sm:flex">
+            <BadgeCheck className="h-4 w-4 text-primary" />
+            <span>Developer Console</span>
           </div>
-        </HoverTooltip>
+        ) : (
+          <HoverTooltip text={isDisasterModeActive ? 'I-deactivate ang Disaster Mode' : 'I-activate ang Disaster Mode'}>
+            <div className="flex items-center gap-2 rounded-full border border-border/90 bg-card px-3 py-2 shadow-sm">
+              <Label htmlFor="disaster-mode" className="flex cursor-pointer items-center gap-2 text-[13px] font-medium tracking-tight">
+                <Flame className="h-4 w-4 text-destructive" />
+                <span className="hidden sm:inline">Disaster Mode</span>
+              </Label>
+              <Switch
+                id="disaster-mode"
+                checked={isDisasterModeActive}
+                onCheckedChange={handleSwitchChange}
+                className="data-[state=checked]:bg-destructive"
+              />
+            </div>
+          </HoverTooltip>
+        )}
 
         <ThemeToggle />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="relative rounded-full">
-              <Bell className="h-5 w-5" />
-              {notificationCount > 0 ? (
-                <span className="absolute right-0 top-0 inline-flex -translate-y-1/2 translate-x-1/2 transform items-center justify-center rounded-full bg-destructive px-2 py-1 text-[10px] font-semibold leading-none text-red-100">
-                  {notificationCount}
-                </span>
-              ) : null}
-              <span className="sr-only">I-toggle ang mga notipikasyon</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[22rem] max-w-[calc(100vw-2rem)] p-0">
-            <DropdownMenuLabel className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Mga Notipikasyon
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {unreadNotifications.length > 0 ? (
-              <ScrollArea className="h-[18rem]">
-                <div className="p-1">
-                  {unreadNotifications.map((notification) => (
-                    <DropdownMenuItem
-                      key={notification.id}
-                      onSelect={() => handleNotificationSelect(notification)}
-                      className="cursor-pointer items-start rounded-xl px-3 py-3"
-                    >
-                      <div className="flex w-full flex-col gap-1 overflow-hidden">
-                        <div className="flex items-start justify-between gap-3">
-                          <span className="break-words pr-2 font-semibold leading-snug">
-                            {notification.title}
-                          </span>
-                          <span className="shrink-0 text-[11px] text-muted-foreground">
-                            {formatNotificationTime(notification.timestamp)}
+        {!isDeveloperView ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="relative rounded-full">
+                <Bell className="h-5 w-5" />
+                {notificationCount > 0 ? (
+                  <span className="absolute right-0 top-0 inline-flex -translate-y-1/2 translate-x-1/2 transform items-center justify-center rounded-full bg-destructive px-2 py-1 text-[10px] font-semibold leading-none text-red-100">
+                    {notificationCount}
+                  </span>
+                ) : null}
+                <span className="sr-only">I-toggle ang mga notipikasyon</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[22rem] max-w-[calc(100vw-2rem)] p-0">
+              <DropdownMenuLabel className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Mga Notipikasyon
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {unreadNotifications.length > 0 ? (
+                <ScrollArea className="h-[18rem]">
+                  <div className="p-1">
+                    {unreadNotifications.map((notification) => (
+                      <DropdownMenuItem
+                        key={notification.id}
+                        onSelect={() => handleNotificationSelect(notification)}
+                        className="cursor-pointer items-start rounded-xl px-3 py-3"
+                      >
+                        <div className="flex w-full flex-col gap-1 overflow-hidden">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="break-words pr-2 font-semibold leading-snug">
+                              {notification.title}
+                            </span>
+                            <span className="shrink-0 text-[11px] text-muted-foreground">
+                              {formatNotificationTime(notification.timestamp)}
+                            </span>
+                          </div>
+                          <span className="break-words text-xs leading-relaxed text-muted-foreground">
+                            {notification.description}
                           </span>
                         </div>
-                        <span className="break-words text-xs leading-relaxed text-muted-foreground">
-                          {notification.description}
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Wala pang bagong notipikasyon.
                 </div>
-              </ScrollArea>
-            ) : (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                Wala pang bagong notipikasyon.
-              </div>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -75,6 +75,7 @@ export default function DataCenterPage() {
   const [isImportingStaff, setIsImportingStaff] = useState(false);
 
   const isDeveloper = currentUserProfile?.role === 'developer';
+  const backHref = isDeveloper ? '/dashboard/developer' : '/dashboard/settings';
   const snapshotSummary = useMemo(() => ([
     { label: 'Farmers', value: farmers.length },
     { label: 'SMS', value: smsMessages.length },
@@ -378,9 +379,9 @@ export default function DataCenterPage() {
       <Input ref={staffImportRef} type="file" className="hidden" accept=".json,.csv,application/json,text/csv" onChange={handleImportStaffSelect} />
 
       <div className="flex items-center gap-4">
-        <HoverTooltip text="Bumalik sa dashboard">
+        <HoverTooltip text={isDeveloper ? 'Bumalik sa developer dashboard' : 'Bumalik sa barangay settings'}>
           <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/settings">
+            <Link href={backHref}>
               <ArrowLeft />
             </Link>
           </Button>
@@ -399,6 +400,21 @@ export default function DataCenterPage() {
           <p className="text-muted-foreground">Backup, restore, at file-based portability para sa operational data at training assets.</p>
         </div>
       </div>
+
+      {isDeveloper ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="flex items-start gap-3 p-5 text-sm text-muted-foreground">
+            <Shield className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="space-y-1">
+              <p className="font-semibold tracking-tight text-foreground">Developer oversight mode</p>
+              <p>
+                Ang page na ito ay para sa platform monitoring, staff provisioning, at controlled data portability.
+                Hindi ito barangay operations page at hindi ito kapalit ng pang-araw-araw na barangay settings workflow.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-6">
         {snapshotSummary.map((item) => (
