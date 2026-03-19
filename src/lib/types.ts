@@ -115,7 +115,7 @@ export type SmsCaseStatus =
   | 'monitoring'
   | 'escalated'
   | 'closed';
-export type SmsSourceProvider = 'demo' | 'generic' | 'twilio' | 'semaphore' | 'smsgate' | 'unknown';
+export type SmsSourceProvider = 'demo' | 'generic' | 'twilio' | 'semaphore' | 'smsgate' | 'textbee' | 'unknown';
 
 export type SmsMessage = {
   id: string;

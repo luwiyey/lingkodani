@@ -1,6 +1,7 @@
 import type { InboundSmsAnalysis } from "@/lib/sms-simulator";
 import { analyzeInboundSmsWithFallback } from "@/lib/services/server-sms-analysis-service";
 import { isSmsgatePayload } from "@/lib/providers/sms/smsgate";
+import { isTextbeePayload } from "@/lib/providers/sms/textbee";
 import {
   getStringAtPaths,
   type ParsedWebhookRequest,
@@ -10,7 +11,7 @@ import {
 export type NormalizedInboundWebhook = {
   phone: string;
   message: string;
-  provider: "generic" | "twilio" | "semaphore" | "smsgate" | "unknown";
+  provider: "generic" | "twilio" | "semaphore" | "smsgate" | "textbee" | "unknown";
   externalId?: string;
   receivedAt: string;
   analysis: InboundSmsAnalysis;
@@ -23,6 +24,7 @@ function normalizeRawBody(body: WebhookPayloadRecord) {
     ["from"],
     ["From"],
     ["sender"],
+    ["senderNumber"],
     ["msisdn"],
     ["number"],
     ["source"],
@@ -36,6 +38,7 @@ function normalizeRawBody(body: WebhookPayloadRecord) {
     ["Body"],
     ["body"],
     ["content"],
+    ["sms"],
     ["payload", "message"]
   );
   const externalId = getStringAtPaths(
@@ -45,12 +48,15 @@ function normalizeRawBody(body: WebhookPayloadRecord) {
     ["MessageSid"],
     ["message_id"],
     ["messageId"],
+    ["smsId"],
     ["payload", "messageId"]
   );
-  const event = getStringAtPaths(body, ["event"]);
+  const event = getStringAtPaths(body, ["event"], ["webhookEvent"]);
 
   const provider: NormalizedInboundWebhook["provider"] =
-    isSmsgatePayload(body)
+    isTextbeePayload(body)
+      ? "textbee"
+      : isSmsgatePayload(body)
       ? "smsgate"
       : body.MessageSid || body.From || body.Body
         ? "twilio"
@@ -61,7 +67,7 @@ function normalizeRawBody(body: WebhookPayloadRecord) {
             : "unknown";
 
   const receivedAt =
-    getStringAtPaths(body, ["payload", "receivedAt"], ["receivedAt"]) ??
+    getStringAtPaths(body, ["payload", "receivedAt"], ["receivedAt"], ["timestamp"], ["createdAt"]) ??
     (event === "sms:received" ? new Date().toISOString() : undefined);
 
   return { phone, message, provider, externalId, receivedAt };

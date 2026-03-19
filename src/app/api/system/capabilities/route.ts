@@ -6,6 +6,8 @@ import {
   readSmsgateDeviceId,
   readSmsgatePassword,
   readSmsgateUsername,
+  readTextbeeApiKey,
+  readTextbeeDeviceId,
 } from "@/lib/providers/sms/live-sms-config";
 
 function isPresent(value: string | undefined) {
@@ -50,6 +52,19 @@ function resolveLiveSmsStatus(mode: "demo" | "live", realSmsEnabled: boolean) {
   }
 
   const provider = readLiveSmsProvider(process.env);
+
+  if (provider === "textbee") {
+    const configured =
+      isPresent(readTextbeeApiKey(process.env)) &&
+      isPresent(readTextbeeDeviceId(process.env));
+
+    return {
+      configured,
+      reason: configured
+        ? ""
+        : "Kailangan muna ang TEXTBEE_API_KEY at TEXTBEE_DEVICE_ID bago i-enable ang live SMS.",
+    };
+  }
 
   if (provider === "smsgate") {
     const configured =

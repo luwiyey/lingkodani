@@ -31,8 +31,16 @@ function isPresent(value) {
 function readLiveSmsProvider() {
   const explicitProvider = (process.env.LIVE_SMS_PROVIDER ?? process.env.NEXT_PUBLIC_LIVE_SMS_PROVIDER ?? "").trim().toLowerCase();
 
-  if (["twilio", "semaphore", "smsgate"].includes(explicitProvider)) {
+  if (["twilio", "semaphore", "smsgate", "textbee"].includes(explicitProvider)) {
     return explicitProvider;
+  }
+
+  if (
+    isPresent(process.env.TEXTBEE_API_KEY) ||
+    isPresent(process.env.TEXTBEE_DEVICE_ID) ||
+    isPresent(process.env.TEXTBEE_WEBHOOK_SECRET)
+  ) {
+    return "textbee";
   }
 
   if (
@@ -75,6 +83,14 @@ function readSmsgatePassword() {
 
 function readSmsgateDeviceId() {
   return process.env.SMSGATE_DEVICE_ID ?? process.env.SMS_DEVICE_ID ?? "";
+}
+
+function readTextbeeApiKey() {
+  return process.env.TEXTBEE_API_KEY ?? "";
+}
+
+function readTextbeeDeviceId() {
+  return process.env.TEXTBEE_DEVICE_ID ?? "";
 }
 
 function printStatus(label, passed, details) {
@@ -139,6 +155,19 @@ if (readLiveSmsProvider() === "smsgate") {
     "SMSGate device",
     isPresent(readSmsgateDeviceId()),
     readSmsgateDeviceId() || "missing SMSGATE_DEVICE_ID/SMS_DEVICE_ID"
+  );
+}
+
+if (readLiveSmsProvider() === "textbee") {
+  printStatus(
+    "TextBee API key",
+    isPresent(readTextbeeApiKey()),
+    isPresent(readTextbeeApiKey()) ? "ready" : "missing TEXTBEE_API_KEY"
+  );
+  printStatus(
+    "TextBee device",
+    isPresent(readTextbeeDeviceId()),
+    readTextbeeDeviceId() || "missing TEXTBEE_DEVICE_ID"
   );
 }
 

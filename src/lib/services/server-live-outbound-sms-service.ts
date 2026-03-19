@@ -5,11 +5,14 @@ import {
   readSmsgateDeviceId,
   readSmsgatePassword,
   readSmsgateUsername,
+  readTextbeeApiKey,
+  readTextbeeDeviceId,
 } from "@/lib/providers/sms/live-sms-config";
 import { getSmsgateAuthHeader, getSmsgateBaseUrl } from "@/lib/providers/sms/smsgate";
+import { getTextbeeBaseUrl } from "@/lib/providers/sms/textbee";
 import type { SendSmsInput, SendSmsResult } from "@/lib/providers/sms/types";
 
-type SupportedProvider = "twilio" | "semaphore" | "generic" | "smsgate";
+type SupportedProvider = "twilio" | "semaphore" | "generic" | "smsgate" | "textbee";
 
 function getProvider(): SupportedProvider {
   return readLiveSmsProvider(process.env);
@@ -161,6 +164,59 @@ export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
       errorMessage: response.ok
         ? undefined
         : responsePayload.error ?? responsePayload.message ?? "SMSGate send failed.",
+    };
+  }
+
+  if (provider === "textbee") {
+    const apiKey = readTextbeeApiKey(process.env);
+    const deviceId = readTextbeeDeviceId(process.env);
+
+    if (!apiKey || !deviceId) {
+      return {
+        status: "failed",
+        errorMessage: "TextBee environment variables are incomplete.",
+      };
+    }
+
+    const payload: Record<string, unknown> = {
+      recipients: [input.to],
+      message: input.body,
+    };
+    const simSubscriptionId = process.env.TEXTBEE_SIM_SUBSCRIPTION_ID?.trim();
+
+    if (simSubscriptionId && Number.isFinite(Number(simSubscriptionId))) {
+      payload.simSubscriptionId = Number(simSubscriptionId);
+    }
+
+    const response = await fetch(
+      `${getTextbeeBaseUrl(process.env)}/gateway/devices/${encodeURIComponent(deviceId)}/send-sms`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const responsePayload = await response.json().catch(() => ({}));
+
+    return {
+      status: response.ok ? "sent" : "failed",
+      providerMessageId: response.ok
+        ? String(
+            responsePayload.smsId ??
+              responsePayload.messageId ??
+              responsePayload.id ??
+              responsePayload.data?.smsId ??
+              responsePayload.data?.id ??
+              ""
+          ) || undefined
+        : undefined,
+      errorMessage: response.ok
+        ? undefined
+        : responsePayload.error ?? responsePayload.message ?? "TextBee send failed.",
     };
   }
 

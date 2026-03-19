@@ -1,4 +1,4 @@
-type SupportedProvider = "twilio" | "semaphore" | "generic" | "smsgate";
+type SupportedProvider = "twilio" | "semaphore" | "generic" | "smsgate" | "textbee";
 
 function isPresent(value: string | undefined) {
   return typeof value === "string" && value.trim().length > 0;
@@ -7,8 +7,16 @@ function isPresent(value: string | undefined) {
 export function readLiveSmsProvider(env: NodeJS.ProcessEnv = process.env): SupportedProvider {
   const explicitProvider = (env.LIVE_SMS_PROVIDER ?? env.NEXT_PUBLIC_LIVE_SMS_PROVIDER ?? "").trim().toLowerCase();
 
-  if (explicitProvider === "twilio" || explicitProvider === "semaphore" || explicitProvider === "smsgate") {
+  if (explicitProvider === "twilio" || explicitProvider === "semaphore" || explicitProvider === "smsgate" || explicitProvider === "textbee") {
     return explicitProvider;
+  }
+
+  if (
+    isPresent(env.TEXTBEE_API_KEY) ||
+    isPresent(env.TEXTBEE_DEVICE_ID) ||
+    isPresent(env.TEXTBEE_WEBHOOK_SECRET)
+  ) {
+    return "textbee";
   }
 
   if (
@@ -55,4 +63,16 @@ export function readSmsgateDeviceId(env: NodeJS.ProcessEnv = process.env) {
 
 export function readSmsgateBaseUrl(env: NodeJS.ProcessEnv = process.env) {
   return env.SMSGATE_BASE_URL?.trim() || env.SMS_API_URL?.trim() || "";
+}
+
+export function readTextbeeApiKey(env: NodeJS.ProcessEnv = process.env) {
+  return env.TEXTBEE_API_KEY?.trim() || "";
+}
+
+export function readTextbeeDeviceId(env: NodeJS.ProcessEnv = process.env) {
+  return env.TEXTBEE_DEVICE_ID?.trim() || "";
+}
+
+export function readTextbeeWebhookSecret(env: NodeJS.ProcessEnv = process.env) {
+  return env.TEXTBEE_WEBHOOK_SECRET?.trim() || "";
 }

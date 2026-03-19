@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { isLiveMode } from "@/lib/config/app-mode";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { verifyTextbeeWebhookSignature } from "@/lib/providers/sms/textbee";
 import { verifySmsgateWebhookSignature } from "@/lib/providers/sms/smsgate";
 import type { OutboundMessageStatus } from "@/lib/types";
 import { getStringAtPaths, readWebhookRequest, type WebhookPayloadRecord } from "@/lib/webhook-request";
@@ -10,6 +11,9 @@ import { getStringAtPaths, readWebhookRequest, type WebhookPayloadRecord } from 
 function normalizeStatus(value: string | undefined): OutboundMessageStatus | null {
   const status = (value ?? "").toLowerCase();
 
+  if (["message_sent"].includes(status)) return "sent";
+  if (["message_delivered"].includes(status)) return "delivered";
+  if (["message_failed"].includes(status)) return "failed";
   if (["delivered", "delivery_report_delivered", "success"].includes(status)) return "delivered";
   if (["sent", "accepted"].includes(status)) return "sent";
   if (["queued", "buffered"].includes(status)) return "queued";
@@ -21,13 +25,31 @@ function normalizeStatus(value: string | undefined): OutboundMessageStatus | nul
   return null;
 }
 
-function isAuthorized(request: Request, rawBody: string) {
+function isAuthorized(
+  request: Request,
+  rawBody: string,
+  body: Record<string, unknown>
+) {
   const configuredToken = process.env.OUTBOUND_STATUS_WEBHOOK_TOKEN ?? process.env.INBOUND_SMS_WEBHOOK_TOKEN;
   const signingKey = process.env.SMSGATE_WEBHOOK_SIGNING_KEY;
+  const textbeeWebhookSecret = process.env.TEXTBEE_WEBHOOK_SECRET;
   const headerToken = request.headers.get("x-webhook-token") ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
   if (configuredToken && headerToken === configuredToken) {
     return true;
+  }
+
+  if (textbeeWebhookSecret) {
+    const verified = verifyTextbeeWebhookSignature({
+      rawBody,
+      body,
+      signature: request.headers.get("x-signature"),
+      secret: textbeeWebhookSecret,
+    });
+
+    if (verified) {
+      return true;
+    }
   }
 
   if (signingKey) {
@@ -49,11 +71,13 @@ function parseStatusPayload(rawBody: WebhookPayloadRecord) {
     ["messageId"],
     ["MessageSid"],
     ["message_id"],
+    ["smsId"],
     ["id"],
     ["payload", "messageId"]
   );
   const eventOrStatus = getStringAtPaths(
     rawBody,
+    ["webhookEvent"],
     ["status"],
     ["MessageStatus"],
     ["delivery_status"],
@@ -63,6 +87,7 @@ function parseStatusPayload(rawBody: WebhookPayloadRecord) {
   const errorMessage = getStringAtPaths(
     rawBody,
     ["error"],
+    ["errorMessage"],
     ["payload", "failureReason"],
     ["payload", "reason"]
   );
@@ -73,7 +98,7 @@ function parseStatusPayload(rawBody: WebhookPayloadRecord) {
 export async function POST(request: Request) {
   const webhookRequest = await readWebhookRequest(request);
 
-  if (!isAuthorized(request, webhookRequest.rawBody)) {
+  if (!isAuthorized(request, webhookRequest.rawBody, webhookRequest.body)) {
     return NextResponse.json({ error: "Unauthorized webhook request." }, { status: 401 });
   }
 
