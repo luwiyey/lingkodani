@@ -23,6 +23,43 @@ const DEMO_SESSION_EVENT = "demo-session-change";
 const LIVE_FIREBASE_CONFIG_ERROR =
   "Hindi pa kumpleto ang live Firebase web configuration ng deployment na ito. Idagdag ang lahat ng NEXT_PUBLIC_FIREBASE_* values sa Production environment variables.";
 
+function mergeLiveProfile(profile: User | null) {
+  const onboardingProfile = readOnboardingProfile();
+
+  if (!profile) {
+    return null;
+  }
+
+  return {
+    ...profile,
+    preferredWorkspace: profile.role === "developer"
+      ? "detailed"
+      : onboardingProfile?.preferredWorkspace ?? profile.preferredWorkspace,
+  };
+}
+
+async function fetchServerLiveProfile(user: FirebaseUser) {
+  const idToken = await user.getIdToken();
+  const response = await fetch("/api/auth/profile", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    cache: "no-store",
+  });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      typeof payload.error === "string"
+        ? payload.error
+        : "Hindi mabasa ang live user profile para sa account na ito."
+    );
+  }
+
+  return (payload.profile ?? null) as User | null;
+}
+
 type AuthContextType = {
   currentUser: FirebaseUser | null;
   currentUserProfile: User | null;
@@ -136,9 +173,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearDemoPreviewUser();
 
       const userRef = doc(db, firebaseCollections.users, user.uid);
-      const snapshot = await getDoc(userRef);
+      let serverProfile: User | null = null;
 
-      if (!snapshot.exists()) {
+      try {
+        serverProfile = await fetchServerLiveProfile(user);
+      } catch (error) {
+        const message = error instanceof Error
+          ? error.message
+          : "Hindi mabasa ang live user profile para sa account na ito.";
+        setCurrentUserProfile(null);
+        setAuthError(message);
+        await signOut(auth);
+        setAuthLoading(false);
+        return;
+      }
+
+      if (!serverProfile) {
         setCurrentUserProfile(null);
         setAuthError("Walang awtorisadong live user profile para sa account na ito.");
         await signOut(auth);
@@ -146,15 +196,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const existingProfile = snapshot.data() as User;
-
-      if (existingProfile.status === "disabled") {
+      if (serverProfile.status === "disabled") {
         setCurrentUserProfile(null);
         setAuthError("Naka-disable ang account na ito.");
         await signOut(auth);
         setAuthLoading(false);
         return;
       }
+
+      setCurrentUserProfile(mergeLiveProfile(serverProfile));
+
+      const snapshot = await getDoc(userRef);
+      const existingProfile = snapshot.exists() ? (snapshot.data() as User) : serverProfile;
 
       await setDoc(
         userRef,
@@ -173,21 +226,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribeProfile = onSnapshot(
         userRef,
         (snapshot) => {
-          const onboardingProfile = readOnboardingProfile();
           const profile = snapshot.exists()
             ? ({
                 id: snapshot.id,
                 ...(snapshot.data() as User),
               } as User)
             : null;
-          const mergedProfile = profile
-            ? {
-                ...profile,
-                preferredWorkspace: profile.role === "developer"
-                  ? "detailed"
-                  : onboardingProfile?.preferredWorkspace ?? profile.preferredWorkspace,
-              }
-            : null;
+          const mergedProfile = mergeLiveProfile(profile);
 
           if (!mergedProfile) {
             setCurrentUserProfile(null);
@@ -208,8 +253,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthLoading(false);
         },
         () => {
-          setCurrentUserProfile(null);
-          setAuthError("Hindi mabasa ang live user profile para sa account na ito.");
+          setCurrentUserProfile((current) => current ?? mergeLiveProfile(serverProfile));
+          setAuthError("Hindi tuloy-tuloy na mabasa ang live user profile. Gumagamit muna ng huling kilalang access profile.");
           setAuthLoading(false);
         }
       );
