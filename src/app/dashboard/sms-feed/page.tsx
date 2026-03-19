@@ -21,6 +21,7 @@ import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
 import { useAuth } from '@/context/auth-context';
 import { isLiveMode } from '@/lib/config/app-mode';
+import { canUseLiveSmsSimulation } from '@/lib/access-control';
 import { cn } from '@/lib/utils';
 
 type DialogState = {
@@ -216,6 +217,9 @@ function SmsMessageCard({
                         </Badge>
                         <Badge variant={message.safetyFlag === 'High' ? 'destructive' : 'outline'} className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">{message.safetyFlag} Risk</Badge>
                         <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Conf: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                        <Badge variant={message.analysisSource === 'ai' ? 'outline' : 'secondary'} className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">
+                          Source: {message.analysisSource === 'ai_fallback' ? 'AI fallback' : message.analysisSource === 'rules' ? 'Rules' : 'AI'}
+                        </Badge>
                         {message.caseStatus && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Case: {message.caseStatus}</Badge>}
                         {message.assignedTo && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Owner: {message.assignedTo}</Badge>}
                         {message.registrationRequired && (
@@ -244,6 +248,14 @@ function SmsMessageCard({
                       <div className="rounded-lg border border-yellow-400/20 bg-yellow-500/5 p-3 text-xs text-sidebar-foreground/80">
                         <p className="font-medium text-yellow-100">Suggested clarification</p>
                         <p className="mt-1">{message.clarificationQuestion}</p>
+                      </div>
+                    ) : null}
+                    {message.analysisSource && message.analysisSource !== 'ai' ? (
+                      <div className="rounded-lg border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-sidebar-foreground/80">
+                        <p className="font-medium text-amber-100">Review required</p>
+                        <p className="mt-1">
+                          Ang kasalukuyang analysis ay galing sa {message.analysisSource === 'ai_fallback' ? 'AI fallback' : 'rules-based'} path, kaya mas mahalaga ang human review bago magpadala ng final advisory.
+                        </p>
                       </div>
                     ) : null}
                 </div>
@@ -305,7 +317,7 @@ function SmsFeedPageContent() {
     const { toast } = useToast();
     const focusedSmsId = searchParams.get('sms');
     const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
-    const showSimulationTool = !isLiveMode || currentUserProfile?.role === 'developer';
+    const showSimulationTool = !isLiveMode || canUseLiveSmsSimulation(currentUserProfile);
 
     const latestOutboundByMessage = React.useMemo(() => {
       const map = new Map<string, OutboundMessage>();
@@ -455,7 +467,7 @@ function SmsFeedPageContent() {
               <HelpDialog title="Live na Feed ng SMS" tooltipText="Suriin at tumugon sa mga papasok na SMS.">
                 <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang papasok na SMS na kailangan ng iyong atensyon.</p>
                 <p><strong>Daloy ng Trabaho:</strong> Ang isang bagong SMS ay papasok at agad na susuriin ng AI. Ang AI ay magbibigay ng paunang pagsusuri sa layunin (intent), tono, at panganib ng mensahe, at magmumungkahi ng isang tugon. Ang iyong gawain ay suriin ang mungkahi ng AI at aprubahan o i-edit ito.</p>
-                <p><strong>Auto fallback:</strong> Kapag ang isang mensahe ay nanatiling <code>pending_approval</code> lampas sa 3 minuto, ang system ay magpapadala ng isang ligtas na fallback template sa magsasaka habang nananatiling bukas ang case para sa human follow-up.</p>
+                <p><strong>Auto fallback:</strong> Sa free-hosting setup, gumagana ang fallback checks habang bukas ang live dashboard o kapag manu-manong pinaandar ng staff ang automation. Kapag ang isang mensahe ay nanatiling <code>pending_approval</code> lampas sa 3 minuto sa aktibong setup na iyon, magpapadala ang system ng ligtas na fallback template habang nananatiling bukas ang case para sa human follow-up.</p>
                 <p><strong>Mga Aksyon sa Card:</strong></p>
                 <ul className="list-disc pl-5 space-y-1">
                     <li><strong>Aprubahan:</strong> Nagbubukas ito ng isang pop-up kung saan maaari mong suriin at i-edit ang tugon ng AI bago ito ipadala sa magsasaka. Ito ang pinakakaraniwang aksyon.</li>

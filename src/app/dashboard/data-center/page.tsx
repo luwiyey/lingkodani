@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import React, { useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  BrainCircuit,
   Download,
   FileJson,
   Shield,
@@ -23,7 +23,9 @@ import {
   extractKnowledgeArticlesFromJson,
   extractSmsTrainingExamplesFromJson,
   extractUserManagementValuesFromJson,
+  formatFarmerRegistrationsAsCsv,
   formatKnowledgeArticlesAsCsv,
+  formatResourcesAsCsv,
   formatSmsTrainingExamplesAsCsv,
   formatUsersAsCsv,
   isPortableAppBackup,
@@ -31,8 +33,10 @@ import {
   parseSmsTrainingExamplesCsv,
   parseUsersCsv,
 } from '@/lib/data-portability';
+import { canAccessDataCenter } from '@/lib/access-control';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
+import { isSpreadsheetExtension, readSpreadsheetAsCsv } from '@/lib/spreadsheet-import';
 
 function downloadFile(filename: string, content: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -48,7 +52,18 @@ function getFileExtension(filename: string) {
   return filename.split('.').pop()?.toLowerCase() ?? '';
 }
 
+function formatTemporaryPasswordsAsCsv(rows: Array<Record<string, string>>) {
+  const headers = ['email', 'name', 'status', 'temporaryPassword', 'error'];
+  const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+
+  return [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => escapeCell(row[header] ?? '')).join(',')),
+  ].join('\n');
+}
+
 export default function DataCenterPage() {
+  const router = useRouter();
   const {
     farmers,
     resources,
@@ -74,8 +89,8 @@ export default function DataCenterPage() {
   const [isImportingTraining, setIsImportingTraining] = useState(false);
   const [isImportingStaff, setIsImportingStaff] = useState(false);
 
-  const isDeveloper = currentUserProfile?.role === 'developer';
-  const backHref = isDeveloper ? '/dashboard/developer' : '/dashboard/settings';
+  const hasDataCenterAccess = canAccessDataCenter(currentUserProfile);
+  const backHref = '/dashboard/developer';
   const snapshotSummary = useMemo(() => ([
     { label: 'Farmers', value: farmers.length },
     { label: 'SMS', value: smsMessages.length },
@@ -84,6 +99,12 @@ export default function DataCenterPage() {
     { label: 'Prices', value: marketPrices.length },
     { label: 'Training', value: smsTrainingExamples.length },
   ]), [farmers.length, knowledgeArticles.length, marketPrices.length, resources.length, smsMessages.length, smsTrainingExamples.length]);
+
+  React.useEffect(() => {
+    if (currentUserProfile && !hasDataCenterAccess) {
+      router.replace('/dashboard');
+    }
+  }, [currentUserProfile, hasDataCenterAccess, router]);
 
   const handleExportBackup = () => {
     const backup = exportPortableBackup();
@@ -177,11 +198,48 @@ export default function DataCenterPage() {
     setIsImportingKnowledge(true);
 
     try {
-      const text = await file.text();
       const extension = getFileExtension(file.name);
-      const articles = extension === 'csv'
-        ? parseKnowledgeArticlesCsv(text)
-        : extractKnowledgeArticlesFromJson(JSON.parse(text));
+      let articles = [];
+
+      if (extension === 'pdf' || file.type.startsWith('image/')) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const headers: HeadersInit = {};
+
+        if (isLiveMode) {
+          const idToken = await getClientAuth().currentUser?.getIdToken();
+
+          if (!idToken) {
+            throw new Error('Walang authenticated developer session.');
+          }
+
+          headers.Authorization = `Bearer ${idToken}`;
+        }
+
+        const response = await fetch('/api/data-center/knowledge/import-document', {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(String(payload.error ?? 'Hindi mabasa ang PDF/image file.'));
+        }
+
+        articles = Array.isArray(payload.articles) ? payload.articles : [];
+      } else {
+        if (isSpreadsheetExtension(extension)) {
+          const csv = await readSpreadsheetAsCsv(file);
+          articles = parseKnowledgeArticlesCsv(csv);
+        } else {
+          const text = await file.text();
+          articles = extension === 'csv'
+            ? parseKnowledgeArticlesCsv(text)
+            : extractKnowledgeArticlesFromJson(JSON.parse(text));
+        }
+      }
 
       if (articles.length === 0) {
         throw new Error('Walang valid na knowledge articles sa file.');
@@ -226,11 +284,48 @@ export default function DataCenterPage() {
     setIsImportingTraining(true);
 
     try {
-      const text = await file.text();
       const extension = getFileExtension(file.name);
-      const examples = extension === 'csv'
-        ? parseSmsTrainingExamplesCsv(text)
-        : extractSmsTrainingExamplesFromJson(JSON.parse(text));
+      let examples = [];
+
+      if (extension === 'pdf' || file.type.startsWith('image/')) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const headers: HeadersInit = {};
+
+        if (isLiveMode) {
+          const idToken = await getClientAuth().currentUser?.getIdToken();
+
+          if (!idToken) {
+            throw new Error('Walang authenticated developer session.');
+          }
+
+          headers.Authorization = `Bearer ${idToken}`;
+        }
+
+        const response = await fetch('/api/data-center/training/import-document', {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(String(payload.error ?? 'Hindi mabasa ang PDF/image file.'));
+        }
+
+        examples = Array.isArray(payload.examples) ? payload.examples : [];
+      } else {
+        if (isSpreadsheetExtension(extension)) {
+          const csv = await readSpreadsheetAsCsv(file);
+          examples = parseSmsTrainingExamplesCsv(csv);
+        } else {
+          const text = await file.text();
+          examples = extension === 'csv'
+            ? parseSmsTrainingExamplesCsv(text)
+            : extractSmsTrainingExamplesFromJson(JSON.parse(text));
+        }
+      }
 
       if (examples.length === 0) {
         throw new Error('Walang valid na SMS training examples sa file.');
@@ -287,21 +382,52 @@ export default function DataCenterPage() {
     });
   };
 
+  const handleExportFarmersCsv = () => {
+    downloadFile(
+      `lingkod-ani-farmers-${new Date().toISOString().slice(0, 10)}.csv`,
+      formatFarmerRegistrationsAsCsv(farmers),
+      'text/csv;charset=utf-8'
+    );
+    toast({
+      title: 'Na-export ang farmers list',
+      description: `${farmers.length} farmer records ang naisama sa CSV file.`,
+    });
+  };
+
+  const handleExportResourcesCsv = () => {
+    downloadFile(
+      `lingkod-ani-resources-${new Date().toISOString().slice(0, 10)}.csv`,
+      formatResourcesAsCsv(resources),
+      'text/csv;charset=utf-8'
+    );
+    toast({
+      title: 'Na-export ang resource list',
+      description: `${resources.length} inventory records ang naisama sa CSV file.`,
+    });
+  };
+
   const handleImportStaffSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
-    if (!file || !isDeveloper) {
+    if (!file || !hasDataCenterAccess) {
       return;
     }
 
     setIsImportingStaff(true);
 
     try {
-      const text = await file.text();
       const extension = getFileExtension(file.name);
-      const rows = extension === 'csv'
-        ? parseUsersCsv(text)
-        : extractUserManagementValuesFromJson(JSON.parse(text));
+      let rows;
+
+      if (isSpreadsheetExtension(extension)) {
+        const csv = await readSpreadsheetAsCsv(file);
+        rows = parseUsersCsv(csv);
+      } else {
+        const text = await file.text();
+        rows = extension === 'csv'
+          ? parseUsersCsv(text)
+          : extractUserManagementValuesFromJson(JSON.parse(text));
+      }
 
       if (rows.length === 0) {
         throw new Error('Walang valid na staff records sa file.');
@@ -341,15 +467,15 @@ export default function DataCenterPage() {
 
         if (passwordRows.length > 0) {
           downloadFile(
-            `lingkod-ani-import-passwords-${new Date().toISOString().slice(0, 10)}.json`,
-            JSON.stringify(passwordRows, null, 2),
-            'application/json'
+            `lingkod-ani-import-passwords-${new Date().toISOString().slice(0, 10)}.csv`,
+            formatTemporaryPasswordsAsCsv(passwordRows),
+            'text/csv;charset=utf-8'
           );
         }
 
         toast({
           title: 'Natapos ang staff import',
-          description: `${successCount} sa ${rows.length} staff records ang na-provision. ${passwordRows.length > 0 ? 'Na-download din ang temporary passwords.' : ''}`,
+          description: `${successCount} sa ${rows.length} staff records ang na-provision. ${passwordRows.length > 0 ? 'Na-download din ang temporary passwords bilang CSV.' : ''}`,
           variant: successCount > 0 ? 'default' : 'destructive',
         });
       } else {
@@ -371,15 +497,30 @@ export default function DataCenterPage() {
     }
   };
 
+  if (currentUserProfile && !hasDataCenterAccess) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Card className="max-w-lg border-amber-300/40 bg-amber-50/60">
+          <CardHeader>
+            <CardTitle>Developer-only ang Data Center</CardTitle>
+            <CardDescription>
+              Ang import/export at backup center ay para sa platform oversight at controlled data portability lamang. Ibinabalik ka na sa dashboard.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <Input ref={backupImportRef} type="file" className="hidden" accept=".json,application/json" onChange={handleImportBackupSelect} />
-      <Input ref={knowledgeImportRef} type="file" className="hidden" accept=".json,.csv,application/json,text/csv" onChange={handleImportKnowledgeSelect} />
-      <Input ref={trainingImportRef} type="file" className="hidden" accept=".json,.csv,application/json,text/csv" onChange={handleImportTrainingSelect} />
-      <Input ref={staffImportRef} type="file" className="hidden" accept=".json,.csv,application/json,text/csv" onChange={handleImportStaffSelect} />
+      <Input ref={knowledgeImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,.pdf,application/json,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" onChange={handleImportKnowledgeSelect} />
+      <Input ref={trainingImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,.pdf,application/json,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" onChange={handleImportTrainingSelect} />
+      <Input ref={staffImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,application/json,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleImportStaffSelect} />
 
       <div className="flex items-center gap-4">
-        <HoverTooltip text={isDeveloper ? 'Bumalik sa developer dashboard' : 'Bumalik sa barangay settings'}>
+        <HoverTooltip text="Bumalik sa developer dashboard">
           <Button variant="outline" size="icon" asChild>
             <Link href={backHref}>
               <ArrowLeft />
@@ -392,8 +533,8 @@ export default function DataCenterPage() {
             <HelpDialog title="Data Center" tooltipText="Import, export, at backup center">
               <p>Dito pinamamahalaan ang backup, restore, at file-based import/export ng Lingkod-Ani.</p>
               <p><strong>Operational backup:</strong> kasama ang farmers, SMS, resources, knowledge base, price watch, alerts, assistance, field visits, vouchers, logs, at system settings.</p>
-              <p><strong>Knowledge files:</strong> puwedeng mag-import ng JSON o CSV articles/tips na puwedeng maging reference ng system replies at staff search workflows.</p>
-              <p><strong>Training data:</strong> maaari nang mag-import at mag-export ng labeled SMS examples ang barangay at developer.</p>
+              <p><strong>Knowledge files:</strong> puwedeng mag-import ng JSON, CSV, Excel, PDF, o screenshots/litrato ng advisory materials para gawing searchable knowledge entries.</p>
+              <p><strong>Training data:</strong> maaari nang mag-import at mag-export ng labeled SMS examples gamit ang JSON, CSV, Excel, PDF, o screenshots ng reviewed SMS materials.</p>
               <p><strong>Mahalaga:</strong> ang training files at templates ay tumutulong sa evaluation, prompt tuning, at workflow quality, pero hindi nito awtomatikong fine-tune ang Gemini model.</p>
             </HelpDialog>
           </div>
@@ -401,20 +542,28 @@ export default function DataCenterPage() {
         </div>
       </div>
 
-      {isDeveloper ? (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="flex items-start gap-3 p-5 text-sm text-muted-foreground">
-            <Shield className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div className="space-y-1">
-              <p className="font-semibold tracking-tight text-foreground">Developer oversight mode</p>
-              <p>
-                Ang page na ito ay para sa platform monitoring, staff provisioning, at controlled data portability.
-                Hindi ito barangay operations page at hindi ito kapalit ng pang-araw-araw na barangay settings workflow.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="flex items-start gap-3 p-5 text-sm text-muted-foreground">
+          <Shield className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div className="space-y-1">
+            <p className="font-semibold tracking-tight text-foreground">Developer oversight mode</p>
+            <p>
+              Ang page na ito ay para sa platform monitoring, staff provisioning, at controlled data portability.
+              Hindi ito barangay operations page at hindi ito kapalit ng pang-araw-araw na barangay settings workflow.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-emerald-200/70 bg-emerald-50/70">
+        <CardContent className="p-5 text-sm text-emerald-900">
+          <div className="space-y-2">
+            <p className="font-semibold tracking-tight">Best results for PDF or photo import</p>
+            <p>Mas mababasa ng system ang upload kapag malinaw ang text, tuwid ang kuha, hindi putol ang page, at hindi lalampas sa humigit-kumulang 8 MB.</p>
+            <p>Iwasan ang malabong screenshot, madilim na litrato, sobrang daming topic sa iisang file, at sulat-kamay na halos hindi mabasa.</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-6">
         {snapshotSummary.map((item) => (
@@ -447,6 +596,30 @@ export default function DataCenterPage() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>Ang import na ito ay <strong>merge/upsert</strong> sa live mode. Ibig sabihin, ia-add o ia-update nito ang records na nasa file, pero hindi awtomatikong buburahin ang lumang data na wala sa backup.</p>
           <p>Kasama sa backup ang templates at system settings, kaya puwedeng i-restore ang mga reply rules, service hours, at barangay advisory content.</p>
+          <p>JSON pa rin ang full backup format dahil ito lang ang kayang magdala ng buong nested operational state ng system. Para sa mas madaling basahin ng staff, gamitin ang CSV exports sa mga section sa ibaba.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <CardTitle>Readable Operational Lists</CardTitle>
+            <CardDescription>Mga CSV file para sa farmers at inventory na mas madaling basahin sa Excel o spreadsheet apps.</CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleExportFarmersCsv}>
+              <Download className="mr-2 h-4 w-4" />
+              Export Farmers CSV
+            </Button>
+            <Button variant="outline" onClick={handleExportResourcesCsv}>
+              <Download className="mr-2 h-4 w-4" />
+              Export Resources CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>Ang mga file na ito ay para sa human-readable review, printing, at sharing sa barangay staff na mas komportable sa Excel kaysa JSON files.</p>
+          <p>Hindi nito pinapalitan ang full JSON backup, pero mas praktikal ito para sa day-to-day reporting at manual checking.</p>
         </CardContent>
       </Card>
 
@@ -467,12 +640,15 @@ export default function DataCenterPage() {
             </Button>
             <Button onClick={() => knowledgeImportRef.current?.click()} disabled={isImportingKnowledge}>
               <Upload className="mr-2 h-4 w-4" />
-              {isImportingKnowledge ? 'Nag-i-import...' : 'Import Knowledge File'}
+              {isImportingKnowledge ? 'Nag-i-import...' : 'Import File or Photo'}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Supported formats: `JSON` at `CSV`. Ito ang pinakamalapit sa “upload files that shape replies” sa current app, dahil ang imported entries ay napupunta sa shared knowledge base na puwedeng gamitin ng staff at future AI lookup workflows.</p>
+          <p>Supported formats: `JSON`, `CSV`, `Excel`, `PDF`, at image files tulad ng screenshots o litrato ng printed advisory.</p>
+          <p>Kapag PDF o image ang in-upload, gagamit ang system ng AI extraction para gawing structured knowledge articles ang laman na puwedeng hanapin at gamitin sa knowledge base.</p>
+          <p>Mas bagay ang PDF/image import sa flyers, posters, screenshots, at printed materials na gusto mong gawing searchable sa system nang hindi mano-manong kino-convert sa JSON o CSV.</p>
+          <p>Best results: malinaw na text, iisang pangunahing topic kada file, at litrato na tuwid at hindi madilim.</p>
           <p>Para sa audio uploads, article metadata pa lang ang portable ngayon. Wala pang real file storage/transcription pipeline para sa audio asset mismo.</p>
         </CardContent>
       </Card>
@@ -494,63 +670,48 @@ export default function DataCenterPage() {
             </Button>
             <Button onClick={() => trainingImportRef.current?.click()} disabled={isImportingTraining}>
               <Upload className="mr-2 h-4 w-4" />
-              {isImportingTraining ? 'Nag-i-import...' : 'Import Training File'}
+              {isImportingTraining ? 'Nag-i-import...' : 'Import File or Photo'}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Supported formats: `JSON` at `CSV`. Maaari kang mag-upload ng dating export file, o sarili mong labeled dataset basta tugma ang fields.</p>
+          <p>Supported formats: `JSON`, `CSV`, `Excel`, `PDF`, at image files tulad ng screenshots ng reviewed SMS sheets o printed examples.</p>
+          <p>Kapag PDF o image ang in-upload, gagamit ang system ng AI extraction para subukang buuin ang structured training examples mula sa mga nakikitang mensahe, labels, at review notes. Kapag Excel file naman, babasahin ng system ang unang worksheet bilang table import.</p>
+          <p>Best results: malinaw na message text, kita ang labels o final review notes, at hindi halo-halo ang maraming cases sa isang malabong screenshot.</p>
           <p>Ang training files ay hindi pa direktang nagre-retrain ng Gemini model, pero agad silang nagiging managed dataset para sa human review, audit, at future tuning/export work.</p>
         </CardContent>
       </Card>
 
-      {isDeveloper ? (
-        <Card>
-          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                <CardTitle>Staff Access Import/Export</CardTitle>
-              </div>
-              <CardDescription>Developer-only provisioning files para sa barangay staff accounts at access profiles.</CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={handleExportStaffJson}>
-                <FileJson className="mr-2 h-4 w-4" />
-                Export JSON
-              </Button>
-              <Button variant="outline" onClick={handleExportStaffCsv}>
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
-              <Button onClick={() => staffImportRef.current?.click()} disabled={isImportingStaff}>
-                <Upload className="mr-2 h-4 w-4" />
-                {isImportingStaff ? 'Nag-i-import...' : 'Import Staff File'}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Sa live mode, ang import na ito ay gumagamit ng parehong provisioning API na ginagamit sa developer add-user flow, kaya maaari itong gumawa ng real Firebase Auth accounts at user profiles.</p>
-            <p>Kapag may bagong temporary passwords, ida-download sila bilang hiwalay na JSON file para may record ka agad para sa turnover.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader>
+      <Card>
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
             <div className="flex items-center gap-2">
-              <BrainCircuit className="h-5 w-5 text-primary" />
-              <CardTitle>What Influences Replies Right Now</CardTitle>
+              <Shield className="h-5 w-5" />
+              <CardTitle>Staff Access Import/Export</CardTitle>
             </div>
-            <CardDescription>Para malinaw kung ano ang na-aapektuhan ng uploads at settings.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p><strong>System templates:</strong> ginagamit sa auto-reply at fallback messaging.</p>
-            <p><strong>Knowledge articles:</strong> ginagamit sa search at guidance workflows.</p>
-            <p><strong>Price watch:</strong> ginagamit sa `PRICE_CHECK` SMS advice.</p>
-            <p><strong>Training files:</strong> ginagamit sa QA at future tuning/export, pero hindi pa auto-fine-tune.</p>
-          </CardContent>
-        </Card>
-      )}
+            <CardDescription>Developer-only provisioning files para sa barangay staff accounts at access profiles.</CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleExportStaffJson}>
+              <FileJson className="mr-2 h-4 w-4" />
+              Export JSON
+            </Button>
+            <Button variant="outline" onClick={handleExportStaffCsv}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={() => staffImportRef.current?.click()} disabled={isImportingStaff}>
+              <Upload className="mr-2 h-4 w-4" />
+              {isImportingStaff ? 'Nag-i-import...' : 'Import Staff File'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>Sa live mode, ang import na ito ay gumagamit ng parehong provisioning API na ginagamit sa developer add-user flow, kaya maaari itong gumawa ng real Firebase Auth accounts at user profiles.</p>
+          <p>Supported formats: `JSON`, `CSV`, at `Excel`. Sa Excel import, unang worksheet ang babasahin bilang staff table.</p>
+          <p>Kapag may bagong temporary passwords, ida-download sila bilang hiwalay na CSV file para madaling buksan sa Excel o i-print para sa turnover.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

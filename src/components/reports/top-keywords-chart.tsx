@@ -31,8 +31,10 @@ const chartConfig = {
 export function TopKeywordsChart() {
   const { topKeywordsData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
-
-  const topKeyword = topKeywordsData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
+  const hasKeywordData = topKeywordsData.some((item) => item.count > 0);
+  const topKeyword = hasKeywordData
+    ? topKeywordsData.reduce((prev, current) => (prev.count > current.count) ? prev : current)
+    : null;
 
   const renderChart = () => (
      <ResponsiveContainer width="100%" height="100%">
@@ -96,13 +98,23 @@ export function TopKeywordsChart() {
             </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
-            <div className="flex flex-col items-center gap-2">
-                <p className="text-5xl font-bold text-chart-1">{topKeyword.count}</p>
-                <p className="text-sm text-muted-foreground">pagbanggit ng '{topKeyword.word}'</p>
-            </div>
+            {topKeyword ? (
+              <div className="flex flex-col items-center gap-2">
+                  <p className="text-5xl font-bold text-chart-1">{topKeyword.count}</p>
+                  <p className="text-sm text-muted-foreground">pagbanggit ng '{topKeyword.word}'</p>
+              </div>
+            ) : (
+              <div className="px-6 text-center text-sm text-muted-foreground">
+                Wala pang sapat na live SMS text para makabuo ng top keywords.
+              </div>
+            )}
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: "Peste," "pataba," at "sakit" ang mga pangunahing salita, na tumutukoy sa mga pangunahing alalahanin.</p>
+          <p className="text-xs text-muted-foreground">
+            {topKeyword
+              ? `Pagsusuri: Sa kasalukuyang live data, nangunguna ang "${topKeyword.word}" bilang pinakamadalas na keyword.`
+              : 'Magpapakita lang ang insight na ito kapag may sapat nang live SMS messages sa napiling timeframe.'}
+          </p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -113,15 +125,23 @@ export function TopKeywordsChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig} className="w-full h-full">
-                    {renderChart()}
-                </ChartContainer>
-            </div>
-            <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang mga salitang "Peste," "Pataba," at "Sakit" ang nangunguna sa listahan, na malinaw na nagpapahiwatig na ang mga ito ang tatlong pangunahing kategorya ng mga alalahanin para sa mga magsasaka. Ang pagkakaroon ng mga pangalan ng pananim tulad ng "Kamatis" at "Palay" ay nagpapakita kung aling mga pananim ang pinagtutuunan ng pansin.</p>
-                <p><strong>Rekomendasyon:</strong> Gamitin ang mga keyword na ito para i-tag at i-kategorya ang nilalaman sa knowledge base upang mas madali itong mahanap. Ang mga nangungunang keyword na ito ay dapat ding maging priyoridad sa pagsasanay ng AI model upang matiyak na nauunawaan nito ang mga ito nang may mataas na katumpakan.</p>
-            </div>
+            {hasKeywordData ? (
+              <>
+                <div className="h-[400px] w-full mt-4">
+                    <ChartContainer config={chartConfig} className="w-full h-full">
+                        {renderChart()}
+                    </ChartContainer>
+                </div>
+                <div className="mt-8 text-sm text-muted-foreground space-y-2">
+                    <p><strong>Detalyadong Pagsusuri:</strong> Batay sa live na mensahe, ang mga keyword na nasa itaas ang pinakamadalas lumabas sa napiling timeframe. Makakatulong ito para tukuyin kung anong mga alalahanin ang paulit-ulit na lumilitaw sa barangay feed.</p>
+                    <p><strong>Rekomendasyon:</strong> Gamitin ang mga keyword na ito para i-tag ang knowledge-base content at i-compare sa mga susunod na linggo kung may bagong concern na umuusbong.</p>
+                </div>
+              </>
+            ) : (
+              <div className="mt-4 rounded-lg border border-dashed border-border/70 bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+                Wala pang sapat na live SMS text para makabuo ng keyword distribution sa napiling timeframe.
+              </div>
+            )}
         </div>
         <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>

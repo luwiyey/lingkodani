@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useData } from '@/context/data-context';
+import { isLiveMode } from '@/lib/config/app-mode';
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { Sprout, ArrowLeft } from 'lucide-react';
 import Link from "next/link";
@@ -19,6 +20,7 @@ const stageColors: { [key: string]: string } = {
     'Paglago': 'bg-green-500/10 text-green-500',
     'Pamumulaklak': 'bg-yellow-500/10 text-yellow-500',
     'Pag-aani': 'bg-orange-500/10 text-orange-500',
+    'Hindi pa naitatala': 'bg-slate-500/10 text-slate-600',
 }
 
 export default function ActiveFarmsPage() {
@@ -33,14 +35,17 @@ export default function ActiveFarmsPage() {
   const activeFarms = farmers.filter(f => f.status === 'active').map((farmer, index) => {
     const stages = ['Paglago', 'Pamumulaklak', 'Pagtatanim', 'Pag-aani'];
     const crops = farmer.crops.length > 0 ? farmer.crops : ['Unknown'];
-    const stage = stages[index % stages.length];
+    const stage = isLiveMode ? 'Hindi pa naitatala' : stages[index % stages.length];
+    const fallbackLastUpdate = farmer.lastSmsActivity || farmer.registrationDate;
     return {
         id: `CROP${String(index + 1).padStart(3, '0')}`,
         farmerId: farmer.id,
         farmerName: farmer.name,
         crop: crops[0], // Show the first crop for simplicity
         stage: stage,
-        lastUpdate: new Date(new Date('2026-01-28').setDate(new Date('2026-01-28').getDate() - (index + 1))).toISOString()
+        lastUpdate: isLiveMode
+          ? fallbackLastUpdate
+          : new Date(new Date('2026-01-28').setDate(new Date('2026-01-28').getDate() - (index + 1))).toISOString()
     }
   });
 
@@ -69,6 +74,11 @@ export default function ActiveFarmsPage() {
                     </HelpDialog>
                 </div>
                 <p className="text-muted-foreground">Subaybayan ang kasalukuyang yugto at pag-unlad ng mga pananim sa buong barangay.</p>
+                {isLiveMode ? (
+                  <p className="text-xs text-muted-foreground">
+                    Live mode ito: lalabas ang eksaktong crop stage kapag naitatala na ang structured farm-stage updates ng barangay team.
+                  </p>
+                ) : null}
             </div>
       </div>
       <Card>

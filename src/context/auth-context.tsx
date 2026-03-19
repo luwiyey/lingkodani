@@ -23,6 +23,31 @@ const DEMO_SESSION_EVENT = "demo-session-change";
 const LIVE_FIREBASE_CONFIG_ERROR =
   "Hindi pa kumpleto ang live Firebase web configuration ng deployment na ito. Idagdag ang lahat ng NEXT_PUBLIC_FIREBASE_* values sa Production environment variables.";
 
+async function syncServerSession(user: FirebaseUser | null) {
+  if (!isLiveMode) {
+    return;
+  }
+
+  if (!user) {
+    await fetch("/api/auth/session", {
+      method: "DELETE",
+      cache: "no-store",
+    }).catch(() => {
+      // Ignore cookie cleanup failures on the client.
+    });
+    return;
+  }
+
+  const idToken = await user.getIdToken();
+  await fetch("/api/auth/session", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    cache: "no-store",
+  });
+}
+
 function mergeLiveProfile(profile: User | null) {
   const onboardingProfile = readOnboardingProfile();
 
@@ -165,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(user);
 
       if (!user?.uid || !user.email) {
+        await syncServerSession(null);
         setCurrentUserProfile(readDemoPreviewUser());
         setAuthLoading(false);
         return;
@@ -189,6 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!serverProfile) {
+        await syncServerSession(null);
         setCurrentUserProfile(null);
         setAuthError("Walang awtorisadong live user profile para sa account na ito.");
         await signOut(auth);
@@ -197,8 +224,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (serverProfile.status === "disabled") {
+        await syncServerSession(null);
         setCurrentUserProfile(null);
         setAuthError("Naka-disable ang account na ito.");
+        await signOut(auth);
+        setAuthLoading(false);
+        return;
+      }
+
+      try {
+        await syncServerSession(user);
+      } catch {
+        setCurrentUserProfile(null);
+        setAuthError("Hindi maihanda ang secure server session para sa account na ito.");
         await signOut(auth);
         setAuthLoading(false);
         return;
@@ -246,6 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (mergedProfile.status === "disabled") {
               setCurrentUserProfile(null);
               setAuthError("Naka-disable ang account na ito.");
+              void syncServerSession(null);
               void signOut(auth);
               setAuthLoading(false);
               return;
@@ -316,6 +355,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         const auth = getClientAuth();
+        await syncServerSession(null);
         await signOut(auth);
       }
     },

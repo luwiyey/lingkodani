@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,9 @@ const chartConfig = {
 
 export function CropStageChart() {
   const { cropStageData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Kasalukuyan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
+  const hasCropStageData = cropStageData.some((item) => item.value > 0);
 
   const plantingStage = cropStageData.find(d => d.name === 'Pagtatanim')?.value ?? 0;
   const growingStage = cropStageData.find(d => d.name === 'Paglago')?.value ?? 0;
@@ -71,7 +72,7 @@ export function CropStageChart() {
                       </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Kasalukuyan')}>Kasalukuyan</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
@@ -102,19 +103,29 @@ export function CropStageChart() {
             </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
-             <div className="flex items-center gap-4">
-                <div className="flex flex-col items-center">
-                    <p className="text-4xl font-bold text-chart-1">{plantingStage}</p>
-                    <p className="text-xs text-muted-foreground">Nasa Pagtatanim</p>
-                </div>
-                <div className="flex flex-col items-center">
-                    <p className="text-4xl font-bold text-chart-2">{growingStage}</p>
-                    <p className="text-xs text-muted-foreground">Nasa Paglago</p>
-                </div>
-            </div>
+             {hasCropStageData ? (
+              <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-center">
+                      <p className="text-4xl font-bold text-chart-1">{plantingStage}</p>
+                      <p className="text-xs text-muted-foreground">Nasa Pagtatanim</p>
+                  </div>
+                  <div className="flex flex-col items-center">
+                      <p className="text-4xl font-bold text-chart-2">{growingStage}</p>
+                      <p className="text-xs text-muted-foreground">Nasa Paglago</p>
+                  </div>
+              </div>
+             ) : (
+              <div className="px-6 text-center text-sm text-muted-foreground">
+                Wala pang structured crop-stage records sa live mode, kaya hindi muna ipinapakita ang chart na ito.
+              </div>
+             )}
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga bukid ay nasa yugto ng "Pagtatanim" at "Paglago", na nagpapahiwatig ng peak season.</p>
+          <p className="text-xs text-muted-foreground">
+            {hasCropStageData
+              ? 'Pagsusuri: Batay ito sa aktuwal na crop-stage records na naitala sa system.'
+              : 'Kailangang magtala muna ng structured crop-stage updates bago maging available ang insight na ito sa live mode.'}
+          </p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -125,15 +136,23 @@ export function CropStageChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig} className="w-full h-full">
-                    {renderChart()}
-                </ChartContainer>
-            </div>
-            <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Sa kasalukuyan, {plantingStage} na bukid ang nasa yugto ng pagtatanim at {growingStage} ang nasa paglago. Ipinapahiwatig nito na ang pangangailangan para sa mga binhi, pataba, at payo sa maagang yugto ng paglago ay mataas. Ang mas maliit na bilang sa "Pamumulaklak" at "Pag-aani" ay nagmumungkahi na ang panahon ng pag-aani ay malapit nang matapos para sa ilang pananim.</p>
-                <p><strong>Rekomendasyon:</strong> Tiyaking may sapat na imbentaryo ng mga binhi at pataba. I-prioritize ang pag-broadcast ng mga advisory na may kaugnayan sa paghahanda ng lupa at maagang pamamahala ng peste. Magplano ng mga seminar o field visit na nakatuon sa mga magsasakang nagsisimula pa lang sa kanilang crop cycle.</p>
-            </div>
+            {hasCropStageData ? (
+              <>
+                <div className="h-[400px] w-full mt-4">
+                    <ChartContainer config={chartConfig} className="w-full h-full">
+                        {renderChart()}
+                    </ChartContainer>
+                </div>
+                <div className="mt-8 text-sm text-muted-foreground space-y-2">
+                    <p><strong>Detalyadong Pagsusuri:</strong> Sa napiling timeframe, {plantingStage} na crop records ang nasa yugto ng pagtatanim at {growingStage} ang nasa paglago.</p>
+                    <p><strong>Rekomendasyon:</strong> Gamitin ang chart na ito para planuhin ang inputs at advisories kapag nagsimula nang maging consistent ang crop-stage encoding sa live workflow.</p>
+                </div>
+              </>
+            ) : (
+              <div className="mt-4 rounded-lg border border-dashed border-border/70 bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+                Hindi pa sapat ang live crop-stage encoding para makabuo ng expanded crop-stage report.
+              </div>
+            )}
         </div>
         <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>

@@ -21,8 +21,19 @@ service cloud.firestore {
         : null;
     }
 
+    function currentUserTitle() {
+      return hasUserProfile()
+        ? get(/databases/$(database)/documents/users/$(userId())).data.title
+        : "";
+    }
+
     function isDeveloper() {
       return currentUserRole() == 'developer';
+    }
+
+    function isBarangayManager() {
+      return currentUserRole() == 'barangay' &&
+        currentUserTitle().matches('(?i).*(administrator|admin|captain|kapitan|secretary|sekret).*');
     }
 
     function isAuthorizedStaff() {
@@ -51,7 +62,7 @@ service cloud.firestore {
 
     match /systemSettings/{document=**} {
       allow read: if isAuthorizedStaff();
-      allow create, update: if isAuthorizedStaff();
+      allow create, update: if isDeveloper() || isBarangayManager();
       allow delete: if isDeveloper();
     }
 

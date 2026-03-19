@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 import { useData } from '@/context/data-context';
 import { useReportsTimeframe, type ReportsTimeframe } from '@/context/reports-timeframe-context';
+import { isLiveMode } from '@/lib/config/app-mode';
 import type { Resource, SmsMessage } from '@/lib/types';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
 
@@ -301,7 +302,8 @@ export function useAnalytics() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 9)
       .map(([word, count]) => ({ word, count }));
-    const safeTopKeywordsData = topKeywordsData.length > 0 ? topKeywordsData : [{ word: 'wala', count: 0 }];
+    const safeTopKeywordsData =
+      topKeywordsData.length > 0 ? topKeywordsData : isLiveMode ? [] : [{ word: 'wala', count: 0 }];
 
     const inquiryCounter = new Map<string, number>();
     for (const msg of sortedByTime) {
@@ -317,13 +319,19 @@ export function useAnalytics() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([question, count]) => ({ question, count }));
-    const safeTopInquiriesData = topInquiriesData.length > 0 ? topInquiriesData : [{ question: 'Walang inquiry', count: 0 }];
+    const safeTopInquiriesData =
+      topInquiriesData.length > 0
+        ? topInquiriesData
+        : isLiveMode
+          ? []
+          : [{ question: 'Walang inquiry', count: 0 }];
 
     const highRiskKeywordData = RISK_WORDS.map((word) => ({
       word,
       count: sortedByTime.filter((m) => m.message.toLowerCase().includes(word)).length,
     })).filter((item) => item.count > 0);
-    const safeHighRiskKeywordData = highRiskKeywordData.length > 0 ? highRiskKeywordData : [{ word: 'wala', count: 0 }];
+    const safeHighRiskKeywordData =
+      highRiskKeywordData.length > 0 ? highRiskKeywordData : isLiveMode ? [] : [{ word: 'wala', count: 0 }];
 
     const zoneCounter = new Map<string, number>();
     for (const msg of sortedByTime) {
@@ -334,7 +342,12 @@ export function useAnalytics() {
     const geographicHotspotData = [...zoneCounter.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([zone, issues]) => ({ zone, issues }));
-    const safeGeographicHotspotData = geographicHotspotData.length > 0 ? geographicHotspotData : [{ zone: 'Walang zone', issues: 0 }];
+    const safeGeographicHotspotData =
+      geographicHotspotData.length > 0
+        ? geographicHotspotData
+        : isLiveMode
+          ? []
+          : [{ zone: 'Walang zone', issues: 0 }];
 
     const seasonalMap = new Map<number, number>();
     for (const msg of sortedByTime) {
@@ -443,12 +456,14 @@ export function useAnalytics() {
     }
     const recommendationTypeData = [...recommendationTypeCounter.entries()].map(([name, count]) => ({ name, count }));
 
-    const cropStageData = [
-      { name: 'Pagtatanim', value: farmers.filter((f) => f.status === 'pending_approval').length, fill: COLOR_1 },
-      { name: 'Paglago', value: farmers.filter((f) => f.status === 'active').length, fill: COLOR_2 },
-      { name: 'Pamumulaklak', value: Math.max(0, Math.floor(farmers.length * 0.25)), fill: COLOR_3 },
-      { name: 'Pag-aani', value: sortedByTime.filter((m) => m.parsedIntent === 'HARVEST').length, fill: COLOR_4 },
-    ];
+    const cropStageData = isLiveMode
+      ? []
+      : [
+          { name: 'Pagtatanim', value: farmers.filter((f) => f.status === 'pending_approval').length, fill: COLOR_1 },
+          { name: 'Paglago', value: farmers.filter((f) => f.status === 'active').length, fill: COLOR_2 },
+          { name: 'Pamumulaklak', value: Math.max(0, Math.floor(farmers.length * 0.25)), fill: COLOR_3 },
+          { name: 'Pag-aani', value: sortedByTime.filter((m) => m.parsedIntent === 'HARVEST').length, fill: COLOR_4 },
+        ];
 
     const interventionEventMonths = new Map<number, number>();
     for (const task of filteredFieldVisitTasks) {

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, BrainCircuit, Download, FileJson, Search } from 'lucide-react';
+import { ArrowLeft, Download, FileJson, Search } from 'lucide-react';
 
 import { useData } from '@/context/data-context';
 import { Button } from '@/components/ui/button';
@@ -136,7 +136,7 @@ export default function TrainingDataPage() {
         </HoverTooltip>
         <div className="space-y-1">
           <div className="flex items-center">
-            <BrainCircuit className="mr-2 h-6 w-6" />
+            <FileJson className="mr-2 h-6 w-6" />
             <h1 className="text-2xl font-bold tracking-tight">SMS Training Data</h1>
             <HelpDialog title="SMS Training Data" tooltipText="Suriin ang mga labeled SMS records.">
               <p>Ang pahinang ito ay nagpapakita ng mga SMS na na-review na ng tao at na-convert sa structured training examples.</p>
@@ -205,7 +205,7 @@ export default function TrainingDataPage() {
 
           {filteredExamples.length === 0 ? (
             <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Wala pang captured training examples. Mag-review muna ng SMS sa live feed para makabuo ng labeled data.
+              Wala pang captured training examples. Mag-review muna ng SMS sa live feed o mag-import ng JSON, CSV, PDF, o screenshot sa Data Center para makabuo ng labeled data.
             </div>
           ) : (
             <div className="relative w-full overflow-auto">

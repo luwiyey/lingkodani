@@ -1,79 +1,22 @@
-'use client';
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/app-sidebar";
-import { Header } from "@/components/layout/header";
-import { LiveAutomationRunner } from "@/components/layout/live-automation-runner";
-import { MobileFooter } from "@/components/layout/mobile-footer";
-import { useAuth } from "@/context/auth-context";
 import { isLiveMode } from "@/lib/config/app-mode";
-import { getPreferredDashboardRoute } from "@/lib/user-workspace";
+import { readServerSessionProfile } from "@/lib/server/session-auth";
+import { DashboardShell } from "./dashboard-shell";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const { authLoading, currentUser, currentUserProfile } = useAuth();
-  const isDisasterPath = pathname.startsWith('/dashboard/disaster');
-  const isDeveloperPage = pathname.startsWith('/dashboard/developer');
-  const shouldRedirectDeveloperHome =
-    pathname === '/dashboard' && currentUserProfile?.role === 'developer';
-
-  useEffect(() => {
-    if (isLiveMode && !authLoading && !currentUser && !currentUserProfile) {
-      router.replace("/");
+  if (isLiveMode) {
+    const session = await readServerSessionProfile();
+    if (!session) {
+      redirect("/login");
     }
-  }, [authLoading, currentUser, currentUserProfile, router]);
-
-  useEffect(() => {
-    if (
-      isLiveMode &&
-      !authLoading &&
-      isDeveloperPage &&
-      currentUserProfile?.role !== 'developer'
-    ) {
-      router.replace(getPreferredDashboardRoute(currentUserProfile));
-    }
-  }, [authLoading, currentUserProfile, isDeveloperPage, router]);
-
-  useEffect(() => {
-    if (!authLoading && shouldRedirectDeveloperHome) {
-      router.replace('/dashboard/developer');
-    }
-  }, [authLoading, router, shouldRedirectDeveloperHome]);
-
-  if (isLiveMode && authLoading) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Sinusuri ang session...</div>;
-  }
-
-  if (!authLoading && shouldRedirectDeveloperHome) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Binubuksan ang developer dashboard...
-      </div>
-    );
   }
 
   return (
-    <SidebarProvider>
-      {!isDisasterPath && <AppSidebar />}
-      <SidebarInset>
-        <LiveAutomationRunner />
-        <Header />
-        <div className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 lg:p-8 md:pb-8">
-          {children}
-        </div>
-        <footer className="hidden px-8 pb-8 pt-0 text-center text-xs text-muted-foreground md:block">
-          <span>Lingkod-Ani v1.0</span> | <span>Barangay Agricultural Advisory System</span> | <Link href="/terms-of-service" className="hover:underline">Terms of Service</Link> | <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
-        </footer>
-        {!isDisasterPath && <MobileFooter />}
-      </SidebarInset>
-    </SidebarProvider>
+    <DashboardShell>{children}</DashboardShell>
   );
 }

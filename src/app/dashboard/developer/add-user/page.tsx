@@ -113,14 +113,14 @@ export default function AddUserPage() {
         </HoverTooltip>
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Magdagdag ng Bagong User</h1>
-          <p className="text-muted-foreground">Punan ang mga detalye ng bagong user.</p>
+          <p className="text-muted-foreground">Punan ang mga detalye ng bagong barangay staff user.</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
             <CardTitle>Form ng Pagpaparehistro ng User</CardTitle>
-            <CardDescription>Punan ang mga detalye sa ibaba. Ang mga field na may * ay kinakailangan.</CardDescription>
+            <CardDescription>Punan ang mga detalye sa ibaba. Ang form na ito ay para sa barangay staff accounts lamang.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -177,27 +177,12 @@ export default function AddUserPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="barangay">Barangay Staff</SelectItem>
-                        <SelectItem value="developer">Developer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Barangay Staff Access</p>
+                <p className="mt-1">
+                  Ang accounts na ginagawa sa form na ito ay para sa barangay operations lamang. Ang developer access ay pinamamahalaan sa hiwalay na secure provisioning flow.
+                </p>
+              </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}

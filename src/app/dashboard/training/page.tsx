@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { BrainCircuit } from "lucide-react";
+import { MessageSquareQuote } from "lucide-react";
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import React from 'react';
@@ -86,7 +86,7 @@ export default function TrainingPage() {
         <CardHeader className="flex-row items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center">
-                <CardTitle className="flex items-center gap-2"><BrainCircuit /> Feedback sa AI</CardTitle>
+                <CardTitle className="flex items-center gap-2"><MessageSquareQuote /> Feedback sa AI</CardTitle>
                 <HelpDialog title="Paano Magbigay ng Feedback sa AI" tooltipText="Alamin ang mga hakbang sa pagbibigay ng feedback sa AI.">
                     <p>Ito ay isang paraan para direktang turuan ang AI. Sundin ang mga hakbang na ito:</p>
                     <ol className="list-decimal pl-5 space-y-2">

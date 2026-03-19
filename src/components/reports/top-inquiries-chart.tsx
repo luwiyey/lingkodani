@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,9 +30,11 @@ const chartConfig = {
 
 export function TopInquiriesChart() {
   const { topInquiriesData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
-  
-  const topInquiry = topInquiriesData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
+  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const hasInquiryData = topInquiriesData.some((item) => item.count > 0);
+  const topInquiry = hasInquiryData
+    ? topInquiriesData.reduce((prev, current) => (prev.count > current.count) ? prev : current)
+    : null;
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
@@ -96,13 +98,23 @@ export function TopInquiriesChart() {
             </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
-             <div className="flex flex-col items-center gap-2">
-                <p className="text-5xl font-bold text-chart-5">{topInquiry.count}</p>
-                <p className="text-sm text-muted-foreground text-center">tanong tungkol sa "{topInquiry.question}"</p>
-            </div>
+             {topInquiry ? (
+              <div className="flex flex-col items-center gap-2">
+                  <p className="text-5xl font-bold text-chart-5">{topInquiry.count}</p>
+                  <p className="text-sm text-muted-foreground text-center">tanong tungkol sa "{topInquiry.question}"</p>
+              </div>
+             ) : (
+              <div className="px-6 text-center text-sm text-muted-foreground">
+                Wala pang sapat na live inquiry data para tukuyin ang pinakakaraniwang tanong.
+              </div>
+             )}
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Ang tanong tungkol sa "{topInquiry.question}" ang pinakamadalas, na nagpapakita ng pangangailangan para sa solusyon sa peste.</p>
+          <p className="text-xs text-muted-foreground">
+            {topInquiry
+              ? `Pagsusuri: Sa napiling timeframe, ang tanong tungkol sa "${topInquiry.question}" ang pinakamadalas na lumitaw.`
+              : 'Magpapakita lang ang insight na ito kapag may sapat nang live inquiries sa napiling timeframe.'}
+          </p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -113,15 +125,23 @@ export function TopInquiriesChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig} className="w-full h-full">
-                    {renderChart()}
-                </ChartContainer>
-            </div>
-            <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang mga tanong tungkol sa pamamahala ng peste ("Gamot sa peste?") at kalusugan ng pananim ("Bakit dilaw ang dahon?") ang nangingibabaw. Ito ay nagpapatunay na ang pag-diagnose at paggamot sa mga isyu sa bukid ang pangunahing dahilan kung bakit ginagamit ng mga magsasaka ang sistema.</p>
-                <p><strong>Rekomendasyon:</strong> Gumawa o i-highlight ang mga artikulo sa knowledge base na direktang tumutugon sa mga nangungunang tanong na ito. Maaari ring maging kapaki-pakinabang na lumikha ng mga "Quick Reply" na template para sa mga karaniwang tanong na ito upang mas mapabilis pa ang oras ng pagtugon.</p>
-            </div>
+            {hasInquiryData ? (
+              <>
+                <div className="h-[400px] w-full mt-4">
+                    <ChartContainer config={chartConfig} className="w-full h-full">
+                        {renderChart()}
+                    </ChartContainer>
+                </div>
+                <div className="mt-8 text-sm text-muted-foreground space-y-2">
+                    <p><strong>Detalyadong Pagsusuri:</strong> Ang chart sa itaas ay batay sa mga aktuwal na inquiry categories na lumitaw sa live dataset para sa napiling timeframe.</p>
+                    <p><strong>Rekomendasyon:</strong> I-prioritize ang knowledge-base articles at reply templates para sa mga tanong na paulit-ulit na lumilitaw sa listahang ito.</p>
+                </div>
+              </>
+            ) : (
+              <div className="mt-4 rounded-lg border border-dashed border-border/70 bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+                Wala pang sapat na live inquiry data para sa expanded report na ito.
+              </div>
+            )}
         </div>
         <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>

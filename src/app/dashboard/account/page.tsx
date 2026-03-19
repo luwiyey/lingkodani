@@ -6,6 +6,7 @@ import {
   reauthenticateWithCredential,
   updateEmail,
   updatePassword,
+  updateProfile,
 } from 'firebase/auth';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -76,15 +77,61 @@ export default function AccountSettingsPage() {
     setWorkspacePreference(profile.preferredWorkspace ?? 'simple');
   }, [profile.preferredWorkspace]);
 
+  const saveLiveProfile = React.useCallback(async (changes: Partial<User>) => {
+    const liveUser = getClientAuth().currentUser;
+    const idToken = await liveUser?.getIdToken(true);
+
+    if (!idToken) {
+      throw new Error('Walang authenticated live session para sa account na ito.');
+    }
+
+    const response = await fetch('/api/account/profile', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify(changes),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? 'Hindi na-save ang live account profile.');
+    }
+
+    return payload.profile as User;
+  }, []);
+
   const handlePhotoUploadClick = () => {
     photoUploadRef.current?.click();
   };
 
-  const persistProfile = (nextProfile: User, successMessage: string) => {
+  const persistProfile = async (nextProfile: User, successMessage: string) => {
     if (isPreviewSession) {
       saveDemoPreviewUser(nextProfile);
-    } else {
+    } else if (!isLiveMode) {
       updateUser(getUserRecordId(profile), nextProfile);
+    } else {
+      const liveUser = getClientAuth().currentUser;
+
+      if (liveUser) {
+        await updateProfile(liveUser, {
+          displayName: nextProfile.name,
+          photoURL: nextProfile.avatarUrl ?? null,
+        }).catch(() => {
+          // Keep the Firestore profile as the source of truth even if Auth profile sync lags.
+        });
+      }
+
+      await saveLiveProfile({
+        name: nextProfile.name,
+        title: nextProfile.title,
+        barangay: nextProfile.barangay,
+        phone: nextProfile.phone,
+        avatarUrl: nextProfile.avatarUrl,
+        preferredWorkspace: nextProfile.preferredWorkspace,
+      });
     }
 
     const currentOnboarding = readOnboardingProfile();
@@ -114,7 +161,13 @@ export default function AccountSettingsPage() {
         avatarUrl: nextAvatarUrl,
       };
 
-      persistProfile(nextProfile, `Na-update na ang profile picture gamit ang "${file.name}".`);
+      void persistProfile(nextProfile, `Na-update na ang profile picture gamit ang "${file.name}".`).catch((error) => {
+        toast({
+          title: 'Hindi na-save ang larawan',
+          description: error instanceof Error ? error.message : 'Hindi na-save ang live profile photo.',
+          variant: 'destructive',
+        });
+      });
     };
 
     reader.readAsDataURL(file);
@@ -135,7 +188,13 @@ export default function AccountSettingsPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    persistProfile(nextProfile, 'Nai-save na ang iyong profile at workspace preference.');
+    void persistProfile(nextProfile, 'Nai-save na ang iyong profile at workspace preference.').catch((error) => {
+      toast({
+        title: 'Hindi na-save ang profile',
+        description: error instanceof Error ? error.message : 'Hindi na-save ang live account profile.',
+        variant: 'destructive',
+      });
+    });
   };
 
   const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -232,7 +291,9 @@ export default function AccountSettingsPage() {
             updatedAt: new Date().toISOString(),
           };
 
-          updateUser(getUserRecordId(profile), nextProfile);
+          await saveLiveProfile({
+            email: nextEmail,
+          });
           toast({
             title: "Tagumpay!",
             description: "Nai-update na ang live email address at user profile record.",
@@ -489,31 +550,33 @@ export default function AccountSettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/40">
-        <CardHeader>
-          <CardTitle>Demo Data Control</CardTitle>
-          <CardDescription>I-reset ang buong demo state para sa panibagong walkthrough run.</CardDescription>
-        </CardHeader>
-        <CardFooter>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">Reset Demo Data</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Sigurado ka bang ire-reset ang demo data?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Ibabalik nito ang farmers, SMS, inventory, vouchers, logs, at knowledge base sa initial mock state.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                <AlertDialogAction onClick={handleResetDemo}>Oo, I-reset</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardFooter>
-      </Card>
+      {!isLiveMode ? (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle>Demo Data Control</CardTitle>
+            <CardDescription>I-reset ang buong demo state para sa panibagong walkthrough run.</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">Reset Demo Data</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Sigurado ka bang ire-reset ang demo data?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Ibabalik nito ang farmers, SMS, inventory, vouchers, logs, at knowledge base sa initial mock state.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetDemo}>Oo, I-reset</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardFooter>
+        </Card>
+      ) : null}
     </div>
   );
 }

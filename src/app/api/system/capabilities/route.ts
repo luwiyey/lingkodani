@@ -149,7 +149,7 @@ export async function GET() {
     knowledgeAudioUploadConfigured,
     reasons: {
       ai: aiConfigured
-        ? undefined
+        ? "Nakakonekta ang AI service, pero kailangan pa ring bantayan ang fallback at human-review states kapag may analysis na hindi nasagot ng model."
         : "Naka-lock muna ang AI feature habang hindi pa configured ang Gemini/Genkit service sa server.",
       liveSms: liveSmsStatus.configured ? undefined : liveSmsStatus.reason,
       knowledgeAudio: knowledgeAudioUploadConfigured

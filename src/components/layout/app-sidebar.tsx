@@ -8,9 +8,9 @@ import * as React from "react";
 import {
   Archive,
   BarChart,
-  BrainCircuit,
   Book,
   Database,
+  FileJson,
   LayoutDashboard,
   MessageSquare,
   Settings,
@@ -49,6 +49,7 @@ import {
 import type { NavItem } from "@/lib/types";
 import { useData } from "@/context/data-context";
 import { useAuth } from "@/context/auth-context";
+import { canManageBarangaySettings } from "@/lib/access-control";
 import { getPreferredDashboardRoute, getPreferredWorkspace } from "@/lib/user-workspace";
 
 function NavMenu({ items }: { items: NavItem[] }) {
@@ -187,6 +188,7 @@ export function AppSidebar() {
   const homeHref = getPreferredDashboardRoute(currentUserProfile);
   const activeWorkspace = getPreferredWorkspace(currentUserProfile);
   const isDeveloper = currentUserProfile?.role === 'developer';
+  const canSeeBarangaySettings = canManageBarangaySettings(currentUserProfile);
   
   const detailedBarangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -277,14 +279,17 @@ export function AppSidebar() {
   const barangayNavItems = currentUserProfile?.role === 'barangay' && activeWorkspace === 'simple'
     ? simpleBarangayNavItems
     : detailedBarangayNavItems;
+  const filteredBarangayNavItems = canSeeBarangaySettings
+    ? barangayNavItems
+    : barangayNavItems.filter((item) => item.href !== "/dashboard/settings");
   const developerNavItems: NavItem[] = [
       { title: "Developer Home", href: "/dashboard/developer", icon: Shield },
       { title: "Magdagdag ng User", href: "/dashboard/developer/add-user", icon: Users },
-      { title: "Training Data", href: "/dashboard/developer/training-data", icon: BrainCircuit },
+      { title: "Training Data", href: "/dashboard/developer/training-data", icon: FileJson },
       { title: "Data Center", href: "/dashboard/data-center", icon: Database },
       { title: "Aking Account", href: "/dashboard/account", icon: Settings },
     ];
-  const navItems = isDeveloper ? developerNavItems : barangayNavItems;
+  const navItems = isDeveloper ? developerNavItems : filteredBarangayNavItems;
   const sidebarTitle = isDeveloper ? "Developer Console" : "Kaagapay ng Magsasaka";
   const menuLabel = isDeveloper ? "Menu ng Developer" : "Menu ng Barangay";
 

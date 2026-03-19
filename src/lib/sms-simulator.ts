@@ -13,6 +13,23 @@ export type InboundSmsAnalysis = {
 };
 
 const PHONE_NORMALIZER = /\D/g;
+const WORD_SEPARATOR = /[^\p{L}\p{N}]+/u;
+
+function tokenize(message: string) {
+  return message
+    .toLowerCase()
+    .split(WORD_SEPARATOR)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function hasWord(tokens: string[], ...keywords: string[]) {
+  return keywords.some((keyword) => tokens.includes(keyword));
+}
+
+function hasPhrase(message: string, ...phrases: string[]) {
+  return phrases.some((phrase) => message.includes(phrase));
+}
 
 export function normalizePhone(value: string) {
   const digits = value.replace(PHONE_NORMALIZER, "");
@@ -34,14 +51,15 @@ export function normalizePhone(value: string) {
 
 export function inferIntent(message: string): SmsIntent {
   const lower = message.toLowerCase();
+  const tokens = tokenize(message);
   if (lower.startsWith("register")) return "REGISTER";
-  if (lower.includes("emergency") || lower.includes("baha") || lower.includes("bagyo")) return "EMERGENCY";
-  if (lower.includes("sprayer") || lower.includes("hiram") || lower.includes("mahihiraman") || lower.includes("tractor")) return "REQUEST";
-  if (lower.includes("ani") || lower.includes("harvest")) return "HARVEST";
-  if (lower.includes("ulan") || lower.includes("panahon") || lower.includes("tubig")) return "WEATHER_HELP";
-  if (lower.includes("presyo")) return "PRICE_CHECK";
-  if (lower.includes("peste") || lower.includes("uod") || lower.includes("daga") || lower.includes("leafminer") || lower.includes("borer")) return "PEST_DISEASE";
-  if (lower.includes("tanim") || lower.includes("palay") || lower.includes("kamatis") || lower.includes("mais")) return "CROP_UPDATE";
+  if (hasPhrase(lower, "emergency", "baha", "bagyo", "lubog", "evacuate", "evacuation")) return "EMERGENCY";
+  if (hasWord(tokens, "peste", "uod", "daga", "leafminer", "borer") || hasPhrase(lower, "insekto", "may sakit")) return "PEST_DISEASE";
+  if (hasWord(tokens, "ulan", "panahon", "tubig") || hasPhrase(lower, "walang tubig", "kulang sa tubig", "malakas na ulan")) return "WEATHER_HELP";
+  if (hasWord(tokens, "sprayer", "hiram", "mahihiraman", "tractor")) return "REQUEST";
+  if (hasWord(tokens, "presyo")) return "PRICE_CHECK";
+  if (hasWord(tokens, "ani", "anihan", "harvest") || hasPhrase(lower, "nag ani", "mag-aani", "mag ani", "naani")) return "HARVEST";
+  if (hasWord(tokens, "tanim", "palay", "kamatis", "mais", "gulay", "okra", "sili") || hasPhrase(lower, "palayan", "pananim")) return "CROP_UPDATE";
   return "UNKNOWN";
 }
 
@@ -103,6 +121,18 @@ export function analyzeInboundSms(message: string, farmerName = "magsasaka", kno
   const urgency = inferUrgency(message, parsedIntent);
   const safetyFlag = inferSafetyFlag(message);
   const tone = inferTone(message, urgency);
+  const baseConfidence = knownFarmer ? 0.62 : 0.48;
+  const confidenceByIntent: Record<SmsIntent, number> = {
+    REGISTER: 0.74,
+    CROP_UPDATE: 0.58,
+    HARVEST: 0.56,
+    REQUEST: 0.61,
+    PEST_DISEASE: 0.68,
+    WEATHER_HELP: 0.57,
+    PRICE_CHECK: 0.66,
+    EMERGENCY: 0.72,
+    UNKNOWN: 0.36,
+  };
 
   return {
     parsedIntent,
@@ -110,7 +140,7 @@ export function analyzeInboundSms(message: string, farmerName = "magsasaka", kno
     safetyFlag,
     tone,
     aiAdvice: inferAdvice(parsedIntent, message, farmerName),
-    aiConfidence: knownFarmer ? 0.91 : 0.72,
+    aiConfidence: Math.max(baseConfidence, confidenceByIntent[parsedIntent]),
     analysisSource: "rules",
   };
 }

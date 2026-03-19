@@ -1,6 +1,6 @@
 
 'use client';
-import { Bot, Calendar as CalendarIcon, Download, ArrowDownToLine } from 'lucide-react';
+import { Bot, Calendar as CalendarIcon, ArrowDownToLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -40,6 +40,14 @@ import { SmsDeliveryStatusChart } from '@/components/reports/sms-delivery-status
 import { MessageToneChart } from '@/components/reports/message-tone-chart';
 import { ResponseTimeChart } from '@/components/reports/response-time-chart';
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function ReportsPageContent() {
     const { timeframe, setTimeframe } = useReportsTimeframe();
@@ -62,10 +70,11 @@ function ReportsPageContent() {
     } = useAnalytics();
     const topKeyword = topKeywordsData[0];
     const topHotspot = geographicHotspotData[0];
+    const hasTopKeyword = Boolean(topKeyword && topKeyword.count > 0);
+    const hasTopHotspot = Boolean(topHotspot && topHotspot.issues > 0);
     const liveSyncLabel = `${liveContextUpdatedAt.slice(0, 19).replace('T', ' ')} UTC`;
 
-    const handleExportSummary = () => {
-        const summaryLines = [
+    const buildSummaryLines = () => [
           `Lingkod-Ani Report Summary`,
           `Timeframe: ${timeframe}`,
           `Live Context Updated At: ${liveContextUpdatedAt}`,
@@ -81,13 +90,20 @@ function ReportsPageContent() {
           `Completed field visits: ${completedFieldVisits}`,
           `Tracked market prices: ${trackedMarketPrices}`,
           `Stale market prices: ${stalePriceCount}`,
-          `Top keyword: ${topKeyword?.word ?? 'wala'} (${topKeyword?.count ?? 0})`,
-          `Top hotspot: ${topHotspot?.zone ?? 'wala'} (${topHotspot?.issues ?? 0} ulat)`,
+          `Top keyword: ${hasTopKeyword ? `${topKeyword?.word} (${topKeyword?.count})` : 'Kulangan pa ng live SMS text data'}`,
+          `Top hotspot: ${hasTopHotspot ? `${topHotspot?.zone} (${topHotspot?.issues} ulat)` : 'Kulangan pa ng live location-linked reports'}`,
           ``,
           `Recommendations:`,
-          `- I-prioritize ang hotspot zone para sa field action.`,
-          `- Maghanda ng advisory content para sa top keyword concern.`,
-        ].join('\n');
+          hasTopHotspot
+            ? `- I-prioritize ang hotspot zone para sa field action.`
+            : `- Hikayatin ang mas kumpletong farmer/location encoding para lumabas ang hotspot analysis.`,
+          hasTopKeyword
+            ? `- Maghanda ng advisory content para sa top keyword concern.`
+            : `- Maghintay ng mas maraming live SMS records bago gumamit ng keyword-based content planning.`,
+        ];
+
+    const handleExportSummaryText = () => {
+        const summaryLines = buildSummaryLines().join('\n');
 
         const blob = new Blob([summaryLines], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -105,6 +121,67 @@ function ReportsPageContent() {
         });
     };
 
+    const handleExportSummaryPdf = () => {
+        const summaryLines = buildSummaryLines();
+        const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=960,height=720');
+
+        if (!printWindow) {
+          toast({
+            title: 'Hindi nabuksan ang PDF export',
+            description: 'Pinagbawalan ng browser ang bagong window. Payagan muna ang pop-ups para sa site na ito.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const renderedSummary = summaryLines.map((line) => escapeHtml(line)).join('<br />');
+
+        printWindow.document.write(`
+          <!doctype html>
+          <html>
+            <head>
+              <title>Lingkod-Ani Report Summary</title>
+              <style>
+                body {
+                  font-family: "Times New Roman", serif;
+                  padding: 32px;
+                  color: #111827;
+                  line-height: 1.6;
+                }
+                h1 {
+                  font-size: 24px;
+                  margin-bottom: 16px;
+                }
+                .meta {
+                  margin-bottom: 24px;
+                  color: #4b5563;
+                  font-size: 14px;
+                }
+                .report {
+                  white-space: normal;
+                  font-size: 14px;
+                }
+                @media print {
+                  body {
+                    padding: 24px;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <h1>Lingkod-Ani Report Summary</h1>
+              <div class="meta">Timeframe: ${escapeHtml(timeframe)}</div>
+              <div class="report">${renderedSummary}</div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+    };
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -113,7 +190,7 @@ function ReportsPageContent() {
             <h1 className="text-2xl font-bold tracking-tight">Mga Ulat at Pagsusuri</h1>
             <HelpDialog title="Mga Ulat at Pagsusuri" tooltipText="I-visualize ang data at makakuha ng mga insight.">
                 <p>Ang pahinang ito ay ang iyong sentro para sa pagsusuri ng data. Dito mo makikita ang mga visual na representasyon ng mga trend at pattern na nangyayari sa iyong komunidad ng magsasaka, na nagbibigay-daan sa iyo na gumawa ng mga desisyon na batay sa datos.</p>
-                <p><strong>Buod ng AI:</strong> Isang mabilis na buod na binuo ng AI batay sa lahat ng data para sa napiling timeframe. Maaari kang magpalit ng timeframe (Lingguhan, Buwanan, atbp.) upang makita ang mga insight para sa iba't ibang panahon.</p>
+                <p><strong>Awtomatikong Buod:</strong> Isang mabilis na buod na binuo mula sa live metrics sa napiling timeframe. Maaari kang magpalit ng timeframe (Lingguhan, Buwanan, atbp.) upang makita ang mga insight para sa iba't ibang panahon.</p>
                 <p><strong>Mga Tab:</strong> Ang mga ulat ay naka-grupo sa tatlong pangunahing kategorya: "Pagsusuri ng SMS" (tungkol sa mga mensahe mismo), "Performance ng AI" (kung gaano kahusay gumagana ang AI), at "Operasyon at Pakikilahok" (tungkol sa workload at paggamit ng sistema).</p>
                 <p><strong>Mga Chart:</strong> Bawat card ay isang interactive na chart. Maaari mong i-click ang expand button (isang box icon) sa kanang itaas ng bawat card upang makita ang mas malaki at mas detalyadong view ng chart. Sa expanded view, makakakita ka ng mas malalim na pagsusuri at mga konkretong rekomendasyon batay sa data.</p>
             </HelpDialog>
@@ -122,10 +199,16 @@ function ReportsPageContent() {
           <p className="text-xs text-muted-foreground">Live context sync: {liveSyncLabel}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <HoverTooltip text="I-download ang buod ng ulat sa AI bilang PDF.">
-            <Button onClick={handleExportSummary}>
-                <ArrowDownToLine className="mr-2 h-4 w-4" />
-                I-export ang Buod
+          <HoverTooltip text="I-download ang awtomatikong buod bilang text file.">
+            <Button variant="outline" onClick={handleExportSummaryText}>
+              <ArrowDownToLine className="mr-2 h-4 w-4" />
+              Export TXT
+            </Button>
+          </HoverTooltip>
+          <HoverTooltip text="Bubuksan ang print dialog para mai-save mo bilang PDF.">
+            <Button onClick={handleExportSummaryPdf}>
+              <ArrowDownToLine className="mr-2 h-4 w-4" />
+              Save as PDF
             </Button>
           </HoverTooltip>
         </div>
@@ -136,13 +219,13 @@ function ReportsPageContent() {
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
                         <div className="flex items-center">
-                            <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Buod ng AI</CardTitle>
-                            <HelpDialog title="Buod ng AI" tooltipText="Basahin ang buod ng AI para sa napiling timeframe.">
-                                <p>Ito ay isang awtomatikong buod na binuo ng artificial intelligence. Sinusuri nito ang lahat ng data mula sa mga chart sa ibaba para sa napiling timeframe at nagbibigay ng mga pangunahing insight at rekomendasyon sa simpleng wika.</p>
-                                <p>Halimbawa, kung tumaas ang mga ulat ng peste at sabay na bumaba ang paggamit ng isang partikular na payo, maaaring i-highlight ito ng AI at magmungkahi ng posibleng aksyon. Ito ay idinisenyo upang makatipid ka ng oras sa pagsusuri ng data at mabilis na matukoy ang mga mahahalagang isyu.</p>
+                            <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Awtomatikong Buod</CardTitle>
+                            <HelpDialog title="Awtomatikong Buod" tooltipText="Basahin ang awtomatikong buod para sa napiling timeframe.">
+                                <p>Ito ay isang system-generated summary mula sa live metrics sa mga chart sa ibaba para sa napiling timeframe. Hindi ito direktang generative-AI narrative.</p>
+                                <p>Kapag kulang ang live data, magiging mas maingat din ang wording ng buod upang hindi ito magmukhang sigurado sa insight na wala pa naman sa dataset.</p>
                             </HelpDialog>
                         </div>
-                        <CardDescription>Mga awtomatikong nabuong insight mula sa live context. Huling sync: {liveSyncLabel}.</CardDescription>
+                        <CardDescription>Mga awtomatikong insight mula sa live context. Huling sync: {liveSyncLabel}.</CardDescription>
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -166,9 +249,23 @@ function ReportsPageContent() {
             <CardContent>
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <p>Batay sa live na data, may <strong>{highRiskCount}</strong> na high-priority SMS sa kasalukuyang dataset at <strong>{riskAlerts.length}</strong> aktibong alerto sa risk center.</p>
-                    <p>Ang pinakakaraniwang keyword ay <strong className="text-foreground">{topKeyword?.word ?? 'wala'}</strong> ({topKeyword?.count ?? 0} banggit), habang ang hotspot ngayon ay <strong>{topHotspot?.zone ?? 'wala'}</strong> na may {topHotspot?.issues ?? 0} ulat.</p>
+                    <p>
+                      {hasTopKeyword
+                        ? <>Ang pinakakaraniwang keyword ay <strong className="text-foreground">{topKeyword?.word}</strong> ({topKeyword?.count} banggit).</>
+                        : <>Wala pang sapat na live SMS text para sa keyword summary sa timeframe na ito.</>}
+                      {' '}
+                      {hasTopHotspot
+                        ? <>Ang hotspot ngayon ay <strong>{topHotspot?.zone}</strong> na may {topHotspot?.issues} ulat.</>
+                        : <>Wala pang sapat na location-linked reports para tukuyin ang hotspot zone.</>}
+                    </p>
                     <p>May <strong>{openAssistance}</strong> open assistance records at <strong>{scheduledFieldVisits}</strong> scheduled field visits sa parehong timeframe, kaya mas malinaw na ngayon ang intervention load sa barangay.</p>
-                    <p><strong>Rekomendasyon:</strong> I-prioritize ang field action at advisory broadcast sa hotspot zone, i-monitor ang open assistance queue, at i-refresh ang stale market prices bago magbigay ng economic advice sa magsasaka.</p>
+                    <p>
+                      <strong>Rekomendasyon:</strong>{' '}
+                      {hasTopHotspot
+                        ? 'I-prioritize ang field action at advisory broadcast sa hotspot zone, '
+                        : 'Palakasin muna ang live reporting at farmer location tagging, '}
+                      i-monitor ang open assistance queue, at i-refresh ang stale market prices bago magbigay ng economic advice sa magsasaka.
+                    </p>
                 </div>
             </CardContent>
         </Card>

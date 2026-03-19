@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Shield, Edit, BrainCircuit, Database } from 'lucide-react';
+import { PlusCircle, Trash2, Shield, Edit, FileJson, Database } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useData } from '@/context/data-context';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { getManagedBarangayUsers, getPlatformDeveloperUsers } from '@/lib/access-control';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
 import type { User } from '@/lib/types';
@@ -55,13 +56,14 @@ export default function DeveloperPage() {
     });
     const { toast } = useToast();
 
-    const barangayUsers = users.filter((user) => user.role === 'barangay');
+    const barangayUsers = getManagedBarangayUsers(users);
+    const developerUsers = getPlatformDeveloperUsers(users);
     const activeBarangayUsers = barangayUsers.filter((user) => user.status === 'active').length;
     const pendingSetupUsers = barangayUsers.filter((user) => user.status === 'pending_setup').length;
     const simpleWorkspaceUsers = barangayUsers.filter((user) => user.preferredWorkspace === 'simple').length;
     const namedAuditActors = new Set(auditLogs.filter((log) => log.user !== 'system').map((log) => log.user)).size;
 
-    const handleEditUser = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleEditUser = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!editingUser) return;
 
@@ -83,22 +85,56 @@ export default function DeveloperPage() {
             preferredWorkspace: editingForm.preferredWorkspace,
         };
 
-        updateUser(getUserRecordId(editingUser), {
-            ...updatedUser,
-            id: editingUser.id ?? editingUser.uid ?? getUserRecordId(editingUser),
-            uid: editingUser.uid ?? editingUser.id ?? getUserRecordId(editingUser),
-        });
-        setEditingUser(null);
-        setEditingForm({
-          name: '',
-          email: '',
-          title: '',
-          phone: '',
-          role: 'barangay',
-          status: 'active',
-          preferredWorkspace: 'simple',
-        });
-        toast({ title: "Tagumpay!", description: `Nai-update na ang mga detalye ni ${updatedUser.name}.` });
+        try {
+            if (isLiveMode) {
+                const idToken = await getClientAuth().currentUser?.getIdToken();
+
+                if (!idToken) {
+                    throw new Error("Walang authenticated developer session.");
+                }
+
+                const response = await fetch('/api/developer/users', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${idToken}`,
+                    },
+                    body: JSON.stringify({
+                      userId: getUserRecordId(editingUser),
+                      ...updatedUser,
+                    }),
+                });
+                const payload = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(payload.error ?? 'Hindi na-update ang live user.');
+                }
+            } else {
+                updateUser(getUserRecordId(editingUser), {
+                    ...updatedUser,
+                    id: editingUser.id ?? editingUser.uid ?? getUserRecordId(editingUser),
+                    uid: editingUser.uid ?? editingUser.id ?? getUserRecordId(editingUser),
+                });
+            }
+
+            setEditingUser(null);
+            setEditingForm({
+              name: '',
+              email: '',
+              title: '',
+              phone: '',
+              role: 'barangay',
+              status: 'active',
+              preferredWorkspace: 'simple',
+            });
+            toast({ title: "Tagumpay!", description: `Nai-update na ang mga detalye ni ${updatedUser.name}.` });
+        } catch (error) {
+            toast({
+                title: "Hindi na-update ang user",
+                description: error instanceof Error ? error.message : 'Hindi na-update ang live user.',
+                variant: "destructive",
+            });
+        }
     };
 
     const handleDeleteUser = async (userToDelete: User) => {
@@ -152,10 +188,10 @@ export default function DeveloperPage() {
             <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng User (Developer)</h1>
             <HelpDialog title="Pamamahala ng User" tooltipText="Pamahalaan kung sino ang maaaring maka-access sa system.">
                 <p>Ang pahinang ito ay para sa developer upang pamahalaan kung sino ang maaaring maka-access sa Lingkod-Ani system para sa isang partikular na barangay.</p>
-                <p><strong>Magdagdag ng User:</strong> Gamitin ang button na ito upang mag-rehistro ng isang bagong user (hal., ang Barangay Captain, Secretary, o AEW). Sila ay magkakaroon ng access sa system pagkatapos maidagdag dito.</p>
+                <p><strong>Magdagdag ng User:</strong> Gamitin ang button na ito upang mag-rehistro ng isang bagong barangay user (hal., ang Barangay Captain, Secretary, o AEW). Sila ay magkakaroon ng access sa system pagkatapos maidagdag dito.</p>
                 <p><strong>Workspace:</strong> Puwedeng itakda kung ang user ay magsisimula sa mas simpleng workspace o sa detailed tools sa pag-login.</p>
                 <p><strong>Named audit trail:</strong> Ang paglikha, pag-edit, at pagtanggal ng user access ay naitatala rin sa audit log gamit ang pangalan ng aktwal na developer o staff account.</p>
-                <p><strong>I-edit:</strong> I-update ang pangalan, email, o role ng isang kasalukuyang user.</p>
+                <p><strong>I-edit:</strong> I-update ang pangalan, tungkulin, status, at workspace ng isang kasalukuyang barangay user.</p>
                 <p><strong>Alisin:</strong> Ang pag-alis sa isang user ay magbabawi ng kanilang access sa system.</p>
             </HelpDialog>
         </div>
@@ -202,11 +238,27 @@ export default function DeveloperPage() {
         </Card>
       </div>
 
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle>Platform Developer Access</CardTitle>
+          <CardDescription>
+            Hiwalay na pinamamahalaan ang developer accounts mula sa barangay staff provisioning flow.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+          {developerUsers.map((user) => (
+            <Badge key={getUserRecordId(user)} variant="outline">
+              {user.name}
+            </Badge>
+          ))}
+        </CardContent>
+      </Card>
+
        <Card>
         <CardHeader className="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <CardTitle>Listahan ng mga Awtorisadong User</CardTitle>
-                <CardDescription>Ito ang mga user na may access sa system.</CardDescription>
+                <CardTitle>Listahan ng Barangay Staff</CardTitle>
+                <CardDescription>Ito ang mga barangay users na pinamamahalaan sa dashboard na ito.</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <HoverTooltip text="Buksan ang import/export at backup center ng buong app.">
@@ -219,7 +271,7 @@ export default function DeveloperPage() {
               <HoverTooltip text="Tingnan at i-export ang SMS training examples na nabuo mula sa human review.">
                 <Button variant="outline" asChild>
                   <Link href="/dashboard/developer/training-data">
-                    <BrainCircuit /> Training Data
+                    <FileJson /> Training Data
                   </Link>
                 </Button>
               </HoverTooltip>
@@ -247,12 +299,12 @@ export default function DeveloperPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {users.map((user) => (
+                {barangayUsers.map((user) => (
                     <TableRow key={getUserRecordId(user)}>
                     <TableCell className="font-medium px-2 py-4 md:px-4">{user.name}</TableCell>
                     <TableCell className="px-2 py-4 md:px-4">{user.email}</TableCell>
                     <TableCell className="px-2 py-4 md:px-4">{user.title ?? '-'}</TableCell>
-                    <TableCell className="px-2 py-4 md:px-4"><Badge variant={user.role === 'developer' ? 'destructive' : 'secondary'}>{user.role}</Badge></TableCell>
+                    <TableCell className="px-2 py-4 md:px-4"><Badge variant="secondary">{user.role}</Badge></TableCell>
                     <TableCell className="px-2 py-4 md:px-4"><Badge variant="outline">{user.preferredWorkspace ?? 'simple'}</Badge></TableCell>
                     <TableCell className="px-2 py-4 md:px-4">
                       <Badge variant={user.status === 'disabled' ? 'destructive' : user.status === 'active' ? 'default' : 'outline'}>{user.status ?? 'active'}</Badge>
@@ -333,17 +385,9 @@ export default function DeveloperPage() {
                           <Input id="edit-phone" value={editingForm.phone} onChange={(event) => setEditingForm(current => ({ ...current, phone: event.target.value }))} required />
                       </div>
                       <div className="grid gap-4 md:grid-cols-3">
-                       <div className="space-y-2">
-                          <Label htmlFor="edit-role">Role</Label>
-                          <Select value={editingForm.role} onValueChange={(value) => setEditingForm(current => ({ ...current, role: value as User['role'] }))} required>
-                              <SelectTrigger id="edit-role">
-                                  <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="barangay">Barangay Staff</SelectItem>
-                                  <SelectItem value="developer">Developer</SelectItem>
-                              </SelectContent>
-                          </Select>
+                      <div className="space-y-2">
+                          <Label>Role</Label>
+                          <Input value="Barangay Staff" readOnly />
                       </div>
                       <div className="space-y-2">
                           <Label htmlFor="edit-status">Status</Label>

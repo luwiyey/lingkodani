@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,14 +21,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
+import { canAccessDataCenter, canManageBarangaySettings } from '@/lib/access-control';
 import { isLiveMode } from '@/lib/config/app-mode';
 import type { SystemTemplate, SystemTemplateCategory } from '@/lib/types';
 import { defaultSystemSettings } from '@/lib/system-settings';
 
 export default function BarangaySettingsPage() {
+    const router = useRouter();
     const { toast } = useToast();
     const { systemSettings, saveSystemSettings } = useData();
-    const { currentUser } = useAuth();
+    const { currentUser, currentUserProfile } = useAuth();
     const [brgyDescription, setBrgyDescription] = useState(defaultSystemSettings.brgyDescription);
     const [zoneDescriptions, setZoneDescriptions] = useState(defaultSystemSettings.zoneDescriptions);
     const [replyStartTime, setReplyStartTime] = useState(defaultSystemSettings.replyStartTime);
@@ -53,6 +56,14 @@ export default function BarangaySettingsPage() {
     const [autoReplyEnabled, setAutoReplyEnabled] = useState(defaultSystemSettings.autoReplyEnabled);
     const [autoReplyTimeout, setAutoReplyTimeout] = useState(defaultSystemSettings.autoReplyTimeoutMinutes);
     const [runningAutomation, setRunningAutomation] = useState<null | 'overdue' | 'followup'>(null);
+    const canManageSettings = canManageBarangaySettings(currentUserProfile);
+    const canOpenDataCenter = canAccessDataCenter(currentUserProfile);
+
+    useEffect(() => {
+        if (currentUserProfile && !canManageSettings) {
+            router.replace('/dashboard');
+        }
+    }, [canManageSettings, currentUserProfile, router]);
     
     useEffect(() => {
         setBrgyDescription(systemSettings.brgyDescription);
@@ -218,6 +229,21 @@ export default function BarangaySettingsPage() {
         }
     };
 
+    if (currentUserProfile && !canManageSettings) {
+        return (
+          <div className="flex min-h-[40vh] items-center justify-center">
+            <Card className="max-w-lg border-amber-300/40 bg-amber-50/60">
+              <CardHeader>
+                <CardTitle>Limitado ang Access sa Settings</CardTitle>
+                <CardDescription>
+                  Ang page na ito ay para lamang sa barangay managers at developers. Ibinabalik ka na sa dashboard.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        );
+    }
+
   return (
     <div className="flex flex-col gap-8">
       <div className="space-y-1">
@@ -304,9 +330,11 @@ export default function BarangaySettingsPage() {
 
         </CardContent>
         <CardFooter className="justify-end gap-2">
-            <Button variant="outline" asChild>
-                <Link href="/dashboard/data-center">Buksan ang Data Center</Link>
-            </Button>
+            {canOpenDataCenter ? (
+              <Button variant="outline" asChild>
+                  <Link href="/dashboard/data-center">Buksan ang Data Center</Link>
+              </Button>
+            ) : null}
             <Button variant="outline" onClick={handleNotify}>Kopyahin ang Advisory Notice</Button>
             <Button onClick={handleSaveChanges}>I-save ang Live Settings</Button>
         </CardFooter>

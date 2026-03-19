@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calculator, BrainCircuit, CheckCircle, AlertTriangle as AlertTriangleIcon } from "lucide-react";
+import { Calculator, CheckCircle, Leaf, AlertTriangle as AlertTriangleIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { diagnosePlant } from "@/ai/flows/diagnose-plant-problem";
 import type { DiagnosePlantOutput } from "@/ai/flows/diagnose-plant-problem";
@@ -170,11 +170,11 @@ export default function AiToolkitPage() {
       </div>
 
       <AiStatusBanner
-        title={aiLocked ? "AI tools locked in this build" : "AI tools ready"}
+        title={aiLocked ? "AI tools locked in this build" : "AI tools connected with review fallback"}
         description={
           aiLocked
             ? aiLockMessage
-            : "Available ang AI service para sa diagnosis at calculator actions sa build na ito."
+            : "Available ang AI service para sa diagnosis at calculator actions, pero dapat pa ring i-review ng staff ang mga resulta bago ito gamiting operational advice."
         }
       />
       
@@ -183,7 +183,7 @@ export default function AiToolkitPage() {
           <CardHeader className="flex-row items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center">
-                    <CardTitle className="flex items-center gap-2"><BrainCircuit /> Plant-MD: Pagsusuri ng Halaman gamit ang AI</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Leaf /> Plant-MD: Pagsusuri ng Halaman gamit ang AI</CardTitle>
                     <HelpDialog title="Plant-MD: Pagsusuri ng Halaman" tooltipText="Suriin ang mga sakit ng halaman gamit ang isang larawan.">
                       <p>Gamitin ang tool na ito upang makakuha ng mabilis na pagsusuri ng AI para sa mga problema sa halaman.</p>
                       <ol className="list-decimal pl-5 space-y-2">

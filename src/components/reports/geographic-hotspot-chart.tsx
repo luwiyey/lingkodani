@@ -33,8 +33,11 @@ export function GeographicHotspotChart() {
   const { geographicHotspotData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
+  const hasHotspotData = geographicHotspotData.some((item) => item.issues > 0);
 
-  const topHotspot = geographicHotspotData.reduce((prev, current) => (prev.issues > current.issues) ? prev : current);
+  const topHotspot = hasHotspotData
+    ? geographicHotspotData.reduce((prev, current) => (prev.issues > current.issues) ? prev : current)
+    : null;
   
   const handleDownload = () => {
     toast({
@@ -98,13 +101,23 @@ export function GeographicHotspotChart() {
             </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
-             <div className="flex flex-col items-center gap-2">
-                <p className="text-5xl font-bold text-chart-4">{topHotspot.issues}</p>
-                <p className="text-sm text-muted-foreground">isyu sa {topHotspot.zone}</p>
-            </div>
+             {topHotspot ? (
+              <div className="flex flex-col items-center gap-2">
+                  <p className="text-5xl font-bold text-chart-4">{topHotspot.issues}</p>
+                  <p className="text-sm text-muted-foreground">isyu sa {topHotspot.zone}</p>
+              </div>
+             ) : (
+              <div className="px-6 text-center text-sm text-muted-foreground">
+                Wala pang sapat na live location data para tukuyin ang hotspot ng mga isyu.
+              </div>
+             )}
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Ang {topHotspot.zone} ang may pinakamaraming isyu, na ginagawa itong priority area.</p>
+          <p className="text-xs text-muted-foreground">
+            {topHotspot
+              ? `Pagsusuri: Sa kasalukuyang live reports, ang ${topHotspot.zone} ang may pinakamaraming isyu.`
+              : 'Magpapakita lang ang hotspot insight kapag may sapat nang location-linked reports sa live dataset.'}
+          </p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -115,15 +128,23 @@ export function GeographicHotspotChart() {
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
-            <div className="h-[400px] w-full mt-4">
-                <ChartContainer config={chartConfig} className="w-full h-full">
-                    {renderChart()}
-                </ChartContainer>
-            </div>
-            <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Malinaw na ipinapakita ng data na ang {topHotspot.zone} ang kasalukuyang hotspot na may {topHotspot.issues} na iniulat na isyu. Ito ay maaaring sanhi ng iba't ibang mga kadahilanan tulad ng uri ng lupa, mga partikular na pananim na itinanim doon, o mga lokal na kondisyon ng panahon. Ang ibang mga zone tulad ng Zone 1 ay may mas kaunting mga isyu.</p>
-                <p><strong>Rekomendasyon:</strong> I-prioritize ang {topHotspot.zone} para sa susunod na field visit ng Agricultural Extension Worker (AEW). Suriin ang mga partikular na ulat mula sa zone na ito upang maunawaan ang kalikasan ng mga isyu (hal., ito ba ay isang partikular na peste? Isang problema sa patubig?). Magplano ng isang seminar o focus group discussion para sa mga magsasaka sa zone na iyon.</p>
-            </div>
+            {hasHotspotData && topHotspot ? (
+              <>
+                <div className="h-[400px] w-full mt-4">
+                    <ChartContainer config={chartConfig} className="w-full h-full">
+                        {renderChart()}
+                    </ChartContainer>
+                </div>
+                <div className="mt-8 text-sm text-muted-foreground space-y-2">
+                    <p><strong>Detalyadong Pagsusuri:</strong> Ang ulat na ito ay batay lamang sa live reports na may naka-link na farmer location o sitio. Sa napiling timeframe, ang {topHotspot.zone} ang may pinakamataas na bilang ng isyu.</p>
+                    <p><strong>Rekomendasyon:</strong> I-compare ang hotspot na ito sa field visits at assistance queue para makita kung kailangan ng naka-target na follow-through.</p>
+                </div>
+              </>
+            ) : (
+              <div className="mt-4 rounded-lg border border-dashed border-border/70 bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+                Wala pang sapat na location-linked live reports para sa hotspot analysis.
+              </div>
+            )}
         </div>
         <DialogFooter className="pt-4 border-t">
             <DialogClose asChild>
