@@ -27,6 +27,12 @@ const START_FLOW_DRAFT_STORAGE_KEY = "lingkodAniStartFlowDraft";
 
 export const DEMO_PREVIEW_EVENT = "lingkod-ani-demo-preview-change";
 
+function getDefaultDemoBarangayProfile(preferredWorkspace: PreferredWorkspace) {
+  return preferredWorkspace === "simple"
+    ? initialUsers.find((user) => user.email === "secretary@lingkodani.gov.ph") ?? initialUsers[0]
+    : initialUsers.find((user) => user.email === "brgy-admin@lingkodani.gov.ph") ?? initialUsers[0];
+}
+
 function canUseBrowserStorage() {
   return typeof window !== "undefined";
 }
@@ -112,10 +118,6 @@ export function clearDemoPreviewUser() {
 export function pickDemoProfile(position: string, preferredWorkspace: PreferredWorkspace) {
   const normalizedPosition = position.trim().toLowerCase();
 
-  if (normalizedPosition.includes("developer")) {
-    return initialUsers.find((user) => user.role === "developer") ?? initialUsers[0];
-  }
-
   if (normalizedPosition.includes("secretary") || normalizedPosition.includes("sekret")) {
     return initialUsers.find((user) => user.email === "secretary@lingkodani.gov.ph") ?? initialUsers[0];
   }
@@ -132,15 +134,28 @@ export function pickDemoProfile(position: string, preferredWorkspace: PreferredW
     return initialUsers.find((user) => user.email === "aew@lingkodani.gov.ph") ?? initialUsers[0];
   }
 
-  if (preferredWorkspace === "simple") {
-    return initialUsers.find((user) => user.email === "secretary@lingkodani.gov.ph") ?? initialUsers[0];
-  }
+  return getDefaultDemoBarangayProfile(preferredWorkspace);
+}
 
-  return initialUsers.find((user) => user.email === "brgy-admin@lingkodani.gov.ph") ?? initialUsers[0];
+export function normalizeDemoProfile(
+  profile: User | null | undefined,
+  preferredWorkspace: PreferredWorkspace
+) {
+  const baseProfile = !profile || profile.role === "developer"
+    ? getDefaultDemoBarangayProfile(preferredWorkspace)
+    : profile;
+
+  return {
+    ...baseProfile,
+    preferredWorkspace,
+  };
 }
 
 export function createDemoPreviewUser(profile: OnboardingProfile): User {
-  const baseProfile = pickDemoProfile(profile.position, profile.preferredWorkspace);
+  const baseProfile = normalizeDemoProfile(
+    pickDemoProfile(profile.position, profile.preferredWorkspace),
+    profile.preferredWorkspace
+  );
   const timestamp = new Date().toISOString();
 
   return {
@@ -148,7 +163,7 @@ export function createDemoPreviewUser(profile: OnboardingProfile): User {
     id: `preview-${baseProfile.id ?? baseProfile.email}`,
     uid: undefined,
     title: profile.position.trim() || baseProfile.title,
-    preferredWorkspace: baseProfile.role === "developer" ? "detailed" : profile.preferredWorkspace,
+    preferredWorkspace: profile.preferredWorkspace,
     status: "active",
     barangay: "Batakil",
     lastLoginAt: timestamp,

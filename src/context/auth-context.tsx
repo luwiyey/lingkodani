@@ -15,7 +15,7 @@ import { getClientAuth } from "@/lib/firebase/auth-client";
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { hasFirebaseConfig } from "@/lib/firebase/shared";
-import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, readDemoPreviewUser, readOnboardingProfile } from "@/lib/onboarding";
+import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, normalizeDemoProfile, readDemoPreviewUser, readOnboardingProfile } from "@/lib/onboarding";
 import type { User } from "@/lib/types";
 
 const DEMO_SESSION_KEY = "demoSessionEmail";
@@ -92,10 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : null;
     const mergedProfile = nextProfile
       ? {
-          ...nextProfile,
-          preferredWorkspace: nextProfile.role === "developer"
-            ? "detailed"
-            : onboardingProfile?.preferredWorkspace ?? nextProfile.preferredWorkspace,
+          ...normalizeDemoProfile(
+            nextProfile,
+            onboardingProfile?.preferredWorkspace ?? nextProfile.preferredWorkspace ?? "simple"
+          ),
         }
       : null;
 

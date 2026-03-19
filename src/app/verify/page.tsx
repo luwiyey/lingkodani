@@ -21,6 +21,7 @@ import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
 import { isLiveMode } from '@/lib/config/app-mode';
+import { normalizeDemoProfile, readOnboardingProfile } from '@/lib/onboarding';
 import { getPreferredDashboardRoute } from '@/lib/user-workspace';
 
 function VerifyPageContent() {
@@ -47,8 +48,10 @@ function VerifyPageContent() {
     
     const email = searchParams.get('email');
     const user = users.find(u => u.email === email);
+    const preferredWorkspace = readOnboardingProfile()?.preferredWorkspace ?? user?.preferredWorkspace ?? 'simple';
+    const demoUser = normalizeDemoProfile(user ?? null, preferredWorkspace);
 
-    if (!user || user.status === 'disabled') {
+    if (!user || demoUser.status === 'disabled') {
       toast({
         title: "Hindi makapag-login",
         description: "Ang account na ito ay hindi available o naka-disable.",
@@ -63,8 +66,8 @@ function VerifyPageContent() {
       description: "Maligayang pagbabalik sa Lingkod-Ani.",
     });
 
-    startDemoSession(user.email);
-    router.push(getPreferredDashboardRoute(user));
+    startDemoSession(demoUser.email);
+    router.push(getPreferredDashboardRoute(demoUser));
   };
 
   const handleResendCode = () => {
