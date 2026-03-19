@@ -32,6 +32,34 @@ import { readOnboardingProfile } from "@/lib/onboarding";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 
+function readFriendlyLiveAuthError(error: unknown) {
+  const code = typeof error === "object" && error && "code" in error
+    ? String((error as { code?: string }).code ?? "")
+    : "";
+  const message = typeof error === "object" && error && "message" in error
+    ? String((error as { message?: string }).message ?? "")
+    : "";
+  const normalized = `${code} ${message}`.toLowerCase();
+
+  if (
+    normalized.includes("configuration_not_found") ||
+    normalized.includes("operation-not-allowed")
+  ) {
+    return "Hindi pa naka-enable ang Email/Password sign-in sa Firebase Authentication para sa live deployment na ito.";
+  }
+
+  if (
+    normalized.includes("invalid-credential") ||
+    normalized.includes("wrong-password") ||
+    normalized.includes("user-not-found") ||
+    normalized.includes("invalid-login-credentials")
+  ) {
+    return "Hindi makapag-sign in sa live account. Siguraduhing tama ang email at password, at naka-provision ang iyong user profile.";
+  }
+
+  return "Hindi makapag-sign in sa live account. Siguraduhing tama ang email at password, at naka-provision ang iyong user profile.";
+}
+
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -79,8 +107,8 @@ function LoginPageContent() {
     if (isLiveMode) {
       try {
         await signIn(email, password);
-      } catch {
-        setAccessErrorMessage("Hindi makapag-sign in sa live account. Siguraduhing tama ang email at password, at naka-provision ang iyong user profile.");
+      } catch (error) {
+        setAccessErrorMessage(readFriendlyLiveAuthError(error));
         setShowNotRegisteredDialog(true);
       } finally {
         setLoading(false);
