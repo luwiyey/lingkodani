@@ -205,59 +205,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setCurrentUserProfile(mergeLiveProfile(serverProfile));
+      setAuthLoading(false);
 
-      const snapshot = await getDoc(userRef);
-      const existingProfile = snapshot.exists() ? (snapshot.data() as User) : serverProfile;
+      try {
+        const snapshot = await getDoc(userRef);
+        const existingProfile = snapshot.exists() ? (snapshot.data() as User) : serverProfile;
 
-      await setDoc(
-        userRef,
-        {
-          id: user.uid,
-          uid: user.uid,
-          email: user.email,
-          name: user.displayName || existingProfile.name || user.email.split("@")[0],
-          avatarUrl: user.photoURL ?? existingProfile.avatarUrl,
-          lastLoginAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+        await setDoc(
+          userRef,
+          {
+            id: user.uid,
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName || existingProfile.name || user.email.split("@")[0],
+            avatarUrl: user.photoURL ?? existingProfile.avatarUrl,
+            lastLoginAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
 
-      unsubscribeProfile = onSnapshot(
-        userRef,
-        (snapshot) => {
-          const profile = snapshot.exists()
-            ? ({
-                id: snapshot.id,
-                ...(snapshot.data() as User),
-              } as User)
-            : null;
-          const mergedProfile = mergeLiveProfile(profile);
+        unsubscribeProfile = onSnapshot(
+          userRef,
+          (snapshot) => {
+            const profile = snapshot.exists()
+              ? ({
+                  id: snapshot.id,
+                  ...(snapshot.data() as User),
+                } as User)
+              : null;
+            const mergedProfile = mergeLiveProfile(profile);
 
-          if (!mergedProfile) {
-            setCurrentUserProfile(null);
-            setAuthError("Hindi na makita ang live user profile para sa account na ito.");
+            if (!mergedProfile) {
+              setCurrentUserProfile(null);
+              setAuthError("Hindi na makita ang live user profile para sa account na ito.");
+              setAuthLoading(false);
+              return;
+            }
+
+            if (mergedProfile.status === "disabled") {
+              setCurrentUserProfile(null);
+              setAuthError("Naka-disable ang account na ito.");
+              void signOut(auth);
+              setAuthLoading(false);
+              return;
+            }
+
+            setCurrentUserProfile(mergedProfile);
             setAuthLoading(false);
-            return;
-          }
-
-          if (mergedProfile.status === "disabled") {
-            setCurrentUserProfile(null);
-            setAuthError("Naka-disable ang account na ito.");
-            void signOut(auth);
+          },
+          () => {
+            setCurrentUserProfile((current) => current ?? mergeLiveProfile(serverProfile));
+            setAuthError("Hindi tuloy-tuloy na mabasa ang live user profile. Gumagamit muna ng huling kilalang access profile.");
             setAuthLoading(false);
-            return;
           }
-
-          setCurrentUserProfile(mergedProfile);
-          setAuthLoading(false);
-        },
-        () => {
-          setCurrentUserProfile((current) => current ?? mergeLiveProfile(serverProfile));
-          setAuthError("Hindi tuloy-tuloy na mabasa ang live user profile. Gumagamit muna ng huling kilalang access profile.");
-          setAuthLoading(false);
-        }
-      );
+        );
+      } catch {
+        setCurrentUserProfile((current) => current ?? mergeLiveProfile(serverProfile));
+        setAuthError(null);
+        setAuthLoading(false);
+      }
     });
 
     return () => {
