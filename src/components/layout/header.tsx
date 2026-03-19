@@ -57,8 +57,6 @@ type DashboardNotification = {
   timestamp: string;
 };
 
-const DISMISSED_NOTIFICATIONS_STORAGE_KEY = 'headerDismissedNotifications';
-
 function buildDeepLink(path: string, key: string, value: string) {
   return `${path}?${key}=${encodeURIComponent(value)}`;
 }
@@ -113,7 +111,6 @@ export function Header() {
   const isDeveloperView = currentUserProfile?.role === 'developer';
   const [showDisasterDialog, setShowDisasterDialog] = useState(false);
   const [showSidebarNoticeDialog, setShowSidebarNoticeDialog] = useState(false);
-  const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([]);
 
   const latestOutboundByMessage = useMemo(() => {
     const map = new Map<string, (typeof outboundMessages)[number]>();
@@ -128,6 +125,7 @@ export function Header() {
   }, [outboundMessages]);
 
   const notifications = useMemo<DashboardNotification[]>(() => {
+    const operatorName = currentUserProfile?.name?.trim() || '';
     const pendingFarmerNotifications = farmers
       .filter((farmer) => farmer.status === 'pending_approval')
       .map((farmer) => ({
@@ -138,17 +136,41 @@ export function Header() {
         timestamp: farmer.registrationDate,
       }));
 
-    const urgentSmsNotifications = smsMessages
+    const incomingSmsNotifications = smsMessages
       .filter((message) => (
-        message.status === 'pending_approval'
-        && (message.urgency === 'high' || message.safetyFlag === 'High')
+        !message.closedAt &&
+        (
+          message.status === 'pending_approval' ||
+          message.registrationRequired ||
+          message.clarificationNeeded ||
+          message.caseStatus === 'awaiting_clarification' ||
+          message.caseStatus === 'awaiting_registration' ||
+          message.caseStatus === 'open' ||
+          message.caseStatus === 'escalated'
+        ) &&
+        !message.assignedTo
       ))
       .map((message) => ({
         id: createNotificationId('sms', message.id, message.timestamp),
-        title: `Kailangang sagutin: ${message.farmerName}`,
-        description: `${message.urgency.toUpperCase()} urgency - ${truncateText(message.message, 64)}`,
+        title: `May kailangang aksyon: ${message.farmerName}`,
+        description:
+          message.registrationRequired || message.caseStatus === 'awaiting_registration'
+            ? `Kailangan ng rehistro - ${truncateText(message.message, 64)}`
+            : message.clarificationNeeded || message.caseStatus === 'awaiting_clarification'
+              ? `Kailangan ng paglilinaw - ${truncateText(message.message, 64)}`
+              : `${message.urgency.toUpperCase()} urgency - ${truncateText(message.message, 64)}`,
         href: buildDeepLink('/dashboard/sms-feed', 'sms', message.id),
         timestamp: message.timestamp,
+      }));
+
+    const myQueueNotifications = smsMessages
+      .filter((message) => !message.closedAt && message.assignedTo === operatorName)
+      .map((message) => ({
+        id: createNotificationId('assigned', message.id, message.assignedAt ?? message.timestamp),
+        title: `Task mo ito: ${message.farmerName}`,
+        description: `${message.caseStatus ?? 'assigned'} - ${truncateText(message.message, 64)}`,
+        href: '/dashboard/operations#aking-queue',
+        timestamp: message.assignedAt ?? message.timestamp,
       }));
 
     const criticalAlertNotifications = riskAlerts
@@ -213,6 +235,16 @@ export function Header() {
       })
       .filter((notification): notification is DashboardNotification => notification !== null);
 
+    const dueFollowUpNotifications = smsMessages
+      .filter((message) => !message.closedAt && !!message.followUpDueAt && !message.followUpSentAt)
+      .map((message) => ({
+        id: createNotificationId('followup', message.id, message.followUpDueAt ?? message.timestamp),
+        title: `May follow-up kay ${message.farmerName}`,
+        description: `Balikan ang kasong ito - ${truncateText(message.message, 64)}`,
+        href: buildDeepLink('/dashboard/follow-up', 'sms', message.id),
+        timestamp: message.followUpDueAt ?? message.timestamp,
+      }));
+
     const dueVisitNotifications = fieldVisitTasks
       .filter((task) => task.status !== 'completed' && task.status !== 'cancelled')
       .map((task) => {
@@ -255,16 +287,23 @@ export function Header() {
 
     return [
       ...pendingFarmerNotifications,
-      ...urgentSmsNotifications,
+      ...incomingSmsNotifications,
+      ...myQueueNotifications,
       ...criticalAlertNotifications,
       ...lowStockNotifications,
       ...failedSendNotifications,
+      ...dueFollowUpNotifications,
       ...dueVisitNotifications,
       ...assistanceNotifications,
       ...stalePriceNotifications,
-    ].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
+    ]
+      .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
+      .filter((notification, index, collection) => (
+        collection.findIndex((candidate) => candidate.id === notification.id) === index
+      ));
   }, [
     assistanceRecords,
+    currentUserProfile?.name,
     farmers,
     fieldVisitTasks,
     latestOutboundByMessage,
@@ -273,57 +312,13 @@ export function Header() {
     riskAlerts,
     smsMessages,
   ]);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(DISMISSED_NOTIFICATIONS_STORAGE_KEY);
-      if (!stored) {
-        return;
-      }
-
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        setDismissedNotificationIds(parsed.filter((entry): entry is string => typeof entry === 'string'));
-      }
-    } catch {
-      setDismissedNotificationIds([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        DISMISSED_NOTIFICATIONS_STORAGE_KEY,
-        JSON.stringify(dismissedNotificationIds),
-      );
-    } catch {
-      // Ignore storage write failures.
-    }
-  }, [dismissedNotificationIds]);
-
-  useEffect(() => {
-    const activeNotificationIds = new Set(notifications.map((notification) => notification.id));
-
-    setDismissedNotificationIds((current) => {
-      const next = current.filter((id) => activeNotificationIds.has(id));
-      return next.length === current.length ? current : next;
-    });
-  }, [notifications]);
-
-  const unreadNotifications = useMemo(
-    () => notifications.filter((notification) => !dismissedNotificationIds.includes(notification.id)),
-    [dismissedNotificationIds, notifications],
-  );
-  const notificationCount = unreadNotifications.length;
+  const notificationCount = notifications.length;
 
   const handleSwitchChange = () => {
     setShowDisasterDialog(true);
   };
 
   const handleNotificationSelect = (notification: DashboardNotification) => {
-    setDismissedNotificationIds((current) => (
-      current.includes(notification.id) ? current : [...current, notification.id]
-    ));
     router.push(notification.href);
   };
 
@@ -431,10 +426,10 @@ export function Header() {
                 Mga Notipikasyon
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {unreadNotifications.length > 0 ? (
+              {notifications.length > 0 ? (
                 <ScrollArea className="h-[18rem]">
                   <div className="p-1">
-                    {unreadNotifications.map((notification) => (
+                    {notifications.map((notification) => (
                       <DropdownMenuItem
                         key={notification.id}
                         onSelect={() => handleNotificationSelect(notification)}
@@ -459,7 +454,7 @@ export function Header() {
                 </ScrollArea>
               ) : (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  Wala pang bagong notipikasyon.
+                  Wala pang kailangang tugunan sa ngayon.
                 </div>
               )}
             </DropdownMenuContent>

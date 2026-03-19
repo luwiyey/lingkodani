@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -39,10 +39,18 @@ const chartConfig = {
 
 export function IssueTrendsChart() {
   const { issueTrendsData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
 
   const latestPestData = issueTrendsData[issueTrendsData.length - 1].MgaPeste;
+  const latestPoint = issueTrendsData[issueTrendsData.length - 1];
+  const leadingIssue = latestPoint
+    ? [
+        { label: 'Mga Peste', value: latestPoint.MgaPeste },
+        { label: 'Sakit', value: latestPoint.Sakit },
+        { label: 'Patubig', value: latestPoint.Patubig },
+      ].reduce((prev, current) => (prev.value > current.value ? prev : current))
+    : { label: 'Walang sapat na data', value: 0 };
   
   const handleDownload = () => {
     toast({
@@ -119,7 +127,7 @@ export function IssueTrendsChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Ang mga ulat tungkol sa "Mga Peste" ay patuloy na tumataas, na nagpapahiwatig ng isang lumalalang problema.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {leadingIssue.value > 0 ? `Sa pinakahuling point ng timeframe, nangunguna ang "${leadingIssue.label}" na may ${leadingIssue.value} ulat.` : 'Wala pang sapat na trend signal sa live dataset para sa timeframe na ito.'}</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -136,7 +144,7 @@ export function IssueTrendsChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Mayroong isang kapansin-pansing pataas na trend sa mga ulat na may kaugnayan sa "Mga Peste" sa nakalipas na buwan, na nagpapahiwatig ng posibleng outbreak. Ang mga ulat tungkol sa "Sakit" at "Patubig" ay medyo matatag, bagaman may bahagyang pagtaas din. Ang trend na ito ay nagmumungkahi na ang pamamahala sa peste ang pangunahing alalahanin sa kasalukuyan.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Ipinapakita ng chart ang aktuwal na paggalaw ng mga pangunahing issue categories sa napiling timeframe. Sa kasalukuyang snapshot, nangunguna ang "{leadingIssue.label}" na may {leadingIssue.value} ulat, kaya iyon ang mas dapat pagtuunan ng pansin sa operational planning.</p>
                 <p><strong>Rekomendasyon:</strong> Maglabas ng isang advisory broadcast tungkol sa pagmamanman ng peste. I-cross-reference ang data na ito sa "Geographic Hotspot" chart upang matukoy kung ang pagtaas ng ulat ng peste ay puro sa isang partikular na zone. Maghanda ng mga mapagkukunan (hal., mga artikulo sa knowledge base, mga contact ng AEW) na may kaugnayan sa pagkontrol ng peste.</p>
             </div>
         </div>

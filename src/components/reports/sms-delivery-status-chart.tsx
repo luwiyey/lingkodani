@@ -30,8 +30,10 @@ export function SmsDeliveryStatusChart() {
   const { smsDeliveryStatusData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
 
-  const successRate = smsDeliveryStatusData.find(d => d.name === 'Napadala')?.value ?? 0;
-  const failureRate = 1000 - successRate;
+  const successCount = smsDeliveryStatusData.find(d => d.name === 'Napadala')?.value ?? 0;
+  const failureCount = smsDeliveryStatusData.find(d => d.name === 'Nabigo')?.value ?? 0;
+  const total = successCount + failureCount;
+  const successRate = total > 0 ? ((successCount / total) * 100).toFixed(1) : '0.0';
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
@@ -92,12 +94,12 @@ export function SmsDeliveryStatusChart() {
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
              <div className="flex flex-col items-center gap-2">
-                <p className="text-5xl font-bold text-chart-1">{(successRate / (successRate+failureRate) * 100).toFixed(1)}%</p>
+                <p className="text-5xl font-bold text-chart-1">{successRate}%</p>
                 <p className="text-sm text-muted-foreground">ang Matagumpay na Naipadala</p>
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Mataas ang rate ng tagumpay, na nagpapahiwatig ng maaasahang sistema ng komunikasyon.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {successRate}% ng outbound SMS records sa timeframe na ito ang matagumpay na naipadala o na-deliver.</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -114,7 +116,7 @@ export function SmsDeliveryStatusChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang isang napakataas na rate ng tagumpay (higit sa 99%) ay nagpapakita na ang imprastraktura ng SMS ay matatag at ang mga mensahe ay epektibong nakakarating sa mga tatanggap. Ang maliit na bilang ng mga pagkabigo ay normal at maaaring sanhi ng mga pansamantalang isyu sa network o mga problema sa device ng tatanggap.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Batay sa aktuwal na outbound records, {successRate}% ng mga mensahe ang matagumpay na naipadala o na-deliver habang {failureCount} ang nabigo sa napiling timeframe. Kapag mababa ang success rate, kailangan i-check ang provider status, recipient number quality, at device connectivity.</p>
                 <p><strong>Rekomendasyon:</strong> Habang mataas ang rate ng tagumpay, mahalagang subaybayan pa rin ito. Kung may biglaang pagtaas sa rate ng pagkabigo, dapat itong imbestigahan kaagad dahil maaaring magpahiwatig ito ng isang problema sa SMS gateway provider o sa configuration ng sistema.</p>
             </div>
         </div>

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,10 +30,12 @@ const chartConfig = {
 
 export function FollowUpRateChart() {
   const { followUpRateData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
 
-  const noFollowUpRate = followUpRateData.find(d => d.name === 'Walang Follow-up')?.value ?? 0;
+  const noFollowUpCount = followUpRateData.find(d => d.name === 'Walang Follow-up')?.value ?? 0;
+  const total = followUpRateData.reduce((acc, entry) => acc + entry.value, 0);
+  const noFollowUpRate = total > 0 ? ((noFollowUpCount / total) * 100).toFixed(1) : '0.0';
   
   const handleDownload = () => {
     toast({
@@ -107,14 +109,14 @@ export function FollowUpRateChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: {noFollowUpRate}% ng mga magsasaka ay hindi nagtatanong muli, na nagpapahiwatig na sapat na ang unang payo.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {noFollowUpRate}% ng repeat-contact pattern sa timeframe na ito ay walang kasunod na bagong mensahe mula sa parehong farmer.</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Rate ng Follow-up ({timeframe})</DialogTitle>
             <DialogDescription>
-                Sinusukat ng ulat na ito ang porsyento ng mga magsasaka na nagpapadala ng isa pang mensahe (isang follow-up na tanong) pagkatapos makatanggap ng payo mula sa sistema.
+                Sinusukat ng ulat na ito ang repeat-contact pattern ng mga magsasaka sa napiling timeframe batay sa aktuwal na bilang ng inbound messages per farmer.
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
@@ -124,7 +126,7 @@ export function FollowUpRateChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang mataas na porsyento ng "Walang Follow-up" ({noFollowUpRate}%) ay maaaring bigyang-kahulugan sa dalawang paraan: alinman sa (1) ang paunang payo ay napakalinaw at sapat na, kaya hindi na kailangan ng karagdagang tanong, o (2) ang magsasaka ay hindi nakikipag-ugnayan muli. Dahil mataas ang pangkalahatang engagement, malamang na ang unang interpretasyon ang tama.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Ang mataas na porsyento ng "Walang Follow-up" ({noFollowUpRate}%) ay nangangahulugang sa napiling timeframe, mas maraming farmers ang hindi nagpadala ng panibagong mensahe pagkatapos ng initial contact. Ito ay useful bilang engagement signal, pero hindi nito awtomatikong ibig sabihin na solved na ang lahat ng kaso.</p>
                 <p><strong>Rekomendasyon:</strong> Para makasiguro, mag-sample ng ilang mga "Walang Follow-up" na kaso at magpadala ng proaktibong mensahe, tulad ng, "Kumusta po, naging epektibo po ba ang payo namin para sa inyong [isyu]? Mayroon pa po ba kaming maitutulong?" Makakatulong ito na kumpirmahin ang kasiyahan ng magsasaka at magpakita ng mahusay na serbisyo.</p>
             </div>
         </div>

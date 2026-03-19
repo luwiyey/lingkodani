@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Cell, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ const chartConfig = {
 
 export function ValidationQueueChart() {
   const { validationQueueData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Kasalukuyan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   
   const pendingCount = validationQueueData.find(d => d.name === 'Nakabinbin')?.value ?? 0;
 
@@ -64,7 +64,7 @@ export function ValidationQueueChart() {
                       </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Kasalukuyan')}>Kasalukuyan</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
@@ -97,18 +97,18 @@ export function ValidationQueueChart() {
         <CardContent className="h-[180px] flex items-center justify-center p-0">
             <div className="flex flex-col items-center gap-2">
                 <p className="text-5xl font-bold text-chart-2">{pendingCount}</p>
-                <p className="text-sm text-muted-foreground">Nakabinbin para sa Validation</p>
+                <p className="text-sm text-muted-foreground">Hindi pa saradong SMS cases</p>
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: May {pendingCount} na mensahe na kasalukuyang naghihintay ng pagsusuri mula sa isang admin.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: May {pendingCount} na SMS cases na hindi pa sarado sa napiling timeframe.</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Katayuan ng Validation Queue ({timeframe})</DialogTitle>
             <DialogDescription>
-              Ipinapakita ng ulat na ito ang real-time na katayuan ng validation queue. Sinusukat nito ang bilang ng mga mensahe na nangangailangan ng manu-manong pagsusuri mula sa isang AEW kumpara sa mga nalutas na.
+              Ipinapakita ng ulat na ito ang bilang ng mga SMS cases na hindi pa sarado kumpara sa mga naisara na sa napiling timeframe.
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">
@@ -118,7 +118,7 @@ export function ValidationQueueChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang isang malaking bilang ng mga "Nalutas" na mga item ay nagpapakita ng isang mahusay na daloy ng trabaho. Ang bilang ng mga "Nakabinbin" na item ay kumakatawan sa kasalukuyang workload ng mga AEW. Ang layunin ay panatilihing mababa ang bilang ng mga nakabinbin hangga't maaari.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Ang chart na ito ay nakabatay sa aktuwal na case closure state, hindi lang sa approval status. Kaya ang "Nakabinbin" ay tumutukoy sa mga kasong hindi pa sarado at maaari pang kailanganin ng assignment, clarification, o follow-through.</p>
                 <p><strong>Rekomendasyon:</strong> Subaybayan ang bilang ng mga nakabinbin. Kung ito ay patuloy na tumataas, maaaring ito ay isang senyales na kulang ang mga tauhan upang mapangasiwaan ang dami ng mga mensahe. Gamitin ang data na ito upang matukoy ang mga oras na may pinakamataas na pila at mag-iskedyul ng mga tauhan nang naaayon.</p>
             </div>
         </div>

@@ -32,9 +32,9 @@ export function WeeklyInquiriesSummary() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pinakakaraniwang Tanong (7 Araw)</CardTitle>
+        <CardTitle>Pinakakaraniwang Inquiry (7 Araw)</CardTitle>
         <CardDescription>
-          Mga nangungunang alalahanin mula sa mga magsasaka nitong linggo.
+          Mga nangungunang concern categories mula sa live messages nitong linggo.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -43,7 +43,7 @@ export function WeeklyInquiriesSummary() {
             <div className="flex items-baseline gap-2">
               <p className="text-3xl font-bold">{topInquiry.count}</p>
               <p className="text-sm text-muted-foreground">
-                ulat tungkol sa "{topInquiry.question}"
+                mensahe sa category na "{topInquiry.question}"
               </p>
             </div>
             <div className="h-[120px]">

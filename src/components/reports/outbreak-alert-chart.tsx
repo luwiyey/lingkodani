@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ const chartConfig = {
 
 export function OutbreakAlertChart() {
   const { outbreakAlertData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
 
   const peak = outbreakAlertData.reduce((prev, current) => (prev.ulat > current.ulat) ? prev : current);
 
@@ -96,7 +96,7 @@ export function OutbreakAlertChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Isang biglaang pagtaas ng ulat ng peste ang nangyari noong {peak.date}, na posibleng isang outbreak.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {peak.ulat > 0 ? `Pinakamataas ang pest-related signal noong ${peak.date} na may ${peak.ulat} ulat.` : 'Wala pang naitalang pest spike sa timeframe na ito.'}</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -113,7 +113,7 @@ export function OutbreakAlertChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Isang malinaw na "spike" ang makikita noong {peak.date}, kung saan umabot sa {peak.ulat} na ulat ang naitala. Ang ganitong kaganapan ay isang malakas na senyales ng isang posibleng cluster o outbreak na nangangailangan ng agarang pansin.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> {peak.ulat > 0 ? `Isang malinaw na spike ang makikita noong ${peak.date}, kung saan umabot sa ${peak.ulat} na ulat ang naitala. Ito ang pinakamalakas na pest-related signal sa napiling timeframe.` : 'Kapag may malinaw na spike na lumitaw dito, iyon ang magiging senyales para sa posibleng pest cluster o outbreak investigation.'}</p>
                 <p><strong>Rekomendasyon:</strong> Kapag nakakita ng ganitong spike, agad na suriin ang mga kaugnay na ulat. Gamitin ang "Geographic Hotspot" chart upang makita kung ang outbreak ay puro sa isang partikular na lugar. Magpadala ng isang targeted na alerto sa mga magsasaka sa apektadong lugar na may mga tagubilin sa pag-iwas at pagkontrol.</p>
             </div>
         </div>

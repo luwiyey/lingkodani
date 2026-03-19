@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ const chartConfig = {
 
 export function RecommendationTypeChart() {
   const { recommendationTypeData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   
   const mostCommonType = recommendationTypeData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
 
@@ -95,7 +95,7 @@ export function RecommendationTypeChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: "{mostCommonType.name}" ang pinakamadalas na uri ng payo, na nagpapakita ng pokus sa proaktibong pagsasaka.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {mostCommonType.count > 0 ? `"${mostCommonType.name}" ang pinakamadalas na uri ng payo sa timeframe na ito.` : 'Wala pang sapat na AI advice records para sa timeframe na ito.'}</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -112,7 +112,7 @@ export function RecommendationTypeChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang "Pag-iwas" ay ang pinakamadalas na uri ng rekomendasyon, na nagpapahiwatig na ang sistema ay epektibong nagbibigay ng proaktibong payo bago pa man lumala ang mga problema. Ang "Paggamot" ay pangalawa, na nagpapakita ng kakayahan ng sistema na magbigay ng mga solusyon sa mga umiiral na isyu. Ang "Referral" ay nagpapahiwatig ng mga kumplikadong kaso na nangangailangan ng atensyon ng tao.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Batay sa live advice records, ang pinakakaraniwang recommendation type sa timeframe na ito ay "{mostCommonType.name}". Ipinapakita nito kung anong klaseng intervention style ang kasalukuyang pinaka-madalas lumalabas sa system output.</p>
                 <p><strong>Rekomendasyon:</strong> Palakasin ang mga payo sa "Pag-iwas" sa pamamagitan ng pag-broadcast ng mga seasonal na tip. Para sa mga "Referral", pag-aralan ang mga kasong ito upang makita kung may mga umuulit na tema na maaaring matutunan ng AI, upang mabawasan ang bilang ng mga referral sa hinaharap.</p>
             </div>
         </div>

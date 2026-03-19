@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -25,16 +25,19 @@ import { useToast } from "@/hooks/use-toast";
 const chartConfig = {
     Tagalog: { label: "Tagalog", color: "hsl(var(--chart-1))" },
     Taglish: { label: "Taglish", color: "hsl(var(--chart-2))" },
-    Ilocano: { label: "Ilocano", color: "hsl(var(--chart-3))" },
-    English: { label: "English", color: "hsl(var(--chart-4))" },
 } satisfies ChartConfig
 
 export function LanguageUsageChart() {
   const { languageUsageData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
   
   const topLanguage = languageUsageData.reduce((prev, current) => (prev.value > current.value) ? prev : current);
+  const total = languageUsageData.reduce((acc, current) => acc + current.value, 0);
+  const topLanguagePercentage = total > 0 ? ((topLanguage.value / total) * 100).toFixed(1) : '0.0';
+  const secondaryLanguage = languageUsageData
+    .filter((entry) => entry.language !== topLanguage.language)
+    .reduce((prev, current) => (prev && prev.value > current.value ? prev : current), languageUsageData[0]);
   
   const handleDownload = () => {
     toast({
@@ -102,12 +105,12 @@ export function LanguageUsageChart() {
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
              <div className="flex flex-col items-center gap-2">
-                <p className="text-5xl font-bold" style={{color: topLanguage.fill}}>{topLanguage.value}%</p>
+                <p className="text-5xl font-bold" style={{color: topLanguage.fill}}>{topLanguagePercentage}%</p>
                 <p className="text-sm text-muted-foreground">ay nasa {topLanguage.language}</p>
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: {topLanguage.value}% ng mga mensahe ay nasa purong {topLanguage.language}, na ginagawa itong pangunahing wika.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {topLanguagePercentage}% ng mga mensahe ay nasa {topLanguage.language}, na ginagawa itong pangunahing language pattern sa timeframe na ito.</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -124,8 +127,8 @@ export function LanguageUsageChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang {topLanguage.language} ang nangingibabaw na wika, na bumubuo sa {topLanguage.value}% ng lahat ng komunikasyon. Ang "Taglish" o code-switching ay mayroon ding malaking bahagi, na nagpapahiwatig na ang AI ay dapat maging sanay sa pag-unawa ng halo-halong wika. Ang pagkakaroon ng Ilocano at English, kahit na mas maliit ang porsyento, ay nagpapakita ng linggwistikong pagkakaiba-iba sa loob ng komunidad.</p>
-                <p><strong>Rekomendasyon:</strong> Tiyaking ang AI model ay patuloy na sinasanay sa lahat ng mga wikang ito, lalo na sa Taglish. Kolektahin ang mas maraming data ng pagsasanay para sa mga hindi gaanong karaniwang wika tulad ng Ilocano upang mapabuti ang pagganap ng AI para sa mga nagsasalita nito. Maaari ring maging kapaki-pakinabang na magkaroon ng mga template ng tugon sa iba't ibang wika.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Ang {topLanguage.language} ang nangingibabaw na language pattern, na bumubuo sa {topLanguagePercentage}% ng lahat ng komunikasyon sa napiling timeframe. {secondaryLanguage ? `Ang susunod na pattern ay ${secondaryLanguage.language}, kaya mahalagang marunong ang system sa parehong estilo ng pagsulat.` : 'Kapag dumami pa ang live messages, mas lilinaw pa ang language mix ng komunidad.'}</p>
+                <p><strong>Rekomendasyon:</strong> Tiyaking ang AI model at response templates ay komportable sa dominanteng language mix sa barangay. Kapag tumaas ang bahagi ng code-switching, dagdagan ang training examples na may halo-halong Tagalog at English para hindi bumaba ang comprehension.</p>
             </div>
         </div>
         <DialogFooter className="pt-4 border-t">

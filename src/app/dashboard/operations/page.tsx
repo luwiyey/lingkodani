@@ -140,10 +140,23 @@ function MessageTaskRow({
 }
 
 export default function OperationsPage() {
+  const router = useRouter();
   const { currentUserProfile } = useAuth();
   const { smsMessages, outboundMessages, assignSmsMessage, closeSmsCase, retryOutboundMessage, farmers } = useData();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
   const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
+
+  const openMyQueue = React.useCallback(() => {
+    dismiss();
+    const queueElement = document.getElementById('aking-queue');
+    if (queueElement) {
+      window.history.replaceState(null, '', '/dashboard/operations#aking-queue');
+      queueElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    router.push('/dashboard/operations#aking-queue');
+  }, [dismiss, router]);
 
   const latestOutboundByMessage = React.useMemo(() => {
     const map = new Map<string, OutboundMessage>();
@@ -188,7 +201,9 @@ export default function OperationsPage() {
     assignSmsMessage(message.id, activeOperatorName);
     toast({
       title: 'Na-assign ang task',
-      description: `Itinalaga na kay ${activeOperatorName} ang mensahe ni ${message.farmerName}. Nasa "Aking Queue" na ito ngayon.`,
+      description: `Itinalaga na kay ${activeOperatorName} ang mensahe ni ${message.farmerName}. Nasa "Aking Queue" na ito ngayon. I-click ang abisong ito para buksan ang queue.`,
+      onClick: openMyQueue,
+      className: 'cursor-pointer border-primary/20 transition-colors hover:border-primary/40 hover:bg-primary/5',
     });
   };
 
@@ -340,7 +355,7 @@ export default function OperationsPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card id="aking-queue">
         <CardHeader>
           <CardTitle className="text-xl">4. Aking mga naka-assign na task</CardTitle>
           <CardDescription>Mga case na ikaw ang may hawak ngayon.</CardDescription>

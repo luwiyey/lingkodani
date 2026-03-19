@@ -93,15 +93,15 @@ export function TopInquiriesChart() {
               </TooltipProvider>
             </div>
             <div className="grid gap-0.5">
-                <CardTitle>Pinakakaraniwang Uri ng Tanong</CardTitle>
-                <CardDescription>Mga pinakamadalas na tanong ng mga magsasaka.</CardDescription>
+                <CardTitle>Pinakakaraniwang Uri ng Inquiry</CardTitle>
+                <CardDescription>Mga aktuwal na concern categories mula sa live SMS dataset.</CardDescription>
             </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
              {topInquiry ? (
               <div className="flex flex-col items-center gap-2">
                   <p className="text-5xl font-bold text-chart-5">{topInquiry.count}</p>
-                  <p className="text-sm text-muted-foreground text-center">tanong tungkol sa "{topInquiry.question}"</p>
+                  <p className="text-sm text-muted-foreground text-center">mensahe sa category na "{topInquiry.question}"</p>
               </div>
              ) : (
               <div className="px-6 text-center text-sm text-muted-foreground">
@@ -112,16 +112,16 @@ export function TopInquiriesChart() {
         <CardFooter>
           <p className="text-xs text-muted-foreground">
             {topInquiry
-              ? `Pagsusuri: Sa napiling timeframe, ang tanong tungkol sa "${topInquiry.question}" ang pinakamadalas na lumitaw.`
+              ? `Pagsusuri: Sa napiling timeframe, ang inquiry category na "${topInquiry.question}" ang pinakamadalas na lumitaw.`
               : 'Magpapakita lang ang insight na ito kapag may sapat nang live inquiries sa napiling timeframe.'}
           </p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Pinakakaraniwang Uri ng Tanong ({timeframe})</DialogTitle>
+            <DialogTitle>Pinakakaraniwang Uri ng Inquiry ({timeframe})</DialogTitle>
             <DialogDescription>
-              Kinakategorya ng ulat na ito ang mga pinakamadalas na katanungan na ipinapadala ng mga magsasaka. Ang pag-unawa sa mga pangunahing alalahanin na ito ay mahalaga para sa paglikha ng may-katuturang nilalaman sa knowledge base at pagpaplano ng mga aktibidad ng extension.
+              Kinakategorya ng ulat na ito ang mga pinakamadalas na inquiry types batay sa parsed intent at live message content. Mahalaga ito para sa knowledge-base planning at extension prioritization.
             </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-4">

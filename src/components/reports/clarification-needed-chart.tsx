@@ -32,7 +32,9 @@ export function ClarificationNeededChart() {
   const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
 
-  const neededClarification = clarificationNeededData.find(d => d.name === 'Nangailangan ng Clarification')?.value ?? 0;
+  const neededClarificationCount = clarificationNeededData.find(d => d.name === 'Nangailangan ng Clarification')?.value ?? 0;
+  const total = clarificationNeededData.reduce((acc, entry) => acc + entry.value, 0);
+  const neededClarification = total > 0 ? ((neededClarificationCount / total) * 100).toFixed(1) : '0.0';
   
   const handleDownload = () => {
     toast({

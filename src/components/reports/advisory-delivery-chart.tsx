@@ -32,7 +32,8 @@ export function AdvisoryDeliveryChart() {
   const { toast } = useToast();
   
   const successEntry = advisoryDeliveryData.find(d => d.name === 'Tagumpay');
-  const successPercentage = successEntry ? successEntry.value : 0;
+  const total = advisoryDeliveryData.reduce((acc, entry) => acc + entry.value, 0);
+  const successPercentage = total > 0 && successEntry ? ((successEntry.value / total) * 100).toFixed(1) : '0.0';
   
   const handleDownload = () => {
     toast({
@@ -122,7 +123,7 @@ export function AdvisoryDeliveryChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Isang delivery rate na {successPercentage}% ay napakahusay at nagpapahiwatig na halos lahat ng mga payo ay nakakarating sa mga magsasaka. Ang maliit na porsyento ng mga pagkabigo ay maaaring sanhi ng mga isyu sa network, hindi aktibong numero, o puno na inbox.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Isang delivery rate na {successPercentage}% ay nagpapakita kung ilang advisory ang talagang nakarating kumpara sa mga nabigong send attempts sa napiling timeframe. Kapag mababa ito, maaaring may isyu sa network, hindi aktibong numero, o provider/device reliability.</p>
                 <p><strong>Rekomendasyon:</strong> Imbestigahan ang mga nabigong paghahatid. Kung ang isang numero ay palaging nabibigo, i-flag ito para sa manu-manong pag-verify. Maaari mong ipaalam sa AEW na kumpirmahin ang numero ng telepono sa susunod na pagbisita sa bukid.</p>
             </div>
         </div>

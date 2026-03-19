@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,11 @@ const chartConfig = {
 
 export function FarmerEngagementChart() {
   const { farmerEngagementData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
   
   const totalFarmers = farmerEngagementData.reduce((acc, item) => acc + item.count, 0);
+  const topSegment = farmerEngagementData.reduce((prev, current) => (prev.count > current.count ? prev : current), farmerEngagementData[0]);
   
   const handleDownload = () => {
     toast({
@@ -104,7 +105,7 @@ export function FarmerEngagementChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Karamihan sa mga magsasaka ay "Repeat" reporters, na nagpapakita ng tuluy-tuloy na paggamit ng sistema.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {totalFarmers > 0 ? `Pinakamalaki ang segment na "${topSegment.type}" sa napiling timeframe.` : 'Wala pang sapat na live engagement data sa timeframe na ito.'}</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -121,7 +122,7 @@ export function FarmerEngagementChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang pagkakaroon ng malaking bilang ng "Repeat" (150) at "Frequent" (80) na mga taga-ulat ay isang magandang senyales ng kalusugan ng sistema. Ipinapakita nito na nakikita ng mga magsasaka ang halaga sa regular na paggamit nito. Ang bilang ng "First-time" (50) na gumagamit ay nagpapakita ng patuloy na pag-abot at pag-ampon ng mga bagong user.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Sa live dataset, may {farmerEngagementData.find((item) => item.type === 'First-time')?.count ?? 0} first-time, {farmerEngagementData.find((item) => item.type === 'Repeat')?.count ?? 0} repeat, at {farmerEngagementData.find((item) => item.type === 'Frequent')?.count ?? 0} frequent reporters. Ipinapakita nito kung gaano karaming farmers ang bumabalik para muling makipag-ugnayan sa barangay team.</p>
                 <p><strong>Rekomendasyon:</strong> Mag-isip ng mga paraan upang hikayatin ang mga "First-time" na gumagamit na maging "Repeat" reporters. Maaaring ito ay sa pamamagitan ng mga follow-up na mensahe na nagtatanong kung naging kapaki-pakinabang ang payo o pagpapadala ng mga pangkalahatang tip. Kilalanin o bigyan ng insentibo ang mga "Frequent" reporters para sa kanilang patuloy na kontribusyon sa data ng komunidad.</p>
             </div>
         </div>

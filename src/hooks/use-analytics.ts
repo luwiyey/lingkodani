@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 
 import { useData } from '@/context/data-context';
 import { useReportsTimeframe, type ReportsTimeframe } from '@/context/reports-timeframe-context';
-import { isLiveMode } from '@/lib/config/app-mode';
 import type { Resource, SmsMessage } from '@/lib/types';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
 
@@ -143,6 +142,41 @@ function issueBreakdown(messages: SmsMessage[]) {
   }
 
   return { pests, sakit, patubig };
+}
+
+function getInquiryCategory(message: SmsMessage) {
+  switch (message.parsedIntent) {
+    case 'PEST_DISEASE':
+      return 'Peste o sakit sa pananim';
+    case 'HARVEST':
+      return 'Ani at post-harvest';
+    case 'REQUEST':
+      return 'Hiling na tulong o rekurso';
+    case 'EMERGENCY':
+      return 'Agarang sakuna o pinsala';
+    case 'WEATHER_HELP':
+      return 'Panahon at patubig';
+    case 'PRICE_CHECK':
+      return 'Presyo sa merkado';
+    case 'REGISTER':
+      return 'Pagpaparehistro ng magsasaka';
+    case 'CROP_UPDATE':
+      return 'Update sa taniman';
+    default:
+      return 'Iba pang concern';
+  }
+}
+
+function isMessageResolved(message: SmsMessage) {
+  return Boolean(message.closedAt) || message.caseStatus === 'closed';
+}
+
+function formatInterventionPeriodLabel(date: Date, timeframe: ReportsTimeframe) {
+  if (timeframe === 'Ngayong Araw' || timeframe === 'Lingguhan') {
+    return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`;
+  }
+
+  return MONTH_NAMES[date.getMonth()];
 }
 
 function buildRiskAlerts(messages: SmsMessage[], resources: Resource[]): RiskAlert[] {
@@ -302,36 +336,19 @@ export function useAnalytics() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 9)
       .map(([word, count]) => ({ word, count }));
-    const safeTopKeywordsData =
-      topKeywordsData.length > 0 ? topKeywordsData : isLiveMode ? [] : [{ word: 'wala', count: 0 }];
-
     const inquiryCounter = new Map<string, number>();
     for (const msg of sortedByTime) {
-      const key =
-        msg.parsedIntent === 'PEST_DISEASE' ? 'Gamot sa peste?' :
-        msg.parsedIntent === 'HARVEST' ? 'Paano mag-ani?' :
-        msg.parsedIntent === 'REQUEST' ? 'Sira ang gamit' :
-        msg.parsedIntent === 'EMERGENCY' ? 'Pinsala ng bagyo' :
-        'Bakit dilaw ang dahon?';
+      const key = getInquiryCategory(msg);
       inquiryCounter.set(key, (inquiryCounter.get(key) ?? 0) + 1);
     }
     const topInquiriesData = [...inquiryCounter.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([question, count]) => ({ question, count }));
-    const safeTopInquiriesData =
-      topInquiriesData.length > 0
-        ? topInquiriesData
-        : isLiveMode
-          ? []
-          : [{ question: 'Walang inquiry', count: 0 }];
-
     const highRiskKeywordData = RISK_WORDS.map((word) => ({
       word,
       count: sortedByTime.filter((m) => m.message.toLowerCase().includes(word)).length,
     })).filter((item) => item.count > 0);
-    const safeHighRiskKeywordData =
-      highRiskKeywordData.length > 0 ? highRiskKeywordData : isLiveMode ? [] : [{ word: 'wala', count: 0 }];
 
     const zoneCounter = new Map<string, number>();
     for (const msg of sortedByTime) {
@@ -342,13 +359,6 @@ export function useAnalytics() {
     const geographicHotspotData = [...zoneCounter.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([zone, issues]) => ({ zone, issues }));
-    const safeGeographicHotspotData =
-      geographicHotspotData.length > 0
-        ? geographicHotspotData
-        : isLiveMode
-          ? []
-          : [{ zone: 'Walang zone', issues: 0 }];
-
     const seasonalMap = new Map<number, number>();
     for (const msg of sortedByTime) {
       seasonalMap.set(asDate(msg.timestamp).getMonth(), (seasonalMap.get(asDate(msg.timestamp).getMonth()) ?? 0) + 1);
@@ -456,32 +466,44 @@ export function useAnalytics() {
     }
     const recommendationTypeData = [...recommendationTypeCounter.entries()].map(([name, count]) => ({ name, count }));
 
-    const cropStageData = isLiveMode
-      ? []
-      : [
-          { name: 'Pagtatanim', value: farmers.filter((f) => f.status === 'pending_approval').length, fill: COLOR_1 },
-          { name: 'Paglago', value: farmers.filter((f) => f.status === 'active').length, fill: COLOR_2 },
-          { name: 'Pamumulaklak', value: Math.max(0, Math.floor(farmers.length * 0.25)), fill: COLOR_3 },
-          { name: 'Pag-aani', value: sortedByTime.filter((m) => m.parsedIntent === 'HARVEST').length, fill: COLOR_4 },
-        ];
+    const cropStageData: Array<{ name: string; value: number; fill: string }> = [];
 
-    const interventionEventMonths = new Map<number, number>();
+    const interventionEventPeriods = new Map<string, { visits: number; sortTime: number }>();
     for (const task of filteredFieldVisitTasks) {
-      const month = asDate(task.scheduledFor).getMonth();
-      interventionEventMonths.set(month, (interventionEventMonths.get(month) ?? 0) + 1);
+      const taskDate = asDate(task.scheduledFor);
+      const period = formatInterventionPeriodLabel(taskDate, timeframe);
+      const sortTime =
+        timeframe === 'Ngayong Araw' || timeframe === 'Lingguhan'
+          ? startOfDay(taskDate).getTime()
+          : new Date(taskDate.getFullYear(), taskDate.getMonth(), 1).getTime();
+      const current = interventionEventPeriods.get(period);
+      interventionEventPeriods.set(period, {
+        visits: (current?.visits ?? 0) + 1,
+        sortTime,
+      });
     }
     for (const record of filteredAssistanceRecords) {
-      const month = asDate(record.updatedAt).getMonth();
-      interventionEventMonths.set(month, (interventionEventMonths.get(month) ?? 0) + 1);
+      const recordDate = asDate(record.updatedAt);
+      const period = formatInterventionPeriodLabel(recordDate, timeframe);
+      const sortTime =
+        timeframe === 'Ngayong Araw' || timeframe === 'Lingguhan'
+          ? startOfDay(recordDate).getTime()
+          : new Date(recordDate.getFullYear(), recordDate.getMonth(), 1).getTime();
+      const current = interventionEventPeriods.get(period);
+      interventionEventPeriods.set(period, {
+        visits: (current?.visits ?? 0) + 1,
+        sortTime,
+      });
     }
-    const interventionSupportData = MONTH_NAMES.slice(0, 5).map((month, idx) => ({
-      month,
-      visits: interventionEventMonths.get(idx) ?? 0,
-    }));
+    const interventionSupportData = [...interventionEventPeriods.entries()]
+      .map(([period, details]) => ({ period, visits: details.visits, sortTime: details.sortTime }))
+      .sort((left, right) => left.sortTime - right.sortTime)
+      .map(({ period, visits }) => ({ period, visits }));
 
+    const unresolvedSmsCount = sortedByTime.filter((message) => !isMessageResolved(message)).length;
     const validationQueueData = [
-      { name: 'Nakabinbin', value: sortedByTime.filter((m) => m.status === 'pending_approval').length, fill: COLOR_2 },
-      { name: 'Nalutas', value: sortedByTime.filter((m) => m.status !== 'pending_approval').length, fill: COLOR_1 },
+      { name: 'Nakabinbin', value: unresolvedSmsCount, fill: COLOR_2 },
+      { name: 'Nalutas', value: Math.max(sortedByTime.length - unresolvedSmsCount, 0), fill: COLOR_1 },
     ];
 
     const advisoryDeliveryData = [
@@ -546,7 +568,7 @@ export function useAnalytics() {
       issueTrendsData,
       adviceSuccessData,
       cropStageData,
-      topKeywordsData: safeTopKeywordsData,
+      topKeywordsData,
       languageUsageData,
       smsPeakHoursData,
       interventionSupportData,
@@ -556,16 +578,16 @@ export function useAnalytics() {
       aiConfidenceTrendData,
       correctionLogData,
       aiAgreementData,
-      highRiskKeywordData: safeHighRiskKeywordData,
+      highRiskKeywordData,
       outbreakAlertData,
       severityIndexData,
       recommendationTypeData,
       messageLengthData,
       clarificationNeededData,
-      topInquiriesData: safeTopInquiriesData,
+      topInquiriesData,
       seasonalTrendData,
       farmerEngagementData,
-      geographicHotspotData: safeGeographicHotspotData,
+      geographicHotspotData,
       smsDeliveryStatusData,
       messageToneData,
       responseTimeData,

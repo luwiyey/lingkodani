@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,11 @@ const chartConfig = {
 
 export function CorrectionLogChart() {
   const { correctionLogData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
 
   const totalCorrections = correctionLogData.reduce((acc, curr) => acc + curr.count, 0);
+  const topCorrectionType = correctionLogData.reduce((prev, current) => (prev.count > current.count ? prev : current), correctionLogData[0]);
 
   const handleDownload = () => {
     toast({
@@ -104,7 +105,7 @@ export function CorrectionLogChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Ang pinakamadalas itama ay ang 'Entity', na nagpapahiwatig ng mga hamon sa pagkilala ng AI sa mga partikular na pangngalan.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {totalCorrections > 0 ? `Ang pinakamadalas itama sa timeframe na ito ay "${topCorrectionType.type}".` : 'Wala pang naitalang manual correction sa timeframe na ito.'}</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -121,7 +122,7 @@ export function CorrectionLogChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang "Entity" (pagkilala sa mga partikular na pangngalan tulad ng pangalan ng peste, gamot, o lugar) ang may pinakamaraming pagwawasto. Ito ay karaniwan sa mga AI model na nahihirapang unawain ang mga lokal at tiyak na termino. Ang "Intent" (ang layunin ng mensahe) ay mas madalang na i-correct, na nagpapakita na ang AI ay karaniwang nakukuha ang pangkalahatang layunin ng magsasaka.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Ang chart na ito ay nagpapakita ng aktuwal na uri ng human corrections sa napiling timeframe. Kung nangingibabaw ang "{topCorrectionType.type}", iyon ang bahagi ng analysis pipeline na kasalukuyang pinaka-kailangang i-refine gamit ang mas malinaw na rules, better prompts, o dagdag na training examples.</p>
                 <p><strong>Rekomendasyon:</strong> Mag-focus sa pagpapabuti ng 'Entity Recognition'. Magtipon ng listahan ng mga lokal na termino para sa mga pananim, peste, at pataba at idagdag ang mga ito sa dataset ng pagsasanay ng AI. Ang bawat pagwawasto sa 'Entity' ay isang mahalagang data point.</p>
             </div>
         </div>

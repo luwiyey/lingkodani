@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ const chartConfig = {
 
 export function SeasonalTrendChart() {
   const { seasonalTrendData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Taunan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
 
   const peakMonth = seasonalTrendData.reduce((prev, current) => (prev.reports > current.reports) ? prev : current);
 
@@ -96,7 +96,7 @@ export function SeasonalTrendChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamarami ang ulat tuwing {peakMonth.month}, na maaaring kasabay ng peak ng tag-ulan.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {peakMonth.reports > 0 ? `Pinakamarami ang ulat sa buwan ng ${peakMonth.month} sa kasalukuyang live dataset.` : 'Wala pang sapat na seasonal pattern signal sa live dataset.'}</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -113,7 +113,7 @@ export function SeasonalTrendChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Mayroong isang malinaw na peak sa dami ng ulat sa panahon ng tag-ulan, partikular na sa buwan ng {peakMonth.month}. Ito ay malamang na dahil sa pagtaas ng mga isyu na may kaugnayan sa baha, mga sakit ng halaman na dala ng fungal, at iba pang mga problema na pinalalala ng basa na kondisyon. Ang mga ulat ay bumababa sa panahon ng tag-araw.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Batay sa live monthly distribution, ang pinakamataas na bilang ng ulat ay nasa {peakMonth.month} na may {peakMonth.reports} records. Kapag mas dumami pa ang live data across months, mas magiging matibay ang seasonal interpretation ng chart na ito.</p>
                 <p><strong>Rekomendasyon:</strong> Gamitin ang data na ito para sa proaktibong pagpaplano. Bago ang mga peak na buwan, mag-broadcast ng mga advisory tungkol sa paghahanda para sa tag-ulan. Tiyaking may sapat na stock ng mga mapagkukunan na may kaugnayan sa mga isyu sa tag-ulan (hal., fungicides, tulong para sa baha). I-schedule ang mga AEW para sa mas maraming field visit sa mga buwan na ito.</p>
             </div>
         </div>

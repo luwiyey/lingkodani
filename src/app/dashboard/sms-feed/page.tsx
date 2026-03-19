@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, ShieldAlert, CloudCog, Tractor } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -307,6 +307,7 @@ function SmsMessageCard({
 }
 
 function SmsFeedPageContent() {
+    const router = useRouter();
     const { smsMessages, outboundMessages, farmers, resources, addInboundSms, updateSmsMessage, assignSmsMessage, closeSmsCase, retryOutboundMessage, webhookBridgeStatus } = useData();
     const { currentUserProfile } = useAuth();
     const searchParams = useSearchParams();
@@ -314,7 +315,7 @@ function SmsFeedPageContent() {
     const [reviewDraft, setReviewDraft] = React.useState<ReviewDraft | null>(null);
     const [simulatedPhone, setSimulatedPhone] = React.useState('+639171234567');
     const [simulatedMessage, setSimulatedMessage] = React.useState('Marami pong uod sa palay namin at mabilis dumami ngayong umaga.');
-    const { toast } = useToast();
+    const { toast, dismiss } = useToast();
     const focusedSmsId = searchParams.get('sms');
     const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
     const showSimulationTool = !isLiveMode || canUseLiveSmsSimulation(currentUserProfile);
@@ -404,7 +405,12 @@ function SmsFeedPageContent() {
       assignSmsMessage(message.id, activeOperatorName);
       toast({
         title: "Na-assign ang case",
-        description: `Itinalaga na kay ${activeOperatorName} ang mensahe ni ${message.farmerName}.`,
+        description: `Itinalaga na kay ${activeOperatorName} ang mensahe ni ${message.farmerName}. I-click ang abisong ito para buksan ang Aking Queue.`,
+        onClick: () => {
+          dismiss();
+          router.push('/dashboard/operations#aking-queue');
+        },
+        className: 'cursor-pointer border-primary/20 transition-colors hover:border-primary/40 hover:bg-primary/5',
       });
     };
 

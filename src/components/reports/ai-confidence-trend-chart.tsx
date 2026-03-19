@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,12 @@ const chartConfig = {
 
 export function AIConfidenceTrendChart() {
   const { aiConfidenceTrendData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
   
   const latestConfidence = aiConfidenceTrendData[aiConfidenceTrendData.length - 1].confidence;
+  const firstConfidence = aiConfidenceTrendData[0]?.confidence ?? latestConfidence;
+  const confidenceDelta = latestConfidence - firstConfidence;
   
   const handleDownload = () => {
     toast({
@@ -108,7 +110,7 @@ export function AIConfidenceTrendChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Tumaas ang kumpiyansa ng AI, na nagpapakita ng pag-aaral at pag-unlad nito.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {confidenceDelta > 0 ? 'Tumaas' : confidenceDelta < 0 ? 'Bumaba' : 'Nanatiling halos pareho'} ang AI confidence sa napiling timeframe.</p>
         </CardFooter>
       </Card>
        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -125,7 +127,7 @@ export function AIConfidenceTrendChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Makikita ang isang malinaw na pataas na trend sa kumpiyansa ng AI, na tumaas mula {aiConfidenceTrendData[0].confidence}% hanggang {latestConfidence}% sa loob ng apat na linggo. Ito ay isang malakas na indikasyon na ang "human-in-the-loop" na sistema ng feedback ay epektibo. Ang bawat pagwawasto na ginawa ng isang AEW ay nagsisilbing aral para sa AI.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Batay sa live dataset, ang average confidence ng AI ay gumalaw mula {firstConfidence}% papuntang {latestConfidence}% sa napiling timeframe. Kapag tumataas ito, posibleng mas maraming mensahe ang tumutugma sa mga pattern na kaya nang basahin ng model; kapag bumababa, maaaring may bagong klase ng concern o wording na kailangang i-review.</p>
                 <p><strong>Rekomendasyon:</strong> Ipagpatuloy ang regular na pagbibigay ng feedback at pagwawasto sa mga mungkahi ng AI. Bigyang-pansin ang mga mensahe kung saan biglang bumababa ang kumpiyansa; maaaring ito ay nagpapahiwatig ng isang bagong uri ng tanong o isang kumplikadong isyu na kailangang pag-aralan.</p>
             </div>
         </div>

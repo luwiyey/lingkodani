@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,14 @@ const chartConfig = {
 
 export function SeverityIndexChart() {
   const { severityIndexData } = useAnalytics();
-  const [timeframe, setTimeframe] = useState('Buwanan');
+  const { timeframe, setTimeframe } = useReportsTimeframe();
   
-  const mostSevereCategory = severityIndexData.reduce((prev, current) => ((prev.severe / (prev.mild + prev.moderate + prev.severe)) > (current.severe / (current.mild + current.moderate + current.severe))) ? prev : current);
+  const getSevereShare = (entry: { mild: number; moderate: number; severe: number }) => {
+    const total = entry.mild + entry.moderate + entry.severe;
+    return total > 0 ? entry.severe / total : 0;
+  };
+  const mostSevereCategory = severityIndexData.reduce((prev, current) => (getSevereShare(prev) > getSevereShare(current) ? prev : current), severityIndexData[0]);
+  const hasSeverityData = severityIndexData.some((entry) => entry.mild + entry.moderate + entry.severe > 0);
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
@@ -97,7 +102,7 @@ export function SeverityIndexChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Ang "{mostSevereCategory.name}" ang may pinakamataas na bahagdan ng "malubhang" ulat.</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: {hasSeverityData ? `Ang "${mostSevereCategory.name}" ang may pinakamataas na bahagi ng malulubhang ulat sa timeframe na ito.` : 'Wala pang sapat na severity-linked records sa timeframe na ito.'}</p>
         </CardFooter>
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -114,7 +119,7 @@ export function SeverityIndexChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ipinapakita ng data na habang ang "Peste" ay maaaring ang pinakamadalas na iulat, ang kategorya ng "{mostSevereCategory.name}" ay may pinakamataas na porsyento ng mga ulat na "moderate" at "severe". Ibig sabihin, kapag nag-ulat ang isang magsasaka tungkol sa sakit, ito ay malamang na isang malubhang problema na.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Ipinapakita ng data kung aling issue category ang may pinakamataas na share ng "moderate" at "severe" cases. Sa kasalukuyang timeframe, ang "{mostSevereCategory.name}" ang nangunguna sa severity mix, kaya dapat itong mas bantayan sa triage at field prioritization.</p>
                 <p><strong>Rekomendasyon:</strong> Bigyan ng mas mataas na prayoridad ang mga ulat na may kaugnayan sa "{mostSevereCategory.name}". Tiyaking ang mga AEW ay may sapat na kaalaman at kagamitan para sa pag-diagnose at paggamot ng mga sakit ng halaman. Isaalang-alang ang paglikha ng mas maraming nilalaman sa knowledge base tungkol sa pag-iwas sa mga sakit.</p>
             </div>
         </div>

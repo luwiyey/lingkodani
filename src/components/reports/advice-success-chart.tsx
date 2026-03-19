@@ -34,7 +34,9 @@ export function AdviceSuccessChart() {
   const { toast } = useToast();
 
   const total = adviceSuccessData.reduce((acc, curr) => acc + curr.value, 0);
-  const approvedPercentage = ((adviceSuccessData.find(d => d.status === 'Inaprubahan')?.value ?? 0) / total * 100).toFixed(0);
+  const approvedPercentage = total > 0 ? ((adviceSuccessData.find(d => d.status === 'Inaprubahan')?.value ?? 0) / total * 100).toFixed(0) : '0';
+  const revisedPercentage = total > 0 ? ((adviceSuccessData.find(d => d.status === 'In-edit')?.value ?? 0) / total * 100).toFixed(0) : '0';
+  const rejectedPercentage = total > 0 ? ((adviceSuccessData.find(d => d.status === 'Tinanggihan')?.value ?? 0) / total * 100).toFixed(0) : '0';
   
   const handleDownload = () => {
     toast({
@@ -124,7 +126,7 @@ export function AdviceSuccessChart() {
                     </ChartContainer>
                 </div>
                 <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                    <p><strong>Detalyadong Pagsusuri:</strong> Ang kasalukuyang rate ng pag-apruba na {approvedPercentage}% ay nagpapakita na ang AI ay karaniwang nagbibigay ng tumpak at naaangkop na payo. Ang {adviceSuccessData.find(d => d.status === 'In-edit')?.value}% ng mga pag-edit ay nagmumungkahi na may mga pagkakataon pa para sa AI na matuto ng mas tiyak na mga lokal na konteksto. Ang {adviceSuccessData.find(d => d.status === 'Tinanggihan')?.value}% na rejection rate ay mababa, na nagpapahiwatig na bihirang magbigay ng maling payo ang AI.</p>
+                    <p><strong>Detalyadong Pagsusuri:</strong> Ang kasalukuyang rate ng pag-apruba na {approvedPercentage}% ay nagpapakita na ang AI ay karaniwang nagbibigay ng tumpak at naaangkop na payo. Ang {revisedPercentage}% ng mga kaso ay in-edit bago ipadala, na nagmumungkahi na may mga pagkakataon pa para sa AI na matuto ng mas tiyak na mga lokal na konteksto. Ang {rejectedPercentage}% na rejection rate ay mababa, na nagpapahiwatig na bihirang magbigay ng maling payo ang AI.</p>
                     <p><strong>Rekomendasyon:</strong> Suriin ang mga "In-edit" na kaso. Tukuyin ang mga karaniwang tema sa mga pagwawasto (hal., mga lokal na pangalan ng peste, partikular na dosis ng pataba) at gamitin ang mga ito bilang data para sa susunod na pagsasanay sa AI upang mapabuti pa ang katumpakan nito.</p>
                 </div>
             </div>
