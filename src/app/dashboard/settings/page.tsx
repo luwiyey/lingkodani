@@ -426,7 +426,7 @@ export default function BarangaySettingsPage() {
             const extension = getFileExtension(file.name);
             let examples = [];
 
-            if (extension === "pdf" || file.type.startsWith("image/")) {
+            if (extension === "pdf" || file.type.startsWith("image/") || file.type.startsWith("audio/")) {
                 const formData = new FormData();
                 formData.append("file", file);
 
@@ -436,7 +436,7 @@ export default function BarangaySettingsPage() {
                     const idToken = await getClientAuth().currentUser?.getIdToken();
 
                     if (!idToken) {
-                        throw new Error("Mag-sign in muna sa live account bago mag-import ng PDF o larawan.");
+                        throw new Error("Mag-sign in muna sa live account bago mag-import ng PDF, larawan, o audio.");
                     }
 
                     headers.Authorization = `Bearer ${idToken}`;
@@ -450,7 +450,7 @@ export default function BarangaySettingsPage() {
                 const payload = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
-                    throw new Error(String(payload.error ?? "Hindi mabasa ang PDF/image file."));
+                    throw new Error(String(payload.error ?? "Hindi mabasa ang PDF/image/audio file."));
                 }
 
                 examples = Array.isArray(payload.examples) ? payload.examples : [];
@@ -841,13 +841,13 @@ export default function BarangaySettingsPage() {
                 <div className="space-y-1">
                   <h3 className="font-semibold">Reviewed SMS Teaching Files</h3>
                   <p className="text-sm text-muted-foreground">
-                    Mag-upload ng reviewed SMS examples para magkaroon ng lokal na precedent ang AI. Puwede ang JSON, CSV, Excel, PDF, at malinaw na larawan o screenshot ng annotated references.
+                    Mag-upload ng reviewed SMS examples para magkaroon ng lokal na precedent ang AI. Puwede ang JSON, CSV, Excel, PDF, audio, at malinaw na larawan o screenshot ng annotated references.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => trainingImportRef.current?.click()} disabled={isImportingTraining}>
                     <Upload className="mr-2 h-4 w-4" />
-                    {isImportingTraining ? 'Ini-import...' : 'Import Teaching File'}
+                    {isImportingTraining ? 'Ini-import...' : 'Import Teaching File / Audio'}
                   </Button>
                   <Button variant="outline" onClick={handleExportTrainingCsv}>
                     <Download className="mr-2 h-4 w-4" />
@@ -856,7 +856,7 @@ export default function BarangaySettingsPage() {
                 </div>
               </div>
               <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
-                Sa live runtime, ginagamit ng system ang approved local cue rules at ang mga pinakahuling reviewed examples bilang dagdag na gabay bago bumuo ng analysis at draft reply.
+                Sa live runtime, ginagamit ng system ang approved local cue rules at ang mga pinakahuling reviewed examples bilang dagdag na gabay bago bumuo ng analysis at draft reply. Puwede na ring manggaling ang reviewed examples sa malinaw na narrated audio kung iyon ang mas madaling maihanda ng barangay staff.
               </div>
             </div>
 
@@ -870,7 +870,7 @@ export default function BarangaySettingsPage() {
             <Input
               ref={trainingImportRef}
               type="file"
-              accept=".json,.csv,.xls,.xlsx,.pdf,application/json,text/csv,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".json,.csv,.xls,.xlsx,.pdf,.mp3,.wav,.m4a,.aac,.ogg,.webm,application/json,text/csv,application/pdf,image/*,audio/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="hidden"
               onChange={handleImportTrainingSelect}
             />

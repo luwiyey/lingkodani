@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { extractKnowledgeFromDocument } from "@/ai/flows/extract-knowledge-from-document";
+import { extractKnowledgeFromText } from "@/ai/flows/extract-knowledge-from-text";
+import { transcribeAudioFile } from "@/ai/flows/transcribe-audio-file";
 import { isLiveMode } from "@/lib/config/app-mode";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
+import {
+  guessAudioMimeType,
+  isSupportedAudioType,
+  MAX_AUDIO_IMPORT_SIZE_BYTES,
+  toAudioDataUri,
+} from "@/lib/server/audio-import";
 import {
   guessDocumentMimeType,
   isSupportedPdfOrImageType,
@@ -42,27 +50,59 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isSupportedPdfOrImageType(file)) {
+    const isPdfOrImage = isSupportedPdfOrImageType(file);
+    const isAudio = isSupportedAudioType(file);
+
+    if (!isPdfOrImage && !isAudio) {
       return NextResponse.json(
-        { error: "PDF o image file lang ang puwedeng i-convert sa knowledge articles." },
+        { error: "PDF, image, o audio file lang ang puwedeng i-convert sa knowledge articles." },
         { status: 400 }
       );
     }
 
-    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+    const sizeLimit = isAudio ? MAX_AUDIO_IMPORT_SIZE_BYTES : MAX_DOCUMENT_SIZE_BYTES;
+
+    if (file.size > sizeLimit) {
       return NextResponse.json(
-        { error: "Masyadong malaki ang file. Limitahan muna sa humigit-kumulang 8 MB bawat import." },
+        {
+          error: isAudio
+            ? "Masyadong malaki ang audio file. Limitahan muna sa humigit-kumulang 20 MB bawat import."
+            : "Masyadong malaki ang file. Limitahan muna sa humigit-kumulang 8 MB bawat import.",
+        },
         { status: 413 }
       );
     }
 
-    const mimeType = guessDocumentMimeType(file);
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await extractKnowledgeFromDocument({
-      fileDataUri: toDocumentDataUri(buffer, mimeType),
-      fileName: file.name,
-      mimeType,
-    });
+    const result = isAudio
+      ? await (async () => {
+          const mimeType = guessAudioMimeType(file);
+          const transcription = await transcribeAudioFile({
+            fileDataUri: toAudioDataUri(buffer, mimeType),
+            fileName: file.name,
+            mimeType,
+            context: "knowledge_audio",
+          });
+
+          if (!transcription.transcript.trim()) {
+            return { articles: [] };
+          }
+
+          return extractKnowledgeFromText({
+            sourceLabel: file.name,
+            transcript: transcription.transcript,
+            summaryHint: transcription.summary,
+            keywordHints: transcription.keywords,
+          });
+        })()
+      : await (async () => {
+          const mimeType = guessDocumentMimeType(file);
+          return extractKnowledgeFromDocument({
+            fileDataUri: toDocumentDataUri(buffer, mimeType),
+            fileName: file.name,
+            mimeType,
+          });
+        })();
 
     const timestamp = new Date().toISOString();
     const articles: KnowledgeArticle[] = result.articles.map((article, index) => ({
@@ -90,7 +130,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Document knowledge import failed", error);
     return NextResponse.json(
-      { error: "Hindi mabasa ang PDF/image file bilang knowledge article." },
+      { error: "Hindi mabasa ang file bilang knowledge article." },
       { status: 500 }
     );
   }

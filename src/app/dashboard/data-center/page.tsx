@@ -201,7 +201,7 @@ export default function DataCenterPage() {
       const extension = getFileExtension(file.name);
       let articles = [];
 
-      if (extension === 'pdf' || file.type.startsWith('image/')) {
+      if (extension === 'pdf' || file.type.startsWith('image/') || file.type.startsWith('audio/')) {
         const formData = new FormData();
         formData.append('file', file);
 
@@ -225,7 +225,7 @@ export default function DataCenterPage() {
         const payload = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(String(payload.error ?? 'Hindi mabasa ang PDF/image file.'));
+          throw new Error(String(payload.error ?? 'Hindi mabasa ang PDF/image/audio file.'));
         }
 
         articles = Array.isArray(payload.articles) ? payload.articles : [];
@@ -287,7 +287,7 @@ export default function DataCenterPage() {
       const extension = getFileExtension(file.name);
       let examples = [];
 
-      if (extension === 'pdf' || file.type.startsWith('image/')) {
+      if (extension === 'pdf' || file.type.startsWith('image/') || file.type.startsWith('audio/')) {
         const formData = new FormData();
         formData.append('file', file);
 
@@ -311,7 +311,7 @@ export default function DataCenterPage() {
         const payload = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(String(payload.error ?? 'Hindi mabasa ang PDF/image file.'));
+          throw new Error(String(payload.error ?? 'Hindi mabasa ang PDF/image/audio file.'));
         }
 
         examples = Array.isArray(payload.examples) ? payload.examples : [];
@@ -515,8 +515,8 @@ export default function DataCenterPage() {
   return (
     <div className="flex flex-col gap-6">
       <Input ref={backupImportRef} type="file" className="hidden" accept=".json,application/json" onChange={handleImportBackupSelect} />
-      <Input ref={knowledgeImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,.pdf,application/json,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" onChange={handleImportKnowledgeSelect} />
-      <Input ref={trainingImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,.pdf,application/json,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" onChange={handleImportTrainingSelect} />
+      <Input ref={knowledgeImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,.pdf,.mp3,.wav,.m4a,.aac,.ogg,.webm,application/json,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,audio/*" onChange={handleImportKnowledgeSelect} />
+      <Input ref={trainingImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,.pdf,.mp3,.wav,.m4a,.aac,.ogg,.webm,application/json,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,audio/*" onChange={handleImportTrainingSelect} />
       <Input ref={staffImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,application/json,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleImportStaffSelect} />
 
       <div className="flex items-center gap-4">
@@ -533,8 +533,8 @@ export default function DataCenterPage() {
             <HelpDialog title="Data Center" tooltipText="Import, export, at backup center">
               <p>Dito pinamamahalaan ang backup, restore, at file-based import/export ng Lingkod-Ani.</p>
               <p><strong>Operational backup:</strong> kasama ang farmers, SMS, resources, knowledge base, price watch, alerts, assistance, field visits, vouchers, logs, at system settings.</p>
-              <p><strong>Knowledge files:</strong> puwedeng mag-import ng JSON, CSV, Excel, PDF, o screenshots/litrato ng advisory materials para gawing searchable knowledge entries.</p>
-              <p><strong>Training data:</strong> maaari nang mag-import at mag-export ng labeled SMS examples gamit ang JSON, CSV, Excel, PDF, o screenshots ng reviewed SMS materials.</p>
+              <p><strong>Knowledge files:</strong> puwedeng mag-import ng JSON, CSV, Excel, PDF, audio, o screenshots/litrato ng advisory materials para gawing searchable knowledge entries.</p>
+              <p><strong>Training data:</strong> maaari nang mag-import at mag-export ng labeled SMS examples gamit ang JSON, CSV, Excel, PDF, audio, o screenshots ng reviewed SMS materials.</p>
               <p><strong>Mahalaga:</strong> ang training files at templates ay tumutulong sa evaluation, prompt tuning, at workflow quality, pero hindi nito awtomatikong fine-tune ang Gemini model.</p>
             </HelpDialog>
           </div>
@@ -558,9 +558,10 @@ export default function DataCenterPage() {
       <Card className="border-emerald-200/70 bg-emerald-50/70">
         <CardContent className="p-5 text-sm text-emerald-900">
           <div className="space-y-2">
-            <p className="font-semibold tracking-tight">Best results for PDF or photo import</p>
-            <p>Mas mababasa ng system ang upload kapag malinaw ang text, tuwid ang kuha, hindi putol ang page, at hindi lalampas sa humigit-kumulang 8 MB.</p>
-            <p>Iwasan ang malabong screenshot, madilim na litrato, sobrang daming topic sa iisang file, at sulat-kamay na halos hindi mabasa.</p>
+            <p className="font-semibold tracking-tight">Best results for PDF, photo, or audio import</p>
+            <p>Mas mababasa ng system ang upload kapag malinaw ang text, tuwid ang kuha, hindi putol ang page, at hindi lalampas sa humigit-kumulang 8 MB para sa PDF/photo o 20 MB para sa audio.</p>
+            <p>Sa audio, mas maganda ang malinaw na boses, kaunting ingay sa paligid, at isang pangunahing topic kada recording.</p>
+            <p>Iwasan ang malabong screenshot, madilim na litrato, sobrang daming topic sa iisang file, sulat-kamay na halos hindi mabasa, at audio na sabay-sabay ang nagsasalita.</p>
           </div>
         </CardContent>
       </Card>
@@ -640,15 +641,15 @@ export default function DataCenterPage() {
             </Button>
             <Button onClick={() => knowledgeImportRef.current?.click()} disabled={isImportingKnowledge}>
               <Upload className="mr-2 h-4 w-4" />
-              {isImportingKnowledge ? 'Nag-i-import...' : 'Import File or Photo'}
+              {isImportingKnowledge ? 'Nag-i-import...' : 'Import File, Photo, or Audio'}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Supported formats: `JSON`, `CSV`, `Excel`, `PDF`, at image files tulad ng screenshots o litrato ng printed advisory.</p>
-          <p>Kapag PDF o image ang in-upload, gagamit ang system ng AI extraction para gawing structured knowledge articles ang laman na puwedeng hanapin at gamitin sa knowledge base.</p>
-          <p>Mas bagay ang PDF/image import sa flyers, posters, screenshots, at printed materials na gusto mong gawing searchable sa system nang hindi mano-manong kino-convert sa JSON o CSV.</p>
-          <p>Best results: malinaw na text, iisang pangunahing topic kada file, at litrato na tuwid at hindi madilim.</p>
+          <p>Supported formats: `JSON`, `CSV`, `Excel`, `PDF`, audio files, at image files tulad ng screenshots o litrato ng printed advisory.</p>
+          <p>Kapag PDF, image, o audio ang in-upload, gagamit ang system ng AI extraction para gawing structured knowledge articles ang laman na puwedeng hanapin at gamitin sa knowledge base.</p>
+          <p>Mas bagay ang PDF/image/audio import sa flyers, posters, screenshots, recorded briefings, at printed materials na gusto mong gawing searchable sa system nang hindi mano-manong kino-convert sa JSON o CSV.</p>
+          <p>Best results: malinaw na text, iisang pangunahing topic kada file, litrato na tuwid at hindi madilim, at audio na malinaw ang boses.</p>
           <p>Para sa portable backup/import sa Data Center, metadata at links pa lang ang naisasauli para sa audio assets. Ang farmer evidence at knowledge audio puwedeng ma-save live, pero hindi pa full embedded audio-transcription archive ang backup format ngayon.</p>
         </CardContent>
       </Card>
@@ -670,14 +671,14 @@ export default function DataCenterPage() {
             </Button>
             <Button onClick={() => trainingImportRef.current?.click()} disabled={isImportingTraining}>
               <Upload className="mr-2 h-4 w-4" />
-              {isImportingTraining ? 'Nag-i-import...' : 'Import File or Photo'}
+              {isImportingTraining ? 'Nag-i-import...' : 'Import File, Photo, or Audio'}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Supported formats: `JSON`, `CSV`, `Excel`, `PDF`, at image files tulad ng screenshots ng reviewed SMS sheets o printed examples.</p>
-          <p>Kapag PDF o image ang in-upload, gagamit ang system ng AI extraction para subukang buuin ang structured training examples mula sa mga nakikitang mensahe, labels, at review notes. Kapag Excel file naman, babasahin ng system ang unang worksheet bilang table import.</p>
-          <p>Best results: malinaw na message text, kita ang labels o final review notes, at hindi halo-halo ang maraming cases sa isang malabong screenshot.</p>
+          <p>Supported formats: `JSON`, `CSV`, `Excel`, `PDF`, audio files, at image files tulad ng screenshots ng reviewed SMS sheets o printed examples.</p>
+          <p>Kapag PDF, image, o audio ang in-upload, gagamit ang system ng AI extraction para subukang buuin ang structured training examples mula sa mga nakikitang o naririnig na mensahe, labels, at review notes. Kapag Excel file naman, babasahin ng system ang unang worksheet bilang table import.</p>
+          <p>Best results: malinaw na message text, kita ang labels o final review notes, hindi halo-halo ang maraming cases sa isang malabong screenshot, at audio na malinaw ang pagkakabanggit ng mensahe at tamang tugon.</p>
           <p>Ang training files ay hindi pa direktang nagre-retrain ng Gemini model, pero agad silang nagiging managed dataset para sa human review, audit, at future tuning/export work.</p>
         </CardContent>
       </Card>

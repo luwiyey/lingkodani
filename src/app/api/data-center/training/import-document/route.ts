@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 
 import { extractSmsTrainingFromDocument } from "@/ai/flows/extract-sms-training-from-document";
+import { extractSmsTrainingFromText } from "@/ai/flows/extract-sms-training-from-text";
+import { transcribeAudioFile } from "@/ai/flows/transcribe-audio-file";
 import { canManageBarangaySettings } from "@/lib/access-control";
 import { isLiveMode } from "@/lib/config/app-mode";
 import { buildImportedSmsTrainingExamples } from "@/lib/imported-training-examples";
+import {
+  guessAudioMimeType,
+  isSupportedAudioType,
+  MAX_AUDIO_IMPORT_SIZE_BYTES,
+  toAudioDataUri,
+} from "@/lib/server/audio-import";
 import {
   guessDocumentMimeType,
   isSupportedPdfOrImageType,
@@ -50,27 +58,59 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isSupportedPdfOrImageType(file)) {
+    const isPdfOrImage = isSupportedPdfOrImageType(file);
+    const isAudio = isSupportedAudioType(file);
+
+    if (!isPdfOrImage && !isAudio) {
       return NextResponse.json(
-        { error: "PDF o image file lang ang puwedeng i-convert sa SMS training examples." },
+        { error: "PDF, image, o audio file lang ang puwedeng i-convert sa SMS training examples." },
         { status: 400 }
       );
     }
 
-    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+    const sizeLimit = isAudio ? MAX_AUDIO_IMPORT_SIZE_BYTES : MAX_DOCUMENT_SIZE_BYTES;
+
+    if (file.size > sizeLimit) {
       return NextResponse.json(
-        { error: "Masyadong malaki ang file. Limitahan muna sa humigit-kumulang 8 MB bawat import." },
+        {
+          error: isAudio
+            ? "Masyadong malaki ang audio file. Limitahan muna sa humigit-kumulang 20 MB bawat import."
+            : "Masyadong malaki ang file. Limitahan muna sa humigit-kumulang 8 MB bawat import.",
+        },
         { status: 413 }
       );
     }
 
-    const mimeType = guessDocumentMimeType(file);
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await extractSmsTrainingFromDocument({
-      fileDataUri: toDocumentDataUri(buffer, mimeType),
-      fileName: file.name,
-      mimeType,
-    });
+    const result = isAudio
+      ? await (async () => {
+          const mimeType = guessAudioMimeType(file);
+          const transcription = await transcribeAudioFile({
+            fileDataUri: toAudioDataUri(buffer, mimeType),
+            fileName: file.name,
+            mimeType,
+            context: "knowledge_audio",
+          });
+
+          if (!transcription.transcript.trim()) {
+            return { examples: [] };
+          }
+
+          return extractSmsTrainingFromText({
+            sourceLabel: file.name,
+            transcript: transcription.transcript,
+            summaryHint: transcription.summary,
+            keywordHints: transcription.keywords,
+          });
+        })()
+      : await (async () => {
+          const mimeType = guessDocumentMimeType(file);
+          return extractSmsTrainingFromDocument({
+            fileDataUri: toDocumentDataUri(buffer, mimeType),
+            fileName: file.name,
+            mimeType,
+          });
+        })();
 
     const examples = buildImportedSmsTrainingExamples(result.examples, file.name);
 
@@ -88,7 +128,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Training document import failed", error);
     return NextResponse.json(
-      { error: "Hindi mabasa ang PDF/image file bilang SMS training examples." },
+      { error: "Hindi mabasa ang file bilang SMS training examples." },
       { status: 500 }
     );
   }

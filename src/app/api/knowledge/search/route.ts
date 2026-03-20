@@ -2,27 +2,9 @@ import { NextResponse } from "next/server";
 
 import { answerKnowledgeQuery } from "@/ai/flows/answer-knowledge-query";
 import { isLiveMode } from "@/lib/config/app-mode";
+import { normalizeKnowledgeQueryArticles } from "@/lib/knowledge-query";
 import { searchArticlesLocally } from "@/lib/knowledge-search";
 import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
-import type { KnowledgeArticle } from "@/lib/types";
-
-function normalizeArticles(input: unknown): KnowledgeArticle[] {
-  if (!Array.isArray(input)) {
-    return [];
-  }
-
-  return input.filter((value): value is KnowledgeArticle => {
-    return Boolean(
-      value &&
-        typeof value === "object" &&
-        typeof (value as KnowledgeArticle).id === "string" &&
-        typeof (value as KnowledgeArticle).title === "string" &&
-        typeof (value as KnowledgeArticle).summary === "string" &&
-        typeof (value as KnowledgeArticle).content === "string" &&
-        Array.isArray((value as KnowledgeArticle).keywords)
-    );
-  });
-}
 
 export async function POST(request: Request) {
   if (isLiveMode) {
@@ -37,7 +19,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const query = typeof body.query === "string" ? body.query.trim() : "";
-    const articles = normalizeArticles(body.articles);
+    const articles = normalizeKnowledgeQueryArticles(body.articles);
 
     if (!query) {
       return NextResponse.json({ error: "Kailangan ang search query." }, { status: 400 });
