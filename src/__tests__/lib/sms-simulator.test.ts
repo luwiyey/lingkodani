@@ -1,4 +1,18 @@
 import { analyzeInboundSms, inferIntent } from "@/lib/sms-simulator";
+import type { SmsLexiconRule } from "@/lib/types";
+
+const customRules: SmsLexiconRule[] = [
+  {
+    id: "lex-custom-armyworm",
+    phrase: "armyworm",
+    intent: "PEST_DISEASE",
+    urgency: "high",
+    safetyFlag: "Medium",
+    tone: "Kritikal",
+    guidance: "Armyworm ito. I-prioritize ang validation at rekomendasyon sa pest control.",
+    enabled: true,
+  },
+];
 
 describe("sms-simulator", () => {
   it("prioritizes flood emergencies over harvest substring matches", () => {
@@ -14,5 +28,19 @@ describe("sms-simulator", () => {
 
     expect(analysis.analysisSource).toBe("rules");
     expect(analysis.aiConfidence).toBeLessThan(0.75);
+  });
+
+  it("uses custom cue rules for fallback analysis when provided", () => {
+    const analysis = analyzeInboundSms(
+      "May armyworm sa mais namin dito sa Zone 3.",
+      "Juan dela Cruz",
+      true,
+      customRules
+    );
+
+    expect(analysis.parsedIntent).toBe("PEST_DISEASE");
+    expect(analysis.urgency).toBe("high");
+    expect(analysis.tone).toBe("Kritikal");
+    expect(analysis.aiAdvice).toContain("Armyworm");
   });
 });

@@ -1,4 +1,5 @@
-import type { SafetyFlag, SmsIntent, SmsMessage } from "@/lib/types";
+import { findBestMatchingLexiconRule } from "@/lib/sms-teaching";
+import type { SafetyFlag, SmsIntent, SmsLexiconRule, SmsMessage } from "@/lib/types";
 
 export type InboundSmsAnalysis = {
   parsedIntent: SmsIntent;
@@ -49,7 +50,14 @@ export function normalizePhone(value: string) {
   return digits;
 }
 
-export function inferIntent(message: string): SmsIntent {
+export function inferIntent(
+  message: string,
+  matchedRule?: SmsLexiconRule | null
+): SmsIntent {
+  if (matchedRule) {
+    return matchedRule.intent;
+  }
+
   const lower = message.toLowerCase();
   const tokens = tokenize(message);
   if (lower.startsWith("register")) return "REGISTER";
@@ -63,7 +71,15 @@ export function inferIntent(message: string): SmsIntent {
   return "UNKNOWN";
 }
 
-export function inferUrgency(message: string, intent: SmsIntent): SmsMessage["urgency"] {
+export function inferUrgency(
+  message: string,
+  intent: SmsIntent,
+  matchedRule?: SmsLexiconRule | null
+): SmsMessage["urgency"] {
+  if (matchedRule) {
+    return matchedRule.urgency;
+  }
+
   const lower = message.toLowerCase();
   if (
     intent === "EMERGENCY" ||
@@ -79,21 +95,45 @@ export function inferUrgency(message: string, intent: SmsIntent): SmsMessage["ur
   return "low";
 }
 
-export function inferSafetyFlag(message: string): SafetyFlag {
+export function inferSafetyFlag(
+  message: string,
+  matchedRule?: SmsLexiconRule | null
+): SafetyFlag {
+  if (matchedRule) {
+    return matchedRule.safetyFlag;
+  }
+
   const lower = message.toLowerCase();
   if (lower.includes("lason") || lower.includes("emergency") || lower.includes("baha")) return "High";
   if (lower.includes("peste") || lower.includes("uod") || lower.includes("sira")) return "Medium";
   return "Low";
 }
 
-export function inferTone(message: string, urgency: SmsMessage["urgency"]): NonNullable<SmsMessage["tone"]> {
+export function inferTone(
+  message: string,
+  urgency: SmsMessage["urgency"],
+  matchedRule?: SmsLexiconRule | null
+): NonNullable<SmsMessage["tone"]> {
+  if (matchedRule?.tone) {
+    return matchedRule.tone;
+  }
+
   const lower = message.toLowerCase();
   if (urgency === "high" || lower.includes("tulong") || lower.includes("kagyat")) return "Kritikal";
   if (lower.includes("paano") || lower.includes("pwede") || lower.includes("po")) return "Nag-aalala";
   return "Neutral";
 }
 
-export function inferAdvice(intent: SmsIntent, message: string, farmerName: string) {
+export function inferAdvice(
+  intent: SmsIntent,
+  message: string,
+  farmerName: string,
+  matchedRule?: SmsLexiconRule | null
+) {
+  if (matchedRule?.guidance.trim()) {
+    return matchedRule.guidance.trim();
+  }
+
   switch (intent) {
     case "REGISTER":
       return `Natanggap namin ang inyong registration request, ${farmerName}. Susuriin ito ng barangay team at magpapadala kami ng kumpirmasyon kapag kumpleto na ang detalye.`;
@@ -116,11 +156,17 @@ export function inferAdvice(intent: SmsIntent, message: string, farmerName: stri
   }
 }
 
-export function analyzeInboundSms(message: string, farmerName = "magsasaka", knownFarmer = true): InboundSmsAnalysis {
-  const parsedIntent = inferIntent(message);
-  const urgency = inferUrgency(message, parsedIntent);
-  const safetyFlag = inferSafetyFlag(message);
-  const tone = inferTone(message, urgency);
+export function analyzeInboundSms(
+  message: string,
+  farmerName = "magsasaka",
+  knownFarmer = true,
+  customRules: SmsLexiconRule[] = []
+): InboundSmsAnalysis {
+  const matchedRule = findBestMatchingLexiconRule(message, customRules);
+  const parsedIntent = inferIntent(message, matchedRule);
+  const urgency = inferUrgency(message, parsedIntent, matchedRule);
+  const safetyFlag = inferSafetyFlag(message, matchedRule);
+  const tone = inferTone(message, urgency, matchedRule);
   const baseConfidence = knownFarmer ? 0.62 : 0.48;
   const confidenceByIntent: Record<SmsIntent, number> = {
     REGISTER: 0.74,
@@ -139,7 +185,7 @@ export function analyzeInboundSms(message: string, farmerName = "magsasaka", kno
     urgency,
     safetyFlag,
     tone,
-    aiAdvice: inferAdvice(parsedIntent, message, farmerName),
+    aiAdvice: inferAdvice(parsedIntent, message, farmerName, matchedRule),
     aiConfidence: Math.max(baseConfidence, confidenceByIntent[parsedIntent]),
     analysisSource: "rules",
   };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { extractSmsTrainingFromDocument } from "@/ai/flows/extract-sms-training-from-document";
+import { canManageBarangaySettings } from "@/lib/access-control";
 import { isLiveMode } from "@/lib/config/app-mode";
 import { buildImportedSmsTrainingExamples } from "@/lib/imported-training-examples";
 import {
@@ -13,10 +14,17 @@ import { authenticateServerRequest } from "@/lib/server/request-auth";
 
 export async function POST(request: Request) {
   if (isLiveMode) {
-    const auth = await authenticateServerRequest(request, ["developer"]);
+    const auth = await authenticateServerRequest(request);
 
     if (!auth.ok) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    if (!canManageBarangaySettings(auth.profile)) {
+      return NextResponse.json(
+        { error: "Kailangan ng barangay manager o developer access para mag-import ng teaching files." },
+        { status: 403 }
+      );
     }
   }
 

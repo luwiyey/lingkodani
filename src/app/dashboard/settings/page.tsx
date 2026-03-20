@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, PlusCircle, FilePen, RefreshCcw } from 'lucide-react';
+import { Download, FilePen, PlusCircle, RefreshCcw, Trash2, Upload } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -23,14 +23,66 @@ import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
 import { canAccessDataCenter, canManageBarangaySettings } from '@/lib/access-control';
 import { isLiveMode } from '@/lib/config/app-mode';
-import type { SystemTemplate, SystemTemplateCategory } from '@/lib/types';
+import {
+  extractSmsTrainingExamplesFromJson,
+  formatSmsTrainingExamplesAsCsv,
+  parseSmsTrainingExamplesCsv,
+} from '@/lib/data-portability';
+import { getClientAuth } from '@/lib/firebase/auth-client';
+import {
+  extractSmsLexiconRulesFromJson,
+  formatSmsLexiconRulesAsCsv,
+  parseSmsLexiconRulesCsv,
+} from '@/lib/sms-lexicon-portability';
+import { summarizeTeachingCoverage } from '@/lib/sms-teaching';
+import { isSpreadsheetExtension, readSpreadsheetAsCsv } from '@/lib/spreadsheet-import';
+import type { SmsLexiconRule, SmsTone, SystemTemplate, SystemTemplateCategory } from '@/lib/types';
 import { defaultSystemSettings } from '@/lib/system-settings';
+
+function downloadFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function getFileExtension(filename: string) {
+  return filename.split('.').pop()?.toLowerCase() ?? '';
+}
+
+function createEmptyLexiconRule(): SmsLexiconRule {
+  return {
+    id: `LEX-${Date.now()}`,
+    phrase: '',
+    intent: 'UNKNOWN',
+    urgency: 'medium',
+    safetyFlag: 'Low',
+    tone: undefined,
+    guidance: '',
+    enabled: true,
+    notes: '',
+  };
+}
+
+function buildLexiconRuleKey(rule: Pick<SmsLexiconRule, 'phrase' | 'intent'>) {
+  return `${rule.phrase.trim().toLowerCase()}::${rule.intent}`;
+}
 
 export default function BarangaySettingsPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { systemSettings, saveSystemSettings } = useData();
+    const {
+      systemSettings,
+      saveSystemSettings,
+      smsTrainingExamples,
+      importSmsTrainingExamples,
+    } = useData();
     const { currentUser, currentUserProfile } = useAuth();
+    const lexiconImportRef = useRef<HTMLInputElement>(null);
+    const trainingImportRef = useRef<HTMLInputElement>(null);
     const [brgyDescription, setBrgyDescription] = useState(defaultSystemSettings.brgyDescription);
     const [zoneDescriptions, setZoneDescriptions] = useState(defaultSystemSettings.zoneDescriptions);
     const [replyStartTime, setReplyStartTime] = useState(defaultSystemSettings.replyStartTime);
@@ -38,11 +90,15 @@ export default function BarangaySettingsPage() {
     const [adminPhone, setAdminPhone] = useState(defaultSystemSettings.adminPhone);
     
     const [templateCategories, setTemplateCategories] = useState<SystemTemplateCategory[]>(defaultSystemSettings.templateCategories);
+    const [smsLexiconRules, setSmsLexiconRules] = useState<SmsLexiconRule[]>(defaultSystemSettings.smsLexiconRules);
     
     // State for Dialogs
     const [isAddDialogOpen, setAddDialogOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<{ categoryId: string; template: SystemTemplate } | null>(null);
     const [deletingTemplate, setDeletingTemplate] = useState<{ categoryId: string; templateId: string } | null>(null);
+    const [isLexiconDialogOpen, setLexiconDialogOpen] = useState(false);
+    const [editingLexiconRule, setEditingLexiconRule] = useState<SmsLexiconRule | null>(null);
+    const [deletingLexiconRule, setDeletingLexiconRule] = useState<SmsLexiconRule | null>(null);
 
     // State for controlled components in dialogs
     const [newTemplateText, setNewTemplateText] = useState('');
@@ -51,13 +107,24 @@ export default function BarangaySettingsPage() {
     
     const [editedTemplateText, setEditedTemplateText] = useState('');
     const [editedTemplateKeywords, setEditedTemplateKeywords] = useState('');
+    const [rulePhrase, setRulePhrase] = useState('');
+    const [ruleIntent, setRuleIntent] = useState<SmsLexiconRule['intent']>('UNKNOWN');
+    const [ruleUrgency, setRuleUrgency] = useState<SmsLexiconRule['urgency']>('medium');
+    const [ruleSafetyFlag, setRuleSafetyFlag] = useState<SmsLexiconRule['safetyFlag']>('Low');
+    const [ruleTone, setRuleTone] = useState<SmsTone | 'none'>('none');
+    const [ruleGuidance, setRuleGuidance] = useState('');
+    const [ruleNotes, setRuleNotes] = useState('');
+    const [ruleEnabled, setRuleEnabled] = useState(true);
 
 
     const [autoReplyEnabled, setAutoReplyEnabled] = useState(defaultSystemSettings.autoReplyEnabled);
     const [autoReplyTimeout, setAutoReplyTimeout] = useState(defaultSystemSettings.autoReplyTimeoutMinutes);
     const [runningAutomation, setRunningAutomation] = useState<null | 'overdue' | 'followup'>(null);
+    const [isImportingLexicon, setIsImportingLexicon] = useState(false);
+    const [isImportingTraining, setIsImportingTraining] = useState(false);
     const canManageSettings = canManageBarangaySettings(currentUserProfile);
     const canOpenDataCenter = canAccessDataCenter(currentUserProfile);
+    const teachingCoverage = summarizeTeachingCoverage(smsLexiconRules, smsTrainingExamples);
 
     useEffect(() => {
         if (currentUserProfile && !canManageSettings) {
@@ -72,6 +139,7 @@ export default function BarangaySettingsPage() {
         setReplyEndTime(systemSettings.replyEndTime);
         setAdminPhone(systemSettings.adminPhone);
         setTemplateCategories(systemSettings.templateCategories);
+        setSmsLexiconRules(systemSettings.smsLexiconRules);
         setAutoReplyEnabled(systemSettings.autoReplyEnabled);
         setAutoReplyTimeout(systemSettings.autoReplyTimeoutMinutes);
     }, [systemSettings]);
@@ -153,6 +221,271 @@ export default function BarangaySettingsPage() {
         setDeletingTemplate(null);
     };
 
+    const resetLexiconForm = (rule?: SmsLexiconRule | null) => {
+        const nextRule = rule ?? createEmptyLexiconRule();
+        setEditingLexiconRule(rule ?? null);
+        setRulePhrase(nextRule.phrase);
+        setRuleIntent(nextRule.intent);
+        setRuleUrgency(nextRule.urgency);
+        setRuleSafetyFlag(nextRule.safetyFlag);
+        setRuleTone(nextRule.tone ?? 'none');
+        setRuleGuidance(nextRule.guidance);
+        setRuleNotes(nextRule.notes ?? '');
+        setRuleEnabled(nextRule.enabled);
+    };
+
+    const openCreateLexiconDialog = () => {
+        resetLexiconForm(null);
+        setLexiconDialogOpen(true);
+    };
+
+    const openEditLexiconDialog = (rule: SmsLexiconRule) => {
+        resetLexiconForm(rule);
+        setLexiconDialogOpen(true);
+    };
+
+    const handleSaveLexiconRule = () => {
+        const trimmedPhrase = rulePhrase.trim();
+        const trimmedGuidance = ruleGuidance.trim();
+
+        if (!trimmedPhrase || !trimmedGuidance) {
+            toast({
+                title: "Kulang ang detalye",
+                description: "Kailangan ang phrase at guidance bago ma-save ang cue rule.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const timestamp = new Date().toISOString();
+        const nextRule: SmsLexiconRule = {
+            id: editingLexiconRule?.id ?? `LEX-${Date.now()}`,
+            phrase: trimmedPhrase,
+            intent: ruleIntent,
+            urgency: ruleUrgency,
+            safetyFlag: ruleSafetyFlag,
+            tone: ruleTone === 'none' ? undefined : ruleTone,
+            guidance: trimmedGuidance,
+            enabled: ruleEnabled,
+            notes: ruleNotes.trim() || undefined,
+            createdAt: editingLexiconRule?.createdAt ?? timestamp,
+            updatedAt: timestamp,
+        };
+
+        setSmsLexiconRules((previousRules) => {
+            const ruleKey = buildLexiconRuleKey(nextRule);
+            const withoutDuplicates = previousRules.filter((rule) => {
+                if (editingLexiconRule && rule.id === editingLexiconRule.id) {
+                    return false;
+                }
+
+                return buildLexiconRuleKey(rule) !== ruleKey;
+            });
+
+            return [...withoutDuplicates, nextRule].sort((left, right) =>
+                left.phrase.localeCompare(right.phrase)
+            );
+        });
+
+        toast({
+            title: editingLexiconRule ? "Na-update ang cue rule" : "Naidagdag ang cue rule",
+            description: "I-save ang live settings para tuluyang mailapat ang bagong turo sa system.",
+        });
+        setLexiconDialogOpen(false);
+        resetLexiconForm(null);
+    };
+
+    const handleDeleteLexiconRule = () => {
+        if (!deletingLexiconRule) {
+            return;
+        }
+
+        setSmsLexiconRules((previousRules) =>
+            previousRules.filter((rule) => rule.id !== deletingLexiconRule.id)
+        );
+        toast({
+            title: "Natanggal ang cue rule",
+            description: "I-save ang live settings para tuluyang maalis ang cue rule sa system.",
+        });
+        setDeletingLexiconRule(null);
+    };
+
+    const handleExportLexiconJson = () => {
+        downloadFile(
+            `lingkod-ani-sms-cues-${new Date().toISOString().slice(0, 10)}.json`,
+            JSON.stringify(smsLexiconRules, null, 2),
+            "application/json"
+        );
+        toast({
+            title: "Na-export ang cue bank",
+            description: `${smsLexiconRules.length} cue rules ang naisama sa JSON file.`,
+        });
+    };
+
+    const handleExportLexiconCsv = () => {
+        downloadFile(
+            `lingkod-ani-sms-cues-${new Date().toISOString().slice(0, 10)}.csv`,
+            formatSmsLexiconRulesAsCsv(smsLexiconRules),
+            "text/csv;charset=utf-8"
+        );
+        toast({
+            title: "Na-export ang cue bank",
+            description: `${smsLexiconRules.length} cue rules ang naisama sa CSV file.`,
+        });
+    };
+
+    const handleExportTrainingCsv = () => {
+        downloadFile(
+            `lingkod-ani-sms-training-${new Date().toISOString().slice(0, 10)}.csv`,
+            formatSmsTrainingExamplesAsCsv(smsTrainingExamples),
+            "text/csv;charset=utf-8"
+        );
+        toast({
+            title: "Na-export ang reviewed examples",
+            description: `${smsTrainingExamples.length} reviewed SMS examples ang naisama sa CSV file.`,
+        });
+    };
+
+    const handleImportLexiconSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        setIsImportingLexicon(true);
+
+        try {
+            const extension = getFileExtension(file.name);
+            let importedRules: SmsLexiconRule[] = [];
+
+            if (isSpreadsheetExtension(extension)) {
+                importedRules = parseSmsLexiconRulesCsv(await readSpreadsheetAsCsv(file));
+            } else {
+                const text = await file.text();
+                importedRules =
+                    extension === "csv"
+                        ? parseSmsLexiconRulesCsv(text)
+                        : extractSmsLexiconRulesFromJson(JSON.parse(text));
+            }
+
+            if (importedRules.length === 0) {
+                throw new Error("Walang valid na cue rules sa file.");
+            }
+
+            setSmsLexiconRules((previousRules) => {
+                const merged = new Map<string, SmsLexiconRule>();
+
+                previousRules.forEach((rule) => {
+                    merged.set(buildLexiconRuleKey(rule), rule);
+                });
+
+                importedRules.forEach((rule) => {
+                    const existing = merged.get(buildLexiconRuleKey(rule));
+                    merged.set(buildLexiconRuleKey(rule), {
+                        ...existing,
+                        ...rule,
+                        id: existing?.id ?? rule.id,
+                        createdAt: existing?.createdAt ?? rule.createdAt,
+                        updatedAt: new Date().toISOString(),
+                    });
+                });
+
+                return Array.from(merged.values()).sort((left, right) =>
+                    left.phrase.localeCompare(right.phrase)
+                );
+            });
+
+            toast({
+                title: "Na-import ang cue bank",
+                description: `${importedRules.length} cue rules ang nadagdag o na-update. I-save ang live settings para mailapat ang mga ito.`,
+            });
+        } catch (error) {
+            toast({
+                title: "Hindi ma-import ang cue bank",
+                description: error instanceof Error ? error.message : "Hindi mabasa ang cue file.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsImportingLexicon(false);
+            event.target.value = "";
+        }
+    };
+
+    const handleImportTrainingSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        setIsImportingTraining(true);
+
+        try {
+            const extension = getFileExtension(file.name);
+            let examples = [];
+
+            if (extension === "pdf" || file.type.startsWith("image/")) {
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const headers: HeadersInit = {};
+
+                if (isLiveMode) {
+                    const idToken = await getClientAuth().currentUser?.getIdToken();
+
+                    if (!idToken) {
+                        throw new Error("Mag-sign in muna sa live account bago mag-import ng PDF o larawan.");
+                    }
+
+                    headers.Authorization = `Bearer ${idToken}`;
+                }
+
+                const response = await fetch("/api/data-center/training/import-document", {
+                    method: "POST",
+                    headers,
+                    body: formData,
+                });
+                const payload = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(String(payload.error ?? "Hindi mabasa ang PDF/image file."));
+                }
+
+                examples = Array.isArray(payload.examples) ? payload.examples : [];
+            } else {
+                if (isSpreadsheetExtension(extension)) {
+                    examples = parseSmsTrainingExamplesCsv(await readSpreadsheetAsCsv(file));
+                } else {
+                    const text = await file.text();
+                    examples =
+                        extension === "csv"
+                            ? parseSmsTrainingExamplesCsv(text)
+                            : extractSmsTrainingExamplesFromJson(JSON.parse(text));
+                }
+            }
+
+            if (examples.length === 0) {
+                throw new Error("Walang valid na SMS teaching examples sa file.");
+            }
+
+            const count = await importSmsTrainingExamples(examples);
+            toast({
+                title: "Na-import ang SMS teaching file",
+                description: `${count} reviewed examples ang na-merge sa teaching dataset.`,
+            });
+        } catch (error) {
+            toast({
+                title: "Hindi ma-import ang SMS teaching file",
+                description: error instanceof Error ? error.message : "Hindi mabasa ang teaching file.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsImportingTraining(false);
+            event.target.value = "";
+        }
+    };
+
     const handleSaveChanges = async () => {
         await saveSystemSettings({
             ...systemSettings,
@@ -162,6 +495,7 @@ export default function BarangaySettingsPage() {
             replyEndTime,
             adminPhone,
             templateCategories,
+            smsLexiconRules,
             autoReplyEnabled,
             autoReplyTimeoutMinutes: Math.max(1, autoReplyTimeout),
         });
@@ -428,6 +762,145 @@ export default function BarangaySettingsPage() {
                 <Button onClick={() => setAddDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Magdagdag ng Template</Button>
             </CardFooter>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pagtuturo sa System</CardTitle>
+            <CardDescription>
+              Turuan ang Lingkod-Ani gamit ang lokal na cue words, karaniwang parirala, at mga reviewed SMS examples na galing sa tunay na barangay workflow.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm text-muted-foreground">Enabled cue rules</p>
+                <p className="mt-2 text-2xl font-semibold">{teachingCoverage.enabledRules}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm text-muted-foreground">Reviewed SMS examples</p>
+                <p className="mt-2 text-2xl font-semibold">{teachingCoverage.approvedExamples}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm text-muted-foreground">Accepted file types</p>
+                <p className="mt-2 text-sm font-medium">CSV, Excel, JSON, PDF, larawan</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Best results para sa pag-turo sa system</p>
+              <p className="mt-2">
+                Para sa cue bank, gumamit ng isang phrase bawat row sa CSV o Excel. Para sa reviewed teaching files, puwede ang JSON, CSV, Excel, PDF, at malinaw na screenshot o litrato ng reference.
+              </p>
+              <p className="mt-2">
+                Pinakamaganda ang resulta kapag malinaw ang text, hindi malabo ang larawan, at hindi lalampas sa humigit-kumulang 8 MB bawat PDF o image file.
+              </p>
+            </div>
+
+            <div className="space-y-4 rounded-lg border p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">SMS Cue Bank</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Magdagdag ng lokal na salita o parirala tulad ng pest names, crop aliases, o paulit-ulit na request wording. Ito ang unang tinitingnan ng system bago ito umasa sa generic na analysis.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => lexiconImportRef.current?.click()} disabled={isImportingLexicon}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isImportingLexicon ? 'Ini-import...' : 'Import CSV/Excel/JSON'}
+                  </Button>
+                  <Button variant="outline" onClick={handleExportLexiconCsv}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  <Button variant="outline" onClick={handleExportLexiconJson}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export JSON
+                  </Button>
+                  <Button onClick={openCreateLexiconDialog}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Magdagdag ng Cue Rule
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                {smsLexiconRules.map((rule) => (
+                  <div key={rule.id} className="rounded-lg border p-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-base font-semibold">{rule.phrase}</span>
+                          <Badge variant={rule.enabled ? 'default' : 'secondary'}>
+                            {rule.enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                          <Badge variant="outline">{rule.intent}</Badge>
+                          <Badge variant="outline">{rule.urgency}</Badge>
+                          <Badge variant="outline">{rule.safetyFlag}</Badge>
+                          {rule.tone ? <Badge variant="outline">{rule.tone}</Badge> : null}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{rule.guidance}</p>
+                        {rule.notes ? (
+                          <p className="text-xs text-muted-foreground">Tala: {rule.notes}</p>
+                        ) : null}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="icon" variant="ghost" onClick={() => openEditLexiconDialog(rule)}>
+                          <FilePen className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => setDeletingLexiconRule(rule)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-lg border p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Reviewed SMS Teaching Files</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Mag-upload ng reviewed SMS examples para magkaroon ng lokal na precedent ang AI. Puwede ang JSON, CSV, Excel, PDF, at malinaw na larawan o screenshot ng annotated references.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => trainingImportRef.current?.click()} disabled={isImportingTraining}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isImportingTraining ? 'Ini-import...' : 'Import Teaching File'}
+                  </Button>
+                  <Button variant="outline" onClick={handleExportTrainingCsv}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Reviewed CSV
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
+                Sa live runtime, ginagamit ng system ang approved local cue rules at ang mga pinakahuling reviewed examples bilang dagdag na gabay bago bumuo ng analysis at draft reply.
+              </div>
+            </div>
+
+            <Input
+              ref={lexiconImportRef}
+              type="file"
+              accept=".json,.csv,.xls,.xlsx,application/json,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              onChange={handleImportLexiconSelect}
+            />
+            <Input
+              ref={trainingImportRef}
+              type="file"
+              accept=".json,.csv,.xls,.xlsx,.pdf,application/json,text/csv,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              onChange={handleImportTrainingSelect}
+            />
+          </CardContent>
+          <CardFooter className="justify-end">
+            <Button onClick={handleSaveChanges}>I-save ang Itinuro sa System</Button>
+          </CardFooter>
+        </Card>
       
         <Card>
           <CardHeader>
@@ -526,6 +999,124 @@ export default function BarangaySettingsPage() {
             </DialogContent>
         </Dialog>
 
+        <Dialog
+            open={isLexiconDialogOpen}
+            onOpenChange={(open) => {
+                setLexiconDialogOpen(open);
+                if (!open) {
+                    resetLexiconForm(null);
+                }
+            }}
+        >
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{editingLexiconRule ? 'I-edit ang Cue Rule' : 'Magdagdag ng Cue Rule'}</DialogTitle>
+                    <DialogDescription>
+                        Ang cue rules ay lokal na salita o parirala na inuuna ng system kapag tumutugma sa mensahe ng magsasaka.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="rule-phrase">Phrase o keyword</Label>
+                        <Input
+                            id="rule-phrase"
+                            value={rulePhrase}
+                            onChange={(event) => setRulePhrase(event.target.value)}
+                            placeholder="hal. armyworm, tungro, walang patubig"
+                        />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="space-y-2">
+                            <Label>Intent</Label>
+                            <Select value={ruleIntent} onValueChange={(value) => setRuleIntent(value as SmsLexiconRule['intent'])}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="REGISTER">REGISTER</SelectItem>
+                                    <SelectItem value="CROP_UPDATE">CROP_UPDATE</SelectItem>
+                                    <SelectItem value="HARVEST">HARVEST</SelectItem>
+                                    <SelectItem value="REQUEST">REQUEST</SelectItem>
+                                    <SelectItem value="PEST_DISEASE">PEST_DISEASE</SelectItem>
+                                    <SelectItem value="WEATHER_HELP">WEATHER_HELP</SelectItem>
+                                    <SelectItem value="PRICE_CHECK">PRICE_CHECK</SelectItem>
+                                    <SelectItem value="EMERGENCY">EMERGENCY</SelectItem>
+                                    <SelectItem value="UNKNOWN">UNKNOWN</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Urgency</Label>
+                            <Select value={ruleUrgency} onValueChange={(value) => setRuleUrgency(value as SmsLexiconRule['urgency'])}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">low</SelectItem>
+                                    <SelectItem value="medium">medium</SelectItem>
+                                    <SelectItem value="high">high</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Safety flag</Label>
+                            <Select value={ruleSafetyFlag} onValueChange={(value) => setRuleSafetyFlag(value as SmsLexiconRule['safetyFlag'])}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Tone</Label>
+                            <Select value={ruleTone} onValueChange={(value) => setRuleTone(value as SmsTone | 'none')}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">Walang override</SelectItem>
+                                    <SelectItem value="Neutral">Neutral</SelectItem>
+                                    <SelectItem value="Nag-aalala">Nag-aalala</SelectItem>
+                                    <SelectItem value="Kritikal">Kritikal</SelectItem>
+                                    <SelectItem value="Positibo">Positibo</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="rule-guidance">Guidance na dapat sundin ng system</Label>
+                        <Textarea
+                            id="rule-guidance"
+                            value={ruleGuidance}
+                            onChange={(event) => setRuleGuidance(event.target.value)}
+                            placeholder="hal. I-prioritize ang field validation at magbigay ng ligtas na paunang payo habang hinihintay ang AEW review."
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="rule-notes">Notes para sa admin team</Label>
+                        <Textarea
+                            id="rule-notes"
+                            value={ruleNotes}
+                            onChange={(event) => setRuleNotes(event.target.value)}
+                            placeholder="Opsyonal: lokal na alias, crop coverage, o special reminder."
+                        />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Switch id="rule-enabled" checked={ruleEnabled} onCheckedChange={setRuleEnabled} />
+                        <Label htmlFor="rule-enabled">Gamitin ang cue rule na ito sa live analysis</Label>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Kanselahin</Button></DialogClose>
+                    <Button onClick={handleSaveLexiconRule}>I-save ang Cue Rule</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={!!deletingTemplate} onOpenChange={() => setDeletingTemplate(null)}>
             <AlertDialogContent>
@@ -538,6 +1129,21 @@ export default function BarangaySettingsPage() {
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setDeletingTemplate(null)}>Kanselahin</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteTemplate}>Ituloy</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!deletingLexiconRule} onOpenChange={() => setDeletingLexiconRule(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Tanggalin ang cue rule?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Mawawala ang lokal na cue rule na ito sa susunod na save ng settings. Maaari ka pa ring mag-import muli o gumawa ng bagong rule pagkatapos.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeletingLexiconRule(null)}>Kanselahin</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteLexiconRule}>Tanggalin</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

@@ -18,6 +18,19 @@ export type UserRole = 'barangay' | 'developer';
 
 export type UserStatus = 'active' | 'pending_setup' | 'disabled';
 export type PreferredWorkspace = 'simple' | 'detailed';
+export type SmsIntent =
+  | 'REGISTER'
+  | 'CROP_UPDATE'
+  | 'HARVEST'
+  | 'REQUEST'
+  | 'PEST_DISEASE'
+  | 'WEATHER_HELP'
+  | 'PRICE_CHECK'
+  | 'EMERGENCY'
+  | 'UNKNOWN';
+export type SafetyFlag = 'Low' | 'Medium' | 'High';
+export type SmsUrgency = 'low' | 'medium' | 'high';
+export type SmsTone = 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
 
 export type User = {
   id?: string;
@@ -59,6 +72,20 @@ export type ZoneDescription = {
   description: string;
 };
 
+export type SmsLexiconRule = {
+  id: string;
+  phrase: string;
+  intent: SmsIntent;
+  urgency: SmsUrgency;
+  safetyFlag: SafetyFlag;
+  tone?: SmsTone;
+  guidance: string;
+  enabled: boolean;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type SystemSettings = {
   id: string;
   brgyDescription: string;
@@ -67,6 +94,7 @@ export type SystemSettings = {
   replyEndTime: string;
   adminPhone: string;
   templateCategories: SystemTemplateCategory[];
+  smsLexiconRules: SmsLexiconRule[];
   autoReplyEnabled: boolean;
   autoReplyTimeoutMinutes: number;
   updatedAt?: string;
@@ -90,19 +118,6 @@ export type Farmer = {
   avatarUrl?: string;
   status: FarmerStatus;
 };
-
-export type SmsIntent = 
-  | 'REGISTER' 
-  | 'CROP_UPDATE' 
-  | 'HARVEST'
-  | 'REQUEST'
-  | 'PEST_DISEASE'
-  | 'WEATHER_HELP'
-  | 'PRICE_CHECK'
-  | 'EMERGENCY'
-  | 'UNKNOWN';
-
-export type SafetyFlag = 'Low' | 'Medium' | 'High';
 
 export type SmsMessageStatus = 'pending_approval' | 'approved' | 'replied' | 'rejected';
 
@@ -148,14 +163,14 @@ export type SmsMessage = {
   clarificationNeeded?: boolean;
   clarificationQuestion?: string;
   parsedIntent: SmsIntent;
-  urgency: 'low' | 'medium' | 'high';
+  urgency: SmsUrgency;
   status: SmsMessageStatus;
   aiAdvice: string;
   aiConfidence: number;
   safetyFlag: SafetyFlag;
   respondedAt?: string;
   knowledgeBaseId?: string;
-  tone?: 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
+  tone?: SmsTone;
 };
 
 export type ResourceCategory = 'Pataba' | 'Binhi' | 'Kagamitan' | 'Paggawa';

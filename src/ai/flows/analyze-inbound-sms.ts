@@ -7,6 +7,8 @@ const AnalyzeInboundSmsInputSchema = z.object({
   message: z.string().describe('The raw SMS message from the farmer.'),
   farmerName: z.string().optional().describe('Known farmer name, if available.'),
   knownFarmer: z.boolean().default(false).describe('Whether the phone number is already matched to a farmer record.'),
+  teachingContext: z.string().optional().describe('Approved local cue rules that matched the message.'),
+  reviewedExamplesContext: z.string().optional().describe('Similar reviewed SMS examples approved by the barangay team.'),
 });
 export type AnalyzeInboundSmsInput = z.infer<typeof AnalyzeInboundSmsInputSchema>;
 
@@ -50,6 +52,8 @@ Rules:
 - Use Filipino-friendly advice. The advice should be short and suitable to send by SMS.
 - If the message is unclear, choose UNKNOWN and give a short clarification-oriented response.
 - Confidence must be between 0 and 1.
+- If approved local cue rules are provided below and they clearly match the message, prioritize them over generic assumptions.
+- If reviewed example messages are provided, use them as guidance for tone, classification, and practical barangay response style. Do not copy them blindly if they do not fit.
 
 Allowed parsedIntent values:
 - REGISTER
@@ -71,6 +75,11 @@ Allowed tone values:
 Farmer known in system: {{{knownFarmer}}}
 Farmer name: {{{farmerName}}}
 SMS message: {{{message}}}
+Approved local cue rules:
+{{{teachingContext}}}
+
+Similar reviewed examples:
+{{{reviewedExamplesContext}}}
 `,
 });
 

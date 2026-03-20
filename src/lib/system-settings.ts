@@ -1,4 +1,9 @@
-import type { SystemSettings, SystemTemplateCategory, SystemTemplateCategoryId } from "@/lib/types";
+import type {
+  SmsLexiconRule,
+  SystemSettings,
+  SystemTemplateCategory,
+  SystemTemplateCategoryId,
+} from "@/lib/types";
 
 export const SYSTEM_SETTINGS_DOCUMENT_ID = "barangay-current";
 const BARANGAY_TIME_ZONE = "Asia/Manila";
@@ -55,6 +60,110 @@ export const defaultTemplateCategories: SystemTemplateCategory[] = [
   },
 ];
 
+export const defaultSmsLexiconRules: SmsLexiconRule[] = [
+  {
+    id: "lex-armyworm",
+    phrase: "armyworm",
+    intent: "PEST_DISEASE",
+    urgency: "high",
+    safetyFlag: "Medium",
+    tone: "Kritikal",
+    guidance:
+      "Nabanggit ang armyworm sa ulat. I-prioritize ang field validation at magbigay agad ng ligtas na pest-management guidance para sa apektadong tanim.",
+    enabled: true,
+    notes: "Para sa fall armyworm at katulad na ulat sa mais o gulay.",
+  },
+  {
+    id: "lex-bph",
+    phrase: "brown planthopper",
+    intent: "PEST_DISEASE",
+    urgency: "high",
+    safetyFlag: "Medium",
+    tone: "Kritikal",
+    guidance:
+      "Mukhang may brown planthopper / hopper concern. I-check ang lawak ng infestation at iwasan ang sobrang nitrogen habang hinihintay ang rekomendasyon ng AEW.",
+    enabled: true,
+    notes: "Puwedeng gumawa ng hiwalay na row para sa lokal na alias tulad ng hopper o bph.",
+  },
+  {
+    id: "lex-tungro",
+    phrase: "tungro",
+    intent: "PEST_DISEASE",
+    urgency: "high",
+    safetyFlag: "Medium",
+    tone: "Nag-aalala",
+    guidance:
+      "May banggit ng tungro. I-flag ito para sa agarang assessment at ihiwalay muna ang malinaw na apektadong bahagi kung posible.",
+    enabled: true,
+  },
+  {
+    id: "lex-leaf-blast",
+    phrase: "leaf blast",
+    intent: "PEST_DISEASE",
+    urgency: "medium",
+    safetyFlag: "Medium",
+    tone: "Nag-aalala",
+    guidance:
+      "Posibleng leaf blast concern. Suriin ang stage ng pananim at ihanda ang payo sa moisture, spacing, at fungicide options kung naaangkop.",
+    enabled: true,
+  },
+  {
+    id: "lex-tagtuyot",
+    phrase: "tagtuyot",
+    intent: "WEATHER_HELP",
+    urgency: "high",
+    safetyFlag: "Medium",
+    tone: "Kritikal",
+    guidance:
+      "Ituring ito bilang mataas na water-stress concern. I-prioritize ang patubig guidance, soil moisture conservation, at agarang follow-up sa apektadong lugar.",
+    enabled: true,
+  },
+  {
+    id: "lex-walang-patubig",
+    phrase: "walang patubig",
+    intent: "WEATHER_HELP",
+    urgency: "high",
+    safetyFlag: "Medium",
+    tone: "Kritikal",
+    guidance:
+      "May malinaw na kakulangan sa patubig. I-escalate para sa irrigation support o barangay coordination kung paulit-ulit ang ulat.",
+    enabled: true,
+  },
+  {
+    id: "lex-lubog-palayan",
+    phrase: "lubog ang palayan",
+    intent: "EMERGENCY",
+    urgency: "high",
+    safetyFlag: "High",
+    tone: "Kritikal",
+    guidance:
+      "Mukhang baha o agarang pinsala ang iniulat. Unahin ang kaligtasan at i-route agad ito sa emergency / disaster response review.",
+    enabled: true,
+  },
+  {
+    id: "lex-sprayer-request",
+    phrase: "mahihiraman ng sprayer",
+    intent: "REQUEST",
+    urgency: "medium",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    guidance:
+      "Ito ay kahilingan sa kagamitan. I-check agad ang availability ng sprayer at ang barangay release process bago tumugon.",
+    enabled: true,
+  },
+  {
+    id: "lex-presyo-palay",
+    phrase: "presyo ng palay",
+    intent: "PRICE_CHECK",
+    urgency: "low",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    guidance:
+      "Tanong ito tungkol sa presyo ng palay. I-match ang reply sa pinakahuling market reference na nasa system.",
+    enabled: true,
+  },
+];
+
 export const defaultSystemSettings: SystemSettings = {
   id: SYSTEM_SETTINGS_DOCUMENT_ID,
   brgyDescription:
@@ -67,6 +176,7 @@ export const defaultSystemSettings: SystemSettings = {
   replyEndTime: "19:00",
   adminPhone: "+639123456789",
   templateCategories: defaultTemplateCategories,
+  smsLexiconRules: defaultSmsLexiconRules,
   autoReplyEnabled: true,
   autoReplyTimeoutMinutes: 3,
 };
@@ -82,6 +192,7 @@ export function mergeSystemSettings(
         templates: [...category.templates],
       })),
       zoneDescriptions: [...defaultSystemSettings.zoneDescriptions],
+      smsLexiconRules: defaultSystemSettings.smsLexiconRules.map((rule) => ({ ...rule })),
     };
   }
 
@@ -97,6 +208,10 @@ export function mergeSystemSettings(
             ...category,
             templates: [...category.templates],
           })),
+    smsLexiconRules:
+      partial.smsLexiconRules?.length
+        ? partial.smsLexiconRules.map((rule) => ({ ...rule }))
+        : defaultSmsLexiconRules.map((rule) => ({ ...rule })),
   };
 }
 
