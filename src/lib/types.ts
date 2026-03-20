@@ -135,6 +135,10 @@ export type FarmerEvidenceAttachment = {
   notes?: string;
   relatedSmsId?: string;
   sizeBytes?: number;
+  transcript?: string;
+  transcriptSummary?: string;
+  transcriptKeywords?: string[];
+  detectedLanguage?: string;
 };
 
 export type SmsMessageStatus = 'pending_approval' | 'approved' | 'replied' | 'rejected';

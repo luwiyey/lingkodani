@@ -19,6 +19,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
 import { canAccessDataCenter, canManageBarangaySettings } from '@/lib/access-control';
@@ -585,6 +586,15 @@ export default function BarangaySettingsPage() {
         <p className="text-muted-foreground">Pamahalaan ang mga detalye tungkol sa iyong barangay at i-configure ang mga setting ng system.</p>
       </div>
 
+      <Tabs defaultValue="barangay" className="space-y-6">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/60 p-1 md:grid-cols-4">
+          <TabsTrigger value="barangay">Barangay Info</TabsTrigger>
+          <TabsTrigger value="templates">Mga Template</TabsTrigger>
+          <TabsTrigger value="teaching">Pagtuturo</TabsTrigger>
+          <TabsTrigger value="automation">Automation</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="barangay" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Impormasyon ng Barangay</CardTitle>
@@ -673,43 +683,9 @@ export default function BarangaySettingsPage() {
             <Button onClick={handleSaveChanges}>I-save ang Live Settings</Button>
         </CardFooter>
       </Card>
+        </TabsContent>
 
-      {isLiveMode ? (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle>Automation sa Free Hosting</CardTitle>
-            <CardDescription>
-              Gumagana pa rin ang overdue SMS at follow-up automation sa Vercel Hobby kahit walang paid cron jobs.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Habang may naka-open na live dashboard, awtomatikong tatakbo ang overdue SMS checks kada 1 minuto at ang follow-up checks kada 30 minuto.
-            </p>
-            <p>
-              Kapag walang staff na naka-open sa dashboard, hindi tuloy-tuloy ang background run. Maaari mong gamitin ang mga button sa ibaba para mano-manong patakbuhin ang checks anumang oras.
-            </p>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={() => runAutomation('overdue')}
-              disabled={runningAutomation !== null}
-            >
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              {runningAutomation === 'overdue' ? 'Pinoproseso ang overdue SMS...' : 'Patakbuhin ang Overdue SMS Check'}
-            </Button>
-            <Button
-              onClick={() => runAutomation('followup')}
-              disabled={runningAutomation !== null}
-            >
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              {runningAutomation === 'followup' ? 'Pinoproseso ang follow-up...' : 'Patakbuhin ang Follow-up Check'}
-            </Button>
-          </CardFooter>
-        </Card>
-      ) : null}
-      
+        <TabsContent value="templates" className="space-y-6">
         <Card>
           <CardHeader>
                 <CardTitle>Mga Template ng Tugon</CardTitle>
@@ -762,7 +738,9 @@ export default function BarangaySettingsPage() {
                 <Button onClick={() => setAddDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Magdagdag ng Template</Button>
             </CardFooter>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="teaching" className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Pagtuturo sa System</CardTitle>
@@ -901,7 +879,44 @@ export default function BarangaySettingsPage() {
             <Button onClick={handleSaveChanges}>I-save ang Itinuro sa System</Button>
           </CardFooter>
         </Card>
-      
+        </TabsContent>
+
+        <TabsContent value="automation" className="space-y-6">
+      {isLiveMode ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle>Automation sa Free Hosting</CardTitle>
+            <CardDescription>
+              Gumagana pa rin ang overdue SMS at follow-up automation sa Vercel Hobby kahit walang paid cron jobs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Habang may naka-open na live dashboard, awtomatikong tatakbo ang overdue SMS checks kada 1 minuto at ang follow-up checks kada 30 minuto.
+            </p>
+            <p>
+              Kapag walang staff na naka-open sa dashboard, hindi tuloy-tuloy ang background run. Maaari mong gamitin ang mga button sa ibaba para mano-manong patakbuhin ang checks anumang oras.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => runAutomation('overdue')}
+              disabled={runningAutomation !== null}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {runningAutomation === 'overdue' ? 'Pinoproseso ang overdue SMS...' : 'Patakbuhin ang Overdue SMS Check'}
+            </Button>
+            <Button
+              onClick={() => runAutomation('followup')}
+              disabled={runningAutomation !== null}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {runningAutomation === 'followup' ? 'Pinoproseso ang follow-up...' : 'Patakbuhin ang Follow-up Check'}
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : null}
         <Card>
           <CardHeader>
               <CardTitle>Pagtugon sa Emergency</CardTitle>
@@ -939,6 +954,8 @@ export default function BarangaySettingsPage() {
             <Button onClick={handleSaveChanges}>I-save ang mga Setting ng Emergency</Button>
           </CardFooter>
       </Card>
+        </TabsContent>
+      </Tabs>
       
       {/* Add Template Dialog */}
         <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>

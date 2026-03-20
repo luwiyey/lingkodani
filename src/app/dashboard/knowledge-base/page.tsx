@@ -19,6 +19,7 @@ import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
 import { buildSuggestedArticlesLocally, searchArticlesLocally, type SuggestedKnowledgeTopic } from '@/lib/knowledge-search';
 import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
+import { transcribeAudioUpload } from '@/lib/services/audio-transcription-service';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 
@@ -73,13 +74,35 @@ export default function KnowledgeBasePage() {
     setIsSavingEntry(true);
 
     try {
+      const audioTranscription = type === 'audio' && audioFile instanceof File
+        ? await transcribeAudioUpload(audioFile, 'knowledge_audio')
+        : null;
       const audioUrl = type === 'audio' && audioFile instanceof File
         ? await uploadKnowledgeAudioFile(audioFile, title)
         : undefined;
+      const mergedKeywords = Array.from(
+        new Set([
+          ...keywords,
+          ...(audioTranscription?.keywords ?? []),
+        ].map((keyword) => keyword.trim()).filter(Boolean))
+      );
 
-      addKnowledgeArticle({ title, summary, keywords, type, content, audioUrl });
+      addKnowledgeArticle({
+        title,
+        summary: type === 'audio' ? (summary.trim() || audioTranscription?.summary || summary) : summary,
+        keywords: mergedKeywords,
+        type,
+        content: type === 'audio' ? (audioTranscription?.transcript ?? '') : content,
+        audioUrl,
+      });
       setNewEntryDialogOpen(false);
-      toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
+      toast({
+        title: "Tagumpay!",
+        description:
+          type === 'audio'
+            ? `Ang "${title}" ay naidagdag na sa knowledge base kasama ang transcript at searchable keywords.`
+            : `Ang "${title}" ay naidagdag na sa knowledge base.`,
+      });
     } catch (error) {
       toast({
         title: "Hindi ma-save ang knowledge entry",

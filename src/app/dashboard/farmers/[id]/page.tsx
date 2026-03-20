@@ -25,6 +25,7 @@ import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { getFarmerEvidenceAttachment, getFarmerEvidenceTypeLabel, buildFarmerEvidenceLogbookData, describeFarmerEvidenceAttachment } from '@/lib/farmer-evidence';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { uploadFarmerEvidenceFile } from '@/lib/services/farmer-evidence-file-service';
+import { transcribeAudioUpload } from '@/lib/services/audio-transcription-service';
 import { getEffectiveSmsCaseOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +69,11 @@ function TimelineItem({ entry }: { entry: LogbookEntry }) {
                 </a>
               </Button>
             </div>
+            {attachment.type === 'audio' && attachment.transcriptSummary ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Buod ng audio: {attachment.transcriptSummary}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -184,6 +190,25 @@ function AttachmentList({
                 ) : null}
                 {attachment.notes ? (
                   <p className="text-sm text-muted-foreground">{attachment.notes}</p>
+                ) : null}
+                {attachment.type === 'audio' && attachment.transcriptSummary ? (
+                  <div className="rounded-lg border bg-background/70 p-3 text-sm">
+                    <p className="font-medium">Buod ng audio</p>
+                    <p className="mt-1 text-muted-foreground">{attachment.transcriptSummary}</p>
+                  </div>
+                ) : null}
+                {attachment.type === 'audio' && attachment.transcript ? (
+                  <details className="rounded-lg border bg-background/70 p-3 text-sm">
+                    <summary className="cursor-pointer font-medium">Basahin ang transcript</summary>
+                    <p className="mt-3 whitespace-pre-wrap text-muted-foreground">{attachment.transcript}</p>
+                    {attachment.transcriptKeywords?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {attachment.transcriptKeywords.map((keyword) => (
+                          <Badge key={keyword} variant="secondary">{keyword}</Badge>
+                        ))}
+                      </div>
+                    ) : null}
+                  </details>
                 ) : null}
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span>
@@ -483,6 +508,22 @@ export default function FarmerLogbookPage() {
         try {
           const uploadedAt = new Date().toISOString();
           const attachmentTitle = file.name.replace(/\.[^/.]+$/, "") || `${getFarmerEvidenceTypeLabel(fileType)} ni ${farmer.name}`;
+          let audioTranscription:
+            | Awaited<ReturnType<typeof transcribeAudioUpload>>
+            | null = null;
+
+          if (fileType === 'audio') {
+            try {
+              audioTranscription = await transcribeAudioUpload(file, 'farmer_field_note');
+            } catch (error) {
+              toast({
+                title: 'Na-save ang audio pero walang transcript',
+                description: error instanceof Error ? error.message : 'Hindi ma-transcribe ang audio sa ngayon.',
+                variant: 'destructive',
+              });
+            }
+          }
+
           const uploadResult = await uploadFarmerEvidenceFile({
             file,
             farmerId: farmer.id,
@@ -503,6 +544,10 @@ export default function FarmerLogbookPage() {
             uploadedBy: currentUserProfile?.name ?? 'Barangay Staff',
             sizeBytes: file.size,
             notes: newNote.trim() || undefined,
+            transcript: audioTranscription?.transcript,
+            transcriptSummary: audioTranscription?.summary,
+            transcriptKeywords: audioTranscription?.keywords,
+            detectedLanguage: audioTranscription?.detectedLanguage,
           };
 
           addLogbookEntry({
@@ -516,7 +561,10 @@ export default function FarmerLogbookPage() {
 
           toast({
             title: `${getFarmerEvidenceTypeLabel(fileType)} na-save`,
-            description: `Naidagdag ang "${file.name}" sa case history ni ${farmer.name}.`,
+            description:
+              fileType === 'audio' && audioTranscription?.transcript
+                ? `Naidagdag ang "${file.name}" sa case history ni ${farmer.name} kasama ang transcript at buod.`
+                : `Naidagdag ang "${file.name}" sa case history ni ${farmer.name}.`,
           });
         } catch (error) {
           toast({

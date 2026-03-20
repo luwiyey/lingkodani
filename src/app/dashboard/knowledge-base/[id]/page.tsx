@@ -56,14 +56,20 @@ export default function KnowledgeArticlePage() {
               <p>{article.content}</p>
             </div>
           ) : (
-            article.audioUrl && (
-              <div className="py-4">
+            <div className="space-y-4 py-4">
+              {article.audioUrl ? (
                 <audio controls className="w-full">
                   <source src={article.audioUrl} />
                   Your browser does not support the audio element.
                 </audio>
-              </div>
-            )
+              ) : null}
+              {article.content.trim() ? (
+                <div className="rounded-xl border bg-muted/10 p-4">
+                  <p className="text-sm font-medium">Transcript</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{article.content}</p>
+                </div>
+              ) : null}
+            </div>
           )}
         </CardContent>
         <CardFooter className="text-xs text-muted-foreground">

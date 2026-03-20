@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { collection, doc, onSnapshot, orderBy, query } from 'firebase/firestore';
 import type {
   AlertHistoryEntry,
@@ -62,6 +62,14 @@ import { applyPriceWatchAdvice } from '@/lib/services/price-watch-service';
 import { createSmsTrainingExample } from '@/lib/services/sms-training-service';
 import { applySmsStatusUpdate, processInboundSms } from '@/lib/services/sms-workflow-service';
 import { getCaseStatusForOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
+import {
+  appendOfflineMutation,
+  createOfflineMutationId,
+  readOfflineMutations,
+  sanitizeLogbookEntry,
+  writeOfflineMutations,
+  type OfflineMutation,
+} from '@/lib/offline-outbox';
 import { defaultSystemSettings, mergeSystemSettings, SYSTEM_SETTINGS_DOCUMENT_ID } from '@/lib/system-settings';
 import { getUserRecordId } from '@/lib/user-record';
 
@@ -185,6 +193,10 @@ interface DataContextType {
   addVoucher: (voucher: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => void;
   updateVoucherStatus: (voucherId: string, status: VoucherStatus) => void;
   retryOutboundMessage: (outboundId: string) => Promise<OutboundMessage | null>;
+  offlineMode: boolean;
+  offlineSyncing: boolean;
+  offlineOutboxCount: number;
+  syncOfflineChanges: () => Promise<{ processedCount: number; remainingCount: number }>;
   resetDemoData: () => void;
 }
 
@@ -227,6 +239,25 @@ function sortByDateAscending<T>(items: T[], getDateValue: (item: T) => string) {
   return [...items].sort((left, right) => normalizeTimestamp(getDateValue(left)) - normalizeTimestamp(getDateValue(right)));
 }
 
+function canUseBrowserStorage() {
+  return typeof window !== 'undefined' ? window.localStorage : null;
+}
+
+function isLikelyOfflinePersistenceError(error: unknown) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return true;
+  }
+
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    message.includes('network') ||
+    message.includes('offline') ||
+    message.includes('failed to fetch') ||
+    message.includes('unavailable') ||
+    message.includes('timeout')
+  );
+}
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { authLoading, currentUser, currentUserProfile } = useAuth();
   const autoReplyInFlight = React.useRef<Set<string>>(new Set());
@@ -249,6 +280,162 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
   const [outboundMessages, setOutboundMessages] = useState<OutboundMessage[]>(initialOutboundMessages);
   const [webhookBridgeStatus, setWebhookBridgeStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [offlineSyncing, setOfflineSyncing] = useState(false);
+  const [offlineOutboxCount, setOfflineOutboxCount] = useState(0);
+
+  const queueOfflineMutation = useCallback((mutation: OfflineMutation) => {
+    const storage = canUseBrowserStorage();
+    const next = appendOfflineMutation(mutation, storage);
+    setOfflineOutboxCount(next.length);
+  }, []);
+
+  const persistOfflineOutbox = useCallback((mutations: OfflineMutation[]) => {
+    writeOfflineMutations(mutations, canUseBrowserStorage());
+    setOfflineOutboxCount(mutations.length);
+  }, []);
+
+  const shouldQueueLiveMutation = useCallback((error?: unknown) => {
+    if (!isLiveMode) {
+      return false;
+    }
+
+    return offlineMode || isLikelyOfflinePersistenceError(error);
+  }, [offlineMode]);
+
+  const processOfflineMutation = useCallback(async (mutation: OfflineMutation) => {
+    switch (mutation.type) {
+      case 'save-system-settings':
+        await systemSettingsRepository.saveSettings(mutation.payload.settings);
+        return;
+      case 'update-farmer-record':
+        await Promise.all([
+          farmerRepository.updateFarmer(mutation.payload.farmerId, mutation.payload.updates),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+        ]);
+        return;
+      case 'create-logbook-entry':
+        await logbookRepository.createEntry(mutation.payload.entry);
+        return;
+      case 'create-assistance-activity':
+        await Promise.all([
+          assistanceRepository.createAssistanceRecord(mutation.payload.record),
+          logbookRepository.createEntry(mutation.payload.logbookEntry),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+        ]);
+        return;
+      case 'update-assistance-status':
+        await Promise.all([
+          assistanceRepository.updateAssistanceRecord(mutation.payload.recordId, mutation.payload.updates),
+          logbookRepository.createEntry(mutation.payload.logbookEntry),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+        ]);
+        return;
+      case 'schedule-field-visit':
+        await Promise.all([
+          fieldVisitRepository.createFieldVisitTask(mutation.payload.task),
+          logbookRepository.createEntry(mutation.payload.logbookEntry),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+        ]);
+        return;
+      case 'update-field-visit-status':
+        await Promise.all([
+          fieldVisitRepository.updateFieldVisitTask(mutation.payload.taskId, mutation.payload.updates),
+          logbookRepository.createEntry(mutation.payload.logbookEntry),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+        ]);
+        return;
+      case 'update-sms-message': {
+        await smsRepository.updateMessage(mutation.payload.messageId, mutation.payload.updates);
+
+        if (mutation.payload.auditLog) {
+          await auditRepository.createAuditLog(mutation.payload.auditLog);
+        }
+
+        if (mutation.payload.responseLogbookEntry) {
+          await logbookRepository.createEntry(mutation.payload.responseLogbookEntry);
+        }
+
+        if (mutation.payload.trainingExample) {
+          await smsTrainingRepository.createTrainingExample(mutation.payload.trainingExample);
+        }
+
+        if (mutation.payload.outboundReply) {
+          const outboundRecord = await sendOutboundMessage({
+            sourceMessage: mutation.payload.outboundReply.sourceMessage,
+            body: mutation.payload.outboundReply.body,
+            provider: smsProvider,
+            providerName: mutation.payload.outboundReply.providerName,
+          });
+          setOutboundMessages((records) => [outboundRecord, ...records]);
+          await outboundMessageRepository.createOutboundMessage(outboundRecord);
+        }
+        return;
+      }
+      case 'assign-sms-message':
+        await Promise.all([
+          smsRepository.updateMessage(mutation.payload.messageId, mutation.payload.updates),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+        ]);
+        return;
+      case 'update-sms-case-outcome':
+        await Promise.all([
+          smsRepository.updateMessage(mutation.payload.messageId, mutation.payload.updates),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+          logbookRepository.createEntry(mutation.payload.logbookEntry),
+        ]);
+        return;
+      case 'close-sms-case':
+        await Promise.all([
+          smsRepository.updateMessage(mutation.payload.messageId, mutation.payload.updates),
+          auditRepository.createAuditLog(mutation.payload.auditLog),
+          logbookRepository.createEntry(mutation.payload.logbookEntry),
+        ]);
+        return;
+      case 'create-knowledge-article':
+        await knowledgeRepository.createKnowledgeArticle(mutation.payload.article);
+        return;
+      default:
+        return;
+    }
+  }, []);
+
+  const syncOfflineChanges = useCallback(async () => {
+    const storage = canUseBrowserStorage();
+    const pending = readOfflineMutations(storage);
+
+    if (!isLiveMode || offlineSyncing || pending.length === 0) {
+      return {
+        processedCount: 0,
+        remainingCount: pending.length,
+      };
+    }
+
+    setOfflineSyncing(true);
+    const remaining: OfflineMutation[] = [];
+    let processedCount = 0;
+
+    for (const mutation of pending) {
+      try {
+        await processOfflineMutation(mutation);
+        processedCount += 1;
+      } catch (error) {
+        remaining.push({
+          ...mutation,
+          attempts: (mutation.attempts ?? 0) + 1,
+          lastError: error instanceof Error ? error.message : 'Unknown sync failure',
+        });
+      }
+    }
+
+    persistOfflineOutbox(remaining);
+    setOfflineSyncing(false);
+
+    return {
+      processedCount,
+      remainingCount: remaining.length,
+    };
+  }, [offlineSyncing, persistOfflineOutbox, processOfflineMutation]);
 
   useEffect(() => {
     if (!isDemoMode) return;
@@ -304,6 +491,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!isLiveMode || typeof window === 'undefined') {
+      return;
+    }
+
+    setOfflineMode(!navigator.onLine);
+    const pendingMutations = readOfflineMutations(window.localStorage);
+    setOfflineOutboxCount(pendingMutations.length);
+    if (navigator.onLine && pendingMutations.length > 0) {
+      void syncOfflineChanges();
+    }
+
+    const handleOnline = () => {
+      setOfflineMode(false);
+      void syncOfflineChanges();
+    };
+    const handleOffline = () => {
+      setOfflineMode(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncOfflineChanges]);
 
   useEffect(() => {
     if (!isLiveMode) return;
@@ -653,9 +869,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
     setSystemSettings(nextSettings);
 
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('settings'),
+        type: 'save-system-settings',
+        createdAt: new Date().toISOString(),
+        payload: { settings: nextSettings },
+      });
+      return;
+    }
+
     try {
       await systemSettingsRepository.saveSettings(nextSettings);
     } catch (error) {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('settings'),
+          type: 'save-system-settings',
+          createdAt: new Date().toISOString(),
+          payload: { settings: nextSettings },
+        });
+        return;
+      }
+
       console.error("Failed to persist system settings", error);
     }
   };
@@ -914,10 +1150,37 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setFarmers(prev => prev.map((farmer) => farmer.id === farmerId ? nextFarmer : farmer));
     setAuditLogs(prev => [auditLog, ...prev]);
 
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('farmer'),
+        type: 'update-farmer-record',
+        createdAt: timestamp,
+        payload: {
+          farmerId,
+          updates,
+          auditLog,
+        },
+      });
+      return;
+    }
+
     void Promise.all([
       farmerRepository.updateFarmer(farmerId, updates),
       auditRepository.createAuditLog(auditLog),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('farmer'),
+          type: 'update-farmer-record',
+          createdAt: timestamp,
+          payload: {
+            farmerId,
+            updates,
+            auditLog,
+          },
+        });
+        return;
+      }
       console.error("Failed to persist farmer update", error);
     });
   };
@@ -1058,7 +1321,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         audioUrl: data.type === 'audio' ? data.audioUrl : undefined,
     };
     setKnowledgeArticles(prev => [newArticle, ...prev]);
+
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('knowledge'),
+        type: 'create-knowledge-article',
+        createdAt: newArticle.lastUpdated,
+        payload: { article: newArticle },
+      });
+      return;
+    }
+
     void knowledgeRepository.createKnowledgeArticle(newArticle).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('knowledge'),
+          type: 'create-knowledge-article',
+          createdAt: newArticle.lastUpdated,
+          payload: { article: newArticle },
+        });
+        return;
+      }
       console.error("Failed to persist knowledge article", error);
     });
   };
@@ -1275,11 +1558,38 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLogbook(prev => [logbookEntry, ...prev]);
     setAuditLogs(prev => [auditLog, ...prev]);
 
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('assistance'),
+        type: 'create-assistance-activity',
+        createdAt: timestamp,
+        payload: {
+          record: nextRecord,
+          logbookEntry: sanitizeLogbookEntry(logbookEntry),
+          auditLog,
+        },
+      });
+      return nextRecord;
+    }
+
     void Promise.all([
       assistanceRepository.createAssistanceRecord(nextRecord),
       logbookRepository.createEntry(logbookEntry),
       auditRepository.createAuditLog(auditLog),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('assistance'),
+          type: 'create-assistance-activity',
+          createdAt: timestamp,
+          payload: {
+            record: nextRecord,
+            logbookEntry: sanitizeLogbookEntry(logbookEntry),
+            auditLog,
+          },
+        });
+        return;
+      }
       console.error("Failed to persist assistance activity", error);
     });
 
@@ -1322,6 +1632,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLogbook(prev => [logbookEntry, ...prev]);
     setAuditLogs(prev => [auditLog, ...prev]);
 
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('assistance-status'),
+        type: 'update-assistance-status',
+        createdAt: timestamp,
+        payload: {
+          recordId,
+          updates: {
+            status: nextRecord.status,
+            updatedAt: nextRecord.updatedAt,
+            fulfilledAt: nextRecord.fulfilledAt,
+          },
+          logbookEntry: sanitizeLogbookEntry(logbookEntry),
+          auditLog,
+        },
+      });
+      return;
+    }
+
     void Promise.all([
       assistanceRepository.updateAssistanceRecord(recordId, {
         status: nextRecord.status,
@@ -1331,6 +1660,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       logbookRepository.createEntry(logbookEntry),
       auditRepository.createAuditLog(auditLog),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('assistance-status'),
+          type: 'update-assistance-status',
+          createdAt: timestamp,
+          payload: {
+            recordId,
+            updates: {
+              status: nextRecord.status,
+              updatedAt: nextRecord.updatedAt,
+              fulfilledAt: nextRecord.fulfilledAt,
+            },
+            logbookEntry: sanitizeLogbookEntry(logbookEntry),
+            auditLog,
+          },
+        });
+        return;
+      }
       console.error("Failed to persist assistance status", error);
     });
   };
@@ -1373,11 +1720,38 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLogbook(prev => [logbookEntry, ...prev]);
     setAuditLogs(prev => [auditLog, ...prev]);
 
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('visit'),
+        type: 'schedule-field-visit',
+        createdAt: timestamp,
+        payload: {
+          task: nextTask,
+          logbookEntry: sanitizeLogbookEntry(logbookEntry),
+          auditLog,
+        },
+      });
+      return nextTask;
+    }
+
     void Promise.all([
       fieldVisitRepository.createFieldVisitTask(nextTask),
       logbookRepository.createEntry(logbookEntry),
       auditRepository.createAuditLog(auditLog),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('visit'),
+          type: 'schedule-field-visit',
+          createdAt: timestamp,
+          payload: {
+            task: nextTask,
+            logbookEntry: sanitizeLogbookEntry(logbookEntry),
+            auditLog,
+          },
+        });
+        return;
+      }
       console.error("Failed to persist field visit schedule", error);
     });
 
@@ -1419,6 +1793,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLogbook(prev => [logbookEntry, ...prev]);
     setAuditLogs(prev => [auditLog, ...prev]);
 
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('visit-status'),
+        type: 'update-field-visit-status',
+        createdAt: timestamp,
+        payload: {
+          taskId,
+          updates: {
+            status: nextTask.status,
+            updatedAt: nextTask.updatedAt,
+          },
+          logbookEntry: sanitizeLogbookEntry(logbookEntry),
+          auditLog,
+        },
+      });
+      return;
+    }
+
     void Promise.all([
       fieldVisitRepository.updateFieldVisitTask(taskId, {
         status: nextTask.status,
@@ -1427,6 +1819,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       logbookRepository.createEntry(logbookEntry),
       auditRepository.createAuditLog(auditLog),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('visit-status'),
+          type: 'update-field-visit-status',
+          createdAt: timestamp,
+          payload: {
+            taskId,
+            updates: {
+              status: nextTask.status,
+              updatedAt: nextTask.updatedAt,
+            },
+            logbookEntry: sanitizeLogbookEntry(logbookEntry),
+            auditLog,
+          },
+        });
+        return;
+      }
       console.error("Failed to persist field visit status", error);
     });
   };
@@ -1508,14 +1917,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       message.id === messageId ? nextMessage : message
     )));
 
-    if (workflow.auditLog) {
-      setAuditLogs((logs) => [workflow.auditLog as AuditLog, ...logs]);
-      void auditRepository.createAuditLog(workflow.auditLog as AuditLog).catch((error) => {
-        console.error("Failed to persist SMS status audit log", error);
-      });
-    }
-
-    void smsRepository.updateMessage(messageId, {
+    const responseLogbookEntry: LogbookEntry | null = isFarmerFacingReply
+      ? {
+          id: `LOG${Date.now()}-${nextMessage.id}`,
+          farmerId: nextMessage.farmerId,
+          timestamp: nextMessage.respondedAt ?? new Date().toISOString(),
+          type: 'Payo',
+          title: 'Naglabas ng tugon',
+          description: `${actorName}: ${nextMessage.aiAdvice}`,
+        }
+      : null;
+    const trainingExample = current && nextMessage.status !== 'pending_approval'
+      ? createSmsTrainingExample({
+          previousMessage: current,
+          nextMessage,
+          actorName,
+        })
+      : null;
+    const messageUpdates = {
       status: nextMessage.status,
       aiAdvice: nextMessage.aiAdvice,
       respondedAt: nextMessage.respondedAt,
@@ -1530,52 +1949,93 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       urgency: nextMessage.urgency,
       safetyFlag: nextMessage.safetyFlag,
       tone: nextMessage.tone,
-    }).catch((error) => {
+    };
+
+    if (workflow.auditLog) {
+      setAuditLogs((logs) => [workflow.auditLog as AuditLog, ...logs]);
+    }
+
+    if (responseLogbookEntry) {
+      setLogbook((entries) => [responseLogbookEntry, ...entries]);
+    }
+
+    if (trainingExample) {
+      setSmsTrainingExamples((examples) => [trainingExample, ...examples]);
+    }
+
+    const outboundReply =
+      isFarmerFacingReply && nextMessage.aiAdvice.trim().length > 0
+        ? {
+            sourceMessage: nextMessage,
+            body: nextMessage.aiAdvice,
+            providerName: isDemoMode ? 'mock-sms-provider' : 'live-sms-provider',
+          }
+        : undefined;
+
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('sms-update'),
+        type: 'update-sms-message',
+        createdAt: new Date().toISOString(),
+        payload: {
+          messageId,
+          updates: messageUpdates,
+          auditLog: workflow.auditLog ?? undefined,
+          responseLogbookEntry: responseLogbookEntry ? sanitizeLogbookEntry(responseLogbookEntry) : undefined,
+          trainingExample: trainingExample ?? undefined,
+          outboundReply,
+        },
+      });
+      return;
+    }
+
+    const persistMessageUpdate = async () => {
+      await smsRepository.updateMessage(messageId, messageUpdates);
+
+      if (workflow.auditLog) {
+        await auditRepository.createAuditLog(workflow.auditLog as AuditLog);
+      }
+
+      if (responseLogbookEntry) {
+        await logbookRepository.createEntry(responseLogbookEntry);
+      }
+
+      if (trainingExample) {
+        await smsTrainingRepository.createTrainingExample(trainingExample);
+      }
+
+      if (outboundReply) {
+        const record = await sendOutboundMessage({
+          sourceMessage: outboundReply.sourceMessage,
+          body: outboundReply.body,
+          provider: smsProvider,
+          providerName: outboundReply.providerName,
+        });
+        setOutboundMessages((records) => [record, ...records]);
+        await outboundMessageRepository.createOutboundMessage(record);
+      }
+    };
+
+    void persistMessageUpdate().catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('sms-update'),
+          type: 'update-sms-message',
+          createdAt: new Date().toISOString(),
+          payload: {
+            messageId,
+            updates: messageUpdates,
+            auditLog: workflow.auditLog ?? undefined,
+            responseLogbookEntry: responseLogbookEntry ? sanitizeLogbookEntry(responseLogbookEntry) : undefined,
+            trainingExample: trainingExample ?? undefined,
+            outboundReply,
+          },
+        });
+        return;
+      }
+
       console.error("Failed to persist SMS status update", error);
     });
-
-    if (isFarmerFacingReply) {
-      const responseLogbookEntry: LogbookEntry = {
-        id: `LOG${Date.now()}-${nextMessage.id}`,
-        farmerId: nextMessage.farmerId,
-        timestamp: nextMessage.respondedAt ?? new Date().toISOString(),
-        type: 'Payo',
-        title: 'Naglabas ng tugon',
-        description: `${actorName}: ${nextMessage.aiAdvice}`,
-      };
-      setLogbook((entries) => [responseLogbookEntry, ...entries]);
-      void logbookRepository.createEntry(responseLogbookEntry).catch((error) => {
-        console.error("Failed to persist SMS response logbook entry", error);
-      });
-    }
-
-    if (current && nextMessage.status !== 'pending_approval') {
-      const trainingExample = createSmsTrainingExample({
-        previousMessage: current,
-        nextMessage,
-        actorName,
-      });
-      setSmsTrainingExamples((examples) => [trainingExample, ...examples]);
-      void smsTrainingRepository.createTrainingExample(trainingExample).catch((error) => {
-        console.error("Failed to persist SMS training example", error);
-      });
-    }
-
-    if (isFarmerFacingReply && nextMessage.aiAdvice.trim().length > 0) {
-      void sendOutboundMessage({
-        sourceMessage: nextMessage,
-        body: nextMessage.aiAdvice,
-        provider: smsProvider,
-        providerName: isDemoMode ? 'mock-sms-provider' : 'live-sms-provider',
-      })
-        .then((record) => {
-          setOutboundMessages((records) => [record, ...records]);
-          return outboundMessageRepository.createOutboundMessage(record);
-        })
-        .catch((error) => {
-          console.error("Failed to create outbound SMS record", error);
-        });
-    }
   };
 
   const assignSmsMessage = (messageId: string, assigneeName?: string) => {
@@ -1602,14 +2062,43 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
     setAuditLogs(prev => [auditLog, ...prev]);
 
+    const assignmentUpdates = {
+      assignedTo: actorName,
+      assignedAt,
+      caseStatus: 'assigned' as const,
+    };
+
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('sms-assign'),
+        type: 'assign-sms-message',
+        createdAt: assignedAt,
+        payload: {
+          messageId,
+          updates: assignmentUpdates,
+          auditLog,
+        },
+      });
+      return;
+    }
+
     void Promise.all([
-      smsRepository.updateMessage(messageId, {
-        assignedTo: actorName,
-        assignedAt,
-        caseStatus: 'assigned',
-      }),
+      smsRepository.updateMessage(messageId, assignmentUpdates),
       auditRepository.createAuditLog(auditLog),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('sms-assign'),
+          type: 'assign-sms-message',
+          createdAt: assignedAt,
+          payload: {
+            messageId,
+            updates: assignmentUpdates,
+            auditLog,
+          },
+        });
+        return;
+      }
       console.error("Failed to assign SMS message", error);
     });
   };
@@ -1667,19 +2156,50 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setAuditLogs((prev) => [auditLog, ...prev]);
     setLogbook((prev) => [outcomeLogbookEntry, ...prev]);
 
+    const outcomeUpdates = {
+      caseStatus: updatedMessage.caseStatus,
+      caseOutcomeStatus: updatedMessage.caseOutcomeStatus,
+      caseOutcomeSummary: updatedMessage.caseOutcomeSummary,
+      caseOutcomeUpdatedAt: updatedMessage.caseOutcomeUpdatedAt,
+      caseOutcomeUpdatedBy: updatedMessage.caseOutcomeUpdatedBy,
+      closedAt: updatedMessage.closedAt,
+      resolutionNote: updatedMessage.resolutionNote,
+    };
+
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('sms-outcome'),
+        type: 'update-sms-case-outcome',
+        createdAt: timestamp,
+        payload: {
+          messageId,
+          updates: outcomeUpdates,
+          auditLog,
+          logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
+        },
+      });
+      return;
+    }
+
     void Promise.all([
-      smsRepository.updateMessage(messageId, {
-        caseStatus: updatedMessage.caseStatus,
-        caseOutcomeStatus: updatedMessage.caseOutcomeStatus,
-        caseOutcomeSummary: updatedMessage.caseOutcomeSummary,
-        caseOutcomeUpdatedAt: updatedMessage.caseOutcomeUpdatedAt,
-        caseOutcomeUpdatedBy: updatedMessage.caseOutcomeUpdatedBy,
-        closedAt: updatedMessage.closedAt,
-        resolutionNote: updatedMessage.resolutionNote,
-      }),
+      smsRepository.updateMessage(messageId, outcomeUpdates),
       auditRepository.createAuditLog(auditLog),
       logbookRepository.createEntry(outcomeLogbookEntry),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('sms-outcome'),
+          type: 'update-sms-case-outcome',
+          createdAt: timestamp,
+          payload: {
+            messageId,
+            updates: outcomeUpdates,
+            auditLog,
+            logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
+          },
+        });
+        return;
+      }
       console.error("Failed to persist SMS case outcome update", error);
     });
   };
@@ -1728,19 +2248,50 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setAuditLogs(prev => [auditLog, ...prev]);
     setLogbook(prev => [outcomeLogbookEntry, ...prev]);
 
+    const closeUpdates = {
+      caseStatus: 'closed' as const,
+      closedAt: timestamp,
+      resolutionNote: resolutionSummary,
+      caseOutcomeStatus: 'resolved' as const,
+      caseOutcomeSummary: resolutionSummary,
+      caseOutcomeUpdatedAt: timestamp,
+      caseOutcomeUpdatedBy: actorName,
+    };
+
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('sms-close'),
+        type: 'close-sms-case',
+        createdAt: timestamp,
+        payload: {
+          messageId,
+          updates: closeUpdates,
+          auditLog,
+          logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
+        },
+      });
+      return;
+    }
+
     void Promise.all([
-      smsRepository.updateMessage(messageId, {
-        caseStatus: 'closed',
-        closedAt: timestamp,
-        resolutionNote: resolutionSummary,
-        caseOutcomeStatus: 'resolved',
-        caseOutcomeSummary: resolutionSummary,
-        caseOutcomeUpdatedAt: timestamp,
-        caseOutcomeUpdatedBy: actorName,
-      }),
+      smsRepository.updateMessage(messageId, closeUpdates),
       auditRepository.createAuditLog(auditLog),
       logbookRepository.createEntry(outcomeLogbookEntry),
     ]).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('sms-close'),
+          type: 'close-sms-case',
+          createdAt: timestamp,
+          payload: {
+            messageId,
+            updates: closeUpdates,
+            auditLog,
+            logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
+          },
+        });
+        return;
+      }
       console.error("Failed to close SMS case", error);
     });
   };
@@ -1800,7 +2351,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     setLogbook(prev => [nextEntry, ...prev]);
+
+    if (shouldQueueLiveMutation()) {
+      queueOfflineMutation({
+        id: createOfflineMutationId('logbook'),
+        type: 'create-logbook-entry',
+        createdAt: nextEntry.timestamp,
+        payload: {
+          entry: sanitizeLogbookEntry(nextEntry),
+        },
+      });
+      return;
+    }
+
     void logbookRepository.createEntry(nextEntry).catch((error) => {
+      if (shouldQueueLiveMutation(error)) {
+        queueOfflineMutation({
+          id: createOfflineMutationId('logbook'),
+          type: 'create-logbook-entry',
+          createdAt: nextEntry.timestamp,
+          payload: {
+            entry: sanitizeLogbookEntry(nextEntry),
+          },
+        });
+        return;
+      }
       console.error("Failed to persist logbook entry", error);
     });
   };
@@ -1897,6 +2472,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     addVoucher,
     updateVoucherStatus,
     retryOutboundMessage,
+    offlineMode,
+    offlineSyncing,
+    offlineOutboxCount,
+    syncOfflineChanges,
     resetDemoData,
   };
 
