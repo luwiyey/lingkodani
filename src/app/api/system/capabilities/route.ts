@@ -117,7 +117,7 @@ function resolveLiveSmsStatus(mode: "demo" | "live", realSmsEnabled: boolean) {
   };
 }
 
-function resolveKnowledgeAudioUploadConfigured(mode: "demo" | "live") {
+function resolveStorageUploadConfigured(mode: "demo" | "live") {
   if (mode !== "live") {
     return true;
   }
@@ -138,7 +138,8 @@ export async function GET() {
   const aiConfigured = isPresent(process.env.GOOGLE_GENAI_API_KEY) || isPresent(process.env.GEMINI_API_KEY);
   const firebaseAdminConfigured = resolveFirebaseAdminConfigured();
   const liveSmsStatus = resolveLiveSmsStatus(mode, realSmsEnabled);
-  const knowledgeAudioUploadConfigured = resolveKnowledgeAudioUploadConfigured(mode);
+  const storageUploadConfigured = resolveStorageUploadConfigured(mode);
+  const knowledgeAudioUploadConfigured = storageUploadConfigured;
 
   const payload: RuntimeCapabilities = {
     mode,
@@ -146,12 +147,16 @@ export async function GET() {
     realSmsEnabled,
     liveSmsConfigured: liveSmsStatus.configured,
     firebaseAdminConfigured,
+    storageUploadConfigured,
     knowledgeAudioUploadConfigured,
     reasons: {
       ai: aiConfigured
         ? "Nakakonekta ang AI service, pero kailangan pa ring bantayan ang fallback at human-review states kapag may analysis na hindi nasagot ng model."
         : "Naka-lock muna ang AI feature habang hindi pa configured ang Gemini/Genkit service sa server.",
       liveSms: liveSmsStatus.configured ? undefined : liveSmsStatus.reason,
+      storageUpload: storageUploadConfigured
+        ? undefined
+        : "Naka-lock muna ang file upload habang hindi pa kumpleto ang live Firebase web/storage setup.",
       knowledgeAudio: knowledgeAudioUploadConfigured
         ? undefined
         : "Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase web/storage setup.",

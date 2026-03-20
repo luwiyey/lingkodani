@@ -649,7 +649,7 @@ export default function DataCenterPage() {
           <p>Kapag PDF o image ang in-upload, gagamit ang system ng AI extraction para gawing structured knowledge articles ang laman na puwedeng hanapin at gamitin sa knowledge base.</p>
           <p>Mas bagay ang PDF/image import sa flyers, posters, screenshots, at printed materials na gusto mong gawing searchable sa system nang hindi mano-manong kino-convert sa JSON o CSV.</p>
           <p>Best results: malinaw na text, iisang pangunahing topic kada file, at litrato na tuwid at hindi madilim.</p>
-          <p>Para sa audio uploads, article metadata pa lang ang portable ngayon. Wala pang real file storage/transcription pipeline para sa audio asset mismo.</p>
+          <p>Para sa portable backup/import sa Data Center, metadata at links pa lang ang naisasauli para sa audio assets. Ang farmer evidence at knowledge audio puwedeng ma-save live, pero hindi pa full embedded audio-transcription archive ang backup format ngayon.</p>
         </CardContent>
       </Card>
 

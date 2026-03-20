@@ -3,13 +3,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
-import type { Farmer, FarmerAssistanceRecord, FieldVisitTask, LogbookEntry, OutboundMessage, SmsMessage } from '@/lib/types';
+import type { Farmer, FarmerAssistanceRecord, FarmerEvidenceAttachment, FarmerEvidenceType, FieldVisitTask, LogbookEntry, OutboundMessage, SmsMessage } from '@/lib/types';
 import { getLogbookEntryIcon } from '@/lib/logbook';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User, MessageSquare, Send, CheckCircle2, ClipboardList, HeartHandshake, MapPinned } from 'lucide-react';
+import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User, MessageSquare, Send, CheckCircle2, ClipboardList, HeartHandshake, MapPinned, Download, ExternalLink, FileAudio, FileImage, FileText, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
@@ -20,11 +21,16 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
+import { AiStatusBanner } from '@/components/shared/ai-status-banner';
+import { getFarmerEvidenceAttachment, getFarmerEvidenceTypeLabel, buildFarmerEvidenceLogbookData, describeFarmerEvidenceAttachment } from '@/lib/farmer-evidence';
+import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
+import { uploadFarmerEvidenceFile } from '@/lib/services/farmer-evidence-file-service';
 import { getEffectiveSmsCaseOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
 import { cn } from '@/lib/utils';
 
 function TimelineItem({ entry }: { entry: LogbookEntry }) {
   const [isClient, setIsClient] = useState(false);
+  const attachment = getFarmerEvidenceAttachment(entry);
 
   useEffect(() => {
     setIsClient(true);
@@ -45,6 +51,25 @@ function TimelineItem({ entry }: { entry: LogbookEntry }) {
           </time>
         </div>
         <p className="text-sm text-muted-foreground">{description}</p>
+        {attachment ? (
+          <div className="mt-3 rounded-xl border bg-muted/10 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium">{attachment.fileName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {getFarmerEvidenceTypeLabel(attachment.type)}
+                  {formatBytes(attachment.sizeBytes) ? ` • ${formatBytes(attachment.sizeBytes)}` : ''}
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <a href={attachment.url} target="_blank" rel="noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Buksan
+                </a>
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -68,11 +93,136 @@ function formatConversationTimestamp(value: string, isClient: boolean) {
   });
 }
 
+function formatAttachmentTimestamp(value: string, isClient: boolean) {
+  if (!isClient) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatBytes(sizeBytes?: number) {
+  if (!sizeBytes || !Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+    return null;
+  }
+
+  if (sizeBytes < 1024) {
+    return `${sizeBytes} B`;
+  }
+
+  if (sizeBytes < 1024 * 1024) {
+    return `${(sizeBytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AttachmentList({
+  attachments,
+  isClient,
+  emptyText,
+}: {
+  attachments: FarmerEvidenceAttachment[];
+  isClient: boolean;
+  emptyText: string;
+}) {
+  if (attachments.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground p-4 border-2 border-dashed rounded-lg">
+        <p>{emptyText}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {attachments.map((attachment) => {
+        const Icon =
+          attachment.type === 'audio'
+            ? FileAudio
+            : attachment.type === 'field_photo'
+              ? FileImage
+              : FileText;
+        const formattedSize = formatBytes(attachment.sizeBytes);
+
+        return (
+          <div key={attachment.id} className="rounded-xl border bg-muted/10 p-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{attachment.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">{attachment.fileName}</p>
+                  </div>
+                  <Badge variant="outline">{getFarmerEvidenceTypeLabel(attachment.type)}</Badge>
+                </div>
+                {attachment.type === 'field_photo' ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={attachment.url}
+                    alt={attachment.title}
+                    className="h-32 w-full rounded-lg object-cover border"
+                  />
+                ) : null}
+                {attachment.type === 'audio' ? (
+                  <audio controls className="w-full" src={attachment.url}>
+                    Hindi suportado ng browser ang audio playback.
+                  </audio>
+                ) : null}
+                {attachment.notes ? (
+                  <p className="text-sm text-muted-foreground">{attachment.notes}</p>
+                ) : null}
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span>
+                    Na-upload ni {attachment.uploadedBy}
+                    {formatAttachmentTimestamp(attachment.uploadedAt, isClient)
+                      ? ` noong ${formatAttachmentTimestamp(attachment.uploadedAt, isClient)}`
+                      : ''}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {formattedSize ? <Badge variant="secondary">{formattedSize}</Badge> : null}
+                    <Button asChild variant="outline" size="sm">
+                      <a href={attachment.url} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Buksan
+                      </a>
+                    </Button>
+                    <Button asChild variant="ghost" size="sm">
+                      <a href={attachment.url} download={attachment.fileName}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 
 export default function FarmerLogbookPage() {
     const params = useParams();
     const router = useRouter();
     const farmerId = params.id as string;
+    const { currentUserProfile } = useAuth();
     
     const {
       farmers,
@@ -88,6 +238,7 @@ export default function FarmerLogbookPage() {
       scheduleFieldVisit,
       updateFieldVisitTaskStatus,
     } = useData();
+    const { capabilities } = useRuntimeCapabilities();
     const farmer = farmers.find(f => f.id === farmerId);
     const farmerLogbook = logbook.filter((entry) => entry.farmerId === farmerId);
     const farmerAssistanceRecords = useMemo(
@@ -107,6 +258,22 @@ export default function FarmerLogbookPage() {
         .filter((message) => message.farmerId === farmerId)
         .sort((left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime()),
       [farmerId, smsMessages]
+    );
+    const farmerAttachments = useMemo(
+      () =>
+        farmerLogbook
+          .map((entry) => getFarmerEvidenceAttachment(entry))
+          .filter((attachment): attachment is FarmerEvidenceAttachment => Boolean(attachment))
+          .sort((left, right) => new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime()),
+      [farmerLogbook]
+    );
+    const farmerDocumentAttachments = useMemo(
+      () => farmerAttachments.filter((attachment) => attachment.type === 'document'),
+      [farmerAttachments]
+    );
+    const farmerMediaAttachments = useMemo(
+      () => farmerAttachments.filter((attachment) => attachment.type !== 'document'),
+      [farmerAttachments]
     );
     const outboundBySmsMessageId = useMemo(() => {
       const grouped = new Map<string, OutboundMessage[]>();
@@ -147,6 +314,7 @@ export default function FarmerLogbookPage() {
         ...farmerConversation.map((message) => message.caseOutcomeUpdatedAt ?? message.respondedAt ?? message.timestamp),
         ...farmerAssistanceRecords.map((record) => record.updatedAt),
         ...farmerFieldVisits.map((task) => task.updatedAt),
+        ...farmerAttachments.map((attachment) => attachment.uploadedAt),
       ]
         .filter(Boolean)
         .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
@@ -157,7 +325,7 @@ export default function FarmerLogbookPage() {
         ongoingSupportCount,
         latestTouch,
       };
-    }, [farmerAssistanceRecords, farmerConversation, farmerFieldVisits]);
+    }, [farmerAssistanceRecords, farmerAttachments, farmerConversation, farmerFieldVisits]);
     const supportJourneyItems = useMemo(() => {
       const items: Array<{
         id: string;
@@ -215,10 +383,21 @@ export default function FarmerLogbookPage() {
         });
       });
 
+      farmerAttachments.forEach((attachment) => {
+        items.push({
+          id: `attachment-${attachment.id}`,
+          timestamp: attachment.uploadedAt,
+          title: `${getFarmerEvidenceTypeLabel(attachment.type)} uploaded`,
+          description: attachment.notes?.trim() || attachment.fileName,
+          badge: attachment.uploadedBy,
+          icon: attachment.type === 'audio' ? Mic : attachment.type === 'field_photo' ? Camera : Archive,
+        });
+      });
+
       return items
         .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
         .slice(0, 8);
-    }, [farmerAssistanceRecords, farmerConversation, farmerFieldVisits]);
+    }, [farmerAssistanceRecords, farmerAttachments, farmerConversation, farmerFieldVisits]);
     
     const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
     const [newNote, setNewNote] = useState('');
@@ -238,8 +417,13 @@ export default function FarmerLogbookPage() {
       priority: 'medium' as FieldVisitTask['priority'],
       assignedTo: '',
     });
+    const [uploadingEvidenceType, setUploadingEvidenceType] = useState<FarmerEvidenceType | null>(null);
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
+    const fileUploadLocked = !capabilities.storageUploadConfigured;
+    const fileUploadLockMessage =
+      capabilities.reasons.storageUpload ??
+      'Naka-lock muna ang file upload habang hindi pa kumpleto ang live Firebase web/storage setup.';
 
     useEffect(() => {
       setIsClient(true);
@@ -277,16 +461,72 @@ export default function FarmerLogbookPage() {
     };
 
 
-     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fileType: string) => {
-        if (e.target.files && e.target.files[0]) {
-            toast({
-                title: `${fileType} Nai-upload!`,
-                description: `Ang file na "${e.target.files[0].name}" ay matagumpay na na-upload.`,
-            });
+     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, fileType: FarmerEvidenceType) => {
+        const file = e.target.files?.[0];
+
+        if (!file) {
+          return;
         }
-        // Reset file input
-        if (e.target) {
-            e.target.value = '';
+
+        if (fileUploadLocked) {
+          toast({
+            title: "Naka-lock ang upload",
+            description: fileUploadLockMessage,
+            variant: "destructive",
+          });
+          e.target.value = '';
+          return;
+        }
+
+        setUploadingEvidenceType(fileType);
+
+        try {
+          const uploadedAt = new Date().toISOString();
+          const attachmentTitle = file.name.replace(/\.[^/.]+$/, "") || `${getFarmerEvidenceTypeLabel(fileType)} ni ${farmer.name}`;
+          const uploadResult = await uploadFarmerEvidenceFile({
+            file,
+            farmerId: farmer.id,
+            type: fileType,
+            title: attachmentTitle,
+          });
+
+          const attachment: FarmerEvidenceAttachment = {
+            id: `ATT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            farmerId: farmer.id,
+            type: fileType,
+            title: attachmentTitle,
+            fileName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            url: uploadResult.url,
+            storagePath: uploadResult.storagePath,
+            uploadedAt,
+            uploadedBy: currentUserProfile?.name ?? 'Barangay Staff',
+            sizeBytes: file.size,
+            notes: newNote.trim() || undefined,
+          };
+
+          addLogbookEntry({
+            farmerId: farmer.id,
+            type: 'Tala sa Bukid',
+            title: `${getFarmerEvidenceTypeLabel(fileType)} na-upload`,
+            description: describeFarmerEvidenceAttachment(attachment),
+            timestamp: uploadedAt,
+            data: buildFarmerEvidenceLogbookData(attachment),
+          });
+
+          toast({
+            title: `${getFarmerEvidenceTypeLabel(fileType)} na-save`,
+            description: `Naidagdag ang "${file.name}" sa case history ni ${farmer.name}.`,
+          });
+        } catch (error) {
+          toast({
+            title: "Hindi ma-upload ang file",
+            description: error instanceof Error ? error.message : "Nagkaroon ng problema sa pag-save ng evidence file.",
+            variant: "destructive",
+          });
+        } finally {
+          setUploadingEvidenceType(null);
+          e.target.value = '';
         }
     };
     
@@ -407,9 +647,9 @@ export default function FarmerLogbookPage() {
   return (
     <div className="flex flex-col gap-6">
         <Input type="file" ref={avatarUploadRef} className="hidden" onChange={handleAvatarSelect} accept="image/*"/>
-        <Input type="file" ref={docUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Dokumento')} />
-        <Input type="file" ref={fieldPhotoUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Larawan sa Bukid')} accept="image/*"/>
-        <Input type="file" ref={audioUploadRef} className="hidden" onChange={(e) => handleFileSelect(e, 'Audio')} accept="audio/*"/>
+        <Input type="file" ref={docUploadRef} className="hidden" onChange={(e) => void handleFileSelect(e, 'document')} accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" />
+        <Input type="file" ref={fieldPhotoUploadRef} className="hidden" onChange={(e) => void handleFileSelect(e, 'field_photo')} accept="image/*"/>
+        <Input type="file" ref={audioUploadRef} className="hidden" onChange={(e) => void handleFileSelect(e, 'audio')} accept="audio/*"/>
 
         <div className="flex items-center gap-4">
             <HoverTooltip text="Bumalik sa listahan ng mga magsasaka.">
@@ -430,6 +670,12 @@ export default function FarmerLogbookPage() {
                 <p className="text-muted-foreground">Tingnan ang kumpletong profile at kasaysayan ni {farmer?.name}.</p>
             </div>
         </div>
+        {fileUploadLocked ? (
+          <AiStatusBanner
+            title="Naka-lock ang live file upload"
+            description={fileUploadLockMessage}
+          />
+        ) : null}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 flex flex-col gap-6">
                 <Card>
@@ -474,21 +720,39 @@ export default function FarmerLogbookPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Archive /> Vault ng Dokumento</CardTitle>
-                        <CardDescription>Mga mahalagang dokumento tulad ng mga sertipiko.</CardDescription>
+                        <CardDescription>Mga sertipiko, form, larawan ng resibo, at iba pang supporting files ni {farmer.name}.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-center text-muted-foreground p-4 border-2 border-dashed rounded-lg">
-                            <p>Wala pang na-upload na dokumento.</p>
-                        </div>
+                        <AttachmentList
+                          attachments={farmerDocumentAttachments}
+                          isClient={isClient}
+                          emptyText="Wala pang na-upload na dokumento."
+                        />
                         <HoverTooltip text="Mag-upload ng isang file mula sa iyong computer.">
-                          <Button variant="outline" className="w-full mt-4" onClick={() => docUploadRef.current?.click()}><Upload className="mr-2"/> Mag-upload</Button>
+                          <Button variant="outline" className="w-full mt-4" onClick={() => docUploadRef.current?.click()} disabled={uploadingEvidenceType !== null}>
+                            {uploadingEvidenceType === 'document' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2"/>}
+                            {uploadingEvidenceType === 'document' ? 'Nag-a-upload...' : 'Mag-upload'}
+                          </Button>
                         </HoverTooltip>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Camera /> Field Evidence</CardTitle>
+                        <CardDescription>Mga larawan at audio note na nakadugtong sa support journey ni {farmer.name}.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AttachmentList
+                          attachments={farmerMediaAttachments}
+                          isClient={isClient}
+                          emptyText="Wala pang field photo o audio note para sa magsasakang ito."
+                        />
                     </CardContent>
                 </Card>
                 <Card>
                      <CardHeader>
                         <CardTitle className="flex items-center gap-2"><FilePen /> Magdagdag ng Tala sa Bukid</CardTitle>
-                        <CardDescription>Mag-log ng mga obserbasyon, mag-upload ng mga larawan, o mag-record ng audio mula sa field.</CardDescription>
+                        <CardDescription>Mag-log ng obserbasyon, mag-upload ng larawan, o mag-save ng audio evidence mula sa field.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <HoverTooltip text="Isulat dito ang iyong mga napansin, rekomendasyon, o anumang mahalagang impormasyon mula sa iyong pagbisita sa bukid.">
@@ -498,12 +762,21 @@ export default function FarmerLogbookPage() {
                                 onChange={(e) => setNewNote(e.target.value)}
                             />
                         </HoverTooltip>
+                        <p className="text-xs leading-5 text-muted-foreground">
+                          Tip: kung may nakasulat kang tala bago mag-upload ng larawan o audio, isasama iyon bilang note sa evidence file para mas malinaw ang context sa susunod na follow-up.
+                        </p>
                         <div className="flex flex-col gap-4 sm:flex-row">
                              <HoverTooltip text="Mag-upload ng larawan mula sa iyong pagbisita.">
-                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => fieldPhotoUploadRef.current?.click()}><Camera className="mr-2"/> Mag-upload ng Larawan</Button>
+                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => fieldPhotoUploadRef.current?.click()} disabled={uploadingEvidenceType !== null}>
+                                  {uploadingEvidenceType === 'field_photo' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2"/>}
+                                  {uploadingEvidenceType === 'field_photo' ? 'Ina-upload...' : 'Mag-upload ng Larawan'}
+                                </Button>
                             </HoverTooltip>
-                             <HoverTooltip text="Mag-record ng audio note o panayam sa magsasaka.">
-                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => audioUploadRef.current?.click()}><Mic className="mr-2"/> Mag-record ng Audio</Button>
+                              <HoverTooltip text="Mag-record ng audio note o panayam sa magsasaka.">
+                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => audioUploadRef.current?.click()} disabled={uploadingEvidenceType !== null}>
+                                  {uploadingEvidenceType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2"/>}
+                                  {uploadingEvidenceType === 'audio' ? 'Ina-upload...' : 'Mag-record ng Audio'}
+                                </Button>
                             </HoverTooltip>
                         </div>
                     </CardContent>

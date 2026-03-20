@@ -17,11 +17,14 @@ import { useToast } from "@/hooks/use-toast";
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
+import { AiStatusBanner } from '@/components/shared/ai-status-banner';
+import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
 
 
 export default function AllKnowledgeArticlesPage() {
   const { knowledgeArticles, addKnowledgeArticle } = useData();
+  const { capabilities } = useRuntimeCapabilities();
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
@@ -29,6 +32,10 @@ export default function AllKnowledgeArticlesPage() {
   
   const { toast } = useToast();
   const router = useRouter();
+  const audioUploadLocked = !capabilities.storageUploadConfigured;
+  const audioUploadLockMessage =
+    capabilities.reasons.storageUpload ??
+    'Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.';
 
   const handleAddNewEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -43,6 +50,11 @@ export default function AllKnowledgeArticlesPage() {
     if (!title || !summary || !keywords.length) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
+    }
+
+    if (type === 'audio' && audioUploadLocked) {
+      toast({ title: "Audio upload locked", description: audioUploadLockMessage, variant: "destructive" });
+      return;
     }
 
     if (type === 'audio' && (!(audioFile instanceof File) || audioFile.size === 0)) {
@@ -102,6 +114,13 @@ export default function AllKnowledgeArticlesPage() {
             </div>
         </div>
 
+        {audioUploadLocked ? (
+          <AiStatusBanner
+            title="Audio upload locked"
+            description={audioUploadLockMessage}
+          />
+        ) : null}
+
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
             <HoverTooltip text="Mag-type dito para mahanap ang isang artikulo ayon sa pamagat, buod, o keyword.">
               <div className="relative flex-1 min-w-[250px]">
@@ -139,7 +158,7 @@ export default function AllKnowledgeArticlesPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="article">Artikulo</SelectItem>
-                                        <SelectItem value="audio">Boses ng Magsasaka (Audio)</SelectItem>
+                                        <SelectItem value="audio" disabled={audioUploadLocked}>Boses ng Magsasaka (Audio)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -169,7 +188,9 @@ export default function AllKnowledgeArticlesPage() {
                         </div>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="outline">Kanselahin</Button></DialogClose>
-                            <Button type="submit" disabled={isSavingEntry}>{isSavingEntry ? 'Nagse-save...' : 'I-save ang Entry'}</Button>
+                            <Button type="submit" disabled={isSavingEntry || (newEntryType === 'audio' && audioUploadLocked)}>
+                              {isSavingEntry ? 'Nagse-save...' : 'I-save ang Entry'}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

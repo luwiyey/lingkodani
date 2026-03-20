@@ -24,5 +24,9 @@ service firebase.storage {
     match /knowledge-base/audio/{allPaths=**} {
       allow read, write: if isAuthorizedStaff();
     }
+
+    match /farmer-evidence/{allPaths=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
   }
 }

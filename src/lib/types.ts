@@ -119,6 +119,24 @@ export type Farmer = {
   status: FarmerStatus;
 };
 
+export type FarmerEvidenceType = 'document' | 'field_photo' | 'audio';
+
+export type FarmerEvidenceAttachment = {
+  id: string;
+  farmerId: string;
+  type: FarmerEvidenceType;
+  title: string;
+  fileName: string;
+  mimeType: string;
+  url: string;
+  storagePath?: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  notes?: string;
+  relatedSmsId?: string;
+  sizeBytes?: number;
+};
+
 export type SmsMessageStatus = 'pending_approval' | 'approved' | 'replied' | 'rejected';
 
 export type SmsAnalysisSource = 'rules' | 'ai' | 'ai_fallback';

@@ -17,100 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
+import { buildSuggestedArticlesLocally, searchArticlesLocally, type SuggestedKnowledgeTopic } from '@/lib/knowledge-search';
 import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
-
-type SuggestedArticle = {
-    title: string;
-    summary: string;
-    keywords: string[];
-}
-
-function tokenize(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter((token) => token.length >= 3);
-}
-
-function searchArticlesLocally(query: string, articles: KnowledgeArticle[]) {
-  const queryTokens = tokenize(query);
-
-  const matches = articles
-    .map((article) => {
-      const haystack = tokenize([
-        article.title,
-        article.summary,
-        article.content ?? '',
-        article.keywords.join(' '),
-        article.type,
-      ].join(' '));
-
-      const score = queryTokens.reduce((total, token) => total + (haystack.includes(token) ? 1 : 0), 0);
-
-      return { article, score };
-    })
-    .filter((entry) => entry.score > 0)
-    .sort((left, right) => right.score - left.score);
-
-  const relevantArticles = matches.slice(0, 6).map((entry) => entry.article);
-  const topArticle = relevantArticles[0];
-
-  return {
-    directAnswer: topArticle
-      ? `Batay sa lokal na knowledge base, pinakamalapit na gabay ang "${topArticle.title}". ${topArticle.summary} Buksan ang kaugnay na artikulo sa ibaba para sa mas detalyadong paliwanag.`
-      : `Wala pang eksaktong tugma sa lokal na knowledge base para sa "${query}". Subukang gumamit ng mas tiyak na keyword gaya ng pananim, peste, sintomas, o uri ng tulong na kailangan.`,
-    articles: relevantArticles,
-  };
-}
-
-function buildSuggestedArticlesLocally(messages: string[]): SuggestedArticle[] {
-  const combined = messages.join(' ').toLowerCase();
-  const suggestions: SuggestedArticle[] = [];
-
-  if (combined.includes('peste') || combined.includes('leafminer') || combined.includes('daga')) {
-    suggestions.push({
-      title: 'Pangunang Gabay sa Karaniwang Peste sa Barangay',
-      summary: 'Mga unang hakbang sa pag-report, pag-dokumento, at pansamantalang pagsugpo sa mga karaniwang pesteng naiuulat ng mga magsasaka.',
-      keywords: ['peste', 'leafminer', 'daga', 'rice bugs'],
-    });
-  }
-
-  if (combined.includes('bagyo') || combined.includes('baha') || combined.includes('emergency')) {
-    suggestions.push({
-      title: 'Gabay sa Bagyo, Baha, at Emergency Reporting',
-      summary: 'Checklist para sa mabilis na pagreport ng pinsala at mga pangunahing susunod na hakbang ng barangay at magsasaka.',
-      keywords: ['bagyo', 'baha', 'emergency', 'pinsala'],
-    });
-  }
-
-  if (combined.includes('ani') || combined.includes('harvest') || combined.includes('presyo')) {
-    suggestions.push({
-      title: 'Post-Harvest at Price Watch Basics',
-      summary: 'Mga paunang payo sa post-harvest handling, price checking, at paghahanda bago ibenta ang ani.',
-      keywords: ['ani', 'harvest', 'presyo', 'price watch'],
-    });
-  }
-
-  if (suggestions.length === 0) {
-    suggestions.push(
-      {
-        title: 'Mga Madalas Itanong ng Magsasaka sa Barangay',
-        summary: 'Panimulang gabay para sa karaniwang concern sa peste, panahon, inputs, at barangay support.',
-        keywords: ['faq', 'magsasaka', 'barangay'],
-      },
-      {
-        title: 'Paano Mag-report ng Concern sa Lingkod-Ani',
-        summary: 'Maikling paliwanag kung paano magsumite ng malinaw na SMS report at anong detalye ang mahalaga.',
-        keywords: ['sms', 'ulat', 'report', 'lingkod-ani'],
-      },
-    );
-  }
-
-  return suggestions.slice(0, 4);
-}
 
 export default function KnowledgeBasePage() {
   const { knowledgeArticles, addKnowledgeArticle, smsMessages } = useData();
@@ -119,16 +29,16 @@ export default function KnowledgeBasePage() {
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ directAnswer: string; articles: KnowledgeArticle[] } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [suggestedArticles, setSuggestedArticles] = useState<SuggestedArticle[]>([]);
+  const [suggestedArticles, setSuggestedArticles] = useState<SuggestedKnowledgeTopic[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
   const [isSavingEntry, setIsSavingEntry] = useState(false);
   
   const { toast } = useToast();
-  const audioUploadLocked = !capabilities.knowledgeAudioUploadConfigured;
+  const audioUploadLocked = !capabilities.storageUploadConfigured;
   const audioUploadLockMessage =
-    capabilities.reasons.knowledgeAudio ??
+    capabilities.reasons.storageUpload ??
     'Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.';
 
   const handleAddNewEntry = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -186,13 +96,33 @@ export default function KnowledgeBasePage() {
     setSuggestedArticles([]);
     try {
         const smsReports = smsMessages.map(m => m.message).slice(0, 10);
+
+        if (capabilities.aiConfigured) {
+          const response = await fetch('/api/knowledge/suggestions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              smsReports,
+              farmerInquiries: smsReports,
+            }),
+          });
+
+          if (response.ok) {
+            const payload = await response.json() as { suggestedArticles?: SuggestedKnowledgeTopic[] };
+            setSuggestedArticles(Array.isArray(payload.suggestedArticles) ? payload.suggestedArticles : []);
+            return;
+          }
+        }
+
         setSuggestedArticles(buildSuggestedArticlesLocally(smsReports));
     } catch (error) {
         console.error("Failed to fetch AI suggestions:", error);
+        setSuggestedArticles(buildSuggestedArticlesLocally(smsMessages.map(m => m.message).slice(0, 10)));
         toast({
-            title: "Error sa Pagkuha ng Mungkahi",
-            description: "Hindi makuha ang mga mungkahi mula sa AI. Maaaring puno na ang quota.",
-            variant: "destructive"
+            title: "Gumamit muna ng lokal na suggestions",
+            description: "Hindi makuha ang AI-assisted suggestions sa ngayon, kaya lokal na patterns muna ang ginamit.",
         });
     } finally {
       setIsSuggesting(false);
@@ -207,15 +137,45 @@ export default function KnowledgeBasePage() {
     setSearchResults(null);
 
     try {
-        const response = searchArticlesLocally(searchQuery, knowledgeArticles);
-        setSearchResults(response);
+        const localResult = searchArticlesLocally(searchQuery, knowledgeArticles);
+
+        if (capabilities.aiConfigured) {
+          const response = await fetch('/api/knowledge/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: searchQuery,
+              articles: knowledgeArticles,
+            }),
+          });
+
+          if (response.ok) {
+            const payload = await response.json() as {
+              directAnswer?: string;
+              relevantArticleIds?: string[];
+            };
+            const relevantArticles = (payload.relevantArticleIds ?? [])
+              .map((articleId) => knowledgeArticles.find((article) => article.id === articleId))
+              .filter((article): article is KnowledgeArticle => Boolean(article));
+
+            setSearchResults({
+              directAnswer: payload.directAnswer?.trim() || localResult.directAnswer,
+              articles: relevantArticles.length > 0 ? relevantArticles : localResult.articles,
+            });
+            return;
+          }
+        }
+
+        setSearchResults(localResult);
 
     } catch (error) {
         console.error("Search failed:", error);
+        setSearchResults(searchArticlesLocally(searchQuery, knowledgeArticles));
         toast({
-            title: "Error sa Paghahanap",
-            description: "Nagkaroon ng problema sa pagproseso ng iyong tanong.",
-            variant: "destructive"
+            title: "Gumamit muna ng lokal na search",
+            description: "Hindi makuha ang AI-assisted answer sa ngayon, kaya local knowledge matching muna ang ginamit.",
         });
     } finally {
         setIsSearching(false);
@@ -241,10 +201,10 @@ export default function KnowledgeBasePage() {
         <div className="space-y-1">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Base ng Kaalaman</h1>
-            <HelpDialog title="Base ng Kaalaman" tooltipText="Maghanap ng impormasyon at pamahalaan ang mga artikulo.">
+                    <HelpDialog title="Base ng Kaalaman" tooltipText="Maghanap ng impormasyon at pamahalaan ang mga artikulo.">
               <p>Ito ang iyong sentral na hub para sa lahat ng impormasyon sa pagsasaka. Dito mo maaaring hanapin ang mga sagot sa mga tanong ng magsasaka, pamahalaan ang mga umiiral na artikulo, at magdagdag ng mga bago.</p>
-              <p><strong>Search assistant (itaas na search bar):</strong> Sa preview, gumagamit muna ito ng lokal na article matching at guided fallback answers. Kapag naka-enable na ang live AI service, dito puwedeng pumasok ang mas advanced na semantic search at richer suggestions.</p>
-              <p><strong>Mga Mungkahing Artikulo:</strong> Sa kasalukuyang preview, ang mga suggestion ay binubuo mula sa mga recent SMS pattern at local heuristics para manatiling usable kahit wala pang live AI dependency.</p>
+              <p><strong>Search assistant (itaas na search bar):</strong> Gumagamit ito ng lokal na knowledge articles bilang pangunahing source. Kapag available ang AI, nire-rewrite nito ang sagot para maging mas malinaw at grounded sa aktwal na lokal na content.</p>
+              <p><strong>Mga Mungkahing Artikulo:</strong> Binubuo ito mula sa recent SMS patterns at, kapag available, AI-assisted topic suggestions para malaman kung anong local guide pa ang kulang.</p>
               <p><strong>Mga Bagong Dagdag na Artikulo:</strong> Nagpapakita ito ng mga pinakabagong artikulo. Mayroon itong sariling simpleng search bar para mabilis na mahanap ang mga artikulo ayon sa pamagat o keyword. Pindutin ang "Tingnan Lahat" para makita ang kumpletong listahan sa isang hiwalay na pahina.</p>
             </HelpDialog>
           </div>
@@ -253,8 +213,10 @@ export default function KnowledgeBasePage() {
       </div>
 
       <AiStatusBanner
-        title="Preview search mode"
-        description="Sa local preview, ang search sa Knowledge Base ay gumagamit muna ng local article matching at safe fallback suggestions. Hindi pa ito full live AI semantic search, kaya malinaw muna ang sagot kaysa misleading na magkunwaring fully AI-powered."
+        title={capabilities.aiConfigured ? "AI-assisted local knowledge search" : "Local knowledge search"}
+        description={capabilities.aiConfigured
+          ? "Gumagamit ang search ng lokal na knowledge articles bilang source of truth, habang tumutulong ang AI sa pagbuo ng mas malinaw na sagot at suggested topics."
+          : "Lokal na article matching muna ang ginagamit ng search habang hindi pa available ang AI service. Grounded pa rin ito sa naka-save na knowledge articles."}
       />
       {audioUploadLocked ? (
         <AiStatusBanner
@@ -302,8 +264,8 @@ export default function KnowledgeBasePage() {
                     <div className="flex items-center">
                       <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng Search Assistant</CardTitle>
                       <HelpDialog title="Sagot ng Search Assistant" tooltipText="Unawain kung paano binuo ang sagot.">
-                        <p>Sa preview na ito, ang sagot ay binubuo muna mula sa lokal na knowledge base at keyword-based matching para manatiling matatag kahit wala pang full AI service sa runtime.</p>
-                        <p>Kapag naka-enable na ang live AI service, puwede itong palawakin sa mas advanced na semantic search at richer article suggestions.</p>
+                        <p>Ang sagot ay laging nakaangkla muna sa lokal na knowledge base. Kapag available ang AI, nire-rewrite nito ang sagot sa mas malinaw na Filipino nang hindi lumalayo sa mga naka-save na article.</p>
+                        <p>Kapag kulang ang local content, mas magandang magdagdag ng bagong article o mag-import ng PDF/image references kaysa magkunwaring may sagot ang system na wala naman sa source material.</p>
                       </HelpDialog>
                     </div>
                 </CardHeader>

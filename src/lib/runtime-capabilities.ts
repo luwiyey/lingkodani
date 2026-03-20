@@ -4,10 +4,12 @@ export type RuntimeCapabilities = {
   realSmsEnabled: boolean;
   liveSmsConfigured: boolean;
   firebaseAdminConfigured: boolean;
+  storageUploadConfigured: boolean;
   knowledgeAudioUploadConfigured: boolean;
   reasons: {
     ai?: string;
     liveSms?: string;
+    storageUpload?: string;
     knowledgeAudio?: string;
   };
 };
@@ -25,7 +27,8 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
   const mode = readMode();
   const realSmsEnabled = readRealSmsEnabled();
   const liveSmsConfigured = mode !== "live" || !realSmsEnabled;
-  const knowledgeAudioUploadConfigured = mode !== "live";
+  const storageUploadConfigured = mode !== "live";
+  const knowledgeAudioUploadConfigured = storageUploadConfigured;
 
   return {
     mode,
@@ -33,12 +36,16 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
     realSmsEnabled,
     liveSmsConfigured,
     firebaseAdminConfigured: false,
+    storageUploadConfigured,
     knowledgeAudioUploadConfigured,
     reasons: {
       ai: "Naka-lock muna ang AI feature habang hindi pa confirmed ang Gemini/Genkit service sa server.",
       liveSms: liveSmsConfigured
         ? undefined
         : "Naka-lock muna ang live SMS actions habang hindi pa kumpleto ang SMS provider configuration.",
+      storageUpload: storageUploadConfigured
+        ? undefined
+        : "Naka-lock muna ang file upload habang hindi pa kumpleto ang live Firebase storage setup.",
       knowledgeAudio: knowledgeAudioUploadConfigured
         ? undefined
         : "Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.",
