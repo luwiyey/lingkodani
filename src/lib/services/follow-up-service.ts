@@ -51,6 +51,8 @@ export async function processDueFollowUpMessage(input: {
     body,
     provider: input.provider,
     providerName: input.providerName,
+    audience: "farmer",
+    purpose: "follow_up",
   });
 
   return {

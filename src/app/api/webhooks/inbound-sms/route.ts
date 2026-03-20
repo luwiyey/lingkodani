@@ -103,10 +103,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       accepted: true,
-      persisted: !result.duplicate,
+      persisted: result.persisted ?? !result.duplicate,
       duplicate: result.duplicate,
+      handledBy: result.handledBy ?? "farmer",
       provider: inbound.provider,
-      messageId: result.message.id,
+      messageId: result.message?.id ?? null,
     });
   }
 

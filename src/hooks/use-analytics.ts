@@ -252,7 +252,9 @@ export function useAnalytics() {
       ...vouchers.map((v) => asDate(v.issueDate).getTime()),
       ...vouchers.filter((v) => !!v.redemptionDate).map((v) => asDate(v.redemptionDate as string).getTime()),
       ...auditLogs.map((l) => asDate(l.timestamp).getTime()),
-      ...outboundMessages.map((o) => asDate(o.createdAt).getTime()),
+      ...outboundMessages
+        .filter((message) => message.audience !== 'official')
+        .map((o) => asDate(o.createdAt).getTime()),
       ...fieldVisitTasks.map((task) => asDate(task.scheduledFor).getTime()),
       ...fieldVisitTasks.map((task) => asDate(task.updatedAt).getTime()),
       ...assistanceRecords.map((record) => asDate(record.updatedAt).getTime()),
@@ -264,7 +266,12 @@ export function useAnalytics() {
     const filteredSms = filterByTimeframe(smsMessages, (m) => m.timestamp, timeframe, anchorDate);
     const filteredAuditLogs = filterByTimeframe(auditLogs, (l) => l.timestamp, timeframe, anchorDate);
     const filteredVouchers = filterByTimeframe(vouchers, (v) => v.issueDate, timeframe, anchorDate);
-    const filteredOutboundMessages = filterByTimeframe(outboundMessages, (o) => o.createdAt, timeframe, anchorDate);
+    const filteredOutboundMessages = filterByTimeframe(
+      outboundMessages.filter((message) => message.audience !== 'official'),
+      (o) => o.createdAt,
+      timeframe,
+      anchorDate
+    );
     const filteredFieldVisitTasks = filterByTimeframe(fieldVisitTasks, (task) => task.updatedAt, timeframe, anchorDate);
     const filteredAssistanceRecords = filterByTimeframe(assistanceRecords, (record) => record.updatedAt, timeframe, anchorDate);
     const filteredAlertHistory = filterByTimeframe(alertHistory, (entry) => entry.timestamp, timeframe, anchorDate);

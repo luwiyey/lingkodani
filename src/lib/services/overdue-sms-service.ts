@@ -28,6 +28,8 @@ export async function processOverdueSmsMessage(input: {
     body: artifacts.body,
     provider: input.provider,
     providerName: input.providerName,
+    audience: "farmer",
+    purpose: "auto_reply",
   });
 
   return {

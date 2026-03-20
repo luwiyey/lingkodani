@@ -139,6 +139,11 @@ export type SmsMessage = {
   resolutionNote?: string;
   autoReplyEligibleAt?: string;
   autoReplySentAt?: string;
+  officialReminderRecipientName?: string;
+  officialReminderRecipientPhone?: string;
+  officialReminderDueAt?: string;
+  officialReminderLastSentAt?: string;
+  officialReminderCount?: number;
   analysisSource?: SmsAnalysisSource;
   clarificationNeeded?: boolean;
   clarificationQuestion?: string;
@@ -289,11 +294,22 @@ export type FieldVisitTask = {
 };
 
 export type OutboundMessageStatus = 'queued' | 'sent' | 'failed' | 'delivered' | 'retried';
+export type OutboundMessageAudience = 'farmer' | 'official';
+export type OutboundMessagePurpose =
+    | 'manual_reply'
+    | 'auto_reply'
+    | 'follow_up'
+    | 'official_reminder'
+    | 'official_ack'
+    | 'official_help'
+    | 'other';
 
 export type OutboundMessage = {
     id: string;
     smsMessageId: string;
     recipientPhone: string;
+    audience?: OutboundMessageAudience;
+    purpose?: OutboundMessagePurpose;
     body: string;
     status: OutboundMessageStatus;
     provider: string;

@@ -1,19 +1,29 @@
 import type { SendSmsResult, SmsProvider } from "@/lib/providers/sms/types";
 import type { OutboundMessage, SmsMessage } from "@/lib/types";
 
+function createRecordId() {
+  return `OUT${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function createOutboundMessageRecord(input: {
   sourceMessage: SmsMessage;
   body: string;
   providerName: string;
   sendResult: SendSmsResult;
+  recipientPhone?: string;
+  audience?: OutboundMessage["audience"];
+  purpose?: OutboundMessage["purpose"];
   timestamp?: string;
 }): OutboundMessage {
   const createdAt = input.timestamp ?? new Date().toISOString();
+  const recipientPhone = input.recipientPhone ?? input.sourceMessage.phone;
 
   return {
-    id: `OUT${Date.now()}`,
+    id: createRecordId(),
     smsMessageId: input.sourceMessage.id,
-    recipientPhone: input.sourceMessage.phone,
+    recipientPhone,
+    audience: input.audience,
+    purpose: input.purpose,
     body: input.body,
     status: input.sendResult.status,
     provider: input.providerName,
@@ -31,9 +41,12 @@ export async function sendOutboundMessage(input: {
   body: string;
   provider: SmsProvider;
   providerName: string;
+  recipientPhone?: string;
+  audience?: OutboundMessage["audience"];
+  purpose?: OutboundMessage["purpose"];
 }) {
   const sendResult = await input.provider.sendMessage({
-    to: input.sourceMessage.phone,
+    to: input.recipientPhone ?? input.sourceMessage.phone,
     body: input.body,
   });
 
@@ -42,5 +55,8 @@ export async function sendOutboundMessage(input: {
     body: input.body,
     providerName: input.providerName,
     sendResult,
+    recipientPhone: input.recipientPhone,
+    audience: input.audience,
+    purpose: input.purpose,
   });
 }

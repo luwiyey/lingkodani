@@ -161,6 +161,10 @@ export default function OperationsPage() {
   const latestOutboundByMessage = React.useMemo(() => {
     const map = new Map<string, OutboundMessage>();
     for (const record of outboundMessages) {
+      if (record.audience === 'official') {
+        continue;
+      }
+
       if (!map.has(record.smsMessageId)) {
         map.set(record.smsMessageId, record);
       }

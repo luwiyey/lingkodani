@@ -116,6 +116,10 @@ export function Header() {
     const map = new Map<string, (typeof outboundMessages)[number]>();
 
     for (const record of outboundMessages) {
+      if (record.audience === 'official') {
+        continue;
+      }
+
       if (!map.has(record.smsMessageId)) {
         map.set(record.smsMessageId, record);
       }

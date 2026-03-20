@@ -110,6 +110,10 @@ export default function FarmerLogbookPage() {
       const grouped = new Map<string, OutboundMessage[]>();
 
       outboundMessages.forEach((message) => {
+        if (message.audience === 'official') {
+          return;
+        }
+
         const existing = grouped.get(message.smsMessageId) ?? [];
         existing.push(message);
         grouped.set(message.smsMessageId, existing);
