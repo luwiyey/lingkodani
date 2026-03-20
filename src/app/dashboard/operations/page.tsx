@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { HelpDialog } from '@/components/ui/help-dialog';
+import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
+import { CaseOutcomeDialog } from '@/components/sms/case-outcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 
 const actionButtonClassName = 'h-auto min-h-12 w-full whitespace-normal break-words px-4 py-3 text-center leading-snug';
@@ -54,13 +56,13 @@ function MessageTaskRow({
   latestOutbound,
   onAssign,
   onRetry,
-  onClose,
+  onRecordOutcome,
 }: {
   message: SmsMessage;
   latestOutbound?: OutboundMessage;
   onAssign: (message: SmsMessage) => void;
   onRetry: (message: SmsMessage) => void;
-  onClose: (message: SmsMessage) => void;
+  onRecordOutcome: (message: SmsMessage) => void;
 }) {
   const router = useRouter();
 
@@ -75,6 +77,7 @@ function MessageTaskRow({
             <p className="text-base font-semibold">{message.farmerName}</p>
             <Badge variant="outline">{message.urgency}</Badge>
             {message.caseStatus ? <Badge variant="outline">{message.caseStatus}</Badge> : null}
+            <CaseOutcomeBadge message={message} />
             {message.assignedTo ? <Badge variant="outline">Owner: {message.assignedTo}</Badge> : null}
             {message.registrationRequired ? <Badge variant="outline">Need registration</Badge> : null}
             {message.clarificationNeeded ? <Badge variant="outline">Need clarification</Badge> : null}
@@ -82,6 +85,12 @@ function MessageTaskRow({
           </div>
           <p className="text-sm text-muted-foreground">{message.phone}</p>
           <p className="break-words text-sm leading-relaxed">{message.message}</p>
+          {message.caseOutcomeSummary ? (
+            <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Latest outcome</p>
+              <p className="mt-1 leading-relaxed">{message.caseOutcomeSummary}</p>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex w-full flex-col gap-2 lg:max-w-[220px] lg:shrink-0">
@@ -110,16 +119,16 @@ function MessageTaskRow({
             </Button>
           ) : null}
 
-          {message.respondedAt && !message.closedAt ? (
+          {!message.closedAt ? (
             <Button
               variant="outline"
               className={actionButtonClassName}
               onClick={(event) => {
                 event.stopPropagation();
-                onClose(message);
+                onRecordOutcome(message);
               }}
             >
-              Isara ang case
+              I-record ang outcome
             </Button>
           ) : null}
 
@@ -142,9 +151,10 @@ function MessageTaskRow({
 export default function OperationsPage() {
   const router = useRouter();
   const { currentUserProfile } = useAuth();
-  const { smsMessages, outboundMessages, assignSmsMessage, closeSmsCase, retryOutboundMessage, farmers } = useData();
+  const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, retryOutboundMessage, farmers } = useData();
   const { toast, dismiss } = useToast();
   const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
+  const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
 
   const openMyQueue = React.useCallback(() => {
     dismiss();
@@ -211,12 +221,17 @@ export default function OperationsPage() {
     });
   };
 
-  const handleClose = (message: SmsMessage) => {
-    closeSmsCase(message.id, 'Tinapos mula sa Operations Center');
+  const handleSaveOutcome = (outcomeStatus: NonNullable<SmsMessage['caseOutcomeStatus']>, summary: string) => {
+    if (!outcomeMessage) {
+      return;
+    }
+
+    updateSmsCaseOutcome(outcomeMessage.id, outcomeStatus, summary);
     toast({
-      title: 'Case closed',
-      description: `Isinara na ang case ni ${message.farmerName}.`,
+      title: 'Na-save ang outcome',
+      description: `Na-update na ang case outcome ni ${outcomeMessage.farmerName}.`,
     });
+    setOutcomeMessage(null);
   };
 
   const handleRetry = async (message: SmsMessage) => {
@@ -299,7 +314,7 @@ export default function OperationsPage() {
               latestOutbound={latestOutboundByMessage.get(message.id)}
               onAssign={handleAssign}
               onRetry={handleRetry}
-              onClose={handleClose}
+              onRecordOutcome={setOutcomeMessage}
             />
           )) : <p className="text-sm text-muted-foreground">Walang urgent na pending SMS sa ngayon.</p>}
         </CardContent>
@@ -319,7 +334,7 @@ export default function OperationsPage() {
                 latestOutbound={latestOutboundByMessage.get(message.id)}
                 onAssign={handleAssign}
                 onRetry={handleRetry}
-                onClose={handleClose}
+                onRecordOutcome={setOutcomeMessage}
               />
             ))}
             {registrationQueue.length + clarificationQueue.length === 0 ? (
@@ -349,7 +364,7 @@ export default function OperationsPage() {
                 latestOutbound={latestOutboundByMessage.get(message.id)}
                 onAssign={handleAssign}
                 onRetry={handleRetry}
-                onClose={handleClose}
+                onRecordOutcome={setOutcomeMessage}
               />
             ))}
             {failedSendQueue.length + followUpQueue.length === 0 ? (
@@ -372,13 +387,26 @@ export default function OperationsPage() {
               latestOutbound={latestOutboundByMessage.get(message.id)}
               onAssign={handleAssign}
               onRetry={handleRetry}
-              onClose={handleClose}
+              onRecordOutcome={setOutcomeMessage}
             />
           )) : (
             <p className="text-sm text-muted-foreground">Wala pang task na naka-assign sa iyo. Puwede kang mag-assign mula sa mga urgent at pending na ulat sa itaas.</p>
           )}
         </CardContent>
       </Card>
+
+      <CaseOutcomeDialog
+        open={Boolean(outcomeMessage)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOutcomeMessage(null);
+          }
+        }}
+        farmerName={outcomeMessage?.farmerName}
+        initialStatus={outcomeMessage?.caseOutcomeStatus}
+        initialSummary={outcomeMessage?.caseOutcomeSummary}
+        onSubmit={handleSaveOutcome}
+      />
     </div>
   );
 }

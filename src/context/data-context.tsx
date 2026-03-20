@@ -21,6 +21,7 @@ import type {
   MarketPriceEntry,
   OutboundMessage,
   Resource,
+  SmsCaseOutcomeStatus,
   SmsMessage,
   SmsTrainingExample,
   SystemSettings,
@@ -60,6 +61,7 @@ import { sendOutboundMessage } from '@/lib/services/outbound-sms-service';
 import { applyPriceWatchAdvice } from '@/lib/services/price-watch-service';
 import { createSmsTrainingExample } from '@/lib/services/sms-training-service';
 import { applySmsStatusUpdate, processInboundSms } from '@/lib/services/sms-workflow-service';
+import { getCaseStatusForOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
 import { defaultSystemSettings, mergeSystemSettings, SYSTEM_SETTINGS_DOCUMENT_ID } from '@/lib/system-settings';
 import { getUserRecordId } from '@/lib/user-record';
 
@@ -141,6 +143,7 @@ interface DataContextType {
     updates: Partial<Pick<SmsMessage, 'status' | 'aiAdvice' | 'parsedIntent' | 'urgency' | 'safetyFlag' | 'tone'>>
   ) => void;
   assignSmsMessage: (messageId: string, assigneeName?: string) => void;
+  updateSmsCaseOutcome: (messageId: string, outcomeStatus: SmsCaseOutcomeStatus, summary: string) => void;
   closeSmsCase: (messageId: string, resolutionNote?: string) => void;
   resources: Resource[];
   addResource: (data: NewResourceData) => void;
@@ -1611,19 +1614,100 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const updateSmsCaseOutcome = (
+    messageId: string,
+    outcomeStatus: SmsCaseOutcomeStatus,
+    summary: string
+  ) => {
+    const timestamp = new Date().toISOString();
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const trimmedSummary = summary.trim();
+    const outcomeMeta = getSmsCaseOutcomeMeta(outcomeStatus);
+    const currentMessage = smsMessages.find((message) => message.id === messageId);
+
+    if (!currentMessage) {
+      return;
+    }
+
+    const updatedMessage: SmsMessage = {
+      ...currentMessage,
+      caseStatus: getCaseStatusForOutcome(outcomeStatus),
+      caseOutcomeStatus: outcomeStatus,
+      caseOutcomeSummary: trimmedSummary,
+      caseOutcomeUpdatedAt: timestamp,
+      caseOutcomeUpdatedBy: actorName,
+      closedAt: outcomeStatus === 'resolved' ? timestamp : currentMessage.closedAt,
+      resolutionNote:
+        outcomeStatus === 'resolved'
+          ? (trimmedSummary || currentMessage.resolutionNote)
+          : currentMessage.resolutionNote,
+    };
+
+    setSmsMessages((prev) => prev.map((message) => (
+      message.id === messageId ? updatedMessage : message
+    )));
+
+    const auditLog: AuditLog = {
+      id: `AUD${Date.now()}`,
+      timestamp,
+      user: actorName,
+      action: 'UPDATE_SMS_CASE_OUTCOME',
+      details: `${messageId}: ${outcomeMeta?.label ?? outcomeStatus}${trimmedSummary ? ` - ${trimmedSummary}` : ''}`,
+    };
+
+    const outcomeLogbookEntry: LogbookEntry = {
+      id: `LOG${Date.now()}-${messageId}`,
+      farmerId: updatedMessage.farmerId,
+      timestamp,
+      type: 'Tulong',
+      title: `Case outcome: ${outcomeMeta?.label ?? outcomeStatus}`,
+      description: trimmedSummary || outcomeMeta?.helper || 'Na-update ang case outcome.',
+    };
+
+    setAuditLogs((prev) => [auditLog, ...prev]);
+    setLogbook((prev) => [outcomeLogbookEntry, ...prev]);
+
+    void Promise.all([
+      smsRepository.updateMessage(messageId, {
+        caseStatus: updatedMessage.caseStatus,
+        caseOutcomeStatus: updatedMessage.caseOutcomeStatus,
+        caseOutcomeSummary: updatedMessage.caseOutcomeSummary,
+        caseOutcomeUpdatedAt: updatedMessage.caseOutcomeUpdatedAt,
+        caseOutcomeUpdatedBy: updatedMessage.caseOutcomeUpdatedBy,
+        closedAt: updatedMessage.closedAt,
+        resolutionNote: updatedMessage.resolutionNote,
+      }),
+      auditRepository.createAuditLog(auditLog),
+      logbookRepository.createEntry(outcomeLogbookEntry),
+    ]).catch((error) => {
+      console.error("Failed to persist SMS case outcome update", error);
+    });
+  };
+
   const closeSmsCase = (messageId: string, resolutionNote?: string) => {
     const timestamp = new Date().toISOString();
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const trimmedResolutionNote = resolutionNote?.trim();
+    const resolutionSummary = trimmedResolutionNote || 'Minarkahang resolved ng barangay team.';
+    const currentMessage = smsMessages.find((message) => message.id === messageId);
+
+    if (!currentMessage) {
+      return;
+    }
+
+    const updatedMessage: SmsMessage = {
+      ...currentMessage,
+      caseStatus: 'closed',
+      closedAt: timestamp,
+      resolutionNote: resolutionSummary,
+      caseOutcomeStatus: 'resolved',
+      caseOutcomeSummary: resolutionSummary,
+      caseOutcomeUpdatedAt: timestamp,
+      caseOutcomeUpdatedBy: actorName,
+    };
 
     setSmsMessages(prev => prev.map((message) => (
-      message.id === messageId
-        ? {
-            ...message,
-            caseStatus: 'closed',
-            closedAt: timestamp,
-            resolutionNote,
-          }
-        : message
+      message.id === messageId ? updatedMessage : message
     )));
 
     const auditLog: AuditLog = {
@@ -1631,17 +1715,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       timestamp,
       user: actorName,
       action: 'CLOSE_SMS_CASE',
-      details: `${messageId}: isinara ang case${resolutionNote ? ` - ${resolutionNote}` : ''}`,
+      details: `${messageId}: isinara ang case - ${resolutionSummary}`,
+    };
+    const outcomeLogbookEntry: LogbookEntry = {
+      id: `LOG${Date.now()}-${messageId}`,
+      farmerId: updatedMessage.farmerId,
+      timestamp,
+      type: 'Tulong',
+      title: 'Case resolved',
+      description: resolutionSummary,
     };
     setAuditLogs(prev => [auditLog, ...prev]);
+    setLogbook(prev => [outcomeLogbookEntry, ...prev]);
 
     void Promise.all([
       smsRepository.updateMessage(messageId, {
         caseStatus: 'closed',
         closedAt: timestamp,
-        resolutionNote,
+        resolutionNote: resolutionSummary,
+        caseOutcomeStatus: 'resolved',
+        caseOutcomeSummary: resolutionSummary,
+        caseOutcomeUpdatedAt: timestamp,
+        caseOutcomeUpdatedBy: actorName,
       }),
       auditRepository.createAuditLog(auditLog),
+      logbookRepository.createEntry(outcomeLogbookEntry),
     ]).catch((error) => {
       console.error("Failed to close SMS case", error);
     });
@@ -1757,6 +1855,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     webhookBridgeStatus,
     updateSmsMessage,
     assignSmsMessage,
+    updateSmsCaseOutcome,
     closeSmsCase,
     resources,
     addResource,

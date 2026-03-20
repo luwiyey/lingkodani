@@ -18,10 +18,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
+import { CaseOutcomeDialog } from '@/components/sms/case-outcome-dialog';
 import { useData } from '@/context/data-context';
 import { useAuth } from '@/context/auth-context';
 import { isLiveMode } from '@/lib/config/app-mode';
 import { canUseLiveSmsSimulation } from '@/lib/access-control';
+import { findBestMatchingLexiconRule, findRelevantTrainingExamples } from '@/lib/sms-teaching';
 import { cn } from '@/lib/utils';
 
 type DialogState = {
@@ -140,22 +143,26 @@ function SmsMessageCard({
   message,
   onActionClick,
   onAssignToMe,
-  onCloseCase,
+  onRecordOutcome,
   onRetrySend,
   latestOutboundStatus,
   farmers,
   cardId,
   isHighlighted = false,
+  matchedTeachingPhrase,
+  similarReviewedExamplesCount = 0,
 }: {
   message: SmsMessage;
   onActionClick: (type: DialogState['type'], message: SmsMessage) => void;
   onAssignToMe: (message: SmsMessage) => void;
-  onCloseCase: (message: SmsMessage) => void;
+  onRecordOutcome: (message: SmsMessage) => void;
   onRetrySend: (message: SmsMessage) => void;
   latestOutboundStatus?: string;
   farmers: Farmer[];
   cardId?: string;
   isHighlighted?: boolean;
+  matchedTeachingPhrase?: string;
+  similarReviewedExamplesCount?: number;
 }) {
     const [isClient, setIsClient] = React.useState(false);
     React.useEffect(() => { setIsClient(true); }, []);
@@ -221,6 +228,7 @@ function SmsMessageCard({
                           Source: {message.analysisSource === 'ai_fallback' ? 'AI fallback' : message.analysisSource === 'rules' ? 'Rules' : 'AI'}
                         </Badge>
                         {message.caseStatus && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Case: {message.caseStatus}</Badge>}
+                        <CaseOutcomeBadge message={message} />
                         {message.assignedTo && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Owner: {message.assignedTo}</Badge>}
                         {message.registrationRequired && (
                           <Badge variant="outline" className="text-blue-200 border-blue-400/40 bg-blue-500/10">
@@ -258,6 +266,25 @@ function SmsMessageCard({
                         </p>
                       </div>
                     ) : null}
+                    {matchedTeachingPhrase || similarReviewedExamplesCount > 0 ? (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-sidebar-foreground/85">
+                        <p className="font-medium text-primary">Bakit ito ang analysis</p>
+                        <div className="mt-1 space-y-1">
+                          {matchedTeachingPhrase ? (
+                            <p>May tugma ito sa lokal na cue phrase na <span className="font-medium">"{matchedTeachingPhrase}"</span>.</p>
+                          ) : null}
+                          {similarReviewedExamplesCount > 0 ? (
+                            <p>May {similarReviewedExamplesCount} reviewed training example na kahawig ng mensaheng ito.</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                    {message.caseOutcomeSummary ? (
+                      <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-xs text-sidebar-foreground/85">
+                        <p className="font-medium text-primary">Latest outcome</p>
+                        <p className="mt-1 leading-relaxed">{message.caseOutcomeSummary}</p>
+                      </div>
+                    ) : null}
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
@@ -272,9 +299,10 @@ function SmsMessageCard({
                             Retry send
                           </Button>
                         ) : null}
-                        {message.respondedAt && !message.closedAt ? (
-                          <Button variant="outline" size="sm" onClick={() => onCloseCase(message)} className={`bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
-                            Isara ang case
+                        {!message.closedAt ? (
+                          <Button variant="outline" size="sm" onClick={() => onRecordOutcome(message)} className={`bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
+                            <FilePen className="mr-2 h-4 w-4" />
+                            Outcome
                           </Button>
                         ) : null}
                     </div>
@@ -308,11 +336,12 @@ function SmsMessageCard({
 
 function SmsFeedPageContent() {
     const router = useRouter();
-    const { smsMessages, outboundMessages, farmers, resources, addInboundSms, updateSmsMessage, assignSmsMessage, closeSmsCase, retryOutboundMessage, webhookBridgeStatus } = useData();
+    const { smsMessages, outboundMessages, farmers, resources, systemSettings, smsTrainingExamples, addInboundSms, updateSmsMessage, assignSmsMessage, updateSmsCaseOutcome, retryOutboundMessage, webhookBridgeStatus } = useData();
     const { currentUserProfile } = useAuth();
     const searchParams = useSearchParams();
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [reviewDraft, setReviewDraft] = React.useState<ReviewDraft | null>(null);
+    const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
     const [simulatedPhone, setSimulatedPhone] = React.useState('+639171234567');
     const [simulatedMessage, setSimulatedMessage] = React.useState('Marami pong uod sa palay namin at mabilis dumami ngayong umaga.');
     const { toast, dismiss } = useToast();
@@ -333,6 +362,34 @@ function SmsFeedPageContent() {
       }
       return map;
     }, [outboundMessages]);
+
+    const matchedTeachingPhraseByMessage = React.useMemo(() => {
+      const map = new Map<string, string>();
+      for (const message of smsMessages) {
+        const matchedRule = findBestMatchingLexiconRule(
+          message.message,
+          systemSettings.smsLexiconRules
+        );
+        if (matchedRule) {
+          map.set(message.id, matchedRule.phrase);
+        }
+      }
+      return map;
+    }, [smsMessages, systemSettings.smsLexiconRules]);
+
+    const reviewedExampleCountByMessage = React.useMemo(() => {
+      const map = new Map<string, number>();
+      for (const message of smsMessages) {
+        const relatedExamples = findRelevantTrainingExamples(
+          message.message,
+          smsTrainingExamples
+        );
+        if (relatedExamples.length > 0) {
+          map.set(message.id, relatedExamples.length);
+        }
+      }
+      return map;
+    }, [smsMessages, smsTrainingExamples]);
     
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
@@ -418,12 +475,17 @@ function SmsFeedPageContent() {
       });
     };
 
-    const handleCloseCase = (message: SmsMessage) => {
-      closeSmsCase(message.id, 'Tinapos mula sa SMS feed');
+    const handleSaveOutcome = (outcomeStatus: NonNullable<SmsMessage['caseOutcomeStatus']>, summary: string) => {
+      if (!outcomeMessage) {
+        return;
+      }
+
+      updateSmsCaseOutcome(outcomeMessage.id, outcomeStatus, summary);
       toast({
-        title: "Case closed",
-        description: `Isinara na ang case ni ${message.farmerName}.`,
+        title: "Na-save ang outcome",
+        description: `Na-update na ang case outcome ni ${outcomeMessage.farmerName}.`,
       });
+      setOutcomeMessage(null);
     };
 
     const handleRetrySend = async (message: SmsMessage) => {
@@ -552,12 +614,14 @@ function SmsFeedPageContent() {
                 message={message}
                 onActionClick={openDialog}
                 onAssignToMe={handleAssignToMe}
-                onCloseCase={handleCloseCase}
+                onRecordOutcome={setOutcomeMessage}
                 onRetrySend={handleRetrySend}
                 latestOutboundStatus={latestOutboundByMessage.get(message.id)?.status}
                 farmers={farmers}
                 cardId={`sms-card-${message.id}`}
                 isHighlighted={focusedSmsId === message.id}
+                matchedTeachingPhrase={matchedTeachingPhraseByMessage.get(message.id)}
+                similarReviewedExamplesCount={reviewedExampleCountByMessage.get(message.id) ?? 0}
               />
           ))}
       </div>
@@ -655,6 +719,19 @@ function SmsFeedPageContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CaseOutcomeDialog
+        open={Boolean(outcomeMessage)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOutcomeMessage(null);
+          }
+        }}
+        farmerName={outcomeMessage?.farmerName}
+        initialStatus={outcomeMessage?.caseOutcomeStatus}
+        initialSummary={outcomeMessage?.caseOutcomeSummary}
+        onSubmit={handleSaveOutcome}
+      />
     </>
   );
 }

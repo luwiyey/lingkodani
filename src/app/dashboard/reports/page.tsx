@@ -21,6 +21,7 @@ import { LanguageUsageChart } from '@/components/reports/language-usage-chart';
 import { SmsPeakHoursChart } from '@/components/reports/sms-peak-hours-chart';
 import { InterventionSupportChart } from '@/components/reports/intervention-support-chart';
 import { ValidationQueueChart } from '@/components/reports/validation-queue-chart';
+import { CaseOutcomeChart } from '@/components/reports/case-outcome-chart';
 import { AdvisoryDeliveryChart } from '@/components/reports/advisory-delivery-chart';
 import { FollowUpRateChart } from '@/components/reports/follow-up-rate-chart';
 import { AIConfidenceTrendChart } from '@/components/reports/ai-confidence-trend-chart';
@@ -352,6 +353,7 @@ function ReportsPageContent() {
                     <CropStageChart />
                     <InterventionSupportChart />
                     <ValidationQueueChart />
+                    <CaseOutcomeChart />
                     <AdvisoryDeliveryChart />
                     <FollowUpRateChart />
                     <FarmerEngagementChart />

@@ -130,6 +130,12 @@ export type SmsCaseStatus =
   | 'monitoring'
   | 'escalated'
   | 'closed';
+export type SmsCaseOutcomeStatus =
+  | 'monitoring'
+  | 'improving'
+  | 'needs_follow_up'
+  | 'referred'
+  | 'resolved';
 export type SmsSourceProvider = 'demo' | 'generic' | 'twilio' | 'semaphore' | 'smsgate' | 'textbee' | 'unknown';
 
 export type SmsMessage = {
@@ -152,6 +158,10 @@ export type SmsMessage = {
   followUpSentAt?: string;
   closedAt?: string;
   resolutionNote?: string;
+  caseOutcomeStatus?: SmsCaseOutcomeStatus;
+  caseOutcomeSummary?: string;
+  caseOutcomeUpdatedAt?: string;
+  caseOutcomeUpdatedBy?: string;
   autoReplyEligibleAt?: string;
   autoReplySentAt?: string;
   officialReminderRecipientName?: string;

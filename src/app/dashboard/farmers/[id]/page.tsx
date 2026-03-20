@@ -9,7 +9,7 @@ import { getLogbookEntryIcon } from '@/lib/logbook';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User, MessageSquare, Send } from 'lucide-react';
+import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User, MessageSquare, Send, CheckCircle2, ClipboardList, HeartHandshake, MapPinned } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
+import { getEffectiveSmsCaseOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
 import { cn } from '@/lib/utils';
 
 function TimelineItem({ entry }: { entry: LogbookEntry }) {
@@ -132,6 +134,91 @@ export default function FarmerLogbookPage() {
 
       return grouped;
     }, [outboundMessages]);
+    const caseJourneySummary = useMemo(() => {
+      const activeCases = farmerConversation.filter((message) => {
+        const outcome = getEffectiveSmsCaseOutcome(message);
+        return outcome !== 'resolved' && !message.closedAt;
+      }).length;
+      const resolvedCases = farmerConversation.filter((message) => getEffectiveSmsCaseOutcome(message) === 'resolved').length;
+      const ongoingSupportCount =
+        farmerAssistanceRecords.filter((record) => record.status !== 'completed').length +
+        farmerFieldVisits.filter((task) => task.status !== 'completed' && task.status !== 'cancelled').length;
+      const latestTouch = [
+        ...farmerConversation.map((message) => message.caseOutcomeUpdatedAt ?? message.respondedAt ?? message.timestamp),
+        ...farmerAssistanceRecords.map((record) => record.updatedAt),
+        ...farmerFieldVisits.map((task) => task.updatedAt),
+      ]
+        .filter(Boolean)
+        .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
+
+      return {
+        activeCases,
+        resolvedCases,
+        ongoingSupportCount,
+        latestTouch,
+      };
+    }, [farmerAssistanceRecords, farmerConversation, farmerFieldVisits]);
+    const supportJourneyItems = useMemo(() => {
+      const items: Array<{
+        id: string;
+        timestamp: string;
+        title: string;
+        description: string;
+        badge?: string;
+        icon: React.ElementType;
+      }> = [];
+
+      farmerConversation.forEach((message) => {
+        const effectiveOutcome = getEffectiveSmsCaseOutcome(message);
+        const outcomeMeta = getSmsCaseOutcomeMeta(effectiveOutcome);
+
+        items.push({
+          id: `sms-${message.id}`,
+          timestamp: message.timestamp,
+          title: `Bagong concern: ${message.parsedIntent}`,
+          description: message.message,
+          badge: message.urgency,
+          icon: ClipboardList,
+        });
+
+        if (message.caseOutcomeUpdatedAt && outcomeMeta) {
+          items.push({
+            id: `outcome-${message.id}`,
+            timestamp: message.caseOutcomeUpdatedAt,
+            title: `Case outcome: ${outcomeMeta.label}`,
+            description: message.caseOutcomeSummary || outcomeMeta.helper,
+            badge: message.assignedTo ? `Owner: ${message.assignedTo}` : undefined,
+            icon: CheckCircle2,
+          });
+        }
+      });
+
+      farmerAssistanceRecords.forEach((record) => {
+        items.push({
+          id: `assist-${record.id}`,
+          timestamp: record.updatedAt,
+          title: `Assistance: ${record.title}`,
+          description: record.details,
+          badge: record.status,
+          icon: HeartHandshake,
+        });
+      });
+
+      farmerFieldVisits.forEach((task) => {
+        items.push({
+          id: `visit-${task.id}`,
+          timestamp: task.updatedAt,
+          title: `Field visit: ${task.title}`,
+          description: task.purpose,
+          badge: task.status,
+          icon: MapPinned,
+        });
+      });
+
+      return items
+        .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
+        .slice(0, 8);
+    }, [farmerAssistanceRecords, farmerConversation, farmerFieldVisits]);
     
     const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
     const [newNote, setNewNote] = useState('');
@@ -429,11 +516,65 @@ export default function FarmerLogbookPage() {
             </div>
             <div className="lg:col-span-2 space-y-6">
                 <Card>
+                    <CardHeader>
+                        <CardTitle>Case Journey at Follow-through</CardTitle>
+                        <CardDescription>Buod ng concern, tulong, at follow-up para kay {farmer.name}.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <div className="rounded-xl border bg-muted/10 p-4">
+                                <p className="text-sm text-muted-foreground">Aktibong kaso</p>
+                                <p className="mt-2 text-2xl font-semibold">{caseJourneySummary.activeCases}</p>
+                            </div>
+                            <div className="rounded-xl border bg-muted/10 p-4">
+                                <p className="text-sm text-muted-foreground">Nalutas na</p>
+                                <p className="mt-2 text-2xl font-semibold">{caseJourneySummary.resolvedCases}</p>
+                            </div>
+                            <div className="rounded-xl border bg-muted/10 p-4">
+                                <p className="text-sm text-muted-foreground">Ongoing support</p>
+                                <p className="mt-2 text-2xl font-semibold">{caseJourneySummary.ongoingSupportCount}</p>
+                            </div>
+                        </div>
+                        <div className="rounded-xl border bg-primary/5 p-4">
+                            <p className="text-sm font-medium text-foreground">Huling galaw sa support journey</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {caseJourneySummary.latestTouch
+                                  ? `Na-update noong ${isClient ? new Date(caseJourneySummary.latestTouch).toLocaleString() : ''}`
+                                  : 'Wala pang naitatalang case outcome o intervention update para sa magsasakang ito.'}
+                            </p>
+                        </div>
+                        <div className="space-y-3">
+                            {supportJourneyItems.length > 0 ? supportJourneyItems.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <div key={item.id} className="flex items-start gap-3 rounded-xl border p-4">
+                                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                            <Icon className="h-4 w-4" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <p className="font-medium">{item.title}</p>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {isClient ? new Date(item.timestamp).toLocaleString() : ''}
+                                                </span>
+                                            </div>
+                                            <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+                                            {item.badge ? <Badge variant="outline" className="mt-3">{item.badge}</Badge> : null}
+                                        </div>
+                                    </div>
+                                );
+                            }) : (
+                                <p className="text-sm text-muted-foreground">Wala pang support journey entries para sa magsasakang ito.</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
                     <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <MessageSquare className="h-5 w-5 text-primary" />
-                                Usapang SMS at Mga Tugon
+                                Usapang SMS at Case Timeline
                             </CardTitle>
                             <CardDescription>
                                 Buong thread ng mga inquiry ni {farmer.name} at mga tugon ng system o barangay team.
@@ -472,9 +613,16 @@ export default function FarmerLogbookPage() {
                                                     {message.safetyFlag} risk
                                                 </Badge>
                                                 <Badge variant="outline">AI {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                                                <CaseOutcomeBadge message={message} />
                                             </div>
                                         </div>
                                     </div>
+                                    {message.caseOutcomeSummary ? (
+                                        <div className="mt-3 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3">
+                                            <p className="text-xs font-medium uppercase tracking-wide text-primary">Outcome summary</p>
+                                            <p className="mt-1 text-sm text-muted-foreground">{message.caseOutcomeSummary}</p>
+                                        </div>
+                                    ) : null}
 
                                     <div className="mt-4 space-y-3">
                                         {hasSentReply ? relatedReplies.map((reply) => (

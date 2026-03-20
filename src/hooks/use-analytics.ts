@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useData } from '@/context/data-context';
 import { useReportsTimeframe, type ReportsTimeframe } from '@/context/reports-timeframe-context';
 import type { Resource, SmsMessage } from '@/lib/types';
+import { getEffectiveSmsCaseOutcome } from '@/lib/sms-case-outcomes';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
 
 type Tone = 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
@@ -168,7 +169,7 @@ function getInquiryCategory(message: SmsMessage) {
 }
 
 function isMessageResolved(message: SmsMessage) {
-  return Boolean(message.closedAt) || message.caseStatus === 'closed';
+  return getEffectiveSmsCaseOutcome(message) === 'resolved';
 }
 
 function formatInterventionPeriodLabel(date: Date, timeframe: ReportsTimeframe) {
@@ -513,6 +514,38 @@ export function useAnalytics() {
       { name: 'Nalutas', value: Math.max(sortedByTime.length - unresolvedSmsCount, 0), fill: COLOR_1 },
     ];
 
+    const caseOutcomeCounter = {
+      'Walang outcome': 0,
+      'Mino-monitor': 0,
+      'May pagbuti': 0,
+      'Kailangan ng follow-up': 0,
+      'Na-refer': 0,
+      Nalutas: 0,
+    };
+
+    for (const message of sortedByTime) {
+      const outcome = getEffectiveSmsCaseOutcome(message);
+      if (!outcome) {
+        caseOutcomeCounter['Walang outcome'] += 1;
+        continue;
+      }
+
+      if (outcome === 'monitoring') caseOutcomeCounter['Mino-monitor'] += 1;
+      if (outcome === 'improving') caseOutcomeCounter['May pagbuti'] += 1;
+      if (outcome === 'needs_follow_up') caseOutcomeCounter['Kailangan ng follow-up'] += 1;
+      if (outcome === 'referred') caseOutcomeCounter['Na-refer'] += 1;
+      if (outcome === 'resolved') caseOutcomeCounter.Nalutas += 1;
+    }
+
+    const caseOutcomeData = [
+      { name: 'Walang outcome', value: caseOutcomeCounter['Walang outcome'], fill: COLOR_4 },
+      { name: 'Mino-monitor', value: caseOutcomeCounter['Mino-monitor'], fill: COLOR_2 },
+      { name: 'May pagbuti', value: caseOutcomeCounter['May pagbuti'], fill: COLOR_1 },
+      { name: 'Kailangan ng follow-up', value: caseOutcomeCounter['Kailangan ng follow-up'], fill: '#d97706' },
+      { name: 'Na-refer', value: caseOutcomeCounter['Na-refer'], fill: '#0284c7' },
+      { name: 'Nalutas', value: caseOutcomeCounter.Nalutas, fill: '#16a34a' },
+    ];
+
     const advisoryDeliveryData = [
       { name: 'Tagumpay', value: sentCount, fill: COLOR_1 },
       { name: 'Nabigo', value: failedCount, fill: COLOR_DESTRUCTIVE },
@@ -580,6 +613,7 @@ export function useAnalytics() {
       smsPeakHoursData,
       interventionSupportData,
       validationQueueData,
+      caseOutcomeData,
       advisoryDeliveryData,
       followUpRateData,
       aiConfidenceTrendData,
