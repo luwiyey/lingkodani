@@ -1,14 +1,11 @@
 import type { User } from "@/lib/types";
-
-function normalizeTitle(user?: Pick<User, "title" | "role"> | null) {
-  return user?.title?.trim().toLowerCase() ?? "";
-}
+import { resolveUserPermissions } from "@/lib/user-permissions";
 
 export function isDeveloperUser(user?: Pick<User, "role"> | null) {
   return user?.role === "developer";
 }
 
-export function isBarangayManager(user?: Pick<User, "role" | "title"> | null) {
+export function isBarangayManager(user?: Pick<User, "role" | "title" | "permissions"> | null) {
   if (isDeveloperUser(user)) {
     return true;
   }
@@ -17,23 +14,23 @@ export function isBarangayManager(user?: Pick<User, "role" | "title"> | null) {
     return false;
   }
 
-  const title = normalizeTitle(user);
-  return (
-    title.includes("administrator") ||
-    title.includes("admin") ||
-    title.includes("captain") ||
-    title.includes("kapitan") ||
-    title.includes("secretary") ||
-    title.includes("sekret")
-  );
+  return resolveUserPermissions(user).manageBarangaySettings === true;
 }
 
-export function canManageBarangaySettings(user?: Pick<User, "role" | "title"> | null) {
-  return isBarangayManager(user);
+export function canManageBarangaySettings(user?: Pick<User, "role" | "title" | "permissions"> | null) {
+  return resolveUserPermissions(user).manageBarangaySettings === true;
 }
 
-export function canAccessDataCenter(user?: Pick<User, "role"> | null) {
-  return isDeveloperUser(user);
+export function canManageAutomation(user?: Pick<User, "role" | "title" | "permissions"> | null) {
+  return resolveUserPermissions(user).manageAutomation === true;
+}
+
+export function canManageSystemTeaching(user?: Pick<User, "role" | "title" | "permissions"> | null) {
+  return resolveUserPermissions(user).manageSystemTeaching === true;
+}
+
+export function canAccessDataCenter(user?: Pick<User, "role" | "title" | "permissions"> | null) {
+  return resolveUserPermissions(user).accessDataCenter === true;
 }
 
 export function canUseLiveSmsSimulation(user?: Pick<User, "role"> | null) {

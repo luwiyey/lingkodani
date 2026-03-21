@@ -78,4 +78,43 @@ describe("offline-outbox", () => {
     clearOfflineMutations(window.localStorage);
     expect(readOfflineMutations(window.localStorage)).toEqual([]);
   });
+
+  it("keeps offline queues scoped per signed-in user", () => {
+    const adminMutation = {
+      id: createOfflineMutationId("admin"),
+      type: "create-logbook-entry" as const,
+      createdAt: "2026-03-20T10:00:00.000Z",
+      payload: {
+        entry: {
+          id: "LOG-ADMIN",
+          farmerId: "FARM-1",
+          timestamp: "2026-03-20T10:00:00.000Z",
+          type: "Tala sa Bukid" as const,
+          title: "Admin note",
+          description: "For admin queue only",
+        },
+      },
+    };
+    const aewMutation = {
+      id: createOfflineMutationId("aew"),
+      type: "create-logbook-entry" as const,
+      createdAt: "2026-03-20T10:01:00.000Z",
+      payload: {
+        entry: {
+          id: "LOG-AEW",
+          farmerId: "FARM-2",
+          timestamp: "2026-03-20T10:01:00.000Z",
+          type: "Tala sa Bukid" as const,
+          title: "AEW note",
+          description: "For AEW queue only",
+        },
+      },
+    };
+
+    appendOfflineMutation(adminMutation, window.localStorage, "uid:admin");
+    appendOfflineMutation(aewMutation, window.localStorage, "uid:aew");
+
+    expect(readOfflineMutations(window.localStorage, "uid:admin")).toEqual([adminMutation]);
+    expect(readOfflineMutations(window.localStorage, "uid:aew")).toEqual([aewMutation]);
+  });
 });

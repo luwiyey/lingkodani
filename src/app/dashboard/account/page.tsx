@@ -26,6 +26,7 @@ import { useData } from '@/context/data-context';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
 import { readOnboardingProfile, saveDemoPreviewUser, saveOnboardingProfile } from '@/lib/onboarding';
+import { uploadUserAvatarFile } from '@/lib/services/profile-avatar-file-service';
 import type { User } from '@/lib/types';
 import { getUserRecordId } from '@/lib/user-record';
 
@@ -44,6 +45,7 @@ export default function AccountSettingsPage() {
   const { updateUser, users, resetDemoData } = useData();
   const [newEmailAddress, setNewEmailAddress] = React.useState('');
   const [workspacePreference, setWorkspacePreference] = React.useState<User['preferredWorkspace']>('simple');
+  const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
 
   const liveProfile = React.useMemo(() => {
     if (currentUserProfile) return currentUserProfile;
@@ -148,30 +150,30 @@ export default function AccountSettingsPage() {
     });
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
 
     const file = e.target.files[0];
-    const reader = new FileReader();
+    e.target.value = '';
+    setIsUploadingAvatar(true);
 
-    reader.onloadend = () => {
-      const nextAvatarUrl = typeof reader.result === 'string' ? reader.result : profile.avatarUrl;
+    try {
+      const uploadResult = await uploadUserAvatarFile(file, profile.uid ?? profile.email);
       const nextProfile: User = {
         ...profile,
-        avatarUrl: nextAvatarUrl,
+        avatarUrl: uploadResult.url,
       };
 
-      void persistProfile(nextProfile, `Na-update na ang profile picture gamit ang "${file.name}".`).catch((error) => {
-        toast({
-          title: 'Hindi na-save ang larawan',
-          description: error instanceof Error ? error.message : 'Hindi na-save ang live profile photo.',
-          variant: 'destructive',
-        });
+      await persistProfile(nextProfile, `Na-update na ang profile picture gamit ang "${file.name}".`);
+    } catch (error) {
+      toast({
+        title: 'Hindi na-save ang larawan',
+        description: error instanceof Error ? error.message : 'Hindi na-save ang live profile photo.',
+        variant: 'destructive',
       });
-    };
-
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   };
 
   const handleSaveProfile = (e: React.FormEvent<HTMLFormElement>) => {
@@ -379,8 +381,10 @@ export default function AccountSettingsPage() {
                       </Avatar>
                   </HoverTooltip>
                   <div className="space-y-2">
-                    <HoverTooltip text="Pumili ng bagong larawan mula sa iyong device. Ang image data ay ise-save sa live profile record.">
-                        <Button type="button" variant="outline" onClick={handlePhotoUploadClick}>Mag-upload ng Bagong Larawan</Button>
+                    <HoverTooltip text="Pumili ng bagong larawan mula sa iyong device. Ang avatar ay ise-save bilang live uploaded file, hindi bilang raw image data sa profile record.">
+                        <Button type="button" variant="outline" onClick={handlePhotoUploadClick} disabled={isUploadingAvatar}>
+                          {isUploadingAvatar ? 'Ina-upload ang larawan...' : 'Mag-upload ng Bagong Larawan'}
+                        </Button>
                     </HoverTooltip>
                     <p className="text-xs text-muted-foreground">
                       Auth email: {currentUser?.email ?? profile.email}

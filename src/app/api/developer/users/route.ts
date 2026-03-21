@@ -6,6 +6,7 @@ import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
 import type { User, UserRole } from "@/lib/types";
+import { withResolvedUserPermissions } from "@/lib/user-permissions";
 
 function allowDeveloperProvisioning() {
   return (process.env.ALLOW_DEVELOPER_ACCOUNT_PROVISIONING ?? "false") === "true";
@@ -59,7 +60,7 @@ function buildUserProfile(input: {
   existing?: Partial<User>;
 }): User {
   const timestamp = new Date().toISOString();
-  return {
+  return withResolvedUserPermissions<User>({
     ...input.existing,
     id: input.uid,
     uid: input.uid,
@@ -73,7 +74,7 @@ function buildUserProfile(input: {
     preferredWorkspace: input.preferredWorkspace ?? input.existing?.preferredWorkspace ?? (input.role === "developer" ? "detailed" : "simple"),
     createdAt: input.existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
-  };
+  });
 }
 
 export async function POST(request: Request) {

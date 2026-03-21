@@ -11,7 +11,7 @@ import type {
   SystemSettings,
 } from "@/lib/types";
 
-const OFFLINE_OUTBOX_STORAGE_KEY = "lingkodani:offline-outbox";
+const OFFLINE_OUTBOX_STORAGE_KEY_PREFIX = "lingkodani:offline-outbox";
 
 type OfflineMutationBase<TType extends string, TPayload> = {
   id: string;
@@ -89,8 +89,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
 
-export function getOfflineOutboxStorageKey() {
-  return OFFLINE_OUTBOX_STORAGE_KEY;
+function normalizeScope(scope?: string | null) {
+  const value = scope?.trim().toLowerCase();
+
+  if (!value) {
+    return "";
+  }
+
+  return value.replace(/[^a-z0-9:_-]+/g, "-");
+}
+
+export function getOfflineOutboxStorageKey(scope?: string | null) {
+  const normalizedScope = normalizeScope(scope);
+  return normalizedScope
+    ? `${OFFLINE_OUTBOX_STORAGE_KEY_PREFIX}:${normalizedScope}`
+    : OFFLINE_OUTBOX_STORAGE_KEY_PREFIX;
 }
 
 export function createOfflineMutationId(scope: string) {
@@ -128,13 +141,13 @@ function normalizeOfflineMutation(value: unknown): OfflineMutation | null {
   } as OfflineMutation;
 }
 
-export function readOfflineMutations(storage?: Storage | null) {
+export function readOfflineMutations(storage?: Storage | null, scope?: string | null) {
   if (!storage) {
     return [] as OfflineMutation[];
   }
 
   try {
-    const raw = storage.getItem(OFFLINE_OUTBOX_STORAGE_KEY);
+    const raw = storage.getItem(getOfflineOutboxStorageKey(scope));
     if (!raw) {
       return [];
     }
@@ -152,24 +165,41 @@ export function readOfflineMutations(storage?: Storage | null) {
   }
 }
 
-export function writeOfflineMutations(mutations: OfflineMutation[], storage?: Storage | null) {
+export function writeOfflineMutations(mutations: OfflineMutation[], storage?: Storage | null, scope?: string | null) {
   if (!storage) {
     return;
   }
 
-  storage.setItem(OFFLINE_OUTBOX_STORAGE_KEY, JSON.stringify(mutations));
+  storage.setItem(getOfflineOutboxStorageKey(scope), JSON.stringify(mutations));
 }
 
-export function appendOfflineMutation(mutation: OfflineMutation, storage?: Storage | null) {
-  const next = [...readOfflineMutations(storage), mutation];
-  writeOfflineMutations(next, storage);
+export function appendOfflineMutation(mutation: OfflineMutation, storage?: Storage | null, scope?: string | null) {
+  const next = [...readOfflineMutations(storage, scope), mutation];
+  writeOfflineMutations(next, storage, scope);
   return next;
 }
 
-export function clearOfflineMutations(storage?: Storage | null) {
+export function clearOfflineMutations(storage?: Storage | null, scope?: string | null) {
   if (!storage) {
     return;
   }
 
-  storage.removeItem(OFFLINE_OUTBOX_STORAGE_KEY);
+  storage.removeItem(getOfflineOutboxStorageKey(scope));
+}
+
+export function clearAllOfflineMutations(storage?: Storage | null) {
+  if (!storage) {
+    return;
+  }
+
+  const keysToDelete: string[] = [];
+
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index);
+    if (key?.startsWith(OFFLINE_OUTBOX_STORAGE_KEY_PREFIX)) {
+      keysToDelete.push(key);
+    }
+  }
+
+  keysToDelete.forEach((key) => storage.removeItem(key));
 }

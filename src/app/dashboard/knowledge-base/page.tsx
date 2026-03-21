@@ -61,7 +61,9 @@ export default function KnowledgeBasePage() {
       return;
     }
 
-    if (!title || !summary || !keywords.length) {
+    const requiresManualMetadata = type !== 'audio';
+
+    if (!title || (requiresManualMetadata && (!summary || !keywords.length))) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
     }
@@ -89,7 +91,7 @@ export default function KnowledgeBasePage() {
 
       addKnowledgeArticle({
         title,
-        summary: type === 'audio' ? (summary.trim() || audioTranscription?.summary || summary) : summary,
+        summary: type === 'audio' ? (summary.trim() || audioTranscription?.summary || 'Auto-generated mula sa transcript ng audio entry.') : summary,
         keywords: mergedKeywords,
         type,
         content: type === 'audio' ? (audioTranscription?.transcript ?? '') : content,
@@ -118,18 +120,13 @@ export default function KnowledgeBasePage() {
     setIsSuggesting(true);
     setSuggestedArticles([]);
     try {
-        const smsReports = smsMessages.map(m => m.message).slice(0, 10);
-
         if (capabilities.aiConfigured) {
           const response = await fetch('/api/knowledge/suggestions', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              smsReports,
-              farmerInquiries: smsReports,
-            }),
+            body: JSON.stringify({}),
           });
 
           if (response.ok) {
@@ -139,7 +136,7 @@ export default function KnowledgeBasePage() {
           }
         }
 
-        setSuggestedArticles(buildSuggestedArticlesLocally(smsReports));
+        setSuggestedArticles(buildSuggestedArticlesLocally(smsMessages.map(m => m.message).slice(0, 10)));
     } catch (error) {
         console.error("Failed to fetch AI suggestions:", error);
         setSuggestedArticles(buildSuggestedArticlesLocally(smsMessages.map(m => m.message).slice(0, 10)));
@@ -170,7 +167,6 @@ export default function KnowledgeBasePage() {
             },
             body: JSON.stringify({
               query: searchQuery,
-              articles: knowledgeArticles,
             }),
           });
 
@@ -178,10 +174,13 @@ export default function KnowledgeBasePage() {
             const payload = await response.json() as {
               directAnswer?: string;
               relevantArticleIds?: string[];
+              relevantArticles?: KnowledgeArticle[];
             };
-            const relevantArticles = (payload.relevantArticleIds ?? [])
-              .map((articleId) => knowledgeArticles.find((article) => article.id === articleId))
-              .filter((article): article is KnowledgeArticle => Boolean(article));
+            const relevantArticles = Array.isArray(payload.relevantArticles) && payload.relevantArticles.length > 0
+              ? payload.relevantArticles
+              : (payload.relevantArticleIds ?? [])
+                .map((articleId) => knowledgeArticles.find((article) => article.id === articleId))
+                .filter((article): article is KnowledgeArticle => Boolean(article));
 
             setSearchResults({
               directAnswer: payload.directAnswer?.trim() || localResult.directAnswer,
@@ -418,7 +417,7 @@ export default function KnowledgeBasePage() {
                            <HoverTooltip text="Isang maikling, isang-pangungusap na buod ng nilalaman.">
                             <div className="space-y-2">
                                 <Label htmlFor="summary-main">Maikling Buod</Label>
-                                <Textarea id="summary-main" name="summary" required />
+                                <Textarea id="summary-main" name="summary" required={newEntryType === 'article'} placeholder={newEntryType === 'audio' ? 'Opsyonal para sa audio. Kapag iniwang blangko, gagawa ang system ng buod mula sa transcript.' : ''} />
                             </div>
                            </HoverTooltip>
                             {newEntryType === 'article' ? (
@@ -439,7 +438,7 @@ export default function KnowledgeBasePage() {
                              <HoverTooltip text="Maglagay ng mga kaugnay na salita para mas madaling mahanap ang entry. Paghiwalayin ng kuwit.">
                               <div className="space-y-2">
                                   <Label htmlFor="keywords-main">Mga Keyword (paghiwalayin ng kuwit)</Label>
-                                  <Input id="keywords-main" name="keywords" placeholder="hal. pataba, mais, peste" required />
+                                  <Input id="keywords-main" name="keywords" placeholder={newEntryType === 'audio' ? 'Opsyonal para sa audio. Hal. peste, palay, baha' : 'hal. pataba, mais, peste'} required={newEntryType === 'article'} />
                               </div>
                             </HoverTooltip>
                         </div>

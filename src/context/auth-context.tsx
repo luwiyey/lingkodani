@@ -16,6 +16,7 @@ import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { hasFirebaseConfig } from "@/lib/firebase/shared";
 import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, normalizeDemoProfile, readDemoPreviewUser, readOnboardingProfile } from "@/lib/onboarding";
+import { clearAllOfflineMutations } from "@/lib/offline-outbox";
 import type { User } from "@/lib/types";
 
 const DEMO_SESSION_KEY = "demoSessionEmail";
@@ -257,6 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: user.email,
             name: user.displayName || existingProfile.name || user.email.split("@")[0],
             avatarUrl: user.photoURL ?? existingProfile.avatarUrl,
+            permissions: existingProfile.permissions ?? serverProfile.permissions,
             lastLoginAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
@@ -339,6 +341,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(new Event(DEMO_SESSION_EVENT));
     },
     async signOutUser() {
+      if (typeof window !== "undefined") {
+        clearAllOfflineMutations(window.localStorage);
+      }
+
       if (isDemoMode) {
         localStorage.removeItem(DEMO_SESSION_KEY);
         window.dispatchEvent(new Event(DEMO_SESSION_EVENT));

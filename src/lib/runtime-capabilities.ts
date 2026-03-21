@@ -39,7 +39,7 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
     reasons: {
-      ai: "Naka-lock muna ang AI feature habang hindi pa confirmed ang Gemini/Genkit service sa server.",
+      ai: "Naka-lock muna ang AI feature habang hindi pa confirmed ang Gemini/Genkit credentials sa server. Kahit configured na ito, kailangan pa ring bantayan ang runtime fallback at latency.",
       liveSms: liveSmsConfigured
         ? undefined
         : "Naka-lock muna ang live SMS actions habang hindi pa kumpleto ang SMS provider configuration.",

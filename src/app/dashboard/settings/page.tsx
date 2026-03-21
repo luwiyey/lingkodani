@@ -887,15 +887,15 @@ export default function BarangaySettingsPage() {
           <CardHeader>
             <CardTitle>Automation sa Free Hosting</CardTitle>
             <CardDescription>
-              Gumagana pa rin ang overdue SMS at follow-up automation sa Vercel Hobby kahit walang paid cron jobs.
+              Puledeng tumakbo ang overdue SMS at follow-up automation sa background kapag naka-deploy ang cron routes, at may manual fallback pa rin para sa testing o emergency reruns.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
-              Habang may naka-open na live dashboard, awtomatikong tatakbo ang overdue SMS checks kada 1 minuto at ang follow-up checks kada 30 minuto.
+              Kapag naka-deploy sa Vercel na may configured <code>CRON_SECRET</code>, tatakbo ang overdue SMS check kada 5 minuto at ang follow-up check kada 30 minuto kahit walang nakabukas na dashboard tab.
             </p>
             <p>
-              Kapag walang staff na naka-open sa dashboard, hindi tuloy-tuloy ang background run. Maaari mong gamitin ang mga button sa ibaba para mano-manong patakbuhin ang checks anumang oras.
+              Maaari mo pa ring gamitin ang mga button sa ibaba para sa mano-manong rerun anumang oras, lalo na habang local testing o kapag gusto mong pilitin ang isang bagong batch check agad.
             </p>
           </CardContent>
           <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">

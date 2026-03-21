@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { authenticateServerRequest } from "@/lib/server/request-auth";
+import { withResolvedUserPermissions } from "@/lib/user-permissions";
 
 export async function GET(request: Request) {
   const auth = await authenticateServerRequest(request, ["barangay", "developer"]);
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    profile: auth.profile,
+    profile: withResolvedUserPermissions(auth.profile),
     route: auth.profile.role === "developer" ? "/dashboard/developer" : undefined,
   });
 }

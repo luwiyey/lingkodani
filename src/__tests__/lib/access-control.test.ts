@@ -1,6 +1,7 @@
 import {
   canAccessDataCenter,
   canManageBarangaySettings,
+  canManageAutomation,
   canUseLiveSmsSimulation,
   getManagedBarangayUsers,
   getPlatformDeveloperUsers,
@@ -39,6 +40,17 @@ describe("access-control", () => {
 
   it("keeps AEW users out of manager-only settings", () => {
     expect(canManageBarangaySettings(aewUser)).toBe(false);
+  });
+
+  it("respects explicit permission flags when present", () => {
+    expect(
+      canManageAutomation({
+        ...aewUser,
+        permissions: {
+          manageAutomation: true,
+        },
+      })
+    ).toBe(true);
   });
 
   it("treats the data center as developer-only and disables live SMS simulation", () => {

@@ -25,6 +25,7 @@ import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { getFarmerEvidenceAttachment, getFarmerEvidenceTypeLabel, buildFarmerEvidenceLogbookData, describeFarmerEvidenceAttachment } from '@/lib/farmer-evidence';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { uploadFarmerEvidenceFile } from '@/lib/services/farmer-evidence-file-service';
+import { uploadFarmerAvatarFile } from '@/lib/services/profile-avatar-file-service';
 import { transcribeAudioUpload } from '@/lib/services/audio-transcription-service';
 import { getEffectiveSmsCaseOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
 import { cn } from '@/lib/utils';
@@ -445,6 +446,7 @@ export default function FarmerLogbookPage() {
     const [uploadingEvidenceType, setUploadingEvidenceType] = useState<FarmerEvidenceType | null>(null);
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const fileUploadLocked = !capabilities.storageUploadConfigured;
     const fileUploadLockMessage =
       capabilities.reasons.storageUpload ??
@@ -463,26 +465,30 @@ export default function FarmerLogbookPage() {
         notFound();
     }
     
-    const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0]) return;
         
         const file = e.target.files[0];
-        const reader = new FileReader();
-        
-        reader.onloadend = () => {
-            const newAvatarUrl = reader.result as string;
-            updateFarmerRecord(farmer.id, { avatarUrl: newAvatarUrl });
-            toast({
-                title: "Nai-upload na ang Larawan!",
-                description: `Ang profile picture para kay ${farmer.name} ay na-update na.`,
-            });
-        };
-        
-        reader.readAsDataURL(file);
-        
-        if (e.target) {
-            e.target.value = '';
+        e.target.value = '';
+        setIsUploadingAvatar(true);
+
+        try {
+          const uploadResult = await uploadFarmerAvatarFile(file, farmer.id);
+          updateFarmerRecord(farmer.id, { avatarUrl: uploadResult.url });
+          toast({
+              title: "Nai-upload na ang Larawan!",
+              description: `Ang profile picture para kay ${farmer.name} ay na-update na.`,
+          });
+        } catch (error) {
+          toast({
+            title: "Hindi ma-save ang avatar",
+            description: error instanceof Error ? error.message : "Hindi ma-upload ang bagong profile photo ng magsasaka.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploadingAvatar(false);
         }
+        
     };
 
 
@@ -730,7 +736,7 @@ export default function FarmerLogbookPage() {
                     <CardHeader>
                         <div className="flex flex-col items-center pt-4 gap-4">
                             <HoverTooltip text="Mag-click para mag-upload ng bagong larawan">
-                                <button onClick={() => avatarUploadRef.current?.click()} className="relative group">
+                                <button onClick={() => avatarUploadRef.current?.click()} className="relative group" disabled={isUploadingAvatar}>
                                     <Avatar className="h-24 w-24 border">
                                         {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
                                         <AvatarFallback className="bg-muted">
@@ -751,11 +757,14 @@ export default function FarmerLogbookPage() {
                     <CardContent className="space-y-4 text-sm">
                          <div className="flex justify-end border-b pb-4 -mt-6">
                             <HoverTooltip text="I-edit ang mga detalye ng profile">
-                                <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)}>
+                                <Button variant="outline" size="sm" onClick={() => setEditingFarmer(farmer)} disabled={isUploadingAvatar}>
                                     <Edit className="mr-2 h-4 w-4" /> I-edit ang Profile
                                 </Button>
                             </HoverTooltip>
                         </div>
+                        {isUploadingAvatar ? (
+                          <p className="text-xs text-muted-foreground">Ina-upload ang bagong profile photo...</p>
+                        ) : null}
                         <p><strong>Telepono:</strong> {farmer.phone}</p>
                         <p><strong>Edad:</strong> {farmer.age}</p>
                         <p><strong>Kasarian:</strong> {farmer.gender}</p>

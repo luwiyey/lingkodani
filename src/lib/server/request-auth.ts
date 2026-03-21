@@ -1,6 +1,7 @@
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
 import type { User, UserRole } from "@/lib/types";
+import { withResolvedUserPermissions } from "@/lib/user-permissions";
 
 function getBearerToken(request: Request) {
   const authorization = request.headers.get("authorization") ?? "";
@@ -34,10 +35,10 @@ export async function authenticateServerRequest(request: Request, allowedRoles?:
       return { ok: false as const, status: 403, error: "No authorized user profile exists for this account." };
     }
 
-    const profile = {
+    const profile = withResolvedUserPermissions({
       id: profileSnapshot.id,
       ...(profileSnapshot.data() as User),
-    };
+    });
 
     if (profile.status === "disabled") {
       return { ok: false as const, status: 403, error: "This account is disabled." };

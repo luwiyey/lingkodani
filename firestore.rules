@@ -15,25 +15,44 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/users/$(userId()));
     }
 
-    function currentUserRole() {
+    function currentUserProfile() {
       return hasUserProfile()
-        ? get(/databases/$(database)/documents/users/$(userId())).data.role
-        : null;
+        ? get(/databases/$(database)/documents/users/$(userId())).data
+        : {};
+    }
+
+    function currentUserRole() {
+      return currentUserProfile().role;
     }
 
     function currentUserTitle() {
-      return hasUserProfile()
-        ? get(/databases/$(database)/documents/users/$(userId())).data.title
+      return "title" in currentUserProfile()
+        ? currentUserProfile().title
         : "";
+    }
+
+    function currentUserPermissions() {
+      return "permissions" in currentUserProfile()
+        ? currentUserProfile().permissions
+        : {};
     }
 
     function isDeveloper() {
       return currentUserRole() == 'developer';
     }
 
-    function isBarangayManager() {
+    function isLegacyBarangayManager() {
       return currentUserRole() == 'barangay' &&
         currentUserTitle().matches('(?i).*(administrator|admin|captain|kapitan|secretary|sekret).*');
+    }
+
+    function canManageBarangaySettings() {
+      return isDeveloper() || (
+        currentUserRole() == 'barangay' && (
+          currentUserPermissions().manageBarangaySettings == true ||
+          isLegacyBarangayManager()
+        )
+      );
     }
 
     function isAuthorizedStaff() {
@@ -62,7 +81,7 @@ service cloud.firestore {
 
     match /systemSettings/{document=**} {
       allow read: if isAuthorizedStaff();
-      allow create, update: if isDeveloper() || isBarangayManager();
+      allow create, update: if canManageBarangaySettings();
       allow delete: if isDeveloper();
     }
 

@@ -5,6 +5,7 @@ import { getServerFirestore } from "@/lib/firebase/server";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
 import type { PreferredWorkspace, User } from "@/lib/types";
+import { withResolvedUserPermissions } from "@/lib/user-permissions";
 
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -42,13 +43,13 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const existingProfile = {
+    const existingProfile = withResolvedUserPermissions({
       id: existingSnapshot.id,
       ...(existingSnapshot.data() as User),
-    };
+    });
 
     const nextEmail = normalizeEmail(body.email) || existingProfile.email;
-    const nextProfile: User = {
+    const nextProfile = withResolvedUserPermissions<User>({
       ...existingProfile,
       email: nextEmail,
       name: normalizeText(body.name) || existingProfile.name,
@@ -62,7 +63,7 @@ export async function PATCH(request: Request) {
         existingProfile.preferredWorkspace ?? (existingProfile.role === "developer" ? "detailed" : "simple")
       ),
       updatedAt: new Date().toISOString(),
-    };
+    });
 
     await userRef.set(nextProfile, { merge: true });
 

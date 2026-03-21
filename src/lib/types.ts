@@ -15,6 +15,12 @@ export type NavItem = {
 };
 
 export type UserRole = 'barangay' | 'developer';
+export type UserPermissions = {
+  manageBarangaySettings?: boolean;
+  manageAutomation?: boolean;
+  manageSystemTeaching?: boolean;
+  accessDataCenter?: boolean;
+};
 
 export type UserStatus = 'active' | 'pending_setup' | 'disabled';
 export type PreferredWorkspace = 'simple' | 'detailed';
@@ -42,6 +48,7 @@ export type User = {
   phone?: string;
   barangay?: string;
   avatarUrl?: string;
+  permissions?: UserPermissions;
   status?: UserStatus;
   preferredWorkspace?: PreferredWorkspace;
   createdAt?: string;

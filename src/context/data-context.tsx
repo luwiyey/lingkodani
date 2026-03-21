@@ -283,17 +283,32 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [offlineMode, setOfflineMode] = useState(false);
   const [offlineSyncing, setOfflineSyncing] = useState(false);
   const [offlineOutboxCount, setOfflineOutboxCount] = useState(0);
+  const offlineOutboxScope = React.useMemo(() => {
+    if (currentUser?.uid) {
+      return `uid:${currentUser.uid}`;
+    }
+
+    if (currentUserProfile?.uid) {
+      return `uid:${currentUserProfile.uid}`;
+    }
+
+    if (currentUserProfile?.email) {
+      return `email:${currentUserProfile.email}`;
+    }
+
+    return "guest";
+  }, [currentUser?.uid, currentUserProfile?.email, currentUserProfile?.uid]);
 
   const queueOfflineMutation = useCallback((mutation: OfflineMutation) => {
     const storage = canUseBrowserStorage();
-    const next = appendOfflineMutation(mutation, storage);
+    const next = appendOfflineMutation(mutation, storage, offlineOutboxScope);
     setOfflineOutboxCount(next.length);
-  }, []);
+  }, [offlineOutboxScope]);
 
   const persistOfflineOutbox = useCallback((mutations: OfflineMutation[]) => {
-    writeOfflineMutations(mutations, canUseBrowserStorage());
+    writeOfflineMutations(mutations, canUseBrowserStorage(), offlineOutboxScope);
     setOfflineOutboxCount(mutations.length);
-  }, []);
+  }, [offlineOutboxScope]);
 
   const shouldQueueLiveMutation = useCallback((error?: unknown) => {
     if (!isLiveMode) {
@@ -402,7 +417,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const syncOfflineChanges = useCallback(async () => {
     const storage = canUseBrowserStorage();
-    const pending = readOfflineMutations(storage);
+    const pending = readOfflineMutations(storage, offlineOutboxScope);
 
     if (!isLiveMode || offlineSyncing || pending.length === 0) {
       return {
@@ -435,7 +450,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       processedCount,
       remainingCount: remaining.length,
     };
-  }, [offlineSyncing, persistOfflineOutbox, processOfflineMutation]);
+  }, [offlineOutboxScope, offlineSyncing, persistOfflineOutbox, processOfflineMutation]);
 
   useEffect(() => {
     if (!isDemoMode) return;
@@ -498,7 +513,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     setOfflineMode(!navigator.onLine);
-    const pendingMutations = readOfflineMutations(window.localStorage);
+    const pendingMutations = readOfflineMutations(window.localStorage, offlineOutboxScope);
     setOfflineOutboxCount(pendingMutations.length);
     if (navigator.onLine && pendingMutations.length > 0) {
       void syncOfflineChanges();
@@ -519,7 +534,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [syncOfflineChanges]);
+  }, [offlineOutboxScope, syncOfflineChanges]);
 
   useEffect(() => {
     if (!isLiveMode) return;

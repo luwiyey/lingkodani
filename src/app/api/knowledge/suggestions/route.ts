@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { suggestKnowledgeBaseArticles } from "@/ai/flows/suggest-knowledge-base-articles";
 import { isLiveMode } from "@/lib/config/app-mode";
+import { firebaseCollections } from "@/lib/firebase/collections";
+import { getServerFirestore } from "@/lib/firebase/server";
 import { buildSuggestedArticlesLocally } from "@/lib/knowledge-search";
 import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
 
@@ -13,6 +15,20 @@ function normalizeStringArray(value: unknown) {
   return value
     .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+async function listRecentLiveSmsReports() {
+  const snapshot = await getServerFirestore()
+    .collection(firebaseCollections.smsMessages)
+    .orderBy("timestamp", "desc")
+    .limit(30)
+    .get();
+
+  return snapshot.docs
+    .map((documentSnapshot) => documentSnapshot.data()?.message)
+    .filter((message): message is string => typeof message === "string")
+    .map((message) => message.trim())
     .filter(Boolean);
 }
 
@@ -28,8 +44,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const smsReports = normalizeStringArray(body.smsReports);
-    const farmerInquiries = normalizeStringArray(body.farmerInquiries);
+    const smsReports = isLiveMode
+      ? await listRecentLiveSmsReports()
+      : normalizeStringArray(body.smsReports);
+    const farmerInquiries = isLiveMode
+      ? smsReports
+      : normalizeStringArray(body.farmerInquiries);
     const combined = [...smsReports, ...farmerInquiries];
 
     if (combined.length === 0) {
