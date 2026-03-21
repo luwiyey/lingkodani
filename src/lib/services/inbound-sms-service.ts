@@ -27,6 +27,7 @@ export type CreatedInboundSms = {
 export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInboundSms {
   const timestamp = input.timestamp ?? new Date().toISOString();
   const settings = input.settings ?? defaultSystemSettings;
+  const messageId = input.id ?? `SMS${Date.now()}`;
   const normalizedPhone = normalizePhone(input.phone);
   const farmer = input.farmers.find((item) => normalizePhone(item.phone) === normalizedPhone);
   const registrationCandidate = farmer
@@ -49,6 +50,7 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
   const caseId = buildCaseId({
     farmerId: farmer?.id ?? registrationCandidate?.id,
     normalizedPhone,
+    fallbackId: messageId,
   });
   const caseStatus = deriveInitialCaseStatus({
     clarificationNeeded: analysis.clarificationNeeded,
@@ -60,7 +62,7 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
     matchedFarmerId: farmer?.id ?? registrationCandidate?.id,
     newFarmer: registrationCandidate ?? undefined,
     message: {
-      id: input.id ?? `SMS${Date.now()}`,
+      id: messageId,
       farmerId: effectiveFarmerId,
       farmerName: effectiveFarmerName,
       phone: input.phone,

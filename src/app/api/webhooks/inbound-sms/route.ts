@@ -105,6 +105,8 @@ export async function POST(request: Request) {
       accepted: true,
       persisted: result.persisted ?? !result.duplicate,
       duplicate: result.duplicate,
+      ignored: result.ignored ?? false,
+      ignoreReason: result.reason ?? null,
       handledBy: result.handledBy ?? "farmer",
       provider: inbound.provider,
       messageId: result.message?.id ?? null,

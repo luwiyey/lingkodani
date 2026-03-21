@@ -28,62 +28,72 @@ export async function processLiveFollowUpMessages(actorName = "system") {
   const messages = snapshot.docs.map((item) => item.data() as SmsMessage);
   const users = userSnapshot.docs.map((item) => item.data() as User);
   const processed: Array<{ id: string; followUpSentAt?: string }> = [];
+  const failed: Array<{ id: string; error: string }> = [];
 
   for (const message of messages) {
-    const result = await processDueFollowUpMessage({
-      message,
-      provider: liveServerSmsProvider,
-      providerName: `live-${readLiveSmsProvider(process.env)}`,
-      actorName,
-    });
+    try {
+      const result = await processDueFollowUpMessage({
+        message,
+        provider: liveServerSmsProvider,
+        providerName: `live-${readLiveSmsProvider(process.env)}`,
+        actorName,
+      });
 
-    const baseMessage = result?.updatedMessage ?? message;
-    const reminderResult = await processOfficialReminderMessage({
-      message: baseMessage,
-      users,
-      settings: systemSettings,
-      provider: liveServerSmsProvider,
-      providerName: `live-${readLiveSmsProvider(process.env)}`,
-      actorName,
-    });
+      const baseMessage = result?.updatedMessage ?? message;
+      const reminderResult = await processOfficialReminderMessage({
+        message: baseMessage,
+        users,
+        settings: systemSettings,
+        provider: liveServerSmsProvider,
+        providerName: `live-${readLiveSmsProvider(process.env)}`,
+        actorName,
+      });
 
-    if (!result && !reminderResult) {
-      continue;
+      if (!result && !reminderResult) {
+        continue;
+      }
+
+      await db.collection(firebaseCollections.smsMessages).doc(message.id).update(withoutUndefined({
+        followUpSentAt: result?.updatedMessage.followUpSentAt ?? message.followUpSentAt,
+        assignedTo: reminderResult?.updatedMessage.assignedTo ?? baseMessage.assignedTo,
+        assignedAt: reminderResult?.updatedMessage.assignedAt ?? baseMessage.assignedAt,
+        caseStatus: reminderResult?.updatedMessage.caseStatus ?? baseMessage.caseStatus,
+        officialReminderRecipientName: reminderResult?.updatedMessage.officialReminderRecipientName ?? baseMessage.officialReminderRecipientName,
+        officialReminderRecipientPhone: reminderResult?.updatedMessage.officialReminderRecipientPhone ?? baseMessage.officialReminderRecipientPhone,
+        officialReminderDueAt: reminderResult?.updatedMessage.officialReminderDueAt ?? baseMessage.officialReminderDueAt,
+        officialReminderLastSentAt: reminderResult?.updatedMessage.officialReminderLastSentAt ?? baseMessage.officialReminderLastSentAt,
+        officialReminderCount: reminderResult?.updatedMessage.officialReminderCount ?? baseMessage.officialReminderCount,
+      }));
+
+      if (result) {
+        await db.collection(firebaseCollections.auditLogs).doc(result.auditLog.id).set(result.auditLog);
+        await db.collection(firebaseCollections.logbookEntries).doc(result.logbookEntry.id).set(result.logbookEntry);
+        await db.collection(firebaseCollections.outboundMessages).doc(result.outboundRecord.id).set(result.outboundRecord);
+      }
+
+      if (reminderResult) {
+        await db.collection(firebaseCollections.auditLogs).doc(reminderResult.auditLog.id).set(reminderResult.auditLog);
+        await db.collection(firebaseCollections.logbookEntries).doc(reminderResult.logbookEntry.id).set(reminderResult.logbookEntry);
+        await db.collection(firebaseCollections.outboundMessages).doc(reminderResult.outboundRecord.id).set(reminderResult.outboundRecord);
+      }
+
+      processed.push({
+        id: message.id,
+        followUpSentAt: result?.updatedMessage.followUpSentAt,
+      });
+    } catch (error) {
+      failed.push({
+        id: message.id,
+        error: error instanceof Error ? error.message : "Unknown follow-up error",
+      });
     }
-
-    await db.collection(firebaseCollections.smsMessages).doc(message.id).update(withoutUndefined({
-      followUpSentAt: result?.updatedMessage.followUpSentAt ?? message.followUpSentAt,
-      assignedTo: reminderResult?.updatedMessage.assignedTo ?? baseMessage.assignedTo,
-      assignedAt: reminderResult?.updatedMessage.assignedAt ?? baseMessage.assignedAt,
-      caseStatus: reminderResult?.updatedMessage.caseStatus ?? baseMessage.caseStatus,
-      officialReminderRecipientName: reminderResult?.updatedMessage.officialReminderRecipientName ?? baseMessage.officialReminderRecipientName,
-      officialReminderRecipientPhone: reminderResult?.updatedMessage.officialReminderRecipientPhone ?? baseMessage.officialReminderRecipientPhone,
-      officialReminderDueAt: reminderResult?.updatedMessage.officialReminderDueAt ?? baseMessage.officialReminderDueAt,
-      officialReminderLastSentAt: reminderResult?.updatedMessage.officialReminderLastSentAt ?? baseMessage.officialReminderLastSentAt,
-      officialReminderCount: reminderResult?.updatedMessage.officialReminderCount ?? baseMessage.officialReminderCount,
-    }));
-
-    if (result) {
-      await db.collection(firebaseCollections.auditLogs).doc(result.auditLog.id).set(result.auditLog);
-      await db.collection(firebaseCollections.logbookEntries).doc(result.logbookEntry.id).set(result.logbookEntry);
-      await db.collection(firebaseCollections.outboundMessages).doc(result.outboundRecord.id).set(result.outboundRecord);
-    }
-
-    if (reminderResult) {
-      await db.collection(firebaseCollections.auditLogs).doc(reminderResult.auditLog.id).set(reminderResult.auditLog);
-      await db.collection(firebaseCollections.logbookEntries).doc(reminderResult.logbookEntry.id).set(reminderResult.logbookEntry);
-      await db.collection(firebaseCollections.outboundMessages).doc(reminderResult.outboundRecord.id).set(reminderResult.outboundRecord);
-    }
-
-    processed.push({
-      id: message.id,
-      followUpSentAt: result?.updatedMessage.followUpSentAt,
-    });
   }
 
   return {
     checked: messages.length,
     processedCount: processed.length,
     processed,
+    failedCount: failed.length,
+    failed,
   };
 }

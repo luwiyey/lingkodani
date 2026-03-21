@@ -31,8 +31,16 @@ export function getFollowUpDueAt(timestamp: string, urgency: SmsMessage["urgency
 export function buildCaseId(input: {
   farmerId?: string;
   normalizedPhone: string;
+  fallbackId?: string;
 }) {
-  return `CASE-${input.farmerId ?? input.normalizedPhone}`;
+  const baseValue = input.farmerId || input.normalizedPhone || input.fallbackId || "UNVERIFIED";
+  const normalized = baseValue
+    .replace(/[^a-zA-Z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toUpperCase();
+
+  return `CASE-${normalized || "UNVERIFIED"}`;
 }
 
 export function deriveInitialCaseStatus(input: {

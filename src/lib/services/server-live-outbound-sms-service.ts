@@ -9,6 +9,7 @@ import {
   readTextbeeDeviceId,
 } from "@/lib/providers/sms/live-sms-config";
 import { getSmsgateAuthHeader, getSmsgateBaseUrl } from "@/lib/providers/sms/smsgate";
+import { isValidPhilippineMobileNumber } from "@/lib/sms-simulator";
 import { getTextbeeBaseUrl } from "@/lib/providers/sms/textbee";
 import type { SendSmsInput, SendSmsResult } from "@/lib/providers/sms/types";
 
@@ -18,7 +19,7 @@ function getProvider(): SupportedProvider {
   return readLiveSmsProvider(process.env);
 }
 
-export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
+async function sendLiveSmsInternal(input: SendSmsInput): Promise<SendSmsResult> {
   const provider = getProvider();
 
   if (provider === "twilio") {
@@ -249,4 +250,22 @@ export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
     providerMessageId: payload.id ?? payload.messageId,
     errorMessage: response.ok ? undefined : payload.error ?? "Generic SMS send failed.",
   };
+}
+
+export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
+  if (!isValidPhilippineMobileNumber(input.to)) {
+    return {
+      status: "failed",
+      errorMessage: "Recipient phone must be a valid Philippine mobile number.",
+    };
+  }
+
+  try {
+    return await sendLiveSmsInternal(input);
+  } catch (error) {
+    return {
+      status: "failed",
+      errorMessage: error instanceof Error ? error.message : "Live SMS send failed.",
+    };
+  }
 }

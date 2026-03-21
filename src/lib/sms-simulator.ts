@@ -50,6 +50,32 @@ export function normalizePhone(value: string) {
   return digits;
 }
 
+export function isValidPhilippineMobileNumber(value: string) {
+  const normalized = normalizePhone(value);
+  return normalized.startsWith("63") && normalized.length === 12;
+}
+
+export function buildPhoneLookupCandidates(value: string) {
+  const trimmed = value.trim();
+  const normalized = normalizePhone(value);
+  const candidates = new Set<string>();
+
+  if (trimmed) {
+    candidates.add(trimmed);
+  }
+
+  if (normalized) {
+    candidates.add(normalized);
+    candidates.add(`+${normalized}`);
+
+    if (normalized.startsWith("63") && normalized.length === 12) {
+      candidates.add(`0${normalized.slice(2)}`);
+    }
+  }
+
+  return Array.from(candidates);
+}
+
 export function inferIntent(
   message: string,
   matchedRule?: SmsLexiconRule | null
