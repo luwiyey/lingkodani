@@ -115,3 +115,37 @@
     background: rgba(47, 111, 62, 0.16);
   }
 }
+
+@layer components {
+  .auth-card-surface {
+    @apply border border-slate-200/80 bg-white text-slate-900 shadow-[0_24px_72px_-40px_rgba(15,23,42,0.32)];
+  }
+
+  .auth-card-title {
+    @apply text-slate-900;
+  }
+
+  .auth-card-description {
+    @apply text-slate-600;
+  }
+
+  .auth-card-label {
+    @apply text-[15px] font-medium text-slate-800;
+  }
+
+  .auth-card-input {
+    @apply border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0;
+  }
+
+  .auth-card-icon-button {
+    @apply text-slate-400 transition-colors hover:text-slate-700;
+  }
+
+  .auth-card-link {
+    @apply text-slate-500 underline hover:text-slate-900;
+  }
+
+  .auth-card-link-secondary {
+    @apply text-slate-500 hover:text-slate-900 hover:underline;
+  }
+}

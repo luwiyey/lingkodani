@@ -183,7 +183,7 @@ function ResetPasswordVerifyPageContent() {
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-1 items-center justify-center px-4 py-8">
-        <Card className="mx-auto w-full max-w-md overflow-hidden border border-slate-200/80 bg-white text-foreground shadow-[0_24px_72px_-40px_rgba(15,23,42,0.32)]">
+        <Card className="auth-card-surface mx-auto w-full max-w-md overflow-hidden">
           <CardHeader className="pb-4 pt-8 text-center sm:pb-5 sm:pt-9">
             <div className="mb-3 flex items-center justify-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -191,10 +191,10 @@ function ResetPasswordVerifyPageContent() {
               </div>
               <h1 className="text-3xl font-semibold tracking-tight text-primary">Lingkod-Ani</h1>
             </div>
-            <CardTitle className="text-2xl text-foreground">
+            <CardTitle className="auth-card-title text-2xl">
               {isResetLinkMode ? 'Ilagay ang Bagong Password' : 'Tingnan ang Iyong Email'}
             </CardTitle>
-            <CardDescription className="mx-auto mt-1 max-w-[26rem] text-[14px] leading-7 text-muted-foreground/90">
+            <CardDescription className="auth-card-description mx-auto mt-1 max-w-[26rem] text-[14px] leading-7">
               {helperDescription}
             </CardDescription>
           </CardHeader>
@@ -223,7 +223,7 @@ function ResetPasswordVerifyPageContent() {
 
                   <HoverTooltip text="Ilagay ang bago mong password.">
                     <div className="space-y-2.5">
-                      <Label htmlFor="new-password" className="text-[15px] font-medium text-foreground">
+                      <Label htmlFor="new-password" className="auth-card-label">
                         Bagong Password
                       </Label>
                       <div className="relative">
@@ -235,13 +235,13 @@ function ResetPasswordVerifyPageContent() {
                           autoComplete="new-password"
                           required
                           disabled={isSubmitting}
-                          className="h-12 rounded-xl border-slate-200 bg-white px-4 pr-12 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0"
+                          className="auth-card-input h-12 rounded-xl px-4 pr-12 text-[15px]"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword((current) => !current)}
                           disabled={isSubmitting}
-                          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed"
+                          className="auth-card-icon-button absolute inset-y-0 right-0 flex w-12 items-center justify-center disabled:cursor-not-allowed"
                           aria-label={showPassword ? 'Itago ang password' : 'Ipakita ang password'}
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -252,7 +252,7 @@ function ResetPasswordVerifyPageContent() {
 
                   <HoverTooltip text="Ulitin ang bagong password para matiyak na tama ito.">
                     <div className="space-y-2.5">
-                      <Label htmlFor="confirm-password" className="text-[15px] font-medium text-foreground">
+                      <Label htmlFor="confirm-password" className="auth-card-label">
                         Kumpirmahin ang Bagong Password
                       </Label>
                       <div className="relative">
@@ -264,13 +264,13 @@ function ResetPasswordVerifyPageContent() {
                           autoComplete="new-password"
                           required
                           disabled={isSubmitting}
-                          className="h-12 rounded-xl border-slate-200 bg-white px-4 pr-12 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0"
+                          className="auth-card-input h-12 rounded-xl px-4 pr-12 text-[15px]"
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword((current) => !current)}
                           disabled={isSubmitting}
-                          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed"
+                          className="auth-card-icon-button absolute inset-y-0 right-0 flex w-12 items-center justify-center disabled:cursor-not-allowed"
                           aria-label={showConfirmPassword ? 'Itago ang kumpirmasyon ng password' : 'Ipakita ang kumpirmasyon ng password'}
                         >
                           {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

@@ -164,14 +164,14 @@ function LoginPageContent() {
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-1 items-center justify-center px-4 py-8">
-        <Card className="mx-auto w-full max-w-md overflow-hidden border border-slate-200/80 bg-white text-foreground shadow-[0_24px_72px_-40px_rgba(15,23,42,0.32)]">
+        <Card className="auth-card-surface mx-auto w-full max-w-md overflow-hidden">
           <CardHeader className="pb-4 pt-8 text-center sm:pb-5 sm:pt-9">
             <div className="mb-3 flex items-center justify-center gap-3">
               <Image src="/logo.png" width={34} height={34} alt="Lingkod-Ani Logo" className="h-[34px] w-[34px]" />
               <h1 className="text-3xl font-semibold tracking-tight text-primary">Lingkod-Ani</h1>
             </div>
-            <CardTitle className="text-2xl text-foreground">Pag-login ng Administrator</CardTitle>
-            <CardDescription className="mx-auto mt-1 max-w-[26rem] text-[14px] leading-7 text-muted-foreground/90">
+            <CardTitle className="auth-card-title text-2xl">Pag-login ng Administrator</CardTitle>
+            <CardDescription className="auth-card-description mx-auto mt-1 max-w-[26rem] text-[14px] leading-7">
               Ilagay ang iyong mga kredensyal upang ma-access ang dashboard.
             </CardDescription>
           </CardHeader>
@@ -216,7 +216,7 @@ function LoginPageContent() {
             <form onSubmit={handleLogin} className="mt-2 space-y-5">
               <HoverTooltip text="Ilagay ang email address na nakarehistro sa iyong account.">
                 <div className="space-y-2.5">
-                  <Label htmlFor="email" className="text-[15px] font-medium text-foreground">
+                    <Label htmlFor="email" className="auth-card-label">
                     Email
                   </Label>
                   <Input
@@ -228,14 +228,14 @@ function LoginPageContent() {
                     autoComplete="username"
                     required
                     disabled={loading}
-                    className="h-12 rounded-xl border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0 [&:-webkit-autofill]:[-webkit-text-fill-color:#111827] [&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_white]"
+                    className="auth-card-input h-12 rounded-xl px-4 text-[15px] [&:-webkit-autofill]:[-webkit-text-fill-color:#111827] [&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_white]"
                   />
                 </div>
               </HoverTooltip>
 
               <HoverTooltip text="Ilagay ang iyong password.">
                 <div className="space-y-2.5">
-                  <Label htmlFor="password" className="text-[15px] font-medium text-foreground">
+                    <Label htmlFor="password" className="auth-card-label">
                     Password
                   </Label>
                   <div className="relative">
@@ -248,13 +248,13 @@ function LoginPageContent() {
                       autoComplete="current-password"
                       required
                       disabled={loading}
-                      className="h-12 rounded-xl border-slate-200 bg-white px-4 pr-12 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0"
+                      className="auth-card-input h-12 rounded-xl px-4 pr-12 text-[15px]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((current) => !current)}
                       disabled={loading}
-                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed"
+                      className="auth-card-icon-button absolute inset-y-0 right-0 flex w-12 items-center justify-center disabled:cursor-not-allowed"
                       aria-label={showPassword ? "Itago ang password" : "Ipakita ang password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -272,17 +272,17 @@ function LoginPageContent() {
 
             <div className="mt-5 space-y-2 text-center text-sm">
               <HoverTooltip text="Simulan ang proseso ng pag-reset ng iyong password.">
-                <Link href="/reset-password" className="text-muted-foreground underline hover:text-foreground">
+                <Link href="/reset-password" className="auth-card-link">
                   Nakalimutan ang iyong password?
                 </Link>
               </HoverTooltip>
               <div>
-                <Link href="/" className="text-muted-foreground hover:text-foreground hover:underline">
+                <Link href="/" className="auth-card-link-secondary">
                   Bumalik sa startup page
                 </Link>
               </div>
               <div>
-                <Link href="/request-access?source=login" className="text-muted-foreground hover:text-foreground hover:underline">
+                <Link href="/request-access?source=login" className="auth-card-link-secondary">
                   Wala ka pang account? Humiling ng access
                 </Link>
               </div>

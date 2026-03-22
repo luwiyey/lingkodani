@@ -280,6 +280,11 @@ function SmsMessageCard({
                             Registration required
                           </Badge>
                         )}
+                        {message.identityDetailsNeeded && !message.registrationRequired && (
+                          <Badge variant="outline" className={infoBadgeClassName}>
+                            Identity pending
+                          </Badge>
+                        )}
                         {message.tone && <Badge variant="outline" className={neutralBadgeClassName}>Tono: {message.tone}</Badge>}
                         {message.clarificationNeeded && (
                           <Badge variant="outline" className={warningBadgeClassName}>
@@ -308,6 +313,14 @@ function SmsMessageCard({
                         <p className="font-semibold text-amber-900 dark:text-amber-100">Review required</p>
                         <p className="mt-1">
                           Ang kasalukuyang analysis ay galing sa {message.analysisSource === 'ai_fallback' ? 'AI fallback' : 'rules-based'} path, kaya mas mahalaga ang human review bago magpadala ng final advisory.
+                        </p>
+                      </div>
+                    ) : null}
+                    {message.identityDetailsNeeded && message.identityPrompt ? (
+                      <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-50">
+                        <p className="font-semibold text-sky-900 dark:text-sky-100">Kulang pa ang identity details</p>
+                        <p className="mt-1">
+                          Hahawakan pa rin ng system ang concern na ito, pero kailangan pa ring makuha ang buong pangalan at sitio o barangay para maayos ang follow-up at farmer matching.
                         </p>
                       </div>
                     ) : null}

@@ -118,7 +118,7 @@ function RequestAccessPageContent() {
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-1 items-center justify-center px-4 py-8">
-        <Card className="mx-auto w-full max-w-2xl overflow-hidden border border-slate-200/80 bg-white text-foreground shadow-[0_24px_72px_-40px_rgba(15,23,42,0.32)]">
+        <Card className="auth-card-surface mx-auto w-full max-w-2xl overflow-hidden">
           <CardHeader className="pb-4 pt-8 text-center sm:pb-5 sm:pt-9">
             <div className="mb-3 flex items-center justify-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -126,8 +126,8 @@ function RequestAccessPageContent() {
               </div>
               <h1 className="text-3xl font-semibold tracking-tight text-primary">Lingkod-Ani</h1>
             </div>
-            <CardTitle className="text-2xl text-foreground">Humiling ng Access</CardTitle>
-            <CardDescription className="mx-auto mt-1 max-w-[36rem] text-[14px] leading-7 text-muted-foreground/90">
+            <CardTitle className="auth-card-title text-2xl">Humiling ng Access</CardTitle>
+            <CardDescription className="auth-card-description mx-auto mt-1 max-w-[36rem] text-[14px] leading-7">
               Kung wala ka pang live account, ilagay ang iyong detalye rito para ma-review ng developer at ma-set up ang access mo.
             </CardDescription>
           </CardHeader>
@@ -136,49 +136,50 @@ function RequestAccessPageContent() {
               <div className="grid gap-5 md:grid-cols-2">
                 <HoverTooltip text="Buong pangalan ng humihiling ng access.">
                   <div className="space-y-2.5">
-                    <Label htmlFor="request-name">Buong Pangalan</Label>
-                    <Input id="request-name" value={name} onChange={(event) => setName(event.target.value)} required disabled={isSubmitting} />
+                    <Label htmlFor="request-name" className="auth-card-label">Buong Pangalan</Label>
+                    <Input id="request-name" value={name} onChange={(event) => setName(event.target.value)} required disabled={isSubmitting} className="auth-card-input" />
                   </div>
                 </HoverTooltip>
 
                 <HoverTooltip text="Email address na gagamitin sa Lingkod-Ani.">
                   <div className="space-y-2.5">
-                    <Label htmlFor="request-email">Email Address</Label>
-                    <Input id="request-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={isSubmitting} />
+                    <Label htmlFor="request-email" className="auth-card-label">Email Address</Label>
+                    <Input id="request-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={isSubmitting} className="auth-card-input" />
                   </div>
                 </HoverTooltip>
 
                 <HoverTooltip text="Mobile number na puwedeng gamitin para sa official reminders o account contact.">
                   <div className="space-y-2.5">
-                    <Label htmlFor="request-phone">Mobile Number</Label>
-                    <Input id="request-phone" value={phone} onChange={(event) => setPhone(event.target.value)} disabled={isSubmitting} placeholder="09XXXXXXXXX" />
+                    <Label htmlFor="request-phone" className="auth-card-label">Mobile Number</Label>
+                    <Input id="request-phone" value={phone} onChange={(event) => setPhone(event.target.value)} disabled={isSubmitting} placeholder="09XXXXXXXXX" className="auth-card-input" />
                   </div>
                 </HoverTooltip>
 
                 <HoverTooltip text="Tungkulin mo sa barangay agriculture workflow.">
                   <div className="space-y-2.5">
-                    <Label htmlFor="request-title">Tungkulin</Label>
-                    <Input id="request-title" value={title} onChange={(event) => setTitle(event.target.value)} disabled={isSubmitting} placeholder="AEW, Secretary, Captain, Admin" />
+                    <Label htmlFor="request-title" className="auth-card-label">Tungkulin</Label>
+                    <Input id="request-title" value={title} onChange={(event) => setTitle(event.target.value)} disabled={isSubmitting} placeholder="AEW, Secretary, Captain, Admin" className="auth-card-input" />
                   </div>
                 </HoverTooltip>
 
                 <HoverTooltip text="Barangay na gagamit ng account na ito.">
                   <div className="space-y-2.5 md:col-span-2">
-                    <Label htmlFor="request-barangay">Barangay</Label>
-                    <Input id="request-barangay" value={barangay} onChange={(event) => setBarangay(event.target.value)} disabled={isSubmitting} />
+                    <Label htmlFor="request-barangay" className="auth-card-label">Barangay</Label>
+                    <Input id="request-barangay" value={barangay} onChange={(event) => setBarangay(event.target.value)} disabled={isSubmitting} className="auth-card-input" />
                   </div>
                 </HoverTooltip>
               </div>
 
               <HoverTooltip text="Opsyonal na note tungkol sa dahilan ng access request o uri ng tulong na kailangan mo sa setup.">
                 <div className="space-y-2.5">
-                  <Label htmlFor="request-message">Dagdag na Tala</Label>
+                  <Label htmlFor="request-message" className="auth-card-label">Dagdag na Tala</Label>
                   <Textarea
                     id="request-message"
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     disabled={isSubmitting}
                     placeholder="Halimbawa: Ako ang bagong AEW at kailangan ko ng live account para sa farmer follow-up at reports."
+                    className="auth-card-input min-h-[112px]"
                   />
                 </div>
               </HoverTooltip>
@@ -194,7 +195,7 @@ function RequestAccessPageContent() {
             </form>
 
             <div className="mt-5 space-y-2 text-center text-sm">
-              <Link href="/login" className="text-muted-foreground underline hover:text-foreground">
+              <Link href="/login" className="auth-card-link">
                 Bumalik sa login
               </Link>
             </div>

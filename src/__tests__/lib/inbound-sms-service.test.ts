@@ -98,7 +98,106 @@ describe("inbound-sms-service", () => {
     expect(concernMessage.newFarmer).toBeUndefined();
     expect(concernMessage.message.parsedIntent).toBe("PEST_DISEASE");
     expect(concernMessage.message.message).toBe("Marami pong uod sa palay namin");
-    expect(concernMessage.message.aiAdvice).toContain("rehistro");
+    expect(concernMessage.message.caseId).not.toBe(firstMessage.message.caseId);
+    expect(concernMessage.message.registrationRequired).toBe(false);
+    expect(concernMessage.message.identityDetailsNeeded).toBe(true);
+    expect(concernMessage.message.aiAdvice).toContain("pangalan");
+  });
+
+  it("handles an unregistered farmer concern without blocking it behind registration", () => {
+    const created = createInboundSmsRecord({
+      id: "SMS-CONCERN-1",
+      phone: "+639171239999",
+      message: "Marami pong uod sa palay namin",
+      farmers: [],
+      timestamp: "2026-03-22T08:10:00.000Z",
+    });
+
+    expect(created.newFarmer).toBeUndefined();
+    expect(created.message.parsedIntent).toBe("PEST_DISEASE");
+    expect(created.message.registrationRequired).toBe(false);
+    expect(created.message.identityDetailsNeeded).toBe(true);
+    expect(created.message.caseStatus).toBe("open");
+    expect(created.message.aiAdvice).toContain("pangalan");
+    expect(created.message.aiAdvice).toContain("sitio");
+  });
+
+  it("keeps emergency concerns open even when the sender is not yet registered", () => {
+    const created = createInboundSmsRecord({
+      id: "SMS-EMERGENCY-1",
+      phone: "+639171230001",
+      message: "Baha na po sa bukid namin, emergency ito",
+      farmers: [],
+      timestamp: "2026-03-22T08:12:00.000Z",
+    });
+
+    expect(created.newFarmer).toBeUndefined();
+    expect(created.message.parsedIntent).toBe("EMERGENCY");
+    expect(created.message.registrationRequired).toBe(false);
+    expect(created.message.identityDetailsNeeded).toBe(true);
+    expect(created.message.caseStatus).toBe("open");
+    expect(created.message.aiAdvice).toContain("pangalan");
+  });
+
+  it("reuses the same case id for a recent unknown concern follow-up with the same intent", () => {
+    const firstMessage = createInboundSmsRecord({
+      id: "SMS-CONCERN-2A",
+      phone: "+639171230002",
+      message: "Marami pong uod sa palay namin",
+      farmers: [],
+      timestamp: "2026-03-22T08:20:00.000Z",
+    });
+
+    const secondMessage = createInboundSmsRecord({
+      id: "SMS-CONCERN-2B",
+      phone: "+639171230002",
+      message: "Lumalala pa po ang uod sa palay namin",
+      farmers: [],
+      existingMessages: [firstMessage.message],
+      timestamp: "2026-03-22T09:00:00.000Z",
+    });
+
+    expect(secondMessage.message.parsedIntent).toBe("PEST_DISEASE");
+    expect(secondMessage.message.caseId).toBe(firstMessage.message.caseId);
+  });
+
+  it("creates a new case id when a known farmer sends a separate new concern", () => {
+    const farmers = [
+      {
+        id: "FARM-1",
+        name: "Juan Dela Cruz",
+        age: 42,
+        gender: "Lalaki",
+        phone: "+639171230003",
+        barangay: "Batakil",
+        sitio: "Zone 1",
+        farmSize: 1,
+        crops: ["Palay"],
+        registrationDate: "2026-03-01T00:00:00.000Z",
+        lastSmsActivity: "2026-03-21T00:00:00.000Z",
+        status: "active" as const,
+      },
+    ];
+
+    const firstMessage = createInboundSmsRecord({
+      id: "SMS-KNOWN-1A",
+      phone: "+639171230003",
+      message: "May uod po sa palay namin",
+      farmers,
+      timestamp: "2026-03-22T08:25:00.000Z",
+    });
+
+    const secondMessage = createInboundSmsRecord({
+      id: "SMS-KNOWN-1B",
+      phone: "+639171230003",
+      message: "Mahal din po ang presyo ng palay ngayon",
+      farmers,
+      existingMessages: [firstMessage.message],
+      timestamp: "2026-03-22T10:25:00.000Z",
+    });
+
+    expect(firstMessage.message.caseId).toBe("CASE-SMS-KNOWN-1A");
+    expect(secondMessage.message.caseId).toBe("CASE-SMS-KNOWN-1B");
   });
 
   it("asks for missing registration details in respectful English when the farmer texts in English", () => {

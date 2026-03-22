@@ -202,18 +202,23 @@ export async function persistLiveInboundSms(input: {
   }
 
   const confirmationReply = parseFarmerResolutionConfirmationReply(input.message);
-  const awaitingConfirmationMessage = existingPhoneMessages
+  const awaitingConfirmationMessages = existingPhoneMessages
     .filter((message) =>
       normalizePhone(message.phone) === normalizedPhone &&
       message.resolutionConfirmationStatus === "awaiting_farmer" &&
       !message.closedAt
     )
-    .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())[0];
+    .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
+  const awaitingConfirmationMessage = confirmationReply?.caseId
+    ? awaitingConfirmationMessages.find(
+        (message) => (message.caseId ?? "").toUpperCase() === confirmationReply.caseId
+      ) ?? awaitingConfirmationMessages[0]
+    : awaitingConfirmationMessages[0];
 
   if (confirmationReply && awaitingConfirmationMessage) {
     const confirmationResult = applyFarmerResolutionConfirmation({
       message: awaitingConfirmationMessage,
-      confirmationStatus: confirmationReply,
+      confirmationStatus: confirmationReply.status,
       replyBody: input.message,
     });
 
@@ -233,7 +238,7 @@ export async function persistLiveInboundSms(input: {
     await db.collection(firebaseCollections.auditLogs).doc(confirmationResult.auditLog.id).set(confirmationResult.auditLog);
     await db.collection(firebaseCollections.logbookEntries).doc(confirmationResult.logbookEntry.id).set(confirmationResult.logbookEntry);
 
-    if (confirmationReply === "reopened") {
+    if (confirmationReply.status === "reopened") {
       const reminderResult = await processOfficialReminderMessage({
         message: confirmationResult.updatedMessage,
         users: [],
@@ -264,7 +269,7 @@ export async function persistLiveInboundSms(input: {
     await recordRuntimeHealthSuccess("sms_inbound", "Live Inbound SMS", {
       handledBy: "resolution_confirmation",
       caseId: confirmationResult.updatedMessage.caseId ?? confirmationResult.updatedMessage.id,
-      confirmationStatus: confirmationReply,
+      confirmationStatus: confirmationReply.status,
       sourceProvider: input.sourceProvider ?? "unknown",
     });
 

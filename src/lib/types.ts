@@ -225,6 +225,8 @@ export type SmsMessage = {
   slaDueAt?: string;
   escalatedAt?: string;
   registrationRequired?: boolean;
+  identityDetailsNeeded?: boolean;
+  identityPrompt?: string;
   followUpDueAt?: string;
   followUpSentAt?: string;
   closedAt?: string;

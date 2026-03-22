@@ -29,6 +29,18 @@ function appendAfterHoursNotice(body: string, message: SmsMessage, settings: Sys
   return `${body} Ang regular na oras ng barangay agriculture team ay ${settings.replyStartTime} hanggang ${settings.replyEndTime}. Para sa agarang concern sa labas ng oras na ito, makipag-ugnayan sa ${settings.adminPhone}.`;
 }
 
+function appendIdentityPrompt(body: string, message: SmsMessage) {
+  if (!message.identityDetailsNeeded || !message.identityPrompt?.trim()) {
+    return body;
+  }
+
+  if (body.includes(message.identityPrompt.trim())) {
+    return body;
+  }
+
+  return `${body} ${message.identityPrompt.trim()}`.trim();
+}
+
 export function isAutoReplyOverdue(
   message: SmsMessage,
   now = Date.now(),
@@ -47,31 +59,27 @@ export function buildAutoReplyBody(
   settings: SystemSettings = defaultSystemSettings
 ) {
   const useEnglish = message.detectedLanguage === "English";
+  let baseBody: string;
 
   if (message.clarificationNeeded && message.clarificationQuestion) {
     const investigationTemplate = getSystemTemplate(settings, "investigation");
-    const body = useEnglish
+    baseBody = useEnglish
       ? message.clarificationQuestion
       : investigationTemplate
         ? `${replaceSystemTemplateTokens(investigationTemplate.text, settings)} ${message.clarificationQuestion}`.trim()
         : message.clarificationQuestion;
-
-    return appendAfterHoursNotice(
-      body,
-      message,
-      settings
-    );
+    return appendAfterHoursNotice(appendIdentityPrompt(baseBody, message), message, settings);
   }
 
   if (message.urgency === "high" || message.parsedIntent === "EMERGENCY") {
     const emergencyTemplate = getSystemTemplate(settings, "emergency");
-    const body = useEnglish
+    baseBody = useEnglish
       ? `We have received your urgent report. While waiting for the AEW, please prioritize safety and avoid hazardous areas in the field. The barangay team will send follow-up guidance as soon as possible.`
       : emergencyTemplate
       ? replaceSystemTemplateTokens(emergencyTemplate.text, settings)
       : `Natanggap ang inyong agarang ulat. Habang hinihintay ang AEW, unahin ang kaligtasan ng tao at iwasan muna ang mapanganib na bahagi ng bukid. Magpapadala ang barangay ng follow-up sa lalong madaling panahon.`;
 
-    return appendAfterHoursNotice(body, message, settings);
+    return appendAfterHoursNotice(appendIdentityPrompt(baseBody, message), message, settings);
   }
 
   const confirmationTemplate = getSystemTemplate(settings, "confirmation");
@@ -79,56 +87,48 @@ export function buildAutoReplyBody(
 
   switch (message.parsedIntent) {
     case "PEST_DISEASE":
-      return appendAfterHoursNotice(
+      baseBody =
         useEnglish
           ? "We have received your report about a possible pest or disease issue. Please avoid applying chemicals until the barangay agriculture team has reviewed it."
           : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
-          : "Natanggap ang inyong ulat tungkol sa posibleng peste o sakit. Huwag munang mag-apply ng kemikal hangga't walang review mula sa barangay agriculture team. Magpapadala kami ng kasunod na payo sa lalong madaling panahon.",
-        message,
-        settings
-      );
+          : "Natanggap ang inyong ulat tungkol sa posibleng peste o sakit. Huwag munang mag-apply ng kemikal hangga't walang review mula sa barangay agriculture team. Magpapadala kami ng kasunod na payo sa lalong madaling panahon.";
+      break;
     case "REQUEST":
-      return appendAfterHoursNotice(
+      baseBody =
         useEnglish
           ? "We have received your request. We are checking the available equipment or supplies and will send the next update once the barangay team reviews it."
           : resolutionTemplate
           ? replaceSystemTemplateTokens(resolutionTemplate.text, settings)
-          : "Natanggap ang inyong kahilingan. Sinusuri na namin ang available na kagamitan o supply at magpapadala kami ng susunod na update kapag na-review na ito ng barangay team.",
-        message,
-        settings
-      );
+          : "Natanggap ang inyong kahilingan. Sinusuri na namin ang available na kagamitan o supply at magpapadala kami ng susunod na update kapag na-review na ito ng barangay team.";
+      break;
     case "WEATHER_HELP":
-      return appendAfterHoursNotice(
+      baseBody =
         useEnglish
           ? "We have received your report about weather or water conditions. Please continue monitoring your area while waiting for the next advisory from the barangay team."
           : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
-          : "Natanggap ang inyong ulat tungkol sa panahon o kondisyon ng tubig. Hinihiling namin na bantayan ang inyong lugar at hintayin ang kasunod na abiso mula sa barangay team.",
-        message,
-        settings
-      );
+          : "Natanggap ang inyong ulat tungkol sa panahon o kondisyon ng tubig. Hinihiling namin na bantayan ang inyong lugar at hintayin ang kasunod na abiso mula sa barangay team.";
+      break;
     case "REGISTER":
-      return appendAfterHoursNotice(
+      baseBody =
         useEnglish
           ? "We have received your registration request. The barangay team will review the details and send confirmation after validation."
           : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
-          : "Opo, natanggap po ang inyong registration request. Susuriin po ng barangay team ang detalye at magpapadala po kami ng kumpirmasyon pagkatapos ng validation.",
-        message,
-        settings
-      );
+          : "Opo, natanggap po ang inyong registration request. Susuriin po ng barangay team ang detalye at magpapadala po kami ng kumpirmasyon pagkatapos ng validation.";
+      break;
     default:
-      return appendAfterHoursNotice(
+      baseBody =
         useEnglish
           ? "We have received your message and placed it in the queue for barangay agriculture review. We will send a follow-up as soon as possible."
           : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
-          : "Natanggap namin ang inyong mensahe at naka-queue na ito para sa agarang review ng barangay agriculture team. Magpapadala kami ng follow-up sa lalong madaling panahon.",
-        message,
-        settings
-      );
+          : "Natanggap namin ang inyong mensahe at naka-queue na ito para sa agarang review ng barangay agriculture team. Magpapadala kami ng follow-up sa lalong madaling panahon.";
+      break;
   }
+
+  return appendAfterHoursNotice(appendIdentityPrompt(baseBody, message), message, settings);
 }
 
 export function createAutoReplyArtifacts(input: {

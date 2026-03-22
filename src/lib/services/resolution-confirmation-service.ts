@@ -11,24 +11,39 @@ function includesAny(value: string, terms: string[]) {
   return terms.some((term) => value === term || value.startsWith(`${term} `) || value.includes(` ${term} `));
 }
 
+function extractCaseId(value: string) {
+  return value.match(/\bCASE-[A-Z0-9-]+\b/i)?.[0]?.toUpperCase();
+}
+
 export function buildFarmerResolutionConfirmationBody(message: SmsMessage) {
   const caseId = message.caseId ?? message.id;
-  return `Lingkod-Ani ${caseId}: Minarkahan ng barangay team na handa nang isara ang concern mo. Reply YES kung okay na, o NO kung kailangan pa ng dagdag na tulong.`;
+  if (message.detectedLanguage === "English") {
+    return `Lingkod-Ani ${caseId}: The barangay team marked your concern as ready for closure. Please reply YES if the issue is already okay, or NO if you still need additional help.`;
+  }
+
+  return `Lingkod-Ani ${caseId}: Minarkahan na po ng barangay team na handa nang isara ang inyong concern. Pakireply po ng YES kung okay na, o NO kung kailangan pa po ninyo ng dagdag na tulong.`;
 }
 
 export function parseFarmerResolutionConfirmationReply(message: string) {
   const normalized = normalizeReply(message);
+  const caseId = extractCaseId(message);
 
   if (!normalized) {
     return null;
   }
 
   if (includesAny(normalized, ["yes", "oo", "opo", "ok", "okay", "ayos na", "pwede na", "resolved"])) {
-    return "confirmed_by_farmer" as const;
+    return {
+      status: "confirmed_by_farmer" as const,
+      caseId,
+    };
   }
 
   if (includesAny(normalized, ["no", "hindi", "di pa", "hindi pa", "not yet", "kulang pa", "hindi okay"])) {
-    return "reopened" as const;
+    return {
+      status: "reopened" as const,
+      caseId,
+    };
   }
 
   return null;

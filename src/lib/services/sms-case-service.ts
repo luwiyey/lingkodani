@@ -33,7 +33,7 @@ export function buildCaseId(input: {
   normalizedPhone: string;
   fallbackId?: string;
 }) {
-  const baseValue = input.farmerId || input.normalizedPhone || input.fallbackId || "UNVERIFIED";
+  const baseValue = input.fallbackId || input.farmerId || input.normalizedPhone || "UNVERIFIED";
   const normalized = baseValue
     .replace(/[^a-zA-Z0-9-]+/g, "-")
     .replace(/-+/g, "-")

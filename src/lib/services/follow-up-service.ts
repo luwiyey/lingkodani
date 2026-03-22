@@ -28,6 +28,12 @@ export function buildFollowUpBody(message: SmsMessage) {
       : "Kamusta po. Kung maaari po, pakisagot po ang huling clarification request upang makapagbigay po kami ng mas tumpak na payo.";
   }
 
+  if (message.identityDetailsNeeded) {
+    return useEnglish
+      ? "Hello. We can continue following up your concern, but please send your full name and sitio or barangay so we can match your case properly."
+      : "Kamusta po. Maitutuloy po namin ang follow-up sa concern ninyo, pero pakisend din po ang inyong buong pangalan at sitio o barangay upang maitugma po namin nang maayos ang inyong case.";
+  }
+
   if (message.urgency === "high") {
     return useEnglish
       ? "Hello. How is the situation in your field now? Please tell us if the problem is getting worse so we can escalate it quickly."

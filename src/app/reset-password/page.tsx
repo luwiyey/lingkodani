@@ -117,7 +117,7 @@ function ResetPasswordPageContent() {
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-1 items-center justify-center px-4 py-8">
-        <Card className="mx-auto w-full max-w-md overflow-hidden border border-slate-200/80 bg-white text-foreground shadow-[0_24px_72px_-40px_rgba(15,23,42,0.32)]">
+        <Card className="auth-card-surface mx-auto w-full max-w-md overflow-hidden">
           <CardHeader className="pb-4 pt-8 text-center sm:pb-5 sm:pt-9">
             <div className="mb-3 flex items-center justify-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -125,8 +125,8 @@ function ResetPasswordPageContent() {
               </div>
               <h1 className="text-3xl font-semibold tracking-tight text-primary">Lingkod-Ani</h1>
             </div>
-            <CardTitle className="text-2xl text-foreground">I-reset ang Password</CardTitle>
-            <CardDescription className="mx-auto mt-1 max-w-[26rem] text-[14px] leading-7 text-muted-foreground/90">
+            <CardTitle className="auth-card-title text-2xl">I-reset ang Password</CardTitle>
+            <CardDescription className="auth-card-description mx-auto mt-1 max-w-[26rem] text-[14px] leading-7">
               Ilagay ang email address ng iyong account at padadalhan ka namin ng password reset link.
             </CardDescription>
           </CardHeader>
@@ -134,7 +134,7 @@ function ResetPasswordPageContent() {
             <form onSubmit={handleRequestReset} className="space-y-5">
               <HoverTooltip text="Ilagay ang email address na naka-link sa iyong Lingkod-Ani account.">
                 <div className="space-y-2.5">
-                  <Label htmlFor="email" className="text-[15px] font-medium text-foreground">
+                    <Label htmlFor="email" className="auth-card-label">
                     Email Address
                   </Label>
                   <Input
@@ -146,7 +146,7 @@ function ResetPasswordPageContent() {
                     autoComplete="email"
                     required
                     disabled={isSubmitting}
-                    className="h-12 rounded-xl border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:ring-offset-0"
+                    className="auth-card-input h-12 rounded-xl px-4 text-[15px]"
                   />
                 </div>
               </HoverTooltip>
@@ -182,13 +182,13 @@ function ResetPasswordPageContent() {
             </form>
 
             <div className="mt-5 space-y-2 text-center text-sm">
-              <p className="text-muted-foreground">
+              <p className="auth-card-description">
                 Wala ka pang live account? Maaari kang humiling muna ng setup para ma-provision ang access mo.
               </p>
-              <Link href={`/request-access?source=reset_password&email=${encodeURIComponent(email.trim().toLowerCase())}`} className="text-muted-foreground underline hover:text-foreground">
+              <Link href={`/request-access?source=reset_password&email=${encodeURIComponent(email.trim().toLowerCase())}`} className="auth-card-link">
                 Humiling ng access
               </Link>
-              <Link href="/login" className="text-muted-foreground underline hover:text-foreground">
+              <Link href="/login" className="auth-card-link">
                 Bumalik sa login
               </Link>
             </div>
