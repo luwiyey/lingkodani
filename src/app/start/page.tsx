@@ -269,8 +269,8 @@ export default function StartPage() {
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center">
-      <Card className="relative z-10 w-full max-w-3xl overflow-hidden border-white/70 bg-white/98 text-foreground shadow-[0_28px_70px_-38px_rgba(15,23,42,0.42)]">
-        <CardHeader className="space-y-4 bg-[linear-gradient(180deg,rgba(248,251,248,0.98),rgba(255,255,255,0.98))] pb-4">
+      <Card className="relative z-10 w-full max-w-3xl overflow-hidden border-border/80 bg-white text-foreground shadow-[0_28px_70px_-38px_rgba(15,23,42,0.42)]">
+        <CardHeader className="space-y-4 bg-[linear-gradient(180deg,#f8fbf8_0%,#ffffff_100%)] pb-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Image src="/logo.png" width={40} height={40} alt="Lingkod-Ani Logo" className="h-10 w-10" />
@@ -315,7 +315,7 @@ export default function StartPage() {
                   "rounded-[calc(var(--radius)+4px)] border px-4 py-3 shadow-none transition-colors duration-150 ease-out",
                   item.state === "done" && "border-primary/15 bg-primary/5",
                   item.state === "active" && "border-primary/20 bg-[linear-gradient(180deg,#fbfdfb_0%,#f4f9f5_100%)]",
-                  item.state === "upcoming" && "border-border/70 bg-muted/15"
+                  item.state === "upcoming" && "border-border/70 bg-white"
                 )}
               >
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
