@@ -13,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useToast } from "@/hooks/use-toast";
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useAuth } from '@/context/auth-context';
@@ -21,7 +20,12 @@ import { useData } from '@/context/data-context';
 import { isLiveMode } from '@/lib/config/app-mode';
 import { normalizeDemoProfile, readOnboardingProfile } from '@/lib/onboarding';
 import { getPreferredDashboardRoute } from '@/lib/user-workspace';
-import { PUBLIC_ENTRY_IMAGE_OVERLAY } from '@/lib/public-entry-theme';
+import {
+  PUBLIC_ENTRY_BACKGROUND_ALT,
+  PUBLIC_ENTRY_BACKGROUND_HINT,
+  PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_IMAGE_OVERLAY,
+} from '@/lib/public-entry-theme';
 
 function VerifyPageContent() {
   const router = useRouter();
@@ -29,7 +33,6 @@ function VerifyPageContent() {
   const { users } = useData();
   const { authLoading, currentUserProfile, startDemoSession } = useAuth();
   const { toast } = useToast();
-  const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
 
   useEffect(() => {
     if (!authLoading && currentUserProfile) {
@@ -76,15 +79,13 @@ function VerifyPageContent() {
 
   return (
     <div className="w-full h-screen relative">
-       {loginBg && (
-         <Image
-            src={loginBg.imageUrl}
-            alt={loginBg.description}
-            fill
-            className="object-cover"
-            data-ai-hint={loginBg.imageHint}
-         />
-      )}
+      <Image
+        src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
+        alt={PUBLIC_ENTRY_BACKGROUND_ALT}
+        fill
+        className="object-cover"
+        data-ai-hint={PUBLIC_ENTRY_BACKGROUND_HINT}
+      />
       <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
       <div className="relative z-10 flex items-center justify-center h-full p-4">
         <Card className="auth-card-surface w-full max-w-md mx-auto shadow-2xl">

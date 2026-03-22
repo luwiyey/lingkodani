@@ -31,8 +31,12 @@ import {
   saveStartFlowDraft,
   type ApplicationChoice,
 } from "@/lib/onboarding";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { PUBLIC_ENTRY_IMAGE_OVERLAY } from "@/lib/public-entry-theme";
+import {
+  PUBLIC_ENTRY_BACKGROUND_ALT,
+  PUBLIC_ENTRY_BACKGROUND_HINT,
+  PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_IMAGE_OVERLAY,
+} from "@/lib/public-entry-theme";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 import { cn } from "@/lib/utils";
 
@@ -151,7 +155,6 @@ function getApplicationNotice(selectedApplication: ApplicationChoice | null): Ap
 export default function StartPage() {
   const router = useRouter();
   const { startDemoSession } = useAuth();
-  const backgroundImage = PlaceHolderImages.find((image) => image.id === "login-bg");
   const [selectedApplication, setSelectedApplication] = useState<ApplicationChoice | null>(null);
   const [position, setPosition] = useState("");
   const [age, setAge] = useState("");
@@ -256,16 +259,14 @@ export default function StartPage() {
   return (
     <div className="relative min-h-screen overflow-x-hidden px-4 py-10">
       <div className="fixed inset-0">
-        {backgroundImage && (
-          <Image
-            src={backgroundImage.imageUrl}
-            alt={backgroundImage.description}
-            fill
-            className="object-cover"
-            priority
-            data-ai-hint={backgroundImage.imageHint}
-          />
-        )}
+        <Image
+          src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
+          alt={PUBLIC_ENTRY_BACKGROUND_ALT}
+          fill
+          className="object-cover"
+          priority
+          data-ai-hint={PUBLIC_ENTRY_BACKGROUND_HINT}
+        />
         <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
       </div>
 

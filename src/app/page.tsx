@@ -4,6 +4,10 @@ import { ArrowRight, BookOpen, Check, MessageSquare, ShieldAlert } from "lucide-
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { buildLegalPageHref } from "@/lib/legal-links";
+import {
+  PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_IMAGE_OVERLAY,
+} from "@/lib/public-entry-theme";
 
 const featureRows = [
   {
@@ -61,13 +65,13 @@ export default function LandingPage() {
         <section className="relative w-full py-24 md:py-32 lg:py-36">
           <div className="absolute inset-0">
             <Image
-              src="/hero-farm.png"
+              src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
               alt="Rice field landscape for the Lingkod-Ani landing page"
               fill
               className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.68),rgba(15,23,42,0.52),rgba(47,111,62,0.24))]" />
+            <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
           </div>
           <div className="container relative mx-auto px-4 text-center text-primary-foreground">
             <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">

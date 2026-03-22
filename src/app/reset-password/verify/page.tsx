@@ -23,8 +23,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { buildLegalPageHref } from '@/lib/legal-links';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { PUBLIC_ENTRY_IMAGE_OVERLAY } from '@/lib/public-entry-theme';
+import {
+  PUBLIC_ENTRY_BACKGROUND_ALT,
+  PUBLIC_ENTRY_BACKGROUND_HINT,
+  PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_IMAGE_OVERLAY,
+} from '@/lib/public-entry-theme';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 
 function readFriendlyVerificationError(error: unknown) {
@@ -63,7 +67,6 @@ function ResetPasswordVerifyPageContent() {
   const [isCheckingCode, setIsCheckingCode] = useState(false);
   const [resolvedEmail, setResolvedEmail] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
-  const resetBg = PlaceHolderImages.find((image) => image.id === 'login-bg');
 
   const emailFromQuery = searchParams.get('email');
   const actionCode = searchParams.get('oobCode');
@@ -170,16 +173,14 @@ function ResetPasswordVerifyPageContent() {
   return (
     <div className="relative flex min-h-screen w-full flex-col">
       <div className="fixed inset-0">
-        {resetBg ? (
-          <Image
-            src={resetBg.imageUrl}
-            alt={resetBg.description}
-            fill
-            className="object-cover"
-            priority
-            data-ai-hint={resetBg.imageHint}
-          />
-        ) : null}
+        <Image
+          src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
+          alt={PUBLIC_ENTRY_BACKGROUND_ALT}
+          fill
+          className="object-cover"
+          priority
+          data-ai-hint={PUBLIC_ENTRY_BACKGROUND_HINT}
+        />
         <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
       </div>
 

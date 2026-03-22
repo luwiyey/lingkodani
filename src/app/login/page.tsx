@@ -31,8 +31,12 @@ import { useData } from "@/context/data-context";
 import { isDemoMode, isLiveMode } from "@/lib/config/app-mode";
 import { buildLegalPageHref } from "@/lib/legal-links";
 import { readOnboardingProfile } from "@/lib/onboarding";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { PUBLIC_ENTRY_IMAGE_OVERLAY } from "@/lib/public-entry-theme";
+import {
+  PUBLIC_ENTRY_BACKGROUND_ALT,
+  PUBLIC_ENTRY_BACKGROUND_HINT,
+  PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_IMAGE_OVERLAY,
+} from "@/lib/public-entry-theme";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 
 function readFriendlyLiveAuthError(error: unknown) {
@@ -68,7 +72,6 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const { users } = useData();
   const { authLoading, authError, currentUser, currentUserProfile, signIn } = useAuth();
-  const loginBg = PlaceHolderImages.find((img) => img.id === "login-bg");
   const selectedApplication = searchParams.get("application");
   const cameFromStart = searchParams.get("fromStart") === "1";
   const requestedAccess = searchParams.get("requestedAccess") === "1";
@@ -151,16 +154,14 @@ function LoginPageContent() {
   return (
     <div className="relative flex min-h-screen w-full flex-col">
       <div className="fixed inset-0">
-        {loginBg && (
-          <Image
-            src={loginBg.imageUrl}
-            alt={loginBg.description}
-            fill
-            className="object-cover"
-            priority
-            data-ai-hint={loginBg.imageHint}
-          />
-        )}
+        <Image
+          src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
+          alt={PUBLIC_ENTRY_BACKGROUND_ALT}
+          fill
+          className="object-cover"
+          priority
+          data-ai-hint={PUBLIC_ENTRY_BACKGROUND_HINT}
+        />
         <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
       </div>
 

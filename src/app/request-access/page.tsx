@@ -20,8 +20,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { buildLegalPageHref } from '@/lib/legal-links';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { PUBLIC_ENTRY_IMAGE_OVERLAY } from '@/lib/public-entry-theme';
+import {
+  PUBLIC_ENTRY_BACKGROUND_ALT,
+  PUBLIC_ENTRY_BACKGROUND_HINT,
+  PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_IMAGE_OVERLAY,
+} from '@/lib/public-entry-theme';
 
 function RequestAccessPageContent() {
   const router = useRouter();
@@ -34,7 +38,6 @@ function RequestAccessPageContent() {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const accessBg = PlaceHolderImages.find((image) => image.id === 'login-bg');
 
   const source =
     searchParams.get('source') === 'login' || searchParams.get('source') === 'reset_password'
@@ -105,16 +108,14 @@ function RequestAccessPageContent() {
   return (
     <div className="relative flex min-h-screen w-full flex-col">
       <div className="fixed inset-0">
-        {accessBg ? (
-          <Image
-            src={accessBg.imageUrl}
-            alt={accessBg.description}
-            fill
-            className="object-cover"
-            priority
-            data-ai-hint={accessBg.imageHint}
-          />
-        ) : null}
+        <Image
+          src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
+          alt={PUBLIC_ENTRY_BACKGROUND_ALT}
+          fill
+          className="object-cover"
+          priority
+          data-ai-hint={PUBLIC_ENTRY_BACKGROUND_HINT}
+        />
         <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
       </div>
 
