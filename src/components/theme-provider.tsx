@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-type Theme = "dark" | "light" | "contrast-light" | "contrast-dark"
+type Theme = "light" | "night"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -32,17 +32,20 @@ export function ThemeProvider({
     if (typeof window === 'undefined') {
       return defaultTheme;
     }
-    return (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    const storedTheme = localStorage.getItem(storageKey);
+    if (storedTheme === "dark" || storedTheme === "contrast-dark" || storedTheme === "night") {
+      return "night";
+    }
+    return "light";
   })
 
   React.useEffect(() => {
     const root = window.document.documentElement
 
-    root.classList.remove("light", "dark", "contrast-light", "contrast-dark")
-
+    root.classList.remove("light", "dark", "night", "contrast-light", "contrast-dark")
     root.classList.add(theme)
-    if (theme === 'contrast-dark') {
-      root.classList.add('dark');
+    if (theme === "night") {
+      root.classList.add("dark")
     }
   }, [theme])
 

@@ -28,14 +28,8 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("light")}>
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("contrast-light")}>
-          Contrast Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("contrast-dark")}>
-          Contrast Dark
+        <DropdownMenuItem onClick={() => setTheme("night")}>
+          Night
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
