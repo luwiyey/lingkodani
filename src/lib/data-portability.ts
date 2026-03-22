@@ -192,6 +192,10 @@ export function formatSmsTrainingExamplesAsCsv(examples: SmsTrainingExample[]) {
       "reviewedBy",
       "reviewedAt",
       "wasAdviceEdited",
+      "reviewStatus",
+      "reviewNotes",
+      "sourceLabel",
+      "importedAt",
     ],
     ...examples.map((example) => [
       example.id,
@@ -218,6 +222,10 @@ export function formatSmsTrainingExamplesAsCsv(examples: SmsTrainingExample[]) {
       example.finalReview.reviewedBy,
       example.finalReview.reviewedAt,
       String(example.finalReview.wasAdviceEdited),
+      example.reviewStatus ?? "",
+      example.reviewNotes ?? "",
+      example.sourceLabel ?? "",
+      example.importedAt ?? "",
     ]),
   ];
 
@@ -274,6 +282,11 @@ function coerceTrainingExample(record: Record<string, unknown>, index: number): 
       reviewedAt,
       wasAdviceEdited: asBoolean(record.wasAdviceEdited),
     },
+    reviewStatus:
+      asString(record.reviewStatus).trim() as SmsTrainingExample["reviewStatus"] || "approved",
+    reviewNotes: asString(record.reviewNotes).trim() || undefined,
+    sourceLabel: asString(record.sourceLabel).trim() || undefined,
+    importedAt: asString(record.importedAt).trim() || undefined,
   };
 }
 
@@ -526,12 +539,22 @@ function coerceKnowledgeArticle(record: Record<string, unknown>, index: number):
     author: asString(record.author).trim() || "Imported Knowledge File",
     type: type || "article",
     audioUrl: asString(record.audioUrl).trim() || undefined,
+    reviewStatus:
+      asString(record.reviewStatus).trim() as KnowledgeArticle["reviewStatus"] || "approved",
+    reviewNotes: asString(record.reviewNotes).trim() || undefined,
+    reviewedAt: asString(record.reviewedAt).trim() || undefined,
+    reviewedBy: asString(record.reviewedBy).trim() || undefined,
+    sourceLabel: asString(record.sourceLabel).trim() || undefined,
+    sourceType:
+      asString(record.sourceType).trim() as KnowledgeArticle["sourceType"] || undefined,
+    version: asNumber(record.version, 1),
+    supersedesArticleId: asString(record.supersedesArticleId).trim() || undefined,
   };
 }
 
 export function formatKnowledgeArticlesAsCsv(articles: KnowledgeArticle[]) {
   const rows = [
-    ["id", "title", "summary", "content", "keywords", "type", "author", "lastUpdated", "audioUrl"],
+    ["id", "title", "summary", "content", "keywords", "type", "author", "lastUpdated", "audioUrl", "reviewStatus", "reviewNotes", "reviewedAt", "reviewedBy", "sourceLabel", "sourceType", "version", "supersedesArticleId"],
     ...articles.map((article) => [
       article.id,
       article.title,
@@ -542,6 +565,14 @@ export function formatKnowledgeArticlesAsCsv(articles: KnowledgeArticle[]) {
       article.author,
       article.lastUpdated,
       article.audioUrl ?? "",
+      article.reviewStatus ?? "",
+      article.reviewNotes ?? "",
+      article.reviewedAt ?? "",
+      article.reviewedBy ?? "",
+      article.sourceLabel ?? "",
+      article.sourceType ?? "",
+      String(article.version ?? 1),
+      article.supersedesArticleId ?? "",
     ]),
   ];
 

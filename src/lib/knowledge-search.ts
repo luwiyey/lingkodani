@@ -11,6 +11,10 @@ export type SuggestedKnowledgeTopic = {
   keywords: string[];
 };
 
+export function isKnowledgeArticleApproved(article: KnowledgeArticle) {
+  return article.reviewStatus !== "needs_review" && article.reviewStatus !== "archived";
+}
+
 export function tokenizeKnowledgeText(value: string) {
   return value
     .toLowerCase()
@@ -20,9 +24,10 @@ export function tokenizeKnowledgeText(value: string) {
 }
 
 export function searchArticlesLocally(query: string, articles: KnowledgeArticle[]): KnowledgeSearchResult {
+  const searchableArticles = articles.filter(isKnowledgeArticleApproved);
   const queryTokens = tokenizeKnowledgeText(query);
 
-  const matches = articles
+  const matches = searchableArticles
     .map((article) => {
       const haystack = tokenizeKnowledgeText(
         [
@@ -51,7 +56,7 @@ export function searchArticlesLocally(query: string, articles: KnowledgeArticle[
   return {
     directAnswer: topArticle
       ? `Batay sa lokal na knowledge base, pinakamalapit na gabay ang "${topArticle.title}". ${topArticle.summary} Buksan ang kaugnay na artikulo sa ibaba para sa mas detalyadong paliwanag at mas ligtas na pagsunod.`
-      : `Wala pang eksaktong tugma sa lokal na knowledge base para sa "${query}". Subukang gumamit ng mas tiyak na keyword gaya ng pananim, peste, sintomas, lokasyon, o uri ng tulong na kailangan.`,
+      : `Wala pang eksaktong approved na tugma sa lokal na knowledge base para sa "${query}". Subukang gumamit ng mas tiyak na keyword gaya ng pananim, peste, sintomas, lokasyon, o uri ng tulong na kailangan, o magpa-review muna ng imported article kung mayroon na.`,
     articles: relevantArticles,
   };
 }

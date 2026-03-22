@@ -22,6 +22,7 @@ import type {
   OutboundMessage,
   Resource,
   SmsCaseOutcomeStatus,
+  SmsResolutionConfirmationStatus,
   SmsMessage,
   SmsTrainingExample,
   SystemSettings,
@@ -130,6 +131,14 @@ export type NewKnowledgeArticleData = {
   type: KnowledgeArticleType;
   content: string;
   audioUrl?: string;
+  reviewStatus?: KnowledgeArticle["reviewStatus"];
+  reviewNotes?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  sourceLabel?: string;
+  sourceType?: KnowledgeArticle["sourceType"];
+  version?: number;
+  supersedesArticleId?: string;
 };
 
 export type NewInboundSmsData = {
@@ -156,6 +165,11 @@ interface DataContextType {
   assignSmsMessage: (messageId: string, assigneeName?: string) => void;
   updateSmsCaseOutcome: (messageId: string, outcomeStatus: SmsCaseOutcomeStatus, summary: string) => void;
   closeSmsCase: (messageId: string, resolutionNote?: string) => void;
+  confirmSmsCaseResolution: (
+    messageId: string,
+    confirmationStatus: SmsResolutionConfirmationStatus,
+    note?: string
+  ) => void;
   resources: Resource[];
   addResource: (data: NewResourceData) => void;
   updateResource: (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => void;
@@ -185,6 +199,16 @@ interface DataContextType {
   importPortableBackup: (backup: PortableAppBackup) => Promise<{ importedCollections: string[]; importedRecords: number }>;
   importSmsTrainingExamples: (examples: SmsTrainingExample[]) => Promise<number>;
   importKnowledgeArticles: (articles: KnowledgeArticle[]) => Promise<number>;
+  reviewSmsTrainingExample: (
+    exampleId: string,
+    reviewStatus: NonNullable<SmsTrainingExample["reviewStatus"]>,
+    reviewNotes?: string
+  ) => Promise<void>;
+  reviewKnowledgeArticle: (
+    articleId: string,
+    reviewStatus: NonNullable<KnowledgeArticle["reviewStatus"]>,
+    reviewNotes?: string
+  ) => Promise<void>;
   systemSettings: SystemSettings;
   saveSystemSettings: (settings: SystemSettings) => Promise<void>;
   users: User[];
@@ -988,9 +1012,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return 0;
     }
 
-    const mergedExamples = mergeById(smsTrainingExamples, examples);
+    const importedAt = new Date().toISOString();
+    const normalizedExamples = examples.map((example) => ({
+      ...example,
+      reviewStatus: example.reviewStatus ?? 'needs_review',
+      reviewNotes:
+        example.reviewNotes ??
+        'Imported teaching example. Hintayin munang ma-review bago gamitin bilang live precedent.',
+      importedAt: example.importedAt ?? importedAt,
+    }));
+    const mergedExamples = mergeById(smsTrainingExamples, normalizedExamples);
     const nextExamples = sortByDateDescending(
-      mergedExamples.items,
+      mergedExamples.items.map((example) => {
+        const importedVersion = normalizedExamples.find((item) => item.id === example.id);
+        return importedVersion ?? example;
+      }),
       (example) => example.finalReview.reviewedAt
     );
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
@@ -998,19 +1034,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       id: createEntityId('AUD'),
       timestamp: new Date().toISOString(),
       user: actorName,
-      action: 'IMPORT_SMS_TRAINING_DATA',
-      details: `${examples.length} SMS training examples ang in-import.`,
-    };
+        action: 'IMPORT_SMS_TRAINING_DATA',
+        details: `${examples.length} SMS training examples ang in-import at minarkahang needs review.`,
+      };
 
     setSmsTrainingExamples(nextExamples);
     setAuditLogs((prev) => sortByDateDescending([auditLog, ...prev], (entry) => entry.timestamp));
 
-    if (isLiveMode) {
-      await Promise.all([
-        ...examples.map((example) => smsTrainingRepository.createTrainingExample(example)),
-        auditRepository.createAuditLog(auditLog),
-      ]);
-    }
+      if (isLiveMode) {
+        await Promise.all([
+          ...normalizedExamples.map((example) => smsTrainingRepository.createTrainingExample(example)),
+          auditRepository.createAuditLog(auditLog),
+        ]);
+      }
 
     return mergedExamples.importedRecords;
   };
@@ -1020,19 +1056,40 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return 0;
     }
 
-    const mergedArticles = mergeById(knowledgeArticles, articles);
-    const nextArticles = sortByDateDescending(
-      mergedArticles.items,
-      (article) => article.lastUpdated
+      const importedAt = new Date().toISOString();
+      const normalizedArticles = articles.map((article) => {
+        const existingMatch = knowledgeArticles.find(
+          (currentArticle) =>
+            currentArticle.title.trim().toLowerCase() === article.title.trim().toLowerCase()
+        );
+
+        return {
+          ...article,
+          reviewStatus: article.reviewStatus ?? 'needs_review',
+          reviewNotes:
+            article.reviewNotes ??
+            'Imported article. Hintayin munang ma-review bago isama sa live search assistant.',
+          sourceLabel: article.sourceLabel ?? article.author,
+          sourceType: article.sourceType ?? 'imported_file',
+          version: article.version ?? ((existingMatch?.version ?? 0) + 1),
+          supersedesArticleId: article.supersedesArticleId ?? existingMatch?.id,
+          reviewedAt: article.reviewStatus === 'approved' ? article.reviewedAt ?? importedAt : article.reviewedAt,
+        } satisfies KnowledgeArticle;
+      });
+
+      const mergedArticles = mergeById(knowledgeArticles, normalizedArticles);
+      const nextArticles = sortByDateDescending(
+        mergedArticles.items,
+        (article) => article.lastUpdated
     );
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
     const auditLog: AuditLog = {
       id: createEntityId('AUD'),
       timestamp: new Date().toISOString(),
       user: actorName,
-      action: 'IMPORT_KNOWLEDGE_ARTICLES',
-      details: `${articles.length} knowledge articles ang in-import.`,
-    };
+        action: 'IMPORT_KNOWLEDGE_ARTICLES',
+        details: `${articles.length} knowledge articles ang in-import at minarkahang needs review.`,
+      };
 
     setKnowledgeArticles(nextArticles);
     setAuditLogs((prev) => sortByDateDescending([auditLog, ...prev], (entry) => entry.timestamp));
@@ -1044,7 +1101,65 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       ]);
     }
 
-    return mergedArticles.importedRecords;
+      return mergedArticles.importedRecords;
+    };
+
+  const reviewSmsTrainingExample = async (
+    exampleId: string,
+    reviewStatus: NonNullable<SmsTrainingExample["reviewStatus"]>,
+    reviewNotes?: string
+  ) => {
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const timestamp = new Date().toISOString();
+    let nextExample: SmsTrainingExample | null = null;
+
+    const nextExamples = smsTrainingExamples.map((example) => {
+      if (example.id !== exampleId) {
+        return example;
+      }
+
+      nextExample = {
+        ...example,
+        reviewStatus,
+        reviewNotes: reviewNotes?.trim() || example.reviewNotes,
+        finalReview: {
+          ...example.finalReview,
+          reviewedAt: timestamp,
+          reviewedBy: actorName,
+        },
+      };
+      return nextExample;
+    });
+
+    if (!nextExample) {
+      return;
+    }
+
+    setSmsTrainingExamples(nextExamples);
+    await smsTrainingRepository.createTrainingExample(nextExample);
+  };
+
+  const reviewKnowledgeArticle = async (
+    articleId: string,
+    reviewStatus: NonNullable<KnowledgeArticle["reviewStatus"]>,
+    reviewNotes?: string
+  ) => {
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const timestamp = new Date().toISOString();
+    const nextArticles = knowledgeArticles.map((article) =>
+      article.id === articleId
+        ? {
+            ...article,
+            reviewStatus,
+            reviewNotes: reviewNotes?.trim() || article.reviewNotes,
+            reviewedAt: timestamp,
+            reviewedBy: actorName,
+          }
+        : article
+    );
+
+    setKnowledgeArticles(nextArticles);
+    await knowledgeRepository.updateKnowledgeArticles(nextArticles);
   };
 
   const importPortableBackup = async (backup: PortableAppBackup) => {
@@ -1349,18 +1464,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
   
   const addKnowledgeArticle = (data: NewKnowledgeArticleData) => {
-    const newArticle: KnowledgeArticle = {
-        id: `KB${Date.now()}`,
-        title: data.title,
-        summary: data.summary,
+      const newArticle: KnowledgeArticle = {
+          id: `KB${Date.now()}`,
+          title: data.title,
+          summary: data.summary,
         content: data.content,
         keywords: data.keywords,
-        type: data.type,
-        author: 'Admin',
-        lastUpdated: new Date().toISOString(),
-        audioUrl: data.type === 'audio' ? data.audioUrl : undefined,
-    };
-    setKnowledgeArticles(prev => [newArticle, ...prev]);
+          type: data.type,
+          author: 'Admin',
+          lastUpdated: new Date().toISOString(),
+          audioUrl: data.type === 'audio' ? data.audioUrl : undefined,
+          reviewStatus: data.reviewStatus ?? 'approved',
+          reviewNotes: data.reviewNotes,
+          reviewedAt: data.reviewStatus === 'needs_review' ? data.reviewedAt : data.reviewedAt ?? new Date().toISOString(),
+          reviewedBy: data.reviewedBy ?? currentUserProfile?.name ?? 'Admin',
+          sourceLabel: data.sourceLabel,
+          sourceType: data.sourceType ?? (data.type === 'audio' ? 'audio_upload' : 'manual'),
+          version: data.version ?? 1,
+          supersedesArticleId: data.supersedesArticleId,
+      };
+      setKnowledgeArticles(prev => [newArticle, ...prev]);
 
     if (shouldQueueLiveMutation()) {
       queueOfflineMutation({
@@ -2184,11 +2307,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       caseOutcomeSummary: trimmedSummary,
       caseOutcomeUpdatedAt: timestamp,
       caseOutcomeUpdatedBy: actorName,
-      closedAt: outcomeStatus === 'resolved' ? timestamp : currentMessage.closedAt,
+      closedAt:
+        outcomeStatus === 'resolved' ? undefined : currentMessage.closedAt,
       resolutionNote:
         outcomeStatus === 'resolved'
           ? (trimmedSummary || currentMessage.resolutionNote)
           : currentMessage.resolutionNote,
+      resolutionConfirmationStatus:
+        outcomeStatus === 'resolved'
+          ? 'awaiting_farmer'
+          : currentMessage.resolutionConfirmationStatus,
+      resolutionConfirmationRequestedAt:
+        outcomeStatus === 'resolved' ? timestamp : currentMessage.resolutionConfirmationRequestedAt,
+      resolutionConfirmedAt:
+        outcomeStatus === 'resolved' ? undefined : currentMessage.resolutionConfirmedAt,
+      resolutionConfirmedBy:
+        outcomeStatus === 'resolved' ? undefined : currentMessage.resolutionConfirmedBy,
+      resolutionConfirmationNote:
+        outcomeStatus === 'resolved'
+          ? 'Hinihintay pa ang kumpirmasyon ng magsasaka bago tuluyang isara ang case.'
+          : currentMessage.resolutionConfirmationNote,
     };
 
     setSmsMessages((prev) => prev.map((message) => (
@@ -2223,6 +2361,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       caseOutcomeUpdatedBy: updatedMessage.caseOutcomeUpdatedBy,
       closedAt: updatedMessage.closedAt,
       resolutionNote: updatedMessage.resolutionNote,
+      resolutionConfirmationStatus: updatedMessage.resolutionConfirmationStatus,
+      resolutionConfirmationRequestedAt: updatedMessage.resolutionConfirmationRequestedAt,
+      resolutionConfirmedAt: updatedMessage.resolutionConfirmedAt,
+      resolutionConfirmedBy: updatedMessage.resolutionConfirmedBy,
+      resolutionConfirmationNote: updatedMessage.resolutionConfirmationNote,
     };
 
     if (shouldQueueLiveMutation()) {
@@ -2264,94 +2407,90 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const closeSmsCase = (messageId: string, resolutionNote?: string) => {
+    updateSmsCaseOutcome(messageId, 'resolved', resolutionNote?.trim() || 'Minarkahang handa nang isara ng barangay team. Hihintayin pa ang kumpirmasyon ng magsasaka.');
+  };
+
+  const confirmSmsCaseResolution = (
+    messageId: string,
+    confirmationStatus: SmsResolutionConfirmationStatus,
+    note?: string
+  ) => {
     const timestamp = new Date().toISOString();
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
-    const trimmedResolutionNote = resolutionNote?.trim();
-    const resolutionSummary = trimmedResolutionNote || 'Minarkahang resolved ng barangay team.';
     const currentMessage = smsMessages.find((message) => message.id === messageId);
 
     if (!currentMessage) {
       return;
     }
 
+    const trimmedNote = note?.trim();
+    const isConfirmed = confirmationStatus === 'confirmed_by_farmer';
     const updatedMessage: SmsMessage = {
       ...currentMessage,
-      caseStatus: 'closed',
-      closedAt: timestamp,
-      resolutionNote: resolutionSummary,
-      caseOutcomeStatus: 'resolved',
-      caseOutcomeSummary: resolutionSummary,
+      caseStatus: isConfirmed ? 'closed' : 'monitoring',
+      closedAt: isConfirmed ? timestamp : undefined,
+      caseOutcomeStatus: isConfirmed ? 'resolved' : 'needs_follow_up',
+      caseOutcomeSummary:
+        trimmedNote ||
+        (isConfirmed
+          ? 'Kinumpirma ng magsasaka na maayos na ang concern.'
+          : 'Hindi pa kumpirmadong okay ang concern; ibinalik sa follow-up queue.'),
       caseOutcomeUpdatedAt: timestamp,
       caseOutcomeUpdatedBy: actorName,
+      resolutionConfirmationStatus: confirmationStatus,
+      resolutionConfirmedAt: isConfirmed ? timestamp : undefined,
+      resolutionConfirmedBy: actorName,
+      resolutionConfirmationNote:
+        trimmedNote ||
+        (isConfirmed
+          ? 'Kinumpirma ng magsasaka ang resolution.'
+          : 'Ibinukas muli matapos sabihing kailangan pa ng dagdag na tulong.'),
+      followUpDueAt: !isConfirmed ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : currentMessage.followUpDueAt,
     };
 
-    setSmsMessages(prev => prev.map((message) => (
-      message.id === messageId ? updatedMessage : message
-    )));
+    setSmsMessages((prev) =>
+      prev.map((message) => (message.id === messageId ? updatedMessage : message))
+    );
 
     const auditLog: AuditLog = {
       id: `AUD${Date.now()}`,
       timestamp,
       user: actorName,
-      action: 'CLOSE_SMS_CASE',
-      details: `${messageId}: isinara ang case - ${resolutionSummary}`,
+      action: isConfirmed ? 'CONFIRM_SMS_CASE_RESOLUTION' : 'REOPEN_SMS_CASE',
+      details: `${messageId}: ${updatedMessage.resolutionConfirmationNote}`,
     };
-    const outcomeLogbookEntry: LogbookEntry = {
+    const logbookEntry: LogbookEntry = {
       id: `LOG${Date.now()}-${messageId}`,
       farmerId: updatedMessage.farmerId,
       timestamp,
       type: 'Tulong',
-      title: 'Case resolved',
-      description: resolutionSummary,
-    };
-    setAuditLogs(prev => [auditLog, ...prev]);
-    setLogbook(prev => [outcomeLogbookEntry, ...prev]);
-
-    const closeUpdates = {
-      caseStatus: 'closed' as const,
-      closedAt: timestamp,
-      resolutionNote: resolutionSummary,
-      caseOutcomeStatus: 'resolved' as const,
-      caseOutcomeSummary: resolutionSummary,
-      caseOutcomeUpdatedAt: timestamp,
-      caseOutcomeUpdatedBy: actorName,
+      title: isConfirmed ? 'Kinumpirma ang resolution' : 'Ibinalik sa follow-up',
+      description: updatedMessage.resolutionConfirmationNote ?? updatedMessage.caseOutcomeSummary ?? '',
     };
 
-    if (shouldQueueLiveMutation()) {
-      queueOfflineMutation({
-        id: createOfflineMutationId('sms-close'),
-        type: 'close-sms-case',
-        createdAt: timestamp,
-        payload: {
-          messageId,
-          updates: closeUpdates,
-          auditLog,
-          logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
-        },
-      });
-      return;
-    }
+    setAuditLogs((prev) => [auditLog, ...prev]);
+    setLogbook((prev) => [logbookEntry, ...prev]);
+
+    const updates = {
+      caseStatus: updatedMessage.caseStatus,
+      closedAt: updatedMessage.closedAt,
+      caseOutcomeStatus: updatedMessage.caseOutcomeStatus,
+      caseOutcomeSummary: updatedMessage.caseOutcomeSummary,
+      caseOutcomeUpdatedAt: updatedMessage.caseOutcomeUpdatedAt,
+      caseOutcomeUpdatedBy: updatedMessage.caseOutcomeUpdatedBy,
+      resolutionConfirmationStatus: updatedMessage.resolutionConfirmationStatus,
+      resolutionConfirmedAt: updatedMessage.resolutionConfirmedAt,
+      resolutionConfirmedBy: updatedMessage.resolutionConfirmedBy,
+      resolutionConfirmationNote: updatedMessage.resolutionConfirmationNote,
+      followUpDueAt: updatedMessage.followUpDueAt,
+    };
 
     void Promise.all([
-      smsRepository.updateMessage(messageId, closeUpdates),
+      smsRepository.updateMessage(messageId, updates),
       auditRepository.createAuditLog(auditLog),
-      logbookRepository.createEntry(outcomeLogbookEntry),
+      logbookRepository.createEntry(logbookEntry),
     ]).catch((error) => {
-      if (shouldQueueLiveMutation(error)) {
-        queueOfflineMutation({
-          id: createOfflineMutationId('sms-close'),
-          type: 'close-sms-case',
-          createdAt: timestamp,
-          payload: {
-            messageId,
-            updates: closeUpdates,
-            auditLog,
-            logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
-          },
-        });
-        return;
-      }
-      console.error("Failed to close SMS case", error);
+      console.error("Failed to confirm SMS case resolution state", error);
     });
   };
 
@@ -2491,6 +2630,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     assignSmsMessage,
     updateSmsCaseOutcome,
     closeSmsCase,
+    confirmSmsCaseResolution,
     resources,
     addResource,
     updateResource,
@@ -2520,6 +2660,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     importPortableBackup,
     importSmsTrainingExamples,
     importKnowledgeArticles,
+    reviewSmsTrainingExample,
+    reviewKnowledgeArticle,
     systemSettings,
     saveSystemSettings,
     users,

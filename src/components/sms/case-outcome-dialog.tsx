@@ -94,6 +94,11 @@ export function CaseOutcomeDialog({
             <p className="text-xs text-muted-foreground">
               {SMS_CASE_OUTCOME_META[status].helper}
             </p>
+            {status === "resolved" ? (
+              <p className="text-xs text-amber-700 dark:text-amber-200">
+                Kapag pinili ang "Nalutas", hindi pa agad tuluyang isasara ang case. Hihintayin muna ng system ang kumpirmasyon ng magsasaka o manual confirmation ng barangay team.
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label>Maikling buod</Label>

@@ -140,6 +140,8 @@ export async function GET() {
   const liveSmsStatus = resolveLiveSmsStatus(mode, realSmsEnabled);
   const storageUploadConfigured = resolveStorageUploadConfigured(mode);
   const knowledgeAudioUploadConfigured = storageUploadConfigured;
+  const buildCommit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? process.env.NEXT_PUBLIC_APP_COMMIT ?? "local";
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "0.1.0";
 
   const payload: RuntimeCapabilities = {
     mode,
@@ -149,6 +151,12 @@ export async function GET() {
     firebaseAdminConfigured,
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
+    appVersion,
+    buildCommit,
+    automationMode:
+      mode === "live"
+        ? "Araw-araw na background checks sa kasalukuyang hosting setup, plus manual reruns kapag kailangan."
+        : "Demo/manual automation only",
     reasons: {
       ai: aiConfigured
         ? "May configured AI credentials ang server. Hindi nito awtomatikong ibig sabihin na healthy ang model runtime sa bawat request, kaya kailangan pa ring bantayan ang fallback, latency, at human-review states."

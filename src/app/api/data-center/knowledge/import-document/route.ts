@@ -114,6 +114,11 @@ export async function POST(request: Request) {
       type: article.type,
       author: `Imported from ${file.name}`,
       lastUpdated: timestamp,
+      reviewStatus: "needs_review",
+      reviewNotes: "Imported file. Hintayin munang ma-review bago isama sa live search assistant.",
+      sourceLabel: file.name,
+      sourceType: isAudio ? "audio_upload" : "imported_file",
+      version: 1,
     }));
 
     if (articles.length === 0) {

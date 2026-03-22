@@ -9,7 +9,7 @@ describe("sms-case-outcomes", () => {
     expect(getCaseStatusForOutcome("monitoring")).toBe("monitoring");
     expect(getCaseStatusForOutcome("needs_follow_up")).toBe("monitoring");
     expect(getCaseStatusForOutcome("referred")).toBe("escalated");
-    expect(getCaseStatusForOutcome("resolved")).toBe("closed");
+    expect(getCaseStatusForOutcome("resolved")).toBe("monitoring");
   });
 
   it("derives a fallback outcome from older case records", () => {

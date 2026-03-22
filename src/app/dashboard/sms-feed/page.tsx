@@ -26,6 +26,8 @@ import { isLiveMode } from '@/lib/config/app-mode';
 import { canUseLiveSmsSimulation } from '@/lib/access-control';
 import { findBestMatchingLexiconRule, findRelevantTrainingExamples } from '@/lib/sms-teaching';
 import { cn } from '@/lib/utils';
+import { findPotentialDuplicateCase } from '@/lib/sms-case-linking';
+import { isAwaitingFarmerConfirmation } from '@/lib/sms-case-outcomes';
 
 type DialogState = {
   type: 'approve' | 'manual' | 'find' | null;
@@ -168,6 +170,7 @@ function SmsMessageCard({
   isHighlighted = false,
   matchedTeachingPhrase,
   similarReviewedExamplesCount = 0,
+  onConfirmResolution,
 }: {
   message: SmsMessage;
   onActionClick: (type: DialogState['type'], message: SmsMessage) => void;
@@ -180,6 +183,7 @@ function SmsMessageCard({
   isHighlighted?: boolean;
   matchedTeachingPhrase?: string;
   similarReviewedExamplesCount?: number;
+  onConfirmResolution: (message: SmsMessage, confirmed: boolean) => void;
 }) {
     const [isClient, setIsClient] = React.useState(false);
     React.useEffect(() => { setIsClient(true); }, []);
@@ -190,6 +194,7 @@ function SmsMessageCard({
     const farmer = farmers.find(f => f.id === message.farmerId);
     const farmerName = farmer ? farmer.name : message.farmerName;
     const avatarUrl = farmer?.avatarUrl;
+    const awaitingConfirmation = isAwaitingFarmerConfirmation(message);
 
     return (
         <Card
@@ -302,6 +307,14 @@ function SmsMessageCard({
                         <p className="mt-1 leading-relaxed">{message.caseOutcomeSummary}</p>
                       </div>
                     ) : null}
+                    {message.possibleDuplicateOfCaseId ? (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-50">
+                        <p className="font-semibold text-amber-900 dark:text-amber-100">Possible duplicate</p>
+                        <p className="mt-1">
+                          Maaaring konektado ito sa {message.possibleDuplicateOfCaseId}. {message.possibleDuplicateReason ?? 'Suriin muna kung continuation lang ito ng naunang concern.'}
+                        </p>
+                      </div>
+                    ) : null}
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
@@ -323,6 +336,16 @@ function SmsMessageCard({
                           </Button>
                         ) : null}
                     </div>
+                    {awaitingConfirmation ? (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Button variant="outline" size="sm" onClick={() => onConfirmResolution(message, true)} className={`bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
+                          Kinumpirma ng farmer
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => onConfirmResolution(message, false)} className={`bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
+                          Hindi pa pala okay
+                        </Button>
+                      </div>
+                    ) : null}
                     <div className="grid gap-2 sm:grid-cols-2">
                         <HoverTooltip text="Suriin at i-edit ang tugon ng AI bago ipadala.">
                             <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className={`bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary ${cardActionButtonClassName}`}>
@@ -353,7 +376,7 @@ function SmsMessageCard({
 
 function SmsFeedPageContent() {
     const router = useRouter();
-    const { smsMessages, outboundMessages, farmers, resources, systemSettings, smsTrainingExamples, addInboundSms, updateSmsMessage, assignSmsMessage, updateSmsCaseOutcome, retryOutboundMessage, webhookBridgeStatus } = useData();
+    const { smsMessages, outboundMessages, farmers, resources, systemSettings, smsTrainingExamples, addInboundSms, updateSmsMessage, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, webhookBridgeStatus } = useData();
     const { currentUserProfile } = useAuth();
     const searchParams = useSearchParams();
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
@@ -407,6 +430,13 @@ function SmsFeedPageContent() {
       }
       return map;
     }, [smsMessages, smsTrainingExamples]);
+    const duplicateCaseByMessage = React.useMemo(() => {
+      const map = new Map<string, SmsMessage | null>();
+      for (const message of smsMessages) {
+        map.set(message.id, findPotentialDuplicateCase(message, smsMessages));
+      }
+      return map;
+    }, [smsMessages]);
     
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
@@ -531,6 +561,22 @@ function SmsFeedPageContent() {
       }
     };
 
+    const handleConfirmResolution = (message: SmsMessage, confirmed: boolean) => {
+      confirmSmsCaseResolution(
+        message.id,
+        confirmed ? 'confirmed_by_farmer' : 'reopened',
+        confirmed
+          ? 'Kinumpirma ng barangay team na okay na ang concern batay sa feedback ng magsasaka.'
+          : 'Ibinukas muli ang case dahil kailangan pa ng dagdag na follow-up o tulong.'
+      );
+      toast({
+        title: confirmed ? "Kinumpirma ang resolution" : "Ibinalik sa follow-up",
+        description: confirmed
+          ? `Maaari nang tuluyang isara ang case ni ${message.farmerName}.`
+          : `Naibalik sa active follow-up ang concern ni ${message.farmerName}.`,
+      });
+    };
+
     React.useEffect(() => {
       if (!focusedSmsId) {
         return;
@@ -628,7 +674,13 @@ function SmsFeedPageContent() {
           {smsMessages.map(message => (
               <SmsMessageCard
                 key={message.id}
-                message={message}
+                message={{
+                  ...message,
+                  possibleDuplicateOfCaseId: duplicateCaseByMessage.get(message.id)?.caseId,
+                  possibleDuplicateReason: duplicateCaseByMessage.get(message.id)
+                    ? 'May kahawig na kamakailang concern mula sa parehong magsasaka o numero.'
+                    : undefined,
+                }}
                 onActionClick={openDialog}
                 onAssignToMe={handleAssignToMe}
                 onRecordOutcome={setOutcomeMessage}
@@ -639,6 +691,7 @@ function SmsFeedPageContent() {
                 isHighlighted={focusedSmsId === message.id}
                 matchedTeachingPhrase={matchedTeachingPhraseByMessage.get(message.id)}
                 similarReviewedExamplesCount={reviewedExampleCountByMessage.get(message.id) ?? 0}
+                onConfirmResolution={handleConfirmResolution}
               />
           ))}
       </div>

@@ -20,6 +20,8 @@ import { useData } from '@/context/data-context';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
+import { transcribeAudioUpload } from '@/lib/services/audio-transcription-service';
+import { isKnowledgeArticleApproved } from '@/lib/knowledge-search';
 
 
 export default function AllKnowledgeArticlesPage() {
@@ -36,18 +38,24 @@ export default function AllKnowledgeArticlesPage() {
   const audioUploadLockMessage =
     capabilities.reasons.storageUpload ??
     'Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.';
+  const approvedKnowledgeArticles = knowledgeArticles.filter(isKnowledgeArticleApproved);
+  const pendingKnowledgeArticles = knowledgeArticles.filter(
+    (article) => article.reviewStatus === 'needs_review'
+  );
 
   const handleAddNewEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const title = formData.get('title') as string;
-    const summary = formData.get('summary') as string;
+    const rawTitle = (formData.get('title') as string | null)?.trim() ?? '';
+    const summary = (formData.get('summary') as string | null)?.trim() ?? '';
     const keywords = (formData.get('keywords') as string).split(',').map(kw => kw.trim()).filter(Boolean);
     const type = formData.get('type') as KnowledgeArticle['type'];
     const content = type === 'article' ? formData.get('content') as string : '';
     const audioFile = formData.get('audioFile');
 
-    if (!title || !summary || !keywords.length) {
+    const requiresManualMetadata = type !== 'audio';
+
+    if ((!rawTitle && type === 'article') || (requiresManualMetadata && (!summary || !keywords.length))) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
     }
@@ -65,13 +73,39 @@ export default function AllKnowledgeArticlesPage() {
     setIsSavingEntry(true);
 
     try {
+      const audioTranscription = type === 'audio' && audioFile instanceof File
+        ? await transcribeAudioUpload(audioFile, 'knowledge_audio')
+        : null;
+      const fallbackTitle = type === 'audio' && audioFile instanceof File
+        ? audioFile.name.replace(/\.[^.]+$/, '').trim()
+        : '';
+      const title = rawTitle || audioTranscription?.suggestedTitle?.trim() || fallbackTitle || 'Bagong Audio Knowledge Entry';
       const audioUrl = type === 'audio' && audioFile instanceof File
         ? await uploadKnowledgeAudioFile(audioFile, title)
         : undefined;
+      const mergedKeywords = Array.from(
+        new Set([
+          ...keywords,
+          ...(audioTranscription?.keywords ?? []),
+        ].map((keyword) => keyword.trim()).filter(Boolean))
+      );
 
-      addKnowledgeArticle({ title, summary, keywords, type, content, audioUrl });
+      addKnowledgeArticle({
+        title,
+        summary: type === 'audio' ? (summary.trim() || audioTranscription?.summary || 'Auto-generated mula sa transcript ng audio entry.') : summary,
+        keywords: mergedKeywords,
+        type,
+        content: type === 'audio' ? (audioTranscription?.transcript ?? '') : content,
+        audioUrl,
+      });
       setNewEntryDialogOpen(false);
-      toast({title: "Tagumpay!", description: `Ang "${title}" ay naidagdag na sa knowledge base.`});
+      toast({
+        title: "Tagumpay!",
+        description:
+          type === 'audio'
+            ? `Ang "${title}" ay naidagdag na sa knowledge base kasama ang transcript at searchable keywords.`
+            : `Ang "${title}" ay naidagdag na sa knowledge base.`,
+      });
     } catch (error) {
       toast({
         title: "Hindi ma-save ang knowledge entry",
@@ -83,7 +117,7 @@ export default function AllKnowledgeArticlesPage() {
     }
   };
 
-  const filteredArticles = knowledgeArticles.filter(article => {
+  const filteredArticles = approvedKnowledgeArticles.filter(article => {
     if (!localSearchQuery) return true;
     const query = localSearchQuery.toLowerCase();
     return (
@@ -118,6 +152,12 @@ export default function AllKnowledgeArticlesPage() {
           <AiStatusBanner
             title="Audio upload locked"
             description={audioUploadLockMessage}
+          />
+        ) : null}
+        {pendingKnowledgeArticles.length > 0 ? (
+          <AiStatusBanner
+            title="May imported knowledge na naghihintay ng review"
+            description={`${pendingKnowledgeArticles.length} knowledge entr${pendingKnowledgeArticles.length === 1 ? 'y' : 'ies'} ang hindi pa approved. I-review muna ang mga ito sa Settings bago sila gamitin ng search at AI.`}
           />
         ) : null}
 
@@ -164,11 +204,11 @@ export default function AllKnowledgeArticlesPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="title">Pamagat</Label>
-                                <Input id="title" name="title" required />
+                                <Input id="title" name="title" required={newEntryType === 'article'} placeholder={newEntryType === 'audio' ? 'Opsyonal para sa audio. Kapag iniwang blangko, gagawa ang system ng pamagat mula sa transcript o file name.' : ''} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="summary">Maikling Buod</Label>
-                                <Textarea id="summary" name="summary" required />
+                                <Textarea id="summary" name="summary" required={newEntryType === 'article'} placeholder={newEntryType === 'audio' ? 'Opsyonal para sa audio. Kapag iniwang blangko, gagawa ang system ng buod mula sa transcript.' : ''} />
                             </div>
                             {newEntryType === 'article' ? (
                                 <div className="space-y-2">
@@ -183,7 +223,7 @@ export default function AllKnowledgeArticlesPage() {
                             )}
                             <div className="space-y-2">
                                 <Label htmlFor="keywords">Mga Keyword (paghiwalayin ng kuwit)</Label>
-                                <Input id="keywords" name="keywords" placeholder="hal. pataba, mais, peste" required />
+                                <Input id="keywords" name="keywords" placeholder={newEntryType === 'audio' ? 'Opsyonal para sa audio. Hal. peste, palay, baha' : 'hal. pataba, mais, peste'} required={newEntryType === 'article'} />
                             </div>
                         </div>
                         <DialogFooter>
@@ -206,7 +246,13 @@ export default function AllKnowledgeArticlesPage() {
                                 {article.type === 'audio' ? <Volume2/> : <FileText/>}
                                 {article.title}
                             </CardTitle>
-                            <CardDescription>{article.summary}</CardDescription>
+                            <CardDescription className="space-y-2">
+                                <span className="block">{article.summary}</span>
+                                <span className="flex flex-wrap gap-2">
+                                  <Badge variant="secondary">Approved</Badge>
+                                  {article.sourceLabel ? <Badge variant="outline">{article.sourceLabel}</Badge> : null}
+                                </span>
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-2">

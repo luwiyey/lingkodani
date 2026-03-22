@@ -37,6 +37,10 @@ export type SmsIntent =
 export type SafetyFlag = 'Low' | 'Medium' | 'High';
 export type SmsUrgency = 'low' | 'medium' | 'high';
 export type SmsTone = 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
+export type SmsResolutionConfirmationStatus =
+  | 'awaiting_farmer'
+  | 'confirmed_by_farmer'
+  | 'reopened';
 
 export type User = {
   id?: string;
@@ -87,6 +91,7 @@ export type SmsLexiconRule = {
   safetyFlag: SafetyFlag;
   tone?: SmsTone;
   guidance: string;
+  applicability?: string;
   enabled: boolean;
   notes?: string;
   createdAt?: string;
@@ -187,6 +192,13 @@ export type SmsMessage = {
   followUpSentAt?: string;
   closedAt?: string;
   resolutionNote?: string;
+  resolutionConfirmationStatus?: SmsResolutionConfirmationStatus;
+  resolutionConfirmationRequestedAt?: string;
+  resolutionConfirmedAt?: string;
+  resolutionConfirmedBy?: string;
+  resolutionConfirmationNote?: string;
+  possibleDuplicateOfCaseId?: string;
+  possibleDuplicateReason?: string;
   caseOutcomeStatus?: SmsCaseOutcomeStatus;
   caseOutcomeSummary?: string;
   caseOutcomeUpdatedAt?: string;
@@ -254,6 +266,14 @@ export type KnowledgeArticle = {
   author: string;
   type: KnowledgeArticleType;
   audioUrl?: string;
+  reviewStatus?: 'needs_review' | 'approved' | 'archived';
+  reviewNotes?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  sourceLabel?: string;
+  sourceType?: 'manual' | 'imported_file' | 'audio_upload';
+  version?: number;
+  supersedesArticleId?: string;
 };
 
 export type LogbookEntryType = 'SMS' | 'Payo' | 'Tala sa Bukid' | 'Insidente' | 'Tulong';
@@ -429,4 +449,8 @@ export type SmsTrainingExample = {
         reviewedAt: string;
         wasAdviceEdited: boolean;
     };
+    reviewStatus?: 'needs_review' | 'approved' | 'rejected';
+    reviewNotes?: string;
+    sourceLabel?: string;
+    importedAt?: string;
 };

@@ -1,4 +1,5 @@
 import type {
+  SmsResolutionConfirmationStatus,
   SmsCaseOutcomeStatus,
   SmsCaseStatus,
   SmsMessage,
@@ -48,7 +49,7 @@ export function getCaseStatusForOutcome(
   outcome: SmsCaseOutcomeStatus
 ): SmsCaseStatus {
   if (outcome === "resolved") {
-    return "closed";
+    return "monitoring";
   }
 
   if (outcome === "referred") {
@@ -78,6 +79,58 @@ export function getEffectiveSmsCaseOutcome(
 
   if (message.caseStatus === "monitoring") {
     return "monitoring";
+  }
+
+  return null;
+}
+
+export function isAwaitingFarmerConfirmation(
+  message: Pick<SmsMessage, "caseOutcomeStatus" | "resolutionConfirmationStatus" | "closedAt">
+) {
+  return (
+    message.caseOutcomeStatus === "resolved" &&
+    message.resolutionConfirmationStatus === "awaiting_farmer" &&
+    !message.closedAt
+  );
+}
+
+export function isFarmerConfirmedResolution(
+  message: Pick<SmsMessage, "resolutionConfirmationStatus" | "closedAt">
+) {
+  return (
+    message.resolutionConfirmationStatus === "confirmed_by_farmer" ||
+    Boolean(message.closedAt)
+  );
+}
+
+export function getResolutionConfirmationMeta(
+  status: SmsResolutionConfirmationStatus | null | undefined
+) {
+  if (status === "awaiting_farmer") {
+    return {
+      label: "Hintay kumpirmasyon",
+      helper: "Nakapagbigay na ng paunang resolution pero hinihintay pa ang kumpirmasyon ng magsasaka.",
+      badgeClassName:
+        "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200",
+    };
+  }
+
+  if (status === "confirmed_by_farmer") {
+    return {
+      label: "Kinumpirma ng farmer",
+      helper: "Kinumpirma na ng magsasaka na maayos na ang concern.",
+      badgeClassName:
+        "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200",
+    };
+  }
+
+  if (status === "reopened") {
+    return {
+      label: "Ibinalik sa follow-up",
+      helper: "Hindi pa pala sapat ang naunang resolution at kailangan pang balikan.",
+      badgeClassName:
+        "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200",
+    };
   }
 
   return null;

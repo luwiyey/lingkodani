@@ -6,6 +6,9 @@ export type RuntimeCapabilities = {
   firebaseAdminConfigured: boolean;
   storageUploadConfigured: boolean;
   knowledgeAudioUploadConfigured: boolean;
+  appVersion?: string;
+  buildCommit?: string;
+  automationMode?: string;
   reasons: {
     ai?: string;
     liveSms?: string;
@@ -38,6 +41,9 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
     firebaseAdminConfigured: false,
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
+    appVersion: "0.1.0",
+    buildCommit: "local",
+    automationMode: mode === "live" ? "manual or scheduled background checks" : "demo/manual",
     reasons: {
       ai: "Naka-lock muna ang AI feature habang hindi pa confirmed ang Gemini/Genkit credentials sa server. Kahit configured na ito, kailangan pa ring bantayan ang runtime fallback at latency.",
       liveSms: liveSmsConfigured

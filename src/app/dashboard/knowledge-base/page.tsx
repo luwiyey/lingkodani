@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
-import { buildSuggestedArticlesLocally, searchArticlesLocally, type SuggestedKnowledgeTopic } from '@/lib/knowledge-search';
+import { buildSuggestedArticlesLocally, isKnowledgeArticleApproved, searchArticlesLocally, type SuggestedKnowledgeTopic } from '@/lib/knowledge-search';
 import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
 import { transcribeAudioUpload } from '@/lib/services/audio-transcription-service';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
@@ -38,6 +38,10 @@ export default function KnowledgeBasePage() {
   
   const { toast } = useToast();
   const audioUploadLocked = !capabilities.storageUploadConfigured;
+  const approvedKnowledgeArticles = knowledgeArticles.filter(isKnowledgeArticleApproved);
+  const pendingKnowledgeArticles = knowledgeArticles.filter(
+    (article) => article.reviewStatus === 'needs_review'
+  );
   const audioUploadLockMessage =
     capabilities.reasons.storageUpload ??
     'Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.';
@@ -161,7 +165,7 @@ export default function KnowledgeBasePage() {
     setSearchResults(null);
 
     try {
-        const localResult = searchArticlesLocally(searchQuery, knowledgeArticles);
+        const localResult = searchArticlesLocally(searchQuery, approvedKnowledgeArticles);
 
         if (capabilities.aiConfigured) {
           const response = await fetch('/api/knowledge/search', {
@@ -183,7 +187,7 @@ export default function KnowledgeBasePage() {
             const relevantArticles = Array.isArray(payload.relevantArticles) && payload.relevantArticles.length > 0
               ? payload.relevantArticles
               : (payload.relevantArticleIds ?? [])
-                .map((articleId) => knowledgeArticles.find((article) => article.id === articleId))
+                .map((articleId) => approvedKnowledgeArticles.find((article) => article.id === articleId))
                 .filter((article): article is KnowledgeArticle => Boolean(article));
 
             setSearchResults({
@@ -198,7 +202,7 @@ export default function KnowledgeBasePage() {
 
     } catch (error) {
         console.error("Search failed:", error);
-        setSearchResults(searchArticlesLocally(searchQuery, knowledgeArticles));
+        setSearchResults(searchArticlesLocally(searchQuery, approvedKnowledgeArticles));
         toast({
             title: "Gumamit muna ng lokal na search",
             description: "Hindi makuha ang AI-assisted answer sa ngayon, kaya local knowledge matching muna ang ginamit.",
@@ -208,7 +212,7 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  const filteredLocalArticles = knowledgeArticles.filter(article => {
+  const filteredLocalArticles = approvedKnowledgeArticles.filter(article => {
     if (!localSearchQuery) return false; // Don't show anything if search is empty, until user types
     const query = localSearchQuery.toLowerCase();
     return (
@@ -218,7 +222,7 @@ export default function KnowledgeBasePage() {
     );
   });
   
-  const articlesToShow = localSearchQuery ? filteredLocalArticles : knowledgeArticles.slice(0, 6);
+  const articlesToShow = localSearchQuery ? filteredLocalArticles : approvedKnowledgeArticles.slice(0, 6);
 
 
   return (
@@ -248,6 +252,12 @@ export default function KnowledgeBasePage() {
         <AiStatusBanner
           title="Audio upload locked"
           description={audioUploadLockMessage}
+        />
+      ) : null}
+      {pendingKnowledgeArticles.length > 0 ? (
+        <AiStatusBanner
+          title="May imported knowledge na naghihintay ng review"
+          description={`${pendingKnowledgeArticles.length} knowledge entr${pendingKnowledgeArticles.length === 1 ? 'y' : 'ies'} ang hindi pa approved. I-review muna ang mga ito sa Settings bago sila gamitin ng search at AI.`}
         />
       ) : null}
       
@@ -290,7 +300,7 @@ export default function KnowledgeBasePage() {
                     <div className="flex items-center">
                       <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng Search Assistant</CardTitle>
                       <HelpDialog title="Sagot ng Search Assistant" tooltipText="Unawain kung paano binuo ang sagot.">
-                        <p>Ang sagot ay laging nakaangkla muna sa lokal na knowledge base. Kapag available ang AI, nire-rewrite nito ang sagot sa mas malinaw na Filipino nang hindi lumalayo sa mga naka-save na article.</p>
+                        <p>Ang sagot ay laging nakaangkla muna sa approved local knowledge base. Kapag available ang AI, nire-rewrite nito ang sagot sa mas malinaw na Filipino nang hindi lumalayo sa mga na-review nang article.</p>
                         <p>Kapag kulang ang local content, mas magandang magdagdag ng bagong article o mag-import ng PDF/image references kaysa magkunwaring may sagot ang system na wala naman sa source material.</p>
                       </HelpDialog>
                     </div>
@@ -312,7 +322,13 @@ export default function KnowledgeBasePage() {
                                             {article.type === 'audio' ? <Volume2/> : <FileText/>}
                                             {article.title}
                                         </CardTitle>
-                                        <CardDescription>{article.summary}</CardDescription>
+                                        <CardDescription className="space-y-2">
+                                          <span className="block">{article.summary}</span>
+                                          <span className="flex flex-wrap gap-2">
+                                            <Badge variant="secondary">Approved</Badge>
+                                            {article.sourceLabel ? <Badge variant="outline">Source: {article.sourceLabel}</Badge> : null}
+                                          </span>
+                                        </CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex flex-wrap gap-2">
@@ -496,7 +512,13 @@ export default function KnowledgeBasePage() {
                                 {article.type === 'audio' ? <Volume2/> : <FileText/>}
                                 {article.title}
                             </CardTitle>
-                            <CardDescription>{article.summary}</CardDescription>
+                            <CardDescription className="space-y-2">
+                              <span className="block">{article.summary}</span>
+                              <span className="flex flex-wrap gap-2">
+                                <Badge variant="secondary">Approved</Badge>
+                                {article.sourceLabel ? <Badge variant="outline">{article.sourceLabel}</Badge> : null}
+                              </span>
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-2">

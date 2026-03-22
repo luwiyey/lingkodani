@@ -120,6 +120,10 @@ export function buildLexiconTeachingContext(
         parts.push(`guidance=${rule.guidance.trim()}`);
       }
 
+      if (rule.applicability?.trim()) {
+        parts.push(`localApplicability=${rule.applicability.trim()}`);
+      }
+
       if (rule.notes?.trim()) {
         parts.push(`notes=${rule.notes.trim()}`);
       }
@@ -148,8 +152,10 @@ export function findRelevantTrainingExamples(
   return examples
     .filter(
       (example) =>
+        example.reviewStatus !== "needs_review" &&
         example.finalReview.status !== "rejected" &&
-        example.finalReview.action !== "rejected"
+        example.finalReview.action !== "rejected" &&
+        example.reviewStatus !== "rejected"
     )
     .map((example) => {
       const overlap = getTokenOverlapScore(
@@ -234,12 +240,19 @@ export function summarizeTeachingCoverage(
 ) {
   const enabledRules = rules.filter((rule) => rule.enabled);
   const approvedExamples = examples.filter(
-    (example) => example.finalReview.status !== "rejected"
+    (example) =>
+      example.reviewStatus !== "needs_review" &&
+      example.reviewStatus !== "rejected" &&
+      example.finalReview.status !== "rejected"
+  );
+  const pendingExamples = examples.filter(
+    (example) => example.reviewStatus === "needs_review"
   );
 
   return {
     enabledRules: enabledRules.length,
     approvedExamples: approvedExamples.length,
+    pendingExamples: pendingExamples.length,
   };
 }
 

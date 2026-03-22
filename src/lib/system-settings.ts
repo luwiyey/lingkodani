@@ -70,6 +70,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Kritikal",
     guidance:
       "Nabanggit ang armyworm sa ulat. I-prioritize ang field validation at magbigay agad ng ligtas na pest-management guidance para sa apektadong tanim.",
+    applicability:
+      "I-check muna kung anong pananim ang apektado, gaano kalawak ang infestation, at kung may available na barangay support o validated local treatment.",
     enabled: true,
     notes: "Para sa fall armyworm at katulad na ulat sa mais o gulay.",
   },
@@ -82,6 +84,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Kritikal",
     guidance:
       "Mukhang may brown planthopper / hopper concern. I-check ang lawak ng infestation at iwasan ang sobrang nitrogen habang hinihintay ang rekomendasyon ng AEW.",
+    applicability:
+      "Siguraduhing tumutugma ito sa aktuwal na sintomas sa palayan at kung may kasalukuyang advisory na mas akma sa local planting stage.",
     enabled: true,
     notes: "Puwedeng gumawa ng hiwalay na row para sa lokal na alias tulad ng hopper o bph.",
   },
@@ -94,6 +98,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Nag-aalala",
     guidance:
       "May banggit ng tungro. I-flag ito para sa agarang assessment at ihiwalay muna ang malinaw na apektadong bahagi kung posible.",
+    applicability:
+      "I-verify kung tungro nga ang sintomas at iwasang magbigay ng sobrang tiyak na treatment kung wala pang field confirmation.",
     enabled: true,
   },
   {
@@ -105,6 +111,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Nag-aalala",
     guidance:
       "Posibleng leaf blast concern. Suriin ang stage ng pananim at ihanda ang payo sa moisture, spacing, at fungicide options kung naaangkop.",
+    applicability:
+      "Mas angkop ito kung malinaw ang crop stage at may local confirmation na hindi ibang sakit ang sanhi ng sintomas.",
     enabled: true,
   },
   {
@@ -116,6 +124,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Kritikal",
     guidance:
       "Ituring ito bilang mataas na water-stress concern. I-prioritize ang patubig guidance, soil moisture conservation, at agarang follow-up sa apektadong lugar.",
+    applicability:
+      "I-check muna kung isolated lang ba ang concern o malawakan sa sitio/zone bago magbigay ng mas malawak na advisory.",
     enabled: true,
   },
   {
@@ -127,6 +137,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Kritikal",
     guidance:
       "May malinaw na kakulangan sa patubig. I-escalate para sa irrigation support o barangay coordination kung paulit-ulit ang ulat.",
+    applicability:
+      "Kumpirmahin kung talagang walang patubig sa lugar at kung may available na local workaround o schedule ng suplay ng tubig.",
     enabled: true,
   },
   {
@@ -138,6 +150,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Kritikal",
     guidance:
       "Mukhang baha o agarang pinsala ang iniulat. Unahin ang kaligtasan at i-route agad ito sa emergency / disaster response review.",
+    applicability:
+      "Unahin ang safety at actual damage validation bago magbigay ng teknikal na crop advice.",
     enabled: true,
   },
   {
@@ -149,6 +163,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Neutral",
     guidance:
       "Ito ay kahilingan sa kagamitan. I-check agad ang availability ng sprayer at ang barangay release process bago tumugon.",
+    applicability:
+      "I-match ang alok sa tunay na available na stock, proseso ng pahiram, at saklaw ng barangay support.",
     enabled: true,
   },
   {
@@ -160,6 +176,8 @@ export const defaultSmsLexiconRules: SmsLexiconRule[] = [
     tone: "Neutral",
     guidance:
       "Tanong ito tungkol sa presyo ng palay. I-match ang reply sa pinakahuling market reference na nasa system.",
+    applicability:
+      "Sabihin kung gaano kasariwa ang market data at iwasang magbigay ng presyong mukhang final kung luma na ang reference.",
     enabled: true,
   },
 ];

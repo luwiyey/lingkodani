@@ -15,6 +15,8 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
 import { CaseOutcomeDialog } from '@/components/sms/case-outcome-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { findPotentialDuplicateCase } from '@/lib/sms-case-linking';
+import { isAwaitingFarmerConfirmation } from '@/lib/sms-case-outcomes';
 
 const actionButtonClassName = 'h-auto min-h-12 w-full whitespace-normal break-words px-4 py-3 text-center leading-snug';
 
@@ -57,14 +59,17 @@ function MessageTaskRow({
   onAssign,
   onRetry,
   onRecordOutcome,
+  onConfirmResolution,
 }: {
   message: SmsMessage;
   latestOutbound?: OutboundMessage;
   onAssign: (message: SmsMessage) => void;
   onRetry: (message: SmsMessage) => void;
   onRecordOutcome: (message: SmsMessage) => void;
+  onConfirmResolution: (message: SmsMessage, confirmed: boolean) => void;
 }) {
   const router = useRouter();
+  const awaitingConfirmation = isAwaitingFarmerConfirmation(message);
 
   return (
     <div
@@ -89,6 +94,14 @@ function MessageTaskRow({
             <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
               <p className="font-medium text-foreground">Latest outcome</p>
               <p className="mt-1 leading-relaxed">{message.caseOutcomeSummary}</p>
+            </div>
+          ) : null}
+          {message.possibleDuplicateOfCaseId ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+              <p className="font-medium">Posibleng kaparehong case</p>
+              <p className="mt-1 leading-relaxed">
+                Maaaring kaugnay ito ng {message.possibleDuplicateOfCaseId}. {message.possibleDuplicateReason ?? 'Suriin muna kung kailangan ba ng bagong case o pagpapatuloy lang ng naunang concern.'}
+              </p>
             </div>
           ) : null}
         </div>
@@ -131,6 +144,30 @@ function MessageTaskRow({
               I-record ang outcome
             </Button>
           ) : null}
+          {awaitingConfirmation ? (
+            <>
+              <Button
+                variant="outline"
+                className={actionButtonClassName}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onConfirmResolution(message, true);
+                }}
+              >
+                Kinumpirma ng farmer
+              </Button>
+              <Button
+                variant="outline"
+                className={actionButtonClassName}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onConfirmResolution(message, false);
+                }}
+              >
+                Hindi pa pala okay
+              </Button>
+            </>
+          ) : null}
 
           <Button
             variant="secondary"
@@ -151,7 +188,7 @@ function MessageTaskRow({
 export default function OperationsPage() {
   const router = useRouter();
   const { currentUserProfile } = useAuth();
-  const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, retryOutboundMessage, farmers } = useData();
+  const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, farmers } = useData();
   const { toast, dismiss } = useToast();
   const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
   const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
@@ -181,6 +218,14 @@ export default function OperationsPage() {
     }
     return map;
   }, [outboundMessages]);
+
+  const duplicateCaseByMessage = React.useMemo(() => {
+    const map = new Map<string, SmsMessage | null>();
+    for (const message of smsMessages) {
+      map.set(message.id, findPotentialDuplicateCase(message, smsMessages));
+    }
+    return map;
+  }, [smsMessages]);
 
   const urgentQueue = React.useMemo(
     () => smsMessages.filter((message) => message.status === 'pending_approval' && message.urgency === 'high' && !message.closedAt && !message.assignedTo),
@@ -264,6 +309,22 @@ export default function OperationsPage() {
     }
   };
 
+  const handleConfirmResolution = (message: SmsMessage, confirmed: boolean) => {
+    confirmSmsCaseResolution(
+      message.id,
+      confirmed ? 'confirmed_by_farmer' : 'reopened',
+      confirmed
+        ? 'Kinumpirma ng barangay team na okay na ang concern batay sa feedback ng magsasaka.'
+        : 'Ibinukas muli ang case dahil kailangan pa ng dagdag na follow-up o tulong.'
+    );
+    toast({
+      title: confirmed ? 'Kinumpirma ang resolution' : 'Ibinalik sa follow-up',
+      description: confirmed
+        ? `Maaari nang tuluyang isara ang case ni ${message.farmerName}.`
+        : `Naibalik sa active follow-up ang concern ni ${message.farmerName}.`,
+    });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="space-y-2">
@@ -310,11 +371,18 @@ export default function OperationsPage() {
           {urgentQueue.length > 0 ? urgentQueue.slice(0, 6).map((message) => (
             <MessageTaskRow
               key={message.id}
-              message={message}
+              message={{
+                ...message,
+                possibleDuplicateOfCaseId: duplicateCaseByMessage.get(message.id)?.caseId,
+                possibleDuplicateReason: duplicateCaseByMessage.get(message.id)
+                  ? 'May kahawig na kamakailang concern mula sa parehong magsasaka o numero.'
+                  : undefined,
+              }}
               latestOutbound={latestOutboundByMessage.get(message.id)}
               onAssign={handleAssign}
               onRetry={handleRetry}
               onRecordOutcome={setOutcomeMessage}
+              onConfirmResolution={handleConfirmResolution}
             />
           )) : <p className="text-sm text-muted-foreground">Walang urgent na pending SMS sa ngayon.</p>}
         </CardContent>
@@ -330,11 +398,18 @@ export default function OperationsPage() {
             {[...registrationQueue, ...clarificationQueue].slice(0, 6).map((message) => (
               <MessageTaskRow
                 key={message.id}
-                message={message}
+                message={{
+                  ...message,
+                  possibleDuplicateOfCaseId: duplicateCaseByMessage.get(message.id)?.caseId,
+                  possibleDuplicateReason: duplicateCaseByMessage.get(message.id)
+                    ? 'May kahawig na kamakailang concern mula sa parehong magsasaka o numero.'
+                    : undefined,
+                }}
                 latestOutbound={latestOutboundByMessage.get(message.id)}
                 onAssign={handleAssign}
                 onRetry={handleRetry}
                 onRecordOutcome={setOutcomeMessage}
+                onConfirmResolution={handleConfirmResolution}
               />
             ))}
             {registrationQueue.length + clarificationQueue.length === 0 ? (
@@ -360,11 +435,18 @@ export default function OperationsPage() {
             {[...failedSendQueue, ...followUpQueue].slice(0, 6).map((message) => (
               <MessageTaskRow
                 key={`${message.id}-${latestOutboundByMessage.get(message.id)?.id ?? 'task'}`}
-                message={message}
+                message={{
+                  ...message,
+                  possibleDuplicateOfCaseId: duplicateCaseByMessage.get(message.id)?.caseId,
+                  possibleDuplicateReason: duplicateCaseByMessage.get(message.id)
+                    ? 'May kahawig na kamakailang concern mula sa parehong magsasaka o numero.'
+                    : undefined,
+                }}
                 latestOutbound={latestOutboundByMessage.get(message.id)}
                 onAssign={handleAssign}
                 onRetry={handleRetry}
                 onRecordOutcome={setOutcomeMessage}
+                onConfirmResolution={handleConfirmResolution}
               />
             ))}
             {failedSendQueue.length + followUpQueue.length === 0 ? (
@@ -383,11 +465,18 @@ export default function OperationsPage() {
           {myQueue.length > 0 ? myQueue.slice(0, 8).map((message) => (
             <MessageTaskRow
               key={message.id}
-              message={message}
+              message={{
+                ...message,
+                possibleDuplicateOfCaseId: duplicateCaseByMessage.get(message.id)?.caseId,
+                possibleDuplicateReason: duplicateCaseByMessage.get(message.id)
+                  ? 'May kahawig na kamakailang concern mula sa parehong magsasaka o numero.'
+                  : undefined,
+              }}
               latestOutbound={latestOutboundByMessage.get(message.id)}
               onAssign={handleAssign}
               onRetry={handleRetry}
               onRecordOutcome={setOutcomeMessage}
+              onConfirmResolution={handleConfirmResolution}
             />
           )) : (
             <p className="text-sm text-muted-foreground">Wala pang task na naka-assign sa iyo. Puwede kang mag-assign mula sa mga urgent at pending na ulat sa itaas.</p>

@@ -39,6 +39,7 @@ import { summarizeTeachingCoverage } from '@/lib/sms-teaching';
 import { isSpreadsheetExtension, readSpreadsheetAsCsv } from '@/lib/spreadsheet-import';
 import type { SmsLexiconRule, SmsTone, SystemTemplate, SystemTemplateCategory } from '@/lib/types';
 import { defaultSystemSettings } from '@/lib/system-settings';
+import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 
 function downloadFile(filename: string, content: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -79,9 +80,13 @@ export default function BarangaySettingsPage() {
       systemSettings,
       saveSystemSettings,
       smsTrainingExamples,
+      knowledgeArticles,
       importSmsTrainingExamples,
+      reviewSmsTrainingExample,
+      reviewKnowledgeArticle,
     } = useData();
     const { currentUser, currentUserProfile } = useAuth();
+    const { capabilities } = useRuntimeCapabilities();
     const lexiconImportRef = useRef<HTMLInputElement>(null);
     const trainingImportRef = useRef<HTMLInputElement>(null);
     const [brgyDescription, setBrgyDescription] = useState(defaultSystemSettings.brgyDescription);
@@ -114,6 +119,7 @@ export default function BarangaySettingsPage() {
     const [ruleSafetyFlag, setRuleSafetyFlag] = useState<SmsLexiconRule['safetyFlag']>('Low');
     const [ruleTone, setRuleTone] = useState<SmsTone | 'none'>('none');
     const [ruleGuidance, setRuleGuidance] = useState('');
+    const [ruleApplicability, setRuleApplicability] = useState('');
     const [ruleNotes, setRuleNotes] = useState('');
     const [ruleEnabled, setRuleEnabled] = useState(true);
 
@@ -126,6 +132,8 @@ export default function BarangaySettingsPage() {
     const canManageSettings = canManageBarangaySettings(currentUserProfile);
     const canOpenDataCenter = canAccessDataCenter(currentUserProfile);
     const teachingCoverage = summarizeTeachingCoverage(smsLexiconRules, smsTrainingExamples);
+    const pendingTrainingExamples = smsTrainingExamples.filter((example) => example.reviewStatus === 'needs_review').slice(0, 5);
+    const pendingKnowledgeArticles = knowledgeArticles.filter((article) => article.reviewStatus === 'needs_review').slice(0, 5);
 
     useEffect(() => {
         if (currentUserProfile && !canManageSettings) {
@@ -231,6 +239,7 @@ export default function BarangaySettingsPage() {
         setRuleSafetyFlag(nextRule.safetyFlag);
         setRuleTone(nextRule.tone ?? 'none');
         setRuleGuidance(nextRule.guidance);
+        setRuleApplicability(nextRule.applicability ?? '');
         setRuleNotes(nextRule.notes ?? '');
         setRuleEnabled(nextRule.enabled);
     };
@@ -267,6 +276,7 @@ export default function BarangaySettingsPage() {
             safetyFlag: ruleSafetyFlag,
             tone: ruleTone === 'none' ? undefined : ruleTone,
             guidance: trimmedGuidance,
+            applicability: ruleApplicability.trim() || undefined,
             enabled: ruleEnabled,
             notes: ruleNotes.trim() || undefined,
             createdAt: editingLexiconRule?.createdAt ?? timestamp,
@@ -586,6 +596,55 @@ export default function BarangaySettingsPage() {
         <p className="text-muted-foreground">Pamahalaan ang mga detalye tungkol sa iyong barangay at i-configure ang mga setting ng system.</p>
       </div>
 
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle>System Health at Bersyon</CardTitle>
+          <CardDescription>
+            Mabilis na tingin kung ano ang handa sa live runtime at anong build ang tumatakbo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">App version</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.appVersion ?? 'Unknown'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Commit: {capabilities.buildCommit ?? 'Unknown'}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">AI</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.aiConfigured ? 'Configured' : 'Locked'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.ai}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Live SMS</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.liveSmsConfigured ? 'Ready' : 'Kulang pa'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.liveSms ?? capabilities.automationMode}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Firebase Admin</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.firebaseAdminConfigured ? 'Ready' : 'Kulang pa'}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Uploads</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.storageUploadConfigured ? 'Ready' : 'Locked'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.storageUpload ?? 'Puwede ang document, larawan, at audio uploads.'}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Automation mode</p>
+              <p className="mt-2 text-sm font-semibold">{capabilities.automationMode ?? 'Manual / local only'}</p>
+            </div>
+          </div>
+          <div className="rounded-lg border bg-background/80 p-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">Ano ang ibig sabihin nito</p>
+            <div className="mt-3 space-y-2">
+              <p>1. Kapag naka-lock ang AI o uploads, huwag umasa na gagana ang related automation sa live use.</p>
+              <p>2. Ang commit/build info ay madaling reference kung updated ba talaga ang deployed website.</p>
+              <p>3. Ang teaching queue sa ibaba ang dapat mong unahin kapag may bagong imported file na hindi pa dapat pagkatiwalaan agad.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="barangay" className="space-y-6">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/60 p-1 md:grid-cols-4">
           <TabsTrigger value="barangay">Barangay Info</TabsTrigger>
@@ -759,8 +818,12 @@ export default function BarangaySettingsPage() {
                 <p className="mt-2 text-2xl font-semibold">{teachingCoverage.approvedExamples}</p>
               </div>
               <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm text-muted-foreground">Pending review</p>
+                <p className="mt-2 text-2xl font-semibold">{teachingCoverage.pendingExamples + pendingKnowledgeArticles.length}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4">
                 <p className="text-sm text-muted-foreground">Accepted file types</p>
-                <p className="mt-2 text-sm font-medium">CSV, Excel, JSON, PDF, larawan</p>
+                <p className="mt-2 text-sm font-medium">CSV, Excel, JSON, PDF, larawan, audio</p>
               </div>
             </div>
 
@@ -818,6 +881,11 @@ export default function BarangaySettingsPage() {
                           {rule.tone ? <Badge variant="outline">{rule.tone}</Badge> : null}
                         </div>
                         <p className="text-sm text-muted-foreground">{rule.guidance}</p>
+                        {rule.applicability ? (
+                          <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                            Local applicability: {rule.applicability}
+                          </p>
+                        ) : null}
                         {rule.notes ? (
                           <p className="text-xs text-muted-foreground">Tala: {rule.notes}</p>
                         ) : null}
@@ -857,6 +925,64 @@ export default function BarangaySettingsPage() {
               </div>
               <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
                 Sa live runtime, ginagamit ng system ang approved local cue rules at ang mga pinakahuling reviewed examples bilang dagdag na gabay bago bumuo ng analysis at draft reply. Puwede na ring manggaling ang reviewed examples sa malinaw na narrated audio kung iyon ang mas madaling maihanda ng barangay staff.
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Teaching Review Queue</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Ang imported teaching examples ay hindi dapat agad gamitin bilang precedent hangga't walang review.
+                  </p>
+                </div>
+                {pendingTrainingExamples.length > 0 ? pendingTrainingExamples.map((example) => (
+                  <div key={example.id} className="rounded-lg border bg-muted/20 p-3">
+                    <p className="text-sm font-medium">{example.farmerName}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{example.message}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Source: {example.sourceLabel ?? 'Imported dataset'} • Suggested final intent: {example.finalReview.finalAnalysis.parsedIntent}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => void reviewSmsTrainingExample(example.id, 'approved', 'Na-review at puwede nang gamitin bilang live precedent.')}>
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => void reviewSmsTrainingExample(example.id, 'rejected', 'Hindi muna gagamitin bilang live precedent.')}>
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted-foreground">Walang teaching examples na naghihintay ng review ngayon.</p>
+                )}
+              </div>
+
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Knowledge Review Queue</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Ang imported na article ay puwedeng makita ng admin, pero hindi muna isasama sa live assistant hangga't hindi approved.
+                  </p>
+                </div>
+                {pendingKnowledgeArticles.length > 0 ? pendingKnowledgeArticles.map((article) => (
+                  <div key={article.id} className="rounded-lg border bg-muted/20 p-3">
+                    <p className="text-sm font-medium">{article.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{article.summary}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Source: {article.sourceLabel ?? article.author} • Version: {article.version ?? 1}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => void reviewKnowledgeArticle(article.id, 'approved', 'Na-review at puwede nang gamitin sa live search assistant.')}>
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => void reviewKnowledgeArticle(article.id, 'archived', 'Hindi muna isasama sa active local knowledge base.')}>
+                        Archive
+                      </Button>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted-foreground">Walang knowledge articles na naghihintay ng review ngayon.</p>
+                )}
               </div>
             </div>
 
@@ -1114,6 +1240,15 @@ export default function BarangaySettingsPage() {
                             value={ruleGuidance}
                             onChange={(event) => setRuleGuidance(event.target.value)}
                             placeholder="hal. I-prioritize ang field validation at magbigay ng ligtas na paunang payo habang hinihintay ang AEW review."
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="rule-applicability">Local applicability check</Label>
+                        <Textarea
+                            id="rule-applicability"
+                            value={ruleApplicability}
+                            onChange={(event) => setRuleApplicability(event.target.value)}
+                            placeholder="hal. I-check muna kung may available na stock, akma sa crop stage, at valid sa local na kondisyon bago irekomenda."
                         />
                     </div>
                     <div className="space-y-2">

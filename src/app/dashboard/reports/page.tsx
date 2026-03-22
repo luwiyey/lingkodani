@@ -59,6 +59,10 @@ function ReportsPageContent() {
       riskAlerts,
       liveContextUpdatedAt,
       highRiskCount,
+      aiDraftedCases,
+      humanReviewedCases,
+      farmerConfirmedResolutionCount,
+      awaitingFarmerConfirmationCount,
       completedFieldVisits,
       scheduledFieldVisits,
       completedAssistance,
@@ -81,6 +85,10 @@ function ReportsPageContent() {
           `Live Context Updated At: ${liveContextUpdatedAt}`,
           ``,
           `High-priority SMS: ${highRiskCount}`,
+          `AI-drafted cases: ${aiDraftedCases}`,
+          `Human-reviewed cases: ${humanReviewedCases}`,
+          `Farmer-confirmed resolutions: ${farmerConfirmedResolutionCount}`,
+          `Awaiting farmer confirmation: ${awaitingFarmerConfirmationCount}`,
           `Risk alerts: ${riskAlerts.length}`,
           `Alert broadcasts sent: ${totalAlertBroadcasts}`,
           `Broadcast recipients reached: ${broadcastRecipients}`,
@@ -250,6 +258,7 @@ function ReportsPageContent() {
             <CardContent>
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <p>Batay sa live na data, may <strong>{highRiskCount}</strong> na high-priority SMS sa kasalukuyang dataset at <strong>{riskAlerts.length}</strong> aktibong alerto sa risk center.</p>
+                    <p>Sa kasalukuyang timeframe, <strong>{aiDraftedCases}</strong> ang AI-assisted case drafts, <strong>{humanReviewedCases}</strong> ang umabot na sa human review, at <strong>{awaitingFarmerConfirmationCount}</strong> pa ang naghihintay ng kumpirmasyon mula sa magsasaka bago tuluyang ituring na sarado.</p>
                     <p>
                       {hasTopKeyword
                         ? <>Ang pinakakaraniwang keyword ay <strong className="text-foreground">{topKeyword?.word}</strong> ({topKeyword?.count} banggit).</>
@@ -272,6 +281,26 @@ function ReportsPageContent() {
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Human Review Progress</CardTitle>
+                    <CardDescription>AI-assisted vs human-reviewed na mga concern.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{humanReviewedCases}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{aiDraftedCases} AI-assisted, {Math.max(aiDraftedCases - humanReviewedCases, 0)} naghihintay pa ng tao</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Farmer Confirmation</CardTitle>
+                    <CardDescription>Actual na kumpirmasyon bago tuluyang isara.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{farmerConfirmedResolutionCount}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{awaitingFarmerConfirmationCount} cases pa ang naghihintay ng farmer confirmation</p>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">Interventions Completed</CardTitle>

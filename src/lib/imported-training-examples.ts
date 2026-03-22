@@ -96,6 +96,10 @@ export function buildImportedSmsTrainingExamples(
           reviewedAt,
           wasAdviceEdited: originalAdvice !== finalAdvice,
         },
+        reviewStatus: "needs_review",
+        reviewNotes: "Imported dataset. Hintayin munang ma-review bago gamitin bilang live precedent.",
+        sourceLabel,
+        importedAt,
       } satisfies SmsTrainingExample;
     });
 }

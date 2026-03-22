@@ -109,6 +109,7 @@ function coerceLexiconRule(
     tone: normalizeTone(record.tone),
     guidance,
     enabled: asBoolean(record.enabled, true),
+    applicability: asString(record.applicability).trim() || undefined,
     notes: asString(record.notes).trim() || undefined,
     createdAt: asString(record.createdAt).trim() || undefined,
     updatedAt: asString(record.updatedAt).trim() || undefined,
@@ -140,6 +141,7 @@ export function formatSmsLexiconRulesAsCsv(rules: SmsLexiconRule[]) {
       "tone",
       "guidance",
       "enabled",
+      "applicability",
       "notes",
     ],
     ...rules.map((rule) => [
@@ -151,6 +153,7 @@ export function formatSmsLexiconRulesAsCsv(rules: SmsLexiconRule[]) {
       rule.tone ?? "",
       rule.guidance,
       String(rule.enabled),
+      rule.applicability ?? "",
       rule.notes ?? "",
     ]),
   ];

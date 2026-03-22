@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { useData } from '@/context/data-context';
 import { useReportsTimeframe, type ReportsTimeframe } from '@/context/reports-timeframe-context';
 import type { Resource, SmsMessage } from '@/lib/types';
-import { getEffectiveSmsCaseOutcome } from '@/lib/sms-case-outcomes';
+import { getEffectiveSmsCaseOutcome, isAwaitingFarmerConfirmation, isFarmerConfirmedResolution } from '@/lib/sms-case-outcomes';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
 
 type Tone = 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
@@ -169,7 +169,7 @@ function getInquiryCategory(message: SmsMessage) {
 }
 
 function isMessageResolved(message: SmsMessage) {
-  return getEffectiveSmsCaseOutcome(message) === 'resolved';
+  return getEffectiveSmsCaseOutcome(message) === 'resolved' && isFarmerConfirmedResolution(message);
 }
 
 function formatInterventionPeriodLabel(date: Date, timeframe: ReportsTimeframe) {
@@ -516,6 +516,7 @@ export function useAnalytics() {
 
     const caseOutcomeCounter = {
       'Walang outcome': 0,
+      'Hintay kumpirmasyon': 0,
       'Mino-monitor': 0,
       'May pagbuti': 0,
       'Kailangan ng follow-up': 0,
@@ -525,6 +526,10 @@ export function useAnalytics() {
 
     for (const message of sortedByTime) {
       const outcome = getEffectiveSmsCaseOutcome(message);
+      if (isAwaitingFarmerConfirmation(message)) {
+        caseOutcomeCounter['Hintay kumpirmasyon'] += 1;
+        continue;
+      }
       if (!outcome) {
         caseOutcomeCounter['Walang outcome'] += 1;
         continue;
@@ -539,12 +544,18 @@ export function useAnalytics() {
 
     const caseOutcomeData = [
       { name: 'Walang outcome', value: caseOutcomeCounter['Walang outcome'], fill: COLOR_4 },
+      { name: 'Hintay kumpirmasyon', value: caseOutcomeCounter['Hintay kumpirmasyon'], fill: '#f59e0b' },
       { name: 'Mino-monitor', value: caseOutcomeCounter['Mino-monitor'], fill: COLOR_2 },
       { name: 'May pagbuti', value: caseOutcomeCounter['May pagbuti'], fill: COLOR_1 },
       { name: 'Kailangan ng follow-up', value: caseOutcomeCounter['Kailangan ng follow-up'], fill: '#d97706' },
       { name: 'Na-refer', value: caseOutcomeCounter['Na-refer'], fill: '#0284c7' },
       { name: 'Nalutas', value: caseOutcomeCounter.Nalutas, fill: '#16a34a' },
     ];
+
+    const aiDraftedCases = sortedByTime.filter((message) => message.analysisSource === 'ai' || message.analysisSource === 'ai_fallback').length;
+    const humanReviewedCases = sortedByTime.filter((message) => message.status !== 'pending_approval').length;
+    const farmerConfirmedResolutionCount = sortedByTime.filter((message) => isFarmerConfirmedResolution(message)).length;
+    const awaitingFarmerConfirmationCount = sortedByTime.filter((message) => isAwaitingFarmerConfirmation(message)).length;
 
     const advisoryDeliveryData = [
       { name: 'Tagumpay', value: sentCount, fill: COLOR_1 },
@@ -593,6 +604,10 @@ export function useAnalytics() {
 
     return {
       highRiskCount,
+      aiDraftedCases,
+      humanReviewedCases,
+      farmerConfirmedResolutionCount,
+      awaitingFarmerConfirmationCount,
       liveContextUpdatedAt,
       riskAlerts,
       completedFieldVisits,
