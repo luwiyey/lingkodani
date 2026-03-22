@@ -76,6 +76,9 @@ import { getUserRecordId } from '@/lib/user-record';
 type NewResourceData = {
   name: string;
   category: Resource['category'];
+  inventoryGroup?: Resource['inventoryGroup'];
+  subcategory?: Resource['subcategory'];
+  intendedUse?: Resource['intendedUse'];
   stock: number;
   unit: string;
 };
@@ -718,7 +721,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (isLiveMode && (authLoading || !currentUser)) return;
+    if (isLiveMode) return;
 
     let active = true;
 
@@ -781,7 +784,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       active = false;
       window.clearInterval(interval);
     };
-  }, [authLoading, currentUser, currentUserProfile, hydrated, smsMessages, systemSettings]);
+  }, [hydrated, smsMessages, systemSettings]);
 
   useEffect(() => {
     if (!hydrated || isLiveMode) return;
@@ -1179,10 +1182,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    void Promise.all([
-      farmerRepository.updateFarmer(farmerId, updates),
-      auditRepository.createAuditLog(auditLog),
-    ]).catch((error) => {
+    void farmerRepository.updateFarmer(farmerId, updates).then(() => {
+      return auditRepository.createAuditLog(auditLog).catch((error) => {
+        console.error("Failed to persist farmer update audit log", error);
+      });
+    }).catch((error) => {
       if (shouldQueueLiveMutation(error)) {
         queueOfflineMutation({
           id: createOfflineMutationId('farmer'),
@@ -1196,6 +1200,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         });
         return;
       }
+      setFarmers(prev => prev.map((farmer) => (
+        farmer.id === farmerId ? currentFarmer : farmer
+      )));
+      setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist farmer update", error);
     });
   };
@@ -1230,10 +1238,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     )));
     setAuditLogs(prev => [auditLog, ...prev]);
 
-    void Promise.all([
-      farmerRepository.updateFarmer(farmerId, { status }),
-      auditRepository.createAuditLog(auditLog),
-    ]).catch((error) => {
+    void farmerRepository.updateFarmer(farmerId, { status }).then(() => {
+      return auditRepository.createAuditLog(auditLog).catch((error) => {
+        console.error("Failed to persist farmer status audit log", error);
+      });
+    }).catch((error) => {
+      setFarmers(prev => prev.map((farmer) => (
+        farmer.id === farmerId
+          ? { ...farmer, status: currentFarmer.status }
+          : farmer
+      )));
+      setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist farmer status update", error);
     });
   };
@@ -1263,10 +1278,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     )));
     setAuditLogs(prev => [auditLog, ...prev]);
 
-    void Promise.all([
-      ...targetFarmers.map((farmer) => farmerRepository.updateFarmer(farmer.id, { status })),
-      auditRepository.createAuditLog(auditLog),
-    ]).catch((error) => {
+    void Promise.all(
+      targetFarmers.map((farmer) => farmerRepository.updateFarmer(farmer.id, { status }))
+    ).then(() => {
+      return auditRepository.createAuditLog(auditLog).catch((error) => {
+        console.error("Failed to persist bulk farmer status audit log", error);
+      });
+    }).catch((error) => {
+      setFarmers(prev => prev.map((farmer) => {
+        const originalFarmer = targetFarmers.find((candidate) => candidate.id === farmer.id);
+        return originalFarmer ? originalFarmer : farmer;
+      }));
+      setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist bulk farmer status update", error);
     });
 
@@ -1293,10 +1316,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setFarmers(prev => prev.filter((farmer) => farmer.id !== farmerId));
     setAuditLogs(prev => [auditLog, ...prev]);
 
-    void Promise.all([
-      farmerRepository.deleteFarmer(farmerId),
-      auditRepository.createAuditLog(auditLog),
-    ]).catch((error) => {
+    void farmerRepository.deleteFarmer(farmerId).then(() => {
+      return auditRepository.createAuditLog(auditLog).catch((error) => {
+        console.error("Failed to persist farmer deletion audit log", error);
+      });
+    }).catch((error) => {
+      setFarmers(prev => sortByDateDescending([currentFarmer, ...prev], (farmer) => farmer.registrationDate));
+      setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist farmer deletion", error);
     });
   };
@@ -1314,7 +1340,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         gender: farmerData.gender || 'Hindi natukoy',
         registrationDate: new Date().toISOString(),
         lastSmsActivity: new Date().toISOString(),
-        avatarUrl: `https://picsum.photos/seed/${Math.random()}/200/200`,
         status: 'pending_approval'
     };
     setFarmers(prev => [...prev, newFarmer]);
@@ -1400,11 +1425,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
     setResources(prev => [newResource, ...prev]);
     void resourceRepository.createResource(newResource).catch((error) => {
+      setResources(prev => prev.filter((resource) => resource.id !== newResource.id));
       console.error("Failed to persist resource", error);
     });
   };
 
   const updateResource = (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => {
+    const previousResource = resources.find((resource) => resource.id === resourceId);
+
+    if (!previousResource) {
+      return;
+    }
+
     const nextUpdatedAt = new Date().toISOString();
     setResources(prev =>
       prev.map(r =>
@@ -1415,13 +1447,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       ...data,
       lastUpdated: nextUpdatedAt,
     }).catch((error) => {
+      setResources(prev => prev.map((resource) => (
+        resource.id === resourceId ? previousResource : resource
+      )));
       console.error("Failed to persist resource update", error);
     });
   };
   
   const deleteResource = (resourceId: string) => {
+    const previousResource = resources.find((resource) => resource.id === resourceId);
+
+    if (!previousResource) {
+      return;
+    }
+
     setResources(prev => prev.filter(r => r.id !== resourceId));
     void resourceRepository.deleteResource(resourceId).catch((error) => {
+      setResources(prev => [previousResource, ...prev].sort((left, right) => (
+        normalizeTimestamp(right.lastUpdated) - normalizeTimestamp(left.lastUpdated)
+      )));
       console.error("Failed to persist resource deletion", error);
     });
   };

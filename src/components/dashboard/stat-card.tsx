@@ -20,7 +20,7 @@ export function StatCard({ title, value, icon: Icon, description, iconBgClass, i
           <div className="text-3xl font-semibold tracking-tight">{value}</div>
           {description && <p className="text-xs leading-5 text-muted-foreground">{description}</p>}
         </div>
-        <div className={cn("p-2 rounded-md", iconBgClass || "bg-primary/10")}>
+        <div className={cn("flex h-9 w-9 items-center justify-center rounded-full", iconBgClass || "bg-primary/10")}>
             <Icon className={cn("h-4 w-4", iconColorClass || "text-primary")} />
         </div>
       </CardContent>

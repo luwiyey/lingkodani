@@ -51,6 +51,23 @@ const urgencyOptions: SmsMessage['urgency'][] = ['low', 'medium', 'high'];
 const safetyFlagOptions: SmsMessage['safetyFlag'][] = ['Low', 'Medium', 'High'];
 const toneOptions: NonNullable<SmsMessage['tone']>[] = ['Neutral', 'Nag-aalala', 'Kritikal', 'Positibo'];
 const cardActionButtonClassName = 'h-auto min-h-11 whitespace-normal break-words px-3 py-3 text-center leading-snug';
+const neutralBadgeClassName = 'border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100';
+const infoBadgeClassName = 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-100';
+const warningBadgeClassName = 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100';
+const successBadgeClassName = 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100';
+const destructiveBadgeClassName = 'border-red-200 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-100';
+
+function getRiskBadgeClassName(flag: SmsMessage['safetyFlag']) {
+  if (flag === 'High') {
+    return destructiveBadgeClassName;
+  }
+
+  if (flag === 'Medium') {
+    return warningBadgeClassName;
+  }
+
+  return successBadgeClassName;
+}
 
 function createReviewDraft(message: SmsMessage): ReviewDraft {
   return {
@@ -218,49 +235,49 @@ function SmsMessageCard({
                         <h3 className="text-sm font-semibold">Pagsusuri ng AI</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                         <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">
+                         <Badge variant="outline" className={neutralBadgeClassName}>
                             <IntentIcon className="w-3 h-3 mr-1.5"/>
                             {intentLabel}
                         </Badge>
-                        <Badge variant={message.safetyFlag === 'High' ? 'destructive' : 'outline'} className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">{message.safetyFlag} Risk</Badge>
-                        <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Conf: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
-                        <Badge variant={message.analysisSource === 'ai' ? 'outline' : 'secondary'} className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">
+                        <Badge variant="outline" className={getRiskBadgeClassName(message.safetyFlag)}>{message.safetyFlag} Risk</Badge>
+                        <Badge variant="outline" className={neutralBadgeClassName}>Conf: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                        <Badge variant="outline" className={neutralBadgeClassName}>
                           Source: {message.analysisSource === 'ai_fallback' ? 'AI fallback' : message.analysisSource === 'rules' ? 'Rules' : 'AI'}
                         </Badge>
-                        {message.caseStatus && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Case: {message.caseStatus}</Badge>}
+                        {message.caseStatus && <Badge variant="outline" className={neutralBadgeClassName}>Case: {message.caseStatus}</Badge>}
                         <CaseOutcomeBadge message={message} />
-                        {message.assignedTo && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Owner: {message.assignedTo}</Badge>}
+                        {message.assignedTo && <Badge variant="outline" className={neutralBadgeClassName}>Owner: {message.assignedTo}</Badge>}
                         {message.registrationRequired && (
-                          <Badge variant="outline" className="text-blue-200 border-blue-400/40 bg-blue-500/10">
+                          <Badge variant="outline" className={infoBadgeClassName}>
                             Registration required
                           </Badge>
                         )}
-                        {message.tone && <Badge variant="outline" className="text-sidebar-foreground border-sidebar-accent bg-sidebar-accent/50">Tono: {message.tone}</Badge>}
+                        {message.tone && <Badge variant="outline" className={neutralBadgeClassName}>Tono: {message.tone}</Badge>}
                         {message.clarificationNeeded && (
-                          <Badge variant="outline" className="text-yellow-200 border-yellow-400/40 bg-yellow-500/10">
+                          <Badge variant="outline" className={warningBadgeClassName}>
                             Clarification needed
                           </Badge>
                         )}
                         {message.autoReplySentAt && (
-                          <Badge variant="outline" className="text-amber-200 border-amber-400/40 bg-amber-500/10">
+                          <Badge variant="outline" className={warningBadgeClassName}>
                             Auto fallback sent
                           </Badge>
                         )}
                         {latestOutboundStatus === 'failed' && (
-                          <Badge variant="outline" className="text-red-200 border-red-400/40 bg-red-500/10">
+                          <Badge variant="outline" className={destructiveBadgeClassName}>
                             Last send failed
                           </Badge>
                         )}
                     </div>
                     {message.clarificationNeeded && message.clarificationQuestion ? (
-                      <div className="rounded-lg border border-yellow-400/20 bg-yellow-500/5 p-3 text-xs text-sidebar-foreground/80">
-                        <p className="font-medium text-yellow-100">Suggested clarification</p>
-                        <p className="mt-1">{message.clarificationQuestion}</p>
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-slate-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-50">
+                        <p className="font-semibold text-amber-900 dark:text-amber-100">Suggested clarification</p>
+                        <p className="mt-1 leading-relaxed">{message.clarificationQuestion}</p>
                       </div>
                     ) : null}
                     {message.analysisSource && message.analysisSource !== 'ai' ? (
-                      <div className="rounded-lg border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-sidebar-foreground/80">
-                        <p className="font-medium text-amber-100">Review required</p>
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-slate-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-50">
+                        <p className="font-semibold text-amber-900 dark:text-amber-100">Review required</p>
                         <p className="mt-1">
                           Ang kasalukuyang analysis ay galing sa {message.analysisSource === 'ai_fallback' ? 'AI fallback' : 'rules-based'} path, kaya mas mahalaga ang human review bago magpadala ng final advisory.
                         </p>
@@ -539,7 +556,7 @@ function SmsFeedPageContent() {
               <HelpDialog title="Live na Feed ng SMS" tooltipText="Suriin at tumugon sa mga papasok na SMS.">
                 <p>Ito ang iyong real-time na inbox para sa lahat ng mensahe mula sa mga magsasaka. Bawat card ay kumakatawan sa isang papasok na SMS na kailangan ng iyong atensyon.</p>
                 <p><strong>Daloy ng Trabaho:</strong> Ang isang bagong SMS ay papasok at agad na susuriin ng AI. Ang AI ay magbibigay ng paunang pagsusuri sa layunin (intent), tono, at panganib ng mensahe, at magmumungkahi ng isang tugon. Ang iyong gawain ay suriin ang mungkahi ng AI at aprubahan o i-edit ito.</p>
-                <p><strong>Auto fallback:</strong> Sa free-hosting setup, gumagana ang fallback checks habang bukas ang live dashboard o kapag manu-manong pinaandar ng staff ang automation. Kapag ang isang mensahe ay nanatiling <code>pending_approval</code> lampas sa 3 minuto sa aktibong setup na iyon, magpapadala ang system ng ligtas na fallback template habang nananatiling bukas ang case para sa human follow-up.</p>
+                <p><strong>Auto fallback:</strong> Sa live setup na may cron automation, tuloy-tuloy na tumatakbo sa background ang overdue at follow-up checks. Kapag ang isang mensahe ay nanatiling <code>pending_approval</code> lampas sa 3 minuto, magpapadala ang system ng ligtas na fallback template habang nananatiling bukas ang case para sa human follow-up.</p>
                 <p><strong>Mga Aksyon sa Card:</strong></p>
                 <ul className="list-disc pl-5 space-y-1">
                     <li><strong>Aprubahan:</strong> Nagbubukas ito ng isang pop-up kung saan maaari mong suriin at i-edit ang tugon ng AI bago ito ipadala sa magsasaka. Ito ang pinakakaraniwang aksyon.</li>

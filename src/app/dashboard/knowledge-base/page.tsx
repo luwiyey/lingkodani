@@ -45,11 +45,11 @@ export default function KnowledgeBasePage() {
   const handleAddNewEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const title = formData.get('title') as string;
-    const summary = formData.get('summary') as string;
+    const rawTitle = (formData.get('title') as string | null)?.trim() ?? '';
+    const summary = (formData.get('summary') as string | null)?.trim() ?? '';
     const keywords = (formData.get('keywords') as string).split(',').map(kw => kw.trim()).filter(Boolean);
     const type = formData.get('type') as KnowledgeArticle['type'];
-    const content = type === 'article' ? formData.get('content') as string : '';
+    const content = type === 'article' ? (formData.get('content') as string) : '';
     const audioFile = formData.get('audioFile');
 
     if (type === 'audio' && audioUploadLocked) {
@@ -63,7 +63,7 @@ export default function KnowledgeBasePage() {
 
     const requiresManualMetadata = type !== 'audio';
 
-    if (!title || (requiresManualMetadata && (!summary || !keywords.length))) {
+    if ((!rawTitle && type === 'article') || (requiresManualMetadata && (!summary || !keywords.length))) {
         toast({title: "Kulang ang Impormasyon", description: "Punan ang lahat ng kinakailangang field.", variant: "destructive"});
         return;
     }
@@ -79,6 +79,10 @@ export default function KnowledgeBasePage() {
       const audioTranscription = type === 'audio' && audioFile instanceof File
         ? await transcribeAudioUpload(audioFile, 'knowledge_audio')
         : null;
+      const fallbackTitle = type === 'audio' && audioFile instanceof File
+        ? audioFile.name.replace(/\.[^.]+$/, '').trim()
+        : '';
+      const title = rawTitle || audioTranscription?.suggestedTitle?.trim() || fallbackTitle || 'Bagong Audio Knowledge Entry';
       const audioUrl = type === 'audio' && audioFile instanceof File
         ? await uploadKnowledgeAudioFile(audioFile, title)
         : undefined;
@@ -411,7 +415,12 @@ export default function KnowledgeBasePage() {
                            <HoverTooltip text="Ang pamagat ng iyong artikulo o audio story.">
                             <div className="space-y-2">
                                 <Label htmlFor="title-main">Pamagat</Label>
-                                <Input id="title-main" name="title" required />
+                                <Input
+                                  id="title-main"
+                                  name="title"
+                                  required={newEntryType === 'article'}
+                                  placeholder={newEntryType === 'audio' ? 'Opsyonal para sa audio. Kapag iniwang blangko, gagawa ang system ng pamagat mula sa transcript o file name.' : ''}
+                                />
                             </div>
                            </HoverTooltip>
                            <HoverTooltip text="Isang maikling, isang-pangungusap na buod ng nilalaman.">

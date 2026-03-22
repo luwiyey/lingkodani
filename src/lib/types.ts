@@ -213,11 +213,30 @@ export type SmsMessage = {
 };
 
 export type ResourceCategory = 'Pataba' | 'Binhi' | 'Kagamitan' | 'Paggawa';
+export type ResourceInventoryGroup =
+  | 'Para sa Pananim'
+  | 'Proteksyon ng Pananim'
+  | 'Kagamitan at Makinarya'
+  | 'Patubig at Tubig'
+  | 'Serbisyo at Gawaing-Tao'
+  | 'Pag-aani at Imbakan'
+  | 'Pangkalahatang Suporta';
+export type ResourceInventoryUse =
+  | 'Pagtatanim'
+  | 'Pagpapalago at Pagpapataba'
+  | 'Pagkontrol ng Peste at Sakit'
+  | 'Pagdidilig at Patubig'
+  | 'Pag-aani at Pagproseso'
+  | 'Serbisyo sa Bukid'
+  | 'Pangkalahatang Suporta';
 
 export type Resource = {
   id: string;
   name: string;
   category: ResourceCategory;
+  inventoryGroup?: ResourceInventoryGroup;
+  subcategory?: string;
+  intendedUse?: ResourceInventoryUse;
   stock: number;
   unit: string;
   lastUpdated: string;

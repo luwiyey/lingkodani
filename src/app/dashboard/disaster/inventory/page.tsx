@@ -105,8 +105,12 @@ export default function DisasterInventoryPage() {
     let sortableItems = [...filteredResources];
     if (sortConfig !== null) {
         sortableItems.sort((a, b) => {
-            const aValue = a[sortConfig.key];
-            const bValue = b[sortConfig.key];
+            const aValue = sortConfig.key === 'lastUpdated'
+              ? new Date(a.lastUpdated).getTime()
+              : a[sortConfig.key] ?? '';
+            const bValue = sortConfig.key === 'lastUpdated'
+              ? new Date(b.lastUpdated).getTime()
+              : b[sortConfig.key] ?? '';
 
             if (aValue < bValue) {
                 return sortConfig.direction === 'ascending' ? -1 : 1;

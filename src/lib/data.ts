@@ -15,6 +15,7 @@ import type {
   Voucher,
 } from '@/lib/types';
 import { Tractor, Shield, Wind, Flame, Sprout, Droplets, ShieldAlert, Sun } from 'lucide-react';
+import { createInitialsAvatarDataUrl } from '@/lib/avatar-placeholder';
 
 // =================================================================================
 // BASE DATA
@@ -35,7 +36,7 @@ export const farmers: Farmer[] = [
     crops: ['Palay'],
     registrationDate: '2023-10-20T08:00:00Z',
     lastSmsActivity: '2026-03-08T14:30:00Z',
-    avatarUrl: 'https://picsum.photos/seed/felipe/200/200',
+    avatarUrl: createInitialsAvatarDataUrl('Felipe M. Macedonio'),
     status: 'active'
   },
   {
@@ -50,7 +51,7 @@ export const farmers: Farmer[] = [
     crops: ['Palay', 'Mais'],
     registrationDate: '2023-10-01T08:00:00Z',
     lastSmsActivity: '2026-03-08T09:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/101/200/200',
+    avatarUrl: createInitialsAvatarDataUrl('Juan dela Cruz'),
     status: 'active'
   },
   {
@@ -65,7 +66,7 @@ export const farmers: Farmer[] = [
     crops: ['Kamatis'],
     registrationDate: '2023-10-02T09:00:00Z',
     lastSmsActivity: '2026-03-08T11:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/102/200/200',
+    avatarUrl: createInitialsAvatarDataUrl('Maria Clara'),
     status: 'active'
   },
   {
@@ -150,7 +151,7 @@ export const farmers: Farmer[] = [
     crops: ['Kamatis', 'Sili'],
     registrationDate: '2023-10-05T14:00:00Z',
     lastSmsActivity: '2026-03-08T10:00:00Z',
-    avatarUrl: 'https://picsum.photos/seed/109/200/200',
+    avatarUrl: createInitialsAvatarDataUrl('Apolinario Mabini'),
     status: 'active'
   },
 ];
@@ -282,14 +283,14 @@ export const smsMessages: SmsMessage[] = [
 ];
 
 export const resources: Resource[] = [
-    { id: 'RES008', name: 'Pamatay-peste (Pesticide)', category: 'Pataba', stock: 15, unit: 'bote (500ml)', lastUpdated: '2026-03-08' },
-    { id: 'RES001', name: 'Patabang Urea', category: 'Pataba', stock: 8, unit: 'sako (50kg)', lastUpdated: '2026-03-08' },
-    { id: 'RES002', name: 'Binhi ng Hybrid na Palay (SL-8H)', category: 'Binhi', stock: 20, unit: 'sako (20kg)', lastUpdated: '2026-03-08' },
-    { id: 'RES003', name: 'Hand Tractor', category: 'Kagamitan', stock: 5, unit: 'yunit', lastUpdated: '2026-03-01' },
-    { id: 'RES004', name: 'Pangkat ng Manggagawa sa Komunidad', category: 'Paggawa', stock: 25, unit: 'tao', lastUpdated: '2026-03-08' },
-    { id: 'RES005', name: 'Neem Oil (Organic Pesticide)', category: 'Pataba', stock: 150, unit: 'bote (1L)', lastUpdated: '2026-03-08' },
-    { id: 'RES006', name: 'Sprayer', category: 'Kagamitan', stock: 2, unit: 'yunit', lastUpdated: '2026-03-08' },
-    { id: 'RES007', name: 'Ammonium Phosphate (16-20-0)', category: 'Pataba', stock: 5, unit: 'sako (50kg)', lastUpdated: '2026-03-08' },
+    { id: 'RES008', name: 'Pamatay-peste (Pesticide)', category: 'Pataba', inventoryGroup: 'Proteksyon ng Pananim', subcategory: 'Pestisidyo', intendedUse: 'Pagkontrol ng Peste at Sakit', stock: 15, unit: 'bote (500ml)', lastUpdated: '2026-03-08' },
+    { id: 'RES001', name: 'Patabang Urea', category: 'Pataba', inventoryGroup: 'Para sa Pananim', subcategory: 'Pataba', intendedUse: 'Pagpapalago at Pagpapataba', stock: 8, unit: 'sako (50kg)', lastUpdated: '2026-03-08' },
+    { id: 'RES002', name: 'Binhi ng Hybrid na Palay (SL-8H)', category: 'Binhi', inventoryGroup: 'Para sa Pananim', subcategory: 'Binhi', intendedUse: 'Pagtatanim', stock: 20, unit: 'sako (20kg)', lastUpdated: '2026-03-08' },
+    { id: 'RES003', name: 'Hand Tractor', category: 'Kagamitan', inventoryGroup: 'Kagamitan at Makinarya', subcategory: 'Makinarya sa bukid', intendedUse: 'Serbisyo sa Bukid', stock: 5, unit: 'yunit', lastUpdated: '2026-03-01' },
+    { id: 'RES004', name: 'Pangkat ng Manggagawa sa Komunidad', category: 'Paggawa', inventoryGroup: 'Serbisyo at Gawaing-Tao', subcategory: 'Labor pool', intendedUse: 'Serbisyo sa Bukid', stock: 25, unit: 'tao', lastUpdated: '2026-03-08' },
+    { id: 'RES005', name: 'Neem Oil (Organic Pesticide)', category: 'Pataba', inventoryGroup: 'Proteksyon ng Pananim', subcategory: 'Organic spray', intendedUse: 'Pagkontrol ng Peste at Sakit', stock: 150, unit: 'bote (1L)', lastUpdated: '2026-03-08' },
+    { id: 'RES006', name: 'Sprayer', category: 'Kagamitan', inventoryGroup: 'Kagamitan at Makinarya', subcategory: 'Spraying equipment', intendedUse: 'Pagkontrol ng Peste at Sakit', stock: 2, unit: 'yunit', lastUpdated: '2026-03-08' },
+    { id: 'RES007', name: 'Ammonium Phosphate (16-20-0)', category: 'Pataba', inventoryGroup: 'Para sa Pananim', subcategory: 'Pataba', intendedUse: 'Pagpapalago at Pagpapataba', stock: 5, unit: 'sako (50kg)', lastUpdated: '2026-03-08' },
 ];
 
 export const marketPrices: MarketPriceEntry[] = [
@@ -532,7 +533,7 @@ export const registeredUsers = [
       title: 'Barangay Administrator',
       barangay: 'Batakil',
       phone: '+639171111111',
-      avatarUrl: 'https://picsum.photos/seed/brgy-admin/200/200',
+      avatarUrl: createInitialsAvatarDataUrl('Brgy. Admin'),
       permissions: {
         manageBarangaySettings: true,
         manageAutomation: true,

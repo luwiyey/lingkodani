@@ -26,6 +26,7 @@ import { useData } from '@/context/data-context';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
 import { readOnboardingProfile, saveDemoPreviewUser, saveOnboardingProfile } from '@/lib/onboarding';
+import { createInitialsAvatarDataUrl } from '@/lib/avatar-placeholder';
 import { uploadUserAvatarFile } from '@/lib/services/profile-avatar-file-service';
 import type { User } from '@/lib/types';
 import { getUserRecordId } from '@/lib/user-record';
@@ -65,7 +66,7 @@ export default function AccountSettingsPage() {
       title: 'Barangay Administrator',
       barangay: 'Batakil',
       phone: '+639171111111',
-      avatarUrl: 'https://picsum.photos/seed/admin/200/200',
+      avatarUrl: createInitialsAvatarDataUrl('Brgy. Admin'),
       status: 'active',
     };
   }, [liveProfile]);

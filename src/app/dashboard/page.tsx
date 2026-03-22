@@ -64,7 +64,7 @@ function PriorityTaskCard({
     <HoverTooltip text={tooltip}>
       <Link href={href} className="block">
         <div className="flex h-full items-center gap-4 rounded-[calc(var(--radius)+2px)] border border-border/90 bg-card p-5 shadow-sm transition-all duration-150 ease-out hover:-translate-y-px hover:border-primary/15 hover:bg-muted/35">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted">
             <Icon className={`h-5 w-5 ${iconClassName}`} />
           </div>
           <div>
@@ -149,7 +149,7 @@ export default function DashboardPage() {
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Clock3 className="h-5 w-5" />
                 </div>
                 <div className="space-y-1">
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                     Live automation status
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Automatic checks run while the live dashboard is open, or can be triggered manually by staff.
+                    Automatic checks now run through deployed cron routes in the background, with manual rerun controls still available for staff.
                   </p>
                 </div>
               </div>

@@ -4,7 +4,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import Image from "next/image";
-import { Leaf, ShieldCheck } from "lucide-react";
+import { BadgeCheck, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,8 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useToast } from "@/hooks/use-toast";
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
@@ -42,7 +40,7 @@ function VerifyPageContent() {
     e.preventDefault();
 
     if (isLiveMode) {
-      router.push(getPreferredDashboardRoute(currentUserProfile));
+      router.push(currentUserProfile ? getPreferredDashboardRoute(currentUserProfile) : '/login');
       return;
     }
     
@@ -70,12 +68,10 @@ function VerifyPageContent() {
     router.push(getPreferredDashboardRoute(demoUser));
   };
 
-  const handleResendCode = () => {
-    toast({
-      title: "Code Ipinadala Muli",
-      description: "Isang bagong verification code ang ipinadala sa iyong email.",
-    });
-  };
+  const email = searchParams.get('email');
+  const user = users.find((candidate) => candidate.email === email);
+  const preferredWorkspace = readOnboardingProfile()?.preferredWorkspace ?? user?.preferredWorkspace ?? 'simple';
+  const demoUser = normalizeDemoProfile(user ?? null, preferredWorkspace);
 
   return (
     <div className="w-full h-screen relative">
@@ -94,38 +90,42 @@ function VerifyPageContent() {
           <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-2 mb-2">
                 <ShieldCheck className="w-8 h-8 text-primary" />
-                <h1 className="text-3xl font-bold text-primary">I-verify ang Iyong Pag-login</h1>
+                <h1 className="text-3xl font-bold text-primary">Kumpirmahin ang Demo Login</h1>
             </div>
-            <CardTitle className="text-2xl">2-Step Verification</CardTitle>
+            <CardTitle className="text-2xl">Demo session confirmation</CardTitle>
             <CardDescription>
-              Nagpadala kami ng 6-digit na code sa iyong email. Ilagay ito sa ibaba.
+              Walang 6-digit code dito. Ito ay huling kumpirmasyon bago ka pumasok sa demo dashboard gamit ang sample barangay data.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleVerification} className="space-y-4">
-              <HoverTooltip text="Ilagay ang 6-digit na verification code na ipinadala sa iyong email.">
-                <div className="space-y-2">
-                  <Label htmlFor="verification-code">Verification Code</Label>
-                  <Input
-                    id="verification-code"
-                    type="text"
-                    placeholder="123456"
-                    maxLength={6}
-                    required
-                    className="text-center text-lg tracking-widest"
-                  />
+              <div className="rounded-[calc(var(--radius)+6px)] border border-emerald-200 bg-emerald-50 p-4 text-left text-sm text-emerald-900">
+                <div className="flex items-start gap-3">
+                  <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">Handa nang buksan ang demo workspace.</p>
+                    <p>
+                      Account: <span className="font-medium">{demoUser.email}</span>
+                    </p>
+                    <p>
+                      Workspace: <span className="font-medium">{preferredWorkspace === 'detailed' ? 'Detalyado' : 'Simple'}</span>
+                    </p>
+                    <p className="text-emerald-800/90">
+                      Ang susunod na hakbang ay magbubukas ng sample dashboard lamang. Wala itong ipapadalang totoong email code.
+                    </p>
+                  </div>
                 </div>
-              </HoverTooltip>
-               <HoverTooltip text="I-verify ang code at magpatuloy sa dashboard.">
+              </div>
+               <HoverTooltip text="Pumasok sa demo dashboard gamit ang sample barangay records at demo SMS data.">
                 <Button type="submit" className="w-full mt-2">
-                  I-verify
+                  Pumasok sa Demo Dashboard
                 </Button>
               </HoverTooltip>
             </form>
              <div className="mt-4 text-center text-sm">
-                <HoverTooltip text="Humingi ng bagong code kung hindi mo natanggap ang una.">
-                  <button onClick={handleResendCode} className="underline text-muted-foreground">
-                    Hindi natanggap ang code? Ipadala muli.
+                <HoverTooltip text="Bumalik sa login kung gusto mong pumili ng ibang account o live mode.">
+                  <button onClick={() => router.push('/login')} className="underline text-muted-foreground">
+                    Bumalik sa login
                   </button>
                 </HoverTooltip>
             </div>

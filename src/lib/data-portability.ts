@@ -9,6 +9,7 @@ import type {
   MarketPriceEntry,
   OutboundMessage,
   Resource,
+  ResourceInventoryGroup,
   SmsMessage,
   SmsTrainingExample,
   SystemSettings,
@@ -371,9 +372,17 @@ export function extractUserManagementValuesFromJson(input: unknown) {
 type ResourceImportRecord = {
   name: string;
   category: Resource["category"];
+  inventoryGroup?: Resource["inventoryGroup"];
+  subcategory?: Resource["subcategory"];
+  intendedUse?: Resource["intendedUse"];
   stock: number;
   unit: string;
 };
+
+function asResourceInventoryGroup(value: unknown): ResourceInventoryGroup | undefined {
+  const normalized = asString(value).trim() as ResourceInventoryGroup;
+  return normalized || undefined;
+}
 
 function coerceResourceRecord(record: Record<string, unknown>) {
   const name = asString(record.name).trim();
@@ -388,17 +397,23 @@ function coerceResourceRecord(record: Record<string, unknown>) {
   return {
     name,
     category,
+    inventoryGroup: asResourceInventoryGroup(record.inventoryGroup),
+    subcategory: asString(record.subcategory).trim() || undefined,
+    intendedUse: asString(record.intendedUse).trim() as Resource["intendedUse"] || undefined,
     stock,
     unit,
-  } satisfies ResourceImportRecord;
+  } as ResourceImportRecord;
 }
 
 export function formatResourcesAsCsv(resources: Resource[]) {
   const rows = [
-    ["name", "category", "stock", "unit", "lastUpdated"],
+    ["name", "category", "inventoryGroup", "subcategory", "intendedUse", "stock", "unit", "lastUpdated"],
     ...resources.map((resource) => [
       resource.name,
       resource.category,
+      resource.inventoryGroup ?? "",
+      resource.subcategory ?? "",
+      resource.intendedUse ?? "",
       String(resource.stock),
       resource.unit,
       resource.lastUpdated,
@@ -412,8 +427,10 @@ export function formatResourcesAsCsv(resources: Resource[]) {
 
 export function parseResourcesCsv(text: string) {
   return rowsToObjects(parseCsvRows(text))
-    .map((record) => coerceResourceRecord(record))
-    .filter((record): record is ResourceImportRecord => Boolean(record));
+    .flatMap((record) => {
+      const parsed = coerceResourceRecord(record);
+      return parsed ? [parsed] : [];
+    });
 }
 
 export function extractResourcesFromJson(input: unknown) {
@@ -423,8 +440,10 @@ export function extractResourcesFromJson(input: unknown) {
 
   return input
     .filter(isRecord)
-    .map((record) => coerceResourceRecord(record))
-    .filter((record): record is ResourceImportRecord => Boolean(record));
+    .flatMap((record) => {
+      const parsed = coerceResourceRecord(record);
+      return parsed ? [parsed] : [];
+    });
 }
 
 function coerceFarmerRegistrationRecord(record: Record<string, unknown>) {

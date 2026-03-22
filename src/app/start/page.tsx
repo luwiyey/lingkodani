@@ -354,7 +354,7 @@ export default function StartPage() {
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-[calc(var(--radius)+6px)] bg-primary/10 text-primary">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <Icon className="h-6 w-6" />
                           </div>
                           <div className="space-y-2">

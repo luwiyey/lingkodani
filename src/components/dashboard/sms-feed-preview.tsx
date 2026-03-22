@@ -63,7 +63,7 @@ export function SmsFeedPreview({ feedHref = "/dashboard/sms-feed" }: { feedHref?
                             return (
                             <HoverTooltip key={message.id} text={`Layunin ng AI: ${message.parsedIntent} | Kumpiyansa: ${(message.aiConfidence * 100).toFixed(0)}%`}>
                                 <div className="flex items-start gap-4 py-3.5 first:pt-0 last:pb-0">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
                                         <TypeIcon className="h-5 w-5" />
                                     </div>
                                     <div className="min-w-0 flex-1">
