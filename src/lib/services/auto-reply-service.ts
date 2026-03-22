@@ -100,7 +100,7 @@ export function buildAutoReplyBody(
       return appendAfterHoursNotice(
         confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
-          : "Natanggap ang inyong registration request. Susuriin ng barangay team ang detalye at magpapadala kami ng kumpirmasyon pagkatapos ng validation.",
+          : "Opo, natanggap po ang inyong registration request. Susuriin po ng barangay team ang detalye at magpapadala po kami ng kumpirmasyon pagkatapos ng validation.",
         message,
         settings
       );

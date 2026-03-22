@@ -125,10 +125,10 @@ export function buildRegistrationPrompt(missingFields?: string[]) {
   const normalizedMissingFields = (missingFields ?? []).filter(Boolean);
 
   if (normalizedMissingFields.length > 0) {
-    return `Natanggap namin ang inyong registration request. Para maipasa namin ito sa farmer approval, pakisend po ang ${joinMissingFields(normalizedMissingFields)}. Maaari ring isama ang pangunahing pananim at lawak ng sakahan kung available.`;
+    return `Opo, natanggap po namin ang inyong registration request. Para maipasa po namin ito sa farmer approval, pakisend po ang ${joinMissingFields(normalizedMissingFields)}. Maaari rin po ninyong isama ang pangunahing pananim at lawak ng sakahan kung available.`;
   }
 
-  return "Hindi pa namin kayo matugma sa rehistro. Pakisagot po sa format na REGISTER Pangalan Zone PangunahingPananim LawakHa upang maipasa namin kayo sa farmer approval.";
+  return "Opo, hindi pa po namin kayo maitugma sa rehistro. Pakisagot po sa format na REGISTER Pangalan Zone PangunahingPananim LawakHa upang maipasa po namin kayo sa farmer approval.";
 }
 
 export type RegistrationAssessment = {

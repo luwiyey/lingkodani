@@ -162,7 +162,7 @@ export function inferAdvice(
 
   switch (intent) {
     case "REGISTER":
-      return `Natanggap namin ang inyong registration request, ${farmerName}. Susuriin ito ng barangay team at magpapadala kami ng kumpirmasyon kapag kumpleto na ang detalye.`;
+      return `Opo, natanggap po namin ang inyong registration request, ${farmerName}. Susuriin po ito ng barangay team at magpapadala po kami ng kumpirmasyon kapag kumpleto na ang detalye.`;
     case "EMERGENCY":
       return `Natanggap ang emergency report mula kay ${farmerName}. I-secure ang inyong taniman at hintayin ang susunod na alerto mula sa barangay habang sinusuri ng team ang sitwasyon.`;
     case "REQUEST":

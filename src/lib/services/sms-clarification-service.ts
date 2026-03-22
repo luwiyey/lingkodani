@@ -11,7 +11,7 @@ type ClarificationDecision = {
 function buildIntentClarification(intent: SmsIntent) {
   switch (intent) {
     case "REGISTER":
-      return "Natanggap namin ang inyong mensahe. Pakisend po ang buong pangalan, sitio o barangay, pangunahing pananim, at lawak ng sakahan para makumpleto ang registration.";
+      return "Opo, natanggap po namin ang inyong mensahe. Pakisend po ang buong pangalan, sitio o barangay, pangunahing pananim, at lawak ng sakahan para makumpleto po ang registration.";
     case "REQUEST":
       return "Natanggap namin ang inyong kahilingan. Pakilinaw po kung anong kagamitan o supply ang kailangan at kailan ninyo ito kakailanganin.";
     case "PEST_DISEASE":

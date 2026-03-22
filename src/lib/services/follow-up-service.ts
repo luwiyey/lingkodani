@@ -15,11 +15,11 @@ export function isFollowUpDue(message: SmsMessage, now = Date.now()) {
 
 export function buildFollowUpBody(message: SmsMessage) {
   if (message.registrationRequired) {
-    return "Kamusta po. Kung nais ninyo pa ring ma-assist, pakisagot po ang registration details upang maitugma namin ang inyong record sa system.";
+    return "Kamusta po. Kung nais pa po ninyong ma-assist, pakisagot po ang kulang na registration details upang maitugma po namin ang inyong record sa system.";
   }
 
   if (message.clarificationNeeded) {
-    return "Kamusta po. Kung maaari, pakisagot po ang huling clarification request upang makapagbigay kami ng mas tumpak na payo.";
+    return "Kamusta po. Kung maaari po, pakisagot po ang huling clarification request upang makapagbigay po kami ng mas tumpak na payo.";
   }
 
   if (message.urgency === "high") {
