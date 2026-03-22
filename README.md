@@ -66,6 +66,10 @@ Buksan ang [http://localhost:3000](http://localhost:3000) sa iyong browser upang
 
 Ang proyektong ito ay naka-configure para sa madaling deployment sa **Firebase App Hosting**.
 
+### Free automation fallback
+
+Kung naka-deploy ka sa free hosting at hindi available ang madalas na cron jobs, may libreng external scheduler setup sa [docs/free-automation-setup.md](docs/free-automation-setup.md). May kasama na itong GitHub Actions workflow templates para sa overdue SMS at follow-up automation.
+
 ### Environment Variables para sa Production
 
 Para sa production, ang mga sikreto tulad ng `GEMINI_API_KEY` ay dapat na ligtas na pamahalaan gamit ang **Google Secret Manager**. Ang `apphosting.yaml` file ay naka-setup na upang gamitin ito.

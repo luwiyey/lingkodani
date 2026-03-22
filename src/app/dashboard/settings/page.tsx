@@ -1079,10 +1079,10 @@ export default function BarangaySettingsPage() {
               Kapag naka-deploy sa Vercel Hobby na may configured <code>CRON_SECRET</code>, nakaiskedyul ang overdue SMS at follow-up batch checks isang beses kada araw kahit walang nakabukas na dashboard tab.
             </p>
             <p>
-              Kung kailangan mo ng mas madalas na unattended checks kaysa araw-araw, kakailanganin ng Pro cron schedule o mano-manong rerun mula sa page na ito.
+              Kung kailangan mo ng mas madalas na unattended checks kaysa araw-araw, puwede kang gumamit ng libreng external scheduler tulad ng GitHub Actions o Cloudflare Workers Cron, o mano-manong rerun mula sa page na ito.
             </p>
             <p>
-              Libre ring opsyon ang gumamit ng external scheduler na tatama sa automation endpoints gamit ang secure automation token, para hindi nakaasa lang sa daily Vercel Hobby cron.
+              May nakahandang GitHub Actions workflow template sa repository na puwedeng tumama sa automation endpoints gamit ang secure automation token, para hindi nakaasa lang sa daily Vercel Hobby cron.
             </p>
             <p>
               Maaari mo pa ring gamitin ang mga button sa ibaba para sa mano-manong rerun anumang oras, lalo na habang local testing o kapag gusto mong pilitin ang isang bagong batch check agad.

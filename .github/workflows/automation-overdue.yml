@@ -1,0 +1,39 @@
+name: Lingkod-Ani Overdue SMS Automation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+concurrency:
+  group: lingkod-ani-overdue-automation
+  cancel-in-progress: false
+
+jobs:
+  ping-overdue-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        env:
+          BASE_URL: ${{ secrets.LINGKOD_ANI_BASE_URL }}
+          AUTOMATION_TOKEN: ${{ secrets.SYSTEM_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "Missing LINGKOD_ANI_BASE_URL secret."
+            exit 1
+          fi
+
+          if [ -z "$AUTOMATION_TOKEN" ]; then
+            echo "Missing SYSTEM_AUTOMATION_TOKEN secret."
+            exit 1
+          fi
+
+      - name: Run overdue SMS processor
+        env:
+          BASE_URL: ${{ secrets.LINGKOD_ANI_BASE_URL }}
+          AUTOMATION_TOKEN: ${{ secrets.SYSTEM_AUTOMATION_TOKEN }}
+        run: |
+          curl --fail --show-error --silent \
+            --request POST \
+            --header "Authorization: Bearer ${AUTOMATION_TOKEN}" \
+            "${BASE_URL}/api/system/process-overdue-sms"
