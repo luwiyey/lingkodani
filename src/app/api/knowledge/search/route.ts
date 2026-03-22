@@ -6,6 +6,7 @@ import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
 import { normalizeKnowledgeQueryArticles } from "@/lib/knowledge-query";
 import { searchArticlesLocally } from "@/lib/knowledge-search";
+import { answerKnowledgeQueryWithGeminiGrounding } from "@/lib/services/gemini-grounded-knowledge-service";
 import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
 import type { KnowledgeArticle } from "@/lib/types";
 
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const query = typeof body.query === "string" ? body.query.trim() : "";
+    const includeWebGrounding = body.includeWebGrounding === true;
     const articles = isLiveMode
       ? await listServerKnowledgeArticles()
       : normalizeKnowledgeQueryArticles(body.articles);
@@ -65,17 +67,48 @@ export async function POST(request: Request) {
         directAnswer: fallback.directAnswer,
         relevantArticleIds: fallback.articles.map((article) => article.id),
         relevantArticles: fallback.articles,
+        usedWebGrounding: false,
+        webSources: [],
+        webSearchQueries: [],
       });
     }
 
-    const result = await answerKnowledgeQuery({ query, articles });
+    const localResult = searchArticlesLocally(query, articles);
+    const prioritizedArticles = localResult.articles.length > 0
+      ? localResult.articles
+      : articles.slice(0, 6);
+
+    if (includeWebGrounding) {
+      try {
+        const groundedResult = await answerKnowledgeQueryWithGeminiGrounding({
+          query,
+          articles: prioritizedArticles,
+        });
+
+        return NextResponse.json({
+          directAnswer: groundedResult.directAnswer,
+          relevantArticleIds: prioritizedArticles.map((article) => article.id),
+          relevantArticles: prioritizedArticles,
+          usedWebGrounding: groundedResult.usedWebGrounding,
+          webSources: groundedResult.webSources,
+          webSearchQueries: groundedResult.webSearchQueries,
+        });
+      } catch (groundingError) {
+        console.error("Gemini web grounding fallback triggered", groundingError);
+      }
+    }
+
+    const result = await answerKnowledgeQuery({ query, articles: prioritizedArticles });
     const relevantArticles = result.relevantArticleIds
-      .map((articleId) => articles.find((article) => article.id === articleId))
+      .map((articleId) => prioritizedArticles.find((article) => article.id === articleId))
       .filter((article): article is KnowledgeArticle => Boolean(article));
 
     return NextResponse.json({
       ...result,
       relevantArticles,
+      usedWebGrounding: false,
+      webSources: [],
+      webSearchQueries: [],
     });
   } catch (error) {
     console.error("Knowledge search request failed", error);

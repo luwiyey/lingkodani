@@ -11,6 +11,36 @@ export type SuggestedKnowledgeTopic = {
   keywords: string[];
 };
 
+export function buildKnowledgeAutocompleteSuggestions(
+  query: string,
+  articles: KnowledgeArticle[],
+  limit = 6
+) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return [] as string[];
+  }
+
+  const suggestions = new Set<string>();
+
+  for (const article of articles.filter(isKnowledgeArticleApproved)) {
+    const title = article.title.trim();
+    if (title.toLowerCase().includes(normalizedQuery)) {
+      suggestions.add(title);
+    }
+
+    for (const keyword of article.keywords) {
+      const normalizedKeyword = keyword.trim();
+      if (normalizedKeyword.toLowerCase().includes(normalizedQuery)) {
+        suggestions.add(normalizedKeyword);
+      }
+    }
+  }
+
+  return Array.from(suggestions).slice(0, limit);
+}
+
 export function isKnowledgeArticleApproved(article: KnowledgeArticle) {
   return article.reviewStatus !== "needs_review" && article.reviewStatus !== "archived";
 }

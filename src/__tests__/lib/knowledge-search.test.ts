@@ -1,4 +1,5 @@
 import {
+  buildKnowledgeAutocompleteSuggestions,
   buildSuggestedArticlesLocally,
   searchArticlesLocally,
 } from "@/lib/knowledge-search";
@@ -43,5 +44,12 @@ describe("knowledge-search", () => {
 
     expect(suggestions.length).toBeGreaterThan(0);
     expect(suggestions[0].keywords.join(" ")).toContain("bagyo");
+  });
+
+  it("builds autocomplete suggestions from approved article titles and keywords", () => {
+    const suggestions = buildKnowledgeAutocompleteSuggestions("rice", articles);
+
+    expect(suggestions).toContain("Gabay sa Rice Bugs");
+    expect(suggestions).toContain("rice bugs");
   });
 });

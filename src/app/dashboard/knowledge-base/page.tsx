@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { KnowledgeArticle } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -17,30 +17,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
-import { buildSuggestedArticlesLocally, isKnowledgeArticleApproved, searchArticlesLocally, type SuggestedKnowledgeTopic } from '@/lib/knowledge-search';
+import { buildKnowledgeAutocompleteSuggestions, buildSuggestedArticlesLocally, isKnowledgeArticleApproved, searchArticlesLocally, type SuggestedKnowledgeTopic } from '@/lib/knowledge-search';
 import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
 import { transcribeAudioUpload } from '@/lib/services/audio-transcription-service';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
+import { Switch } from '@/components/ui/switch';
+
+type SearchResultsState = {
+  directAnswer: string;
+  articles: KnowledgeArticle[];
+  usedWebGrounding: boolean;
+  webSearchQueries: string[];
+  webSources: { title: string; url: string }[];
+};
 
 export default function KnowledgeBasePage() {
   const { knowledgeArticles, addKnowledgeArticle, smsMessages } = useData();
   const { capabilities, capabilitiesLoading } = useRuntimeCapabilities();
   const [searchQuery, setSearchQuery] = useState('');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{ directAnswer: string; articles: KnowledgeArticle[] } | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResultsState | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [suggestedArticles, setSuggestedArticles] = useState<SuggestedKnowledgeTopic[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'article' | 'audio'>('article');
   const [isSavingEntry, setIsSavingEntry] = useState(false);
+  const [includeWebGrounding, setIncludeWebGrounding] = useState(true);
   
   const { toast } = useToast();
   const audioUploadLocked = !capabilities.storageUploadConfigured;
   const approvedKnowledgeArticles = knowledgeArticles.filter(isKnowledgeArticleApproved);
   const pendingKnowledgeArticles = knowledgeArticles.filter(
     (article) => article.reviewStatus === 'needs_review'
+  );
+  const autocompleteSuggestions = useMemo(
+    () => buildKnowledgeAutocompleteSuggestions(searchQuery, approvedKnowledgeArticles),
+    [approvedKnowledgeArticles, searchQuery]
   );
   const audioUploadLockMessage =
     capabilities.reasons.storageUpload ??
@@ -134,7 +148,10 @@ export default function KnowledgeBasePage() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({}),
+            body: JSON.stringify({
+              smsReports: smsMessages.map((message) => message.message).slice(0, 30),
+              farmerInquiries: smsMessages.map((message) => message.message).slice(0, 30),
+            }),
           });
 
           if (response.ok) {
@@ -157,15 +174,14 @@ export default function KnowledgeBasePage() {
     }
   }
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
+  const performSearch = async (queryValue: string) => {
+    const normalizedQuery = queryValue.trim();
+    if (!normalizedQuery) return;
     setIsSearching(true);
     setSearchResults(null);
 
     try {
-        const localResult = searchArticlesLocally(searchQuery, approvedKnowledgeArticles);
+        const localResult = searchArticlesLocally(normalizedQuery, approvedKnowledgeArticles);
 
         if (capabilities.aiConfigured) {
           const response = await fetch('/api/knowledge/search', {
@@ -174,7 +190,9 @@ export default function KnowledgeBasePage() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              query: searchQuery,
+              query: normalizedQuery,
+              includeWebGrounding,
+              articles: approvedKnowledgeArticles,
             }),
           });
 
@@ -183,6 +201,9 @@ export default function KnowledgeBasePage() {
               directAnswer?: string;
               relevantArticleIds?: string[];
               relevantArticles?: KnowledgeArticle[];
+              usedWebGrounding?: boolean;
+              webSearchQueries?: string[];
+              webSources?: { title?: string; url?: string }[];
             };
             const relevantArticles = Array.isArray(payload.relevantArticles) && payload.relevantArticles.length > 0
               ? payload.relevantArticles
@@ -193,16 +214,39 @@ export default function KnowledgeBasePage() {
             setSearchResults({
               directAnswer: payload.directAnswer?.trim() || localResult.directAnswer,
               articles: relevantArticles.length > 0 ? relevantArticles : localResult.articles,
+              usedWebGrounding: Boolean(payload.usedWebGrounding),
+              webSearchQueries: Array.isArray(payload.webSearchQueries) ? payload.webSearchQueries.filter(Boolean) : [],
+              webSources: Array.isArray(payload.webSources)
+                ? payload.webSources
+                    .map((source) => ({
+                      title: source.title?.trim() || '',
+                      url: source.url?.trim() || '',
+                    }))
+                    .filter((source) => source.title && source.url)
+                : [],
             });
             return;
           }
         }
 
-        setSearchResults(localResult);
+        setSearchResults({
+          directAnswer: localResult.directAnswer,
+          articles: localResult.articles,
+          usedWebGrounding: false,
+          webSearchQueries: [],
+          webSources: [],
+        });
 
     } catch (error) {
         console.error("Search failed:", error);
-        setSearchResults(searchArticlesLocally(searchQuery, approvedKnowledgeArticles));
+        const fallback = searchArticlesLocally(normalizedQuery, approvedKnowledgeArticles);
+        setSearchResults({
+          directAnswer: fallback.directAnswer,
+          articles: fallback.articles,
+          usedWebGrounding: false,
+          webSearchQueries: [],
+          webSources: [],
+        });
         toast({
             title: "Gumamit muna ng lokal na search",
             description: "Hindi makuha ang AI-assisted answer sa ngayon, kaya local knowledge matching muna ang ginamit.",
@@ -210,6 +254,11 @@ export default function KnowledgeBasePage() {
     } finally {
         setIsSearching(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performSearch(searchQuery);
   };
 
   const filteredLocalArticles = approvedKnowledgeArticles.filter(article => {
@@ -245,7 +294,7 @@ export default function KnowledgeBasePage() {
       <AiStatusBanner
         title={capabilities.aiConfigured ? "AI-assisted local knowledge search" : "Local knowledge search"}
         description={capabilities.aiConfigured
-          ? "Gumagamit ang search ng lokal na knowledge articles bilang source of truth, habang tumutulong ang AI sa pagbuo ng mas malinaw na sagot at suggested topics."
+          ? "Gumagamit ang search ng lokal na knowledge articles bilang source of truth, habang tumutulong ang Gemini sa pagbuo ng mas malinaw na sagot. Maaari mo ring i-on ang optional web grounding para may dagdag na live web sources kapag kailangan."
           : "Lokal na article matching muna ang ginagamit ng search habang hindi pa available ang AI service. Grounded pa rin ito sa naka-save na knowledge articles."}
       />
       {audioUploadLocked ? (
@@ -270,13 +319,58 @@ export default function KnowledgeBasePage() {
                 placeholder="Magtanong tungkol sa pagsasaka... hal. 'Paano sugpuin ang armyworms sa sibuyas?'"
                 className="w-full rounded-lg bg-background pl-12 pr-24 py-6 text-base"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchResults(null);
+                }}
             />
             <Button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2" disabled={isSearching}>
                 {isSearching ? 'Naghahanap...' : 'Maghanap'}
             </Button>
           </div>
         </HoverTooltip>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+            <Switch
+              checked={includeWebGrounding}
+              onCheckedChange={setIncludeWebGrounding}
+              disabled={!capabilities.aiConfigured}
+              aria-label="Isama ang web grounding"
+            />
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium leading-none">Isama ang web grounding</p>
+              <p className="text-xs text-muted-foreground">
+                {capabilities.aiConfigured
+                  ? "Kapag naka-on, magdadagdag ang Gemini ng live web-supported sources kung kulang ang local knowledge."
+                  : "Kailangan munang active ang Gemini AI bago magamit ang optional web grounding."}
+              </p>
+            </div>
+          </div>
+        </div>
+        {searchQuery.trim() && autocompleteSuggestions.length > 0 ? (
+          <div className="mt-3 rounded-lg border border-border bg-card p-2 shadow-sm">
+            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Mga mungkahing query
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {autocompleteSuggestions.map((suggestion) => (
+                <Button
+                  key={suggestion}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => {
+                    setSearchQuery(suggestion);
+                    void performSearch(suggestion);
+                  }}
+                >
+                  {suggestion}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </form>
       
       {isSearching ? (
@@ -297,16 +391,27 @@ export default function KnowledgeBasePage() {
         <div className="space-y-6">
             <Card className="bg-primary/5 border-primary/20">
                 <CardHeader>
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng Search Assistant</CardTitle>
+                      <Badge variant="secondary">Gemini</Badge>
+                      <Badge variant="outline">Local knowledge</Badge>
+                      {searchResults.usedWebGrounding ? <Badge variant="secondary">Web grounding</Badge> : null}
                       <HelpDialog title="Sagot ng Search Assistant" tooltipText="Unawain kung paano binuo ang sagot.">
                         <p>Ang sagot ay laging nakaangkla muna sa approved local knowledge base. Kapag available ang AI, nire-rewrite nito ang sagot sa mas malinaw na Filipino nang hindi lumalayo sa mga na-review nang article.</p>
+                        <p>Kapag naka-on ang web grounding, maaari ring gumamit ang Gemini ng live web sources para dagdagan ang lokal na sagot. Ipapakita ang mga source sa ibaba para transparent ang pinanggalingan.</p>
                         <p>Kapag kulang ang local content, mas magandang magdagdag ng bagong article o mag-import ng PDF/image references kaysa magkunwaring may sagot ang system na wala naman sa source material.</p>
                       </HelpDialog>
                     </div>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-foreground">{searchResults.directAnswer}</p>
+                    {searchResults.webSearchQueries.length > 0 ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {searchResults.webSearchQueries.map((query) => (
+                          <Badge key={query} variant="outline">Query: {query}</Badge>
+                        ))}
+                      </div>
+                    ) : null}
                 </CardContent>
             </Card>
 
@@ -340,6 +445,32 @@ export default function KnowledgeBasePage() {
                         ))}
                     </div>
                 </div>
+            )}
+
+            {searchResults.webSources.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold mb-4">Mga Web Source mula sa Gemini Grounding</h2>
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                  {searchResults.webSources.map((source) => (
+                    <a
+                      key={source.url}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <ArrowUpRight className="h-4 w-4" />
+                            {source.title}
+                          </CardTitle>
+                          <CardDescription className="break-all">{source.url}</CardDescription>
+                        </CardHeader>
+                      </Card>
+                    </a>
+                  ))}
+                </div>
+              </div>
             )}
         </div>
       ) : (
