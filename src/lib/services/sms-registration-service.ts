@@ -86,34 +86,94 @@ function extractName(tokens: string[]) {
   return normalized ? titleCase(normalized) : "Hindi pa nakilalang magsasaka";
 }
 
-export function buildRegistrationPrompt() {
-  return "Hindi pa namin kayo matugma sa rehistro. Pakisagot po sa format na REGISTER Pangalan Edad Kasarian Zone PangunahingPananim LawakHa upang maipasa namin kayo sa farmer approval.";
+const REGISTRATION_REQUIRED_FIELDS = {
+  name: "buong pangalan",
+  sitio: "sitio o zone",
+} as const;
+
+function getMissingRegistrationFields(farmer: Farmer) {
+  const missing: string[] = [];
+
+  if (!farmer.name || farmer.name === "Hindi pa nakilalang magsasaka") {
+    missing.push(REGISTRATION_REQUIRED_FIELDS.name);
+  }
+
+  if (!farmer.sitio || farmer.sitio === "Hindi tukoy") {
+    missing.push(REGISTRATION_REQUIRED_FIELDS.sitio);
+  }
+
+  return missing;
 }
 
-export function extractRegistrationFarmer(input: {
+function joinMissingFields(fields: string[]) {
+  if (fields.length === 0) {
+    return "";
+  }
+
+  if (fields.length === 1) {
+    return fields[0];
+  }
+
+  if (fields.length === 2) {
+    return `${fields[0]} at ${fields[1]}`;
+  }
+
+  return `${fields.slice(0, -1).join(", ")}, at ${fields[fields.length - 1]}`;
+}
+
+export function buildRegistrationPrompt(missingFields?: string[]) {
+  const normalizedMissingFields = (missingFields ?? []).filter(Boolean);
+
+  if (normalizedMissingFields.length > 0) {
+    return `Natanggap namin ang inyong registration request. Para maipasa namin ito sa farmer approval, pakisend po ang ${joinMissingFields(normalizedMissingFields)}. Maaari ring isama ang pangunahing pananim at lawak ng sakahan kung available.`;
+  }
+
+  return "Hindi pa namin kayo matugma sa rehistro. Pakisagot po sa format na REGISTER Pangalan Zone PangunahingPananim LawakHa upang maipasa namin kayo sa farmer approval.";
+}
+
+export type RegistrationAssessment = {
+  isRegistrationMessage: boolean;
+  farmer: Farmer | null;
+  missingFields: string[];
+  clarificationPrompt?: string;
+};
+
+export function assessRegistrationMessage(input: {
   message: string;
   phone: string;
   timestamp: string;
   barangay?: string;
-}): Farmer | null {
+}): RegistrationAssessment {
   const normalized = normalizeWhitespace(input.message);
 
   if (!/^register\b/i.test(normalized)) {
-    return null;
+    return {
+      isRegistrationMessage: false,
+      farmer: null,
+      missingFields: [],
+    };
   }
 
   const payload = normalized.replace(/^register\b/i, "").trim();
 
   if (!payload) {
-    return null;
+    const missingFields = [
+      REGISTRATION_REQUIRED_FIELDS.name,
+      REGISTRATION_REQUIRED_FIELDS.sitio,
+    ];
+
+    return {
+      isRegistrationMessage: true,
+      farmer: null,
+      missingFields,
+      clarificationPrompt: buildRegistrationPrompt(missingFields),
+    };
   }
 
   const tokens = payload.split(" ");
-  const name = extractName(tokens);
-
-  return {
+  const farmer: Farmer = {
     id: `FARM${Date.now()}`,
-    name,
+    name: extractName(tokens),
     age: extractAge(tokens),
     gender: extractGender(tokens),
     phone: input.phone,
@@ -125,4 +185,29 @@ export function extractRegistrationFarmer(input: {
     lastSmsActivity: input.timestamp,
     status: "pending_approval",
   };
+  const missingFields = getMissingRegistrationFields(farmer);
+
+  if (missingFields.length > 0) {
+    return {
+      isRegistrationMessage: true,
+      farmer: null,
+      missingFields,
+      clarificationPrompt: buildRegistrationPrompt(missingFields),
+    };
+  }
+
+  return {
+    isRegistrationMessage: true,
+    farmer,
+    missingFields: [],
+  };
+}
+
+export function extractRegistrationFarmer(input: {
+  message: string;
+  phone: string;
+  timestamp: string;
+  barangay?: string;
+}): Farmer | null {
+  return assessRegistrationMessage(input).farmer;
 }

@@ -2,7 +2,7 @@ import { analyzeInboundSms, normalizePhone, type InboundSmsAnalysis } from "@/li
 import { getAutoReplyEligibleAt } from "@/lib/services/auto-reply-service";
 import { buildCaseId, deriveInitialCaseStatus, getSlaDueAt } from "@/lib/services/sms-case-service";
 import { enhanceInboundAnalysisWithClarification } from "@/lib/services/sms-clarification-service";
-import { buildRegistrationPrompt, extractRegistrationFarmer } from "@/lib/services/sms-registration-service";
+import { assessRegistrationMessage, buildRegistrationPrompt } from "@/lib/services/sms-registration-service";
 import { defaultSystemSettings } from "@/lib/system-settings";
 import type { Farmer, SmsMessage, SystemSettings } from "@/lib/types";
 
@@ -30,21 +30,45 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
   const messageId = input.id ?? `SMS${Date.now()}`;
   const normalizedPhone = normalizePhone(input.phone);
   const farmer = input.farmers.find((item) => normalizePhone(item.phone) === normalizedPhone);
-  const registrationCandidate = farmer
+  const registrationAssessment = farmer
     ? null
-    : extractRegistrationFarmer({
+    : assessRegistrationMessage({
         message: input.message,
         phone: input.phone,
         timestamp,
       });
+  const registrationCandidate = registrationAssessment?.farmer ?? null;
+  const isRegistrationIntent = registrationAssessment?.isRegistrationMessage ?? false;
   const baseAnalysis =
     input.analysis ?? analyzeInboundSms(input.message, farmer?.name ?? registrationCandidate?.name ?? "magsasaka", !!farmer);
-  const analysis = enhanceInboundAnalysisWithClarification({
+  const enhancedAnalysis = enhanceInboundAnalysisWithClarification({
     message: input.message,
     analysis: baseAnalysis,
     knownFarmer: Boolean(farmer),
   });
-  const registrationRequired = !farmer && !registrationCandidate && analysis.parsedIntent !== "REGISTER";
+  const needsRegistrationDetails = !farmer && isRegistrationIntent && !registrationCandidate;
+  const registrationRequired =
+    !farmer && (!registrationCandidate && (baseAnalysis.parsedIntent !== "REGISTER" || needsRegistrationDetails));
+  const analysis = needsRegistrationDetails
+    ? {
+        ...enhancedAnalysis,
+        parsedIntent: "REGISTER" as const,
+        clarificationNeeded: true,
+        clarificationQuestion:
+          registrationAssessment?.clarificationPrompt ??
+          buildRegistrationPrompt(registrationAssessment?.missingFields),
+        aiAdvice:
+          registrationAssessment?.clarificationPrompt ??
+          buildRegistrationPrompt(registrationAssessment?.missingFields),
+      }
+    : isRegistrationIntent && registrationCandidate
+      ? {
+          ...enhancedAnalysis,
+          parsedIntent: "REGISTER" as const,
+          clarificationNeeded: false,
+          clarificationQuestion: undefined,
+        }
+      : enhancedAnalysis;
   const effectiveFarmerId = farmer?.id ?? registrationCandidate?.id ?? `UNKNOWN-${Date.now()}`;
   const effectiveFarmerName = farmer?.name ?? registrationCandidate?.name ?? "Hindi pa nakilalang magsasaka";
   const caseId = buildCaseId({
@@ -56,7 +80,11 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
     clarificationNeeded: analysis.clarificationNeeded,
     registrationRequired,
   });
-  const aiAdvice = registrationRequired ? buildRegistrationPrompt() : analysis.aiAdvice;
+  const aiAdvice =
+    registrationRequired
+      ? registrationAssessment?.clarificationPrompt ??
+        buildRegistrationPrompt(registrationAssessment?.missingFields)
+      : analysis.aiAdvice;
 
   return {
     matchedFarmerId: farmer?.id ?? registrationCandidate?.id,
