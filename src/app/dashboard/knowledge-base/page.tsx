@@ -6,7 +6,7 @@ import type { KnowledgeArticle } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, Search, Volume2, FileText, ArrowUpRight, PlusCircle } from 'lucide-react';
+import { Bot, Search, Volume2, FileText, ArrowUpRight, PlusCircle, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
@@ -72,6 +72,27 @@ export default function KnowledgeBasePage() {
   const audioUploadLockMessage =
     capabilities.reasons.storageUpload ??
     'Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.';
+  const showAutocomplete = !isSearching && searchQuery.trim().length > 0 && autocompleteSuggestions.length > 0;
+
+  const handleCopyAnswer = async () => {
+    if (!searchResults?.directAnswer) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(searchResults.directAnswer);
+      toast({
+        title: "Nakopya ang sagot",
+        description: "Maaari mo na itong i-paste sa notes, report, o reply drafting flow.",
+      });
+    } catch {
+      toast({
+        title: "Hindi makopya ang sagot",
+        description: "Subukan muli o i-highlight na lang muna ang text.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleAddNewEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -344,6 +365,29 @@ export default function KnowledgeBasePage() {
             <Button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2" disabled={isSearching}>
                 {isSearching ? 'Naghahanap...' : 'Maghanap'}
             </Button>
+            {showAutocomplete ? (
+              <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 rounded-xl border border-border bg-card p-2 shadow-lg">
+                <p className="px-3 pb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  Mga mungkahing query
+                </p>
+                <div className="flex flex-col gap-1">
+                  {autocompleteSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      className="rounded-lg px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setSearchQuery(suggestion);
+                        void performSearch(suggestion);
+                      }}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </HoverTooltip>
         <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -364,30 +408,6 @@ export default function KnowledgeBasePage() {
             </div>
           </div>
         </div>
-        {searchQuery.trim() && autocompleteSuggestions.length > 0 ? (
-          <div className="mt-3 rounded-lg border border-border bg-card p-2 shadow-sm">
-            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-              Mga mungkahing query
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {autocompleteSuggestions.map((suggestion) => (
-                <Button
-                  key={suggestion}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => {
-                    setSearchQuery(suggestion);
-                    void performSearch(suggestion);
-                  }}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </form>
       
       {isSearching ? (
@@ -424,6 +444,12 @@ export default function KnowledgeBasePage() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-foreground">{searchResults.directAnswer}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={handleCopyAnswer}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        Kopyahin ang Sagot
+                      </Button>
+                    </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {searchResults.articles.map((article) => (
                         <Button
