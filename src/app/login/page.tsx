@@ -160,7 +160,7 @@ function LoginPageContent() {
             data-ai-hint={loginBg.imageHint}
           />
         )}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.68),rgba(15,23,42,0.54),rgba(17,24,39,0.44))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,250,247,0.76),rgba(239,246,240,0.62),rgba(224,236,226,0.48))]" />
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-1 items-center justify-center px-4 py-8">

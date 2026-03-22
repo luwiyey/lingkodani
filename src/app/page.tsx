@@ -112,7 +112,7 @@ export default function LandingPage() {
                       <div className="grid gap-10 2xl:grid-cols-[minmax(0,1fr)_320px] 2xl:items-start">
                         <div>
                           <div className="flex items-center gap-4">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
                               <Icon className="h-8 w-8" />
                             </div>
                             <div>
@@ -128,7 +128,7 @@ export default function LandingPage() {
                           <div className="mt-8 space-y-4">
                             {primaryFeature.points.map((point) => (
                               <div key={point} className="flex items-start gap-3">
-                                <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                                   <Check className="h-4 w-4" />
                                 </div>
                                 <p className="text-sm leading-6 text-foreground/90 md:text-base">{point}</p>
@@ -183,7 +183,7 @@ export default function LandingPage() {
                         className="rounded-[calc(var(--radius)+10px)] border border-border/90 bg-card p-7 shadow-sm transition-all duration-150 ease-out hover:-translate-y-px hover:border-primary/15"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-primary shadow-sm">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-muted text-primary shadow-sm">
                             <Icon className="h-7 w-7" />
                           </div>
                           <div>
@@ -197,7 +197,7 @@ export default function LandingPage() {
                         <div className="mt-6 space-y-3">
                           {feature.points.map((point) => (
                             <div key={point} className="flex items-start gap-3">
-                              <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                                 <Check className="h-4 w-4" />
                               </div>
                               <p className="text-sm leading-6 text-foreground/90">{point}</p>

@@ -39,7 +39,7 @@ export default function PrivacyPolicyPage() {
           <p>Gumagamit kami ng mga naaangkop na teknikal at organisasyonal na hakbang upang protektahan ang personal na data mula sa hindi awtorisadong pag-access, pagbabago, o pagkasira. Gayunpaman, tandaan na walang paraan ng paghahatid sa internet ang 100% na ligtas.</p>
           
           <h2 className="text-2xl font-semibold">Makipag-ugnayan sa Amin</h2>
-          <p>Kung mayroon kang anumang mga katanungan tungkol sa Patakaran sa Privacy na ito, maaari kang makipag-ugnayan sa amin sa pamamagitan ng email: privacy@lingkodani.gov.ph</p>
+          <p>Kung mayroon kang anumang mga katanungan tungkol sa Patakaran sa Privacy na ito, maaari kang makipag-ugnayan sa amin sa pamamagitan ng email: luwiyeyz@gmail.com</p>
           <LegalBackLink />
         </div>
       </main>

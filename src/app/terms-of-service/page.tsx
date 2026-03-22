@@ -30,7 +30,7 @@ export default function TermsOfServicePage() {
           <p>Maaari naming suspindihin o wakasan ang iyong account kung mapatunayang nilabag mo ang mga tuntuning ito, kabilang ang maling paggamit ng data ng magsasaka o pagpapadala ng hindi na-validate na payo na nagdulot ng pinsala.</p>
 
            <h2 className="text-2xl font-semibold">Makipag-ugnayan sa Amin</h2>
-          <p>Kung mayroon kang anumang mga katanungan tungkol sa mga Tuntunin at Kundisyon na ito, maaari kang makipag-ugnayan sa amin: sa pamamagitan ng email: contact@lingkodani.gov.ph</p>
+          <p>Kung mayroon kang anumang mga katanungan tungkol sa mga Tuntunin at Kundisyon na ito, maaari kang makipag-ugnayan sa amin: sa pamamagitan ng email: luwiyeyz@gmail.com</p>
           <LegalBackLink />
         </div>
       </main>

@@ -84,7 +84,7 @@ function VerifyPageContent() {
             data-ai-hint={loginBg.imageHint}
          />
       )}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-primary/40" />
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(247,250,247,0.78),rgba(231,243,234,0.56))]" />
       <div className="relative z-10 flex items-center justify-center h-full p-4">
         <Card className="auth-card-surface w-full max-w-md mx-auto shadow-2xl">
           <CardHeader className="text-center">

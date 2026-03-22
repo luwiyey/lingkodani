@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 
 type Theme = "light" | "dark"
 
@@ -28,6 +29,7 @@ export function ThemeProvider({
   storageKey = "ui-theme",
   ...props
 }: ThemeProviderProps) {
+  const pathname = usePathname()
   const [theme, setTheme] = React.useState<Theme>(() => {
     if (typeof window === 'undefined') {
       return defaultTheme;
@@ -38,16 +40,18 @@ export function ThemeProvider({
     }
     return "light";
   })
+  const isDashboardRoute = pathname?.startsWith("/dashboard") ?? false
+  const effectiveTheme: Theme = isDashboardRoute ? theme : "light"
 
   React.useEffect(() => {
     const root = window.document.documentElement
 
     root.classList.remove("light", "dark", "night", "contrast-light", "contrast-dark")
-    root.classList.add(theme)
-  }, [theme])
+    root.classList.add(effectiveTheme)
+  }, [effectiveTheme])
 
   const value = {
-    theme,
+    theme: effectiveTheme,
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme)
       setTheme(theme)

@@ -265,7 +265,7 @@ export default function StartPage() {
             data-ai-hint={backgroundImage.imageHint}
           />
         )}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.68),rgba(15,23,42,0.52),rgba(17,24,39,0.42))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,250,247,0.78),rgba(239,246,240,0.64),rgba(224,236,226,0.5))]" />
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center">
@@ -354,7 +354,7 @@ export default function StartPage() {
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <Icon className="h-6 w-6" />
                           </div>
                           <div className="space-y-2">
