@@ -465,7 +465,9 @@ export default function StartPage() {
                 </div>
               </div>
 
-              {workspaceRecommendation ? (
+              {hasProfileInputs ? (
+                <>
+                  {workspaceRecommendation ? (
                 <div className="rounded-[calc(var(--radius)+8px)] border border-primary/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,251,248,0.98))] p-4 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
@@ -487,9 +489,9 @@ export default function StartPage() {
                     Simple o Detalyado sa ibaba.
                   </p>
                 </div>
-              ) : null}
+                  ) : null}
 
-              <div className="space-y-3.5 border-t border-slate-200 pt-5">
+                  <div className="space-y-3.5 border-t border-slate-200 pt-5">
                 <div className="space-y-1">
                   <Label className="block text-base font-semibold">
                     5. Ano ang mas gusto mong workspace?
@@ -531,14 +533,22 @@ export default function StartPage() {
                     </label>
                   ))}
                 </RadioGroup>
-              </div>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-[calc(var(--radius)+6px)] border border-dashed border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-500">
+                  Sagutan muna ang posisyon, edad, at taon sa serbisyo para lumabas ang rekomendasyon at workspace choices.
+                </div>
+              )}
 
               <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <Button type="button" variant="ghost" asChild className="sm:hidden">
                   <Link href="/">Bumalik sa startup page</Link>
                 </Button>
                 <p className="text-sm text-slate-600">
-                  Kapag pinili mo ang <strong>{preferredWorkspace === "simple" ? "Simple" : "Detalyado"}</strong>, iyon ang unang dashboard na bubukas para sa iyo.
+                  {hasProfileInputs
+                    ? <>Kapag pinili mo ang <strong>{preferredWorkspace === "simple" ? "Simple" : "Detalyado"}</strong>, iyon ang unang dashboard na bubukas para sa iyo.</>
+                    : "Kumpletuhin muna ang maikling survey bago lumabas ang workspace recommendation at choices."}
                 </p>
                 <Button type="submit" disabled={submitting || !isSurveyComplete}>
                   {selectedApplication === "live" ? "Magpatuloy sa Live App" : "Magpatuloy sa Demo"}
