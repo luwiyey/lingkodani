@@ -6,6 +6,76 @@ import { assessRegistrationMessage, buildRegistrationPrompt } from "@/lib/servic
 import { defaultSystemSettings } from "@/lib/system-settings";
 import type { Farmer, SmsMessage, SystemSettings } from "@/lib/types";
 
+const REGISTRATION_FIELD_HINTS = [
+  "zone",
+  "sitio",
+  "barangay",
+  "lalaki",
+  "babae",
+  "male",
+  "female",
+  "palay",
+  "mais",
+  "kamatis",
+  "gulay",
+  "sibuyas",
+  "talong",
+  "monggo",
+  "saging",
+];
+
+const NON_REGISTRATION_CONCERN_HINTS = [
+  "peste",
+  "uod",
+  "sakit",
+  "baha",
+  "ulan",
+  "bagyo",
+  "presyo",
+  "price",
+  "hiram",
+  "tractor",
+  "sprayer",
+  "pataba",
+  "abono",
+  "tubig",
+  "emergency",
+  "help",
+  "tulong",
+];
+
+function looksLikeRegistrationFollowUp(message: string) {
+  const normalized = message.trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  if (/^register\b/.test(normalized)) {
+    return true;
+  }
+
+  if (NON_REGISTRATION_CONCERN_HINTS.some((hint) => normalized.includes(hint))) {
+    return false;
+  }
+
+  if (/\?/.test(normalized)) {
+    return false;
+  }
+
+  if (REGISTRATION_FIELD_HINTS.some((hint) => normalized.includes(hint))) {
+    return true;
+  }
+
+  if (/\b\d+(\.\d+)?\s*ha\b/.test(normalized) || /\b\d{2}\b/.test(normalized)) {
+    return true;
+  }
+
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+
+  return tokens.length > 0 && tokens.length <= 5;
+}
+
 export type CreateInboundSmsInput = {
   phone: string;
   message: string;
@@ -47,11 +117,13 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
         .sort((left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime());
   const registrationDraftCaseId = activeRegistrationMessages[0]?.caseId;
   const hasOpenRegistrationDraft = activeRegistrationMessages.length > 0;
+  const shouldContinueRegistrationDraft =
+    hasOpenRegistrationDraft && looksLikeRegistrationFollowUp(input.message);
   const registrationFragments = activeRegistrationMessages
     .map((item) => item.message.replace(/^register\b/i, "").trim())
     .filter(Boolean);
   const currentRegistrationFragment = input.message.replace(/^register\b/i, "").trim();
-  const compiledRegistrationMessage = hasOpenRegistrationDraft || /^register\b/i.test(input.message.trim())
+  const compiledRegistrationMessage = shouldContinueRegistrationDraft || /^register\b/i.test(input.message.trim())
     ? `REGISTER ${Array.from(new Set([
         ...registrationFragments,
         currentRegistrationFragment,
@@ -65,7 +137,7 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
         timestamp,
       });
   const registrationCandidate = registrationAssessment?.farmer ?? null;
-  const isRegistrationIntent = registrationAssessment?.isRegistrationMessage ?? hasOpenRegistrationDraft;
+  const isRegistrationIntent = registrationAssessment?.isRegistrationMessage ?? shouldContinueRegistrationDraft;
   const baseAnalysis =
     input.analysis ?? analyzeInboundSms(compiledRegistrationMessage, farmer?.name ?? registrationCandidate?.name ?? "magsasaka", !!farmer);
   const enhancedAnalysis = enhanceInboundAnalysisWithClarification({
@@ -98,7 +170,7 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
       : enhancedAnalysis;
   const effectiveFarmerId = farmer?.id ?? registrationCandidate?.id ?? `UNKNOWN-${Date.now()}`;
   const effectiveFarmerName = farmer?.name ?? registrationCandidate?.name ?? "Hindi pa nakilalang magsasaka";
-  const caseId = registrationDraftCaseId ?? buildCaseId({
+  const caseId = (shouldContinueRegistrationDraft ? registrationDraftCaseId : undefined) ?? buildCaseId({
     farmerId: farmer?.id ?? registrationCandidate?.id,
     normalizedPhone,
     fallbackId: messageId,

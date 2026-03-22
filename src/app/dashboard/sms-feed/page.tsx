@@ -35,6 +35,13 @@ type DialogState = {
 }
 
 type ReviewDraft = Pick<SmsMessage, 'aiAdvice' | 'parsedIntent' | 'urgency' | 'safetyFlag' | 'tone'>;
+type KnowledgeReplyDraft = {
+  text: string;
+  sourceQuery?: string;
+  answerMode?: string;
+  articleTitles?: string[];
+  createdAt?: string;
+};
 
 const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     REGISTER: { label: 'Pagpaparehistro', icon: User },
@@ -397,6 +404,7 @@ function SmsFeedPageContent() {
     const searchParams = useSearchParams();
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [reviewDraft, setReviewDraft] = React.useState<ReviewDraft | null>(null);
+    const [pendingKnowledgeReplyDraft, setPendingKnowledgeReplyDraft] = React.useState<KnowledgeReplyDraft | null>(null);
     const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
     const [simulatedPhone, setSimulatedPhone] = React.useState('+639171234567');
     const [simulatedMessage, setSimulatedMessage] = React.useState('Marami pong uod sa palay namin at mabilis dumami ngayong umaga.');
@@ -457,7 +465,20 @@ function SmsFeedPageContent() {
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
         if (type === 'approve' || type === 'manual') {
-            setReviewDraft(createReviewDraft(message));
+            const draft = createReviewDraft(message);
+            if (pendingKnowledgeReplyDraft?.text) {
+              setReviewDraft({
+                ...draft,
+                aiAdvice: pendingKnowledgeReplyDraft.text,
+              });
+              setPendingKnowledgeReplyDraft(null);
+              toast({
+                title: "Nailagay ang Knowledge draft",
+                description: `Naipasok na ang sagot mula sa Knowledge search bilang panimulang reply para kay ${message.farmerName}.`,
+              });
+            } else {
+              setReviewDraft(draft);
+            }
         }
     };
 
@@ -594,6 +615,49 @@ function SmsFeedPageContent() {
     };
 
     React.useEffect(() => {
+      if (searchParams.get('draft') !== 'knowledge') {
+        return;
+      }
+
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const rawDraft = sessionStorage.getItem('knowledgeReplyDraft');
+
+      if (!rawDraft) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(rawDraft) as KnowledgeReplyDraft;
+        if (parsed?.text?.trim()) {
+          setPendingKnowledgeReplyDraft({
+            ...parsed,
+            text: parsed.text.trim(),
+          });
+          toast({
+            title: "May Knowledge draft na handa",
+            description: "Pumili ng SMS card at pindutin ang Aprubahan o Manwal upang gamitin ang sagot bilang panimulang draft.",
+          });
+        }
+      } catch {
+        toast({
+          title: "Hindi mabasa ang draft mula sa Knowledge",
+          description: "Subukang bumalik sa Knowledge page at ihanda muli ang sagot.",
+          variant: "destructive",
+        });
+      } finally {
+        sessionStorage.removeItem('knowledgeReplyDraft');
+      }
+
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete('draft');
+      const nextRoute = nextParams.toString() ? `/dashboard/sms-feed?${nextParams.toString()}` : '/dashboard/sms-feed';
+      router.replace(nextRoute);
+    }, [router, searchParams, toast]);
+
+    React.useEffect(() => {
       if (!focusedSmsId) {
         return;
       }
@@ -629,6 +693,34 @@ function SmsFeedPageContent() {
           </div>
           <p className="text-muted-foreground">Suriin, aprubahan, at tumugon sa mga papasok na SMS sa real-time.</p>
       </div>
+      {pendingKnowledgeReplyDraft ? (
+        <Card className="mb-6 border-primary/15 bg-primary/5">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-base">May handang draft mula sa Knowledge search</CardTitle>
+            <CardDescription>
+              Ang susunod na bubuksan mong <span className="font-medium">Aprubahan</span> o <span className="font-medium">Manwal</span> dialog ay mapupunan ng AI answer para mas mabilis mong maangkop sa magsasaka.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border border-primary/15 bg-background/80 p-3 text-sm text-foreground/90">
+              <p className="line-clamp-4">{pendingKnowledgeReplyDraft.text}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              {pendingKnowledgeReplyDraft.sourceQuery ? (
+                <Badge variant="outline">Mula sa query: {pendingKnowledgeReplyDraft.sourceQuery}</Badge>
+              ) : null}
+              {pendingKnowledgeReplyDraft.answerMode ? (
+                <Badge variant="outline">Mode: {pendingKnowledgeReplyDraft.answerMode}</Badge>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setPendingKnowledgeReplyDraft(null)}>
+                I-clear ang draft
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
       {showSimulationTool ? (
         <Card className="mb-6 border-primary/15">
           <CardHeader className="border-b border-border/70 bg-[linear-gradient(180deg,#f8fbf8_0%,#ffffff_100%)]">

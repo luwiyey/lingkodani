@@ -2,6 +2,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { KnowledgeArticle } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import { transcribeAudioUpload } from '@/lib/services/audio-transcription-servic
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 type SearchResultsState = {
   directAnswer: string;
@@ -46,12 +48,14 @@ function getAnswerModeLabel(answerMode: SearchResultsState['answerMode']) {
 }
 
 export default function KnowledgeBasePage() {
+  const router = useRouter();
   const { knowledgeArticles, addKnowledgeArticle, smsMessages } = useData();
   const { capabilities, capabilitiesLoading } = useRuntimeCapabilities();
   const [searchQuery, setSearchQuery] = useState('');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResultsState | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [suggestedArticles, setSuggestedArticles] = useState<SuggestedKnowledgeTopic[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isNewEntryDialogOpen, setNewEntryDialogOpen] = useState(false);
@@ -89,6 +93,37 @@ export default function KnowledgeBasePage() {
       toast({
         title: "Hindi makopya ang sagot",
         description: "Subukan muli o i-highlight na lang muna ang text.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUseAsSmsDraft = () => {
+    if (!searchResults?.directAnswer.trim()) {
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(
+        'knowledgeReplyDraft',
+        JSON.stringify({
+          text: searchResults.directAnswer.trim(),
+          sourceQuery: searchQuery.trim(),
+          answerMode: getAnswerModeLabel(searchResults.answerMode),
+          articleTitles: searchResults.articles.map((article) => article.title),
+          createdAt: new Date().toISOString(),
+        })
+      );
+
+      toast({
+        title: "Inihanda ang SMS draft",
+        description: "Bubuksan na ang SMS feed. Ang unang Aprubahan o Manwal na bubuksan mo ay mapupunan ng sagot na ito.",
+      });
+      router.push('/dashboard/sms-feed?draft=knowledge');
+    } catch {
+      toast({
+        title: "Hindi maihanda ang SMS draft",
+        description: "Subukan muli o kopyahin muna ang sagot.",
         variant: "destructive",
       });
     }
@@ -211,6 +246,8 @@ export default function KnowledgeBasePage() {
   const performSearch = async (queryValue: string) => {
     const normalizedQuery = queryValue.trim();
     if (!normalizedQuery) return;
+    setSearchQuery(normalizedQuery);
+    setActiveSuggestionIndex(-1);
     setIsSearching(true);
     setSearchResults(null);
 
@@ -299,6 +336,50 @@ export default function KnowledgeBasePage() {
     await performSearch(searchQuery);
   };
 
+  const handleSearchInputKeyDown = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showAutocomplete) {
+      if (event.key === 'Escape') {
+        setActiveSuggestionIndex(-1);
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSuggestionIndex((current) => {
+        if (current < 0) {
+          return 0;
+        }
+
+        return (current + 1) % autocompleteSuggestions.length;
+      });
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSuggestionIndex((current) => {
+        if (current <= 0) {
+          return autocompleteSuggestions.length - 1;
+        }
+
+        return current - 1;
+      });
+      return;
+    }
+
+    if (event.key === 'Enter' && activeSuggestionIndex >= 0) {
+      event.preventDefault();
+      await performSearch(autocompleteSuggestions[activeSuggestionIndex]);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setActiveSuggestionIndex(-1);
+    }
+  };
+
   const filteredLocalArticles = approvedKnowledgeArticles.filter(article => {
     if (!localSearchQuery) return false; // Don't show anything if search is empty, until user types
     const query = localSearchQuery.toLowerCase();
@@ -359,8 +440,10 @@ export default function KnowledgeBasePage() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
+                  setActiveSuggestionIndex(-1);
                   setSearchResults(null);
                 }}
+                onKeyDown={handleSearchInputKeyDown}
             />
             <Button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2" disabled={isSearching}>
                 {isSearching ? 'Naghahanap...' : 'Maghanap'}
@@ -375,10 +458,14 @@ export default function KnowledgeBasePage() {
                     <button
                       key={suggestion}
                       type="button"
-                      className="rounded-lg px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      className={cn(
+                        'rounded-lg px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                        autocompleteSuggestions[activeSuggestionIndex] === suggestion && 'bg-accent text-accent-foreground'
+                      )}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
                         setSearchQuery(suggestion);
+                        setActiveSuggestionIndex(-1);
                         void performSearch(suggestion);
                       }}
                     >
@@ -448,6 +535,9 @@ export default function KnowledgeBasePage() {
                       <Button type="button" variant="outline" size="sm" onClick={handleCopyAnswer}>
                         <Copy className="mr-2 h-4 w-4" />
                         Kopyahin ang Sagot
+                      </Button>
+                      <Button type="button" size="sm" onClick={handleUseAsSmsDraft}>
+                        Gamitin bilang SMS draft
                       </Button>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">

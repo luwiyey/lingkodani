@@ -77,6 +77,30 @@ describe("inbound-sms-service", () => {
     expect(secondMessage.message.registrationRequired).toBe(false);
   });
 
+  it("does not force an unrelated concern into an open registration draft", () => {
+    const firstMessage = createInboundSmsRecord({
+      id: "SMS-REGISTER-3C",
+      phone: "+639171234567",
+      message: "REGISTER Juan Dela Cruz",
+      farmers: [],
+      timestamp: "2026-03-22T08:00:00.000Z",
+    });
+
+    const concernMessage = createInboundSmsRecord({
+      id: "SMS-REGISTER-3D",
+      phone: "+639171234567",
+      message: "Marami pong uod sa palay namin",
+      farmers: [],
+      existingMessages: [firstMessage.message],
+      timestamp: "2026-03-22T08:03:00.000Z",
+    });
+
+    expect(concernMessage.newFarmer).toBeUndefined();
+    expect(concernMessage.message.parsedIntent).toBe("PEST_DISEASE");
+    expect(concernMessage.message.message).toBe("Marami pong uod sa palay namin");
+    expect(concernMessage.message.aiAdvice).toContain("rehistro");
+  });
+
   it("asks for missing registration details in respectful English when the farmer texts in English", () => {
     const created = createInboundSmsRecord({
       id: "SMS-REGISTER-4",

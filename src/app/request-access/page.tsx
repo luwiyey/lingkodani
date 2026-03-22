@@ -128,7 +128,7 @@ function RequestAccessPageContent() {
             </div>
             <CardTitle className="text-2xl text-foreground">Humiling ng Access</CardTitle>
             <CardDescription className="mx-auto mt-1 max-w-[36rem] text-[14px] leading-7 text-muted-foreground/90">
-              Kung wala ka pang live account, ilagay ang iyong detalye rito para ma-review ng developer o barangay admin at ma-set up ang access mo.
+              Kung wala ka pang live account, ilagay ang iyong detalye rito para ma-review ng developer at ma-set up ang access mo.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6 pt-2 sm:px-7 sm:pb-7">
