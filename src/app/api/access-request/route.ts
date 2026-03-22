@@ -8,6 +8,12 @@ import { createAuditEntry } from "@/lib/services/audit-service";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
 import type { AccessRequest, AccessRequestStatus, User } from "@/lib/types";
 
+function compactUndefined<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined)
+  ) as Partial<T>;
+}
+
 function normalizeEmail(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
@@ -134,7 +140,7 @@ export async function POST(request: Request) {
       requestedAt: timestamp,
     };
 
-    await db.collection(firebaseCollections.accessRequests).doc(nextRequest.id).set(nextRequest);
+    await db.collection(firebaseCollections.accessRequests).doc(nextRequest.id).set(compactUndefined(nextRequest));
     const auditLog = createAuditEntry({
       id: `AUD${Date.now()}-${nextRequest.id}`,
       user: "public-access-request",
@@ -212,7 +218,7 @@ export async function PATCH(request: Request) {
       reviewNotes: reviewNotes || currentRequest.reviewNotes,
     };
 
-    await ref.set(nextRequest, { merge: true });
+    await ref.set(compactUndefined(nextRequest), { merge: true });
     const auditLog = createAuditEntry({
       id: `AUD${Date.now()}-${requestId}`,
       user: auth.profile.name ?? auth.email,

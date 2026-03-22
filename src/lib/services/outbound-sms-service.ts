@@ -1,6 +1,12 @@
 import type { SendSmsResult, SmsProvider } from "@/lib/providers/sms/types";
 import type { OutboundMessage, SmsMessage } from "@/lib/types";
 
+function compactUndefined<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined)
+  ) as Partial<T>;
+}
+
 function createRecordId() {
   return `OUT${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -18,7 +24,7 @@ export function createOutboundMessageRecord(input: {
   const createdAt = input.timestamp ?? new Date().toISOString();
   const recipientPhone = input.recipientPhone ?? input.sourceMessage.phone;
 
-  return {
+  return compactUndefined({
     id: createRecordId(),
     smsMessageId: input.sourceMessage.id,
     recipientPhone,
@@ -33,7 +39,7 @@ export function createOutboundMessageRecord(input: {
     sentAt: input.sendResult.status === "sent" ? createdAt : undefined,
     lastStatusAt: createdAt,
     attempts: 1,
-  };
+  }) as OutboundMessage;
 }
 
 export async function sendOutboundMessage(input: {

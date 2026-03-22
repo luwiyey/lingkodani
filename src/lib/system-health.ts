@@ -37,7 +37,7 @@ async function writeRuntimeHealth(input: RuntimeHealthInput) {
     lastSuccessAt: input.status === "ok" ? timestamp : undefined,
     lastFailureAt: input.status === "error" ? timestamp : undefined,
     lastError: input.status === "error" ? input.error ?? "Unknown runtime failure" : undefined,
-    meta: input.meta,
+    meta: input.meta ? compactUndefined(input.meta) : undefined,
   };
 
   await db
