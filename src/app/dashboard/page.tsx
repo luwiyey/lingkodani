@@ -157,7 +157,7 @@ export default function DashboardPage() {
                     Live automation status
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Automatic checks now run through deployed cron routes in the background, with manual rerun controls still available for staff.
+                    Automatic checks now run through deployed daily cron routes on the current hosting setup, with manual rerun controls still available for staff.
                   </p>
                 </div>
               </div>

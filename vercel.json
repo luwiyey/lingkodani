@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/system/process-overdue-sms",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 23 * * *"
     },
     {
       "path": "/api/system/process-follow-ups",
-      "schedule": "*/30 * * * *"
+      "schedule": "30 23 * * *"
     }
   ]
 }
