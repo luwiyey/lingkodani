@@ -269,8 +269,8 @@ export default function StartPage() {
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center">
-      <Card className="relative z-10 w-full max-w-3xl border-white/80 bg-white text-foreground shadow-[0_30px_80px_-36px_rgba(15,23,42,0.55)]">
-        <CardHeader className="space-y-4 border-b border-border/70 bg-[linear-gradient(180deg,rgba(248,251,248,0.98),rgba(255,255,255,0.98))] pb-6">
+      <Card className="relative z-10 w-full max-w-3xl overflow-hidden border-white/70 bg-white/98 text-foreground shadow-[0_28px_70px_-38px_rgba(15,23,42,0.42)]">
+        <CardHeader className="space-y-4 bg-[linear-gradient(180deg,rgba(248,251,248,0.98),rgba(255,255,255,0.98))] pb-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Image src="/logo.png" width={40} height={40} alt="Lingkod-Ani Logo" className="h-10 w-10" />
@@ -290,7 +290,7 @@ export default function StartPage() {
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6 pt-12">
+        <CardContent className="space-y-6 pt-8">
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               {
@@ -312,10 +312,10 @@ export default function StartPage() {
               <div
                 key={item.label}
                 className={cn(
-                  "rounded-[calc(var(--radius)+4px)] border px-4 py-3 transition-colors duration-150 ease-out",
-                  item.state === "done" && "border-primary/20 bg-primary/5",
-                  item.state === "active" && "border-primary/30 bg-[linear-gradient(180deg,#f8fbf8_0%,#f2f8f4_100%)]",
-                  item.state === "upcoming" && "border-border/80 bg-muted/25"
+                  "rounded-[calc(var(--radius)+4px)] border px-4 py-3 shadow-none transition-colors duration-150 ease-out",
+                  item.state === "done" && "border-primary/15 bg-primary/5",
+                  item.state === "active" && "border-primary/20 bg-[linear-gradient(180deg,#fbfdfb_0%,#f4f9f5_100%)]",
+                  item.state === "upcoming" && "border-border/70 bg-muted/15"
                 )}
               >
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -391,8 +391,8 @@ export default function StartPage() {
           </div>
 
           {selectedApplication ? (
-            <form onSubmit={handleSurveySubmit} className="space-y-5 rounded-[calc(var(--radius)+10px)] border border-border/80 bg-[linear-gradient(180deg,#f9fbf9_0%,#f5f8f5_100%)] p-6">
-              <div className="space-y-1 border-b border-border/70 pb-4">
+            <form onSubmit={handleSurveySubmit} className="space-y-5 rounded-[calc(var(--radius)+10px)] border border-border/60 bg-[linear-gradient(180deg,#fbfcfb_0%,#f6f9f6_100%)] p-6">
+              <div className="space-y-1 pb-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                   Step 2 · Role & Experience
                 </p>
