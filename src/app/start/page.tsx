@@ -269,19 +269,19 @@ export default function StartPage() {
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center">
-      <Card className="relative z-10 w-full max-w-3xl overflow-hidden border-border/80 bg-white text-foreground shadow-[0_28px_70px_-38px_rgba(15,23,42,0.42)]">
+      <Card className="auth-card-surface relative z-10 w-full max-w-3xl overflow-hidden shadow-[0_28px_70px_-38px_rgba(15,23,42,0.42)]">
         <CardHeader className="space-y-4 bg-[linear-gradient(180deg,#f8fbf8_0%,#ffffff_100%)] pb-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Image src="/logo.png" width={40} height={40} alt="Lingkod-Ani Logo" className="h-10 w-10" />
               <div>
                 <CardTitle className="text-3xl text-primary">Magsimula Na</CardTitle>
-                <CardDescription className="max-w-2xl">
+                <CardDescription className="auth-card-description max-w-2xl">
                   Piliin muna ang application mode at ang pinakaangkop na workspace para sa iyong barangay team.
                 </CardDescription>
               </div>
             </div>
-            <Button variant="ghost" asChild className="hidden border border-transparent text-muted-foreground hover:border-border hover:bg-muted sm:inline-flex">
+            <Button variant="ghost" asChild className="hidden border border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-900 sm:inline-flex">
               <Link href="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Bumalik
@@ -315,13 +315,13 @@ export default function StartPage() {
                   "rounded-[calc(var(--radius)+4px)] border px-4 py-3 shadow-none transition-colors duration-150 ease-out",
                   item.state === "done" && "border-primary/15 bg-primary/5",
                   item.state === "active" && "border-primary/20 bg-[linear-gradient(180deg,#fbfdfb_0%,#f4f9f5_100%)]",
-                  item.state === "upcoming" && "border-border/70 bg-white"
+                  item.state === "upcoming" && "border-slate-200 bg-white"
                 )}
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   {item.step}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{item.label}</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{item.label}</p>
               </div>
             ))}
           </div>
@@ -329,7 +329,7 @@ export default function StartPage() {
           <div className="space-y-4 pt-1">
             <div className="space-y-1">
               <Label className="block text-base font-semibold">1. Piliin ang application</Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-slate-600">
                 Pumili kung practice preview muna o actual operations ang bubuksan.
               </p>
             </div>
@@ -348,7 +348,7 @@ export default function StartPage() {
                       "rounded-[calc(var(--radius)+8px)] border p-5 text-left shadow-sm transition-all duration-200 ease-out motion-safe:hover:-translate-y-0.5",
                       isSelected
                         ? "border-primary/35 bg-[linear-gradient(180deg,#f7fbf8_0%,#eef7f1_100%)] ring-1 ring-primary/10"
-                        : "border-border/90 bg-white hover:border-primary/20 hover:bg-[#fbfcfb] hover:shadow-md"
+                        : "border-slate-200 bg-white hover:border-primary/20 hover:bg-[#fbfcfb] hover:shadow-md"
                     )}
                   >
                     <div className="space-y-4">
@@ -359,22 +359,22 @@ export default function StartPage() {
                           </div>
                           <div className="space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="text-xl font-semibold text-foreground">{option.title}</h2>
-                              <span className="rounded-full border border-border/80 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                              <h2 className="text-xl font-semibold text-slate-900">{option.title}</h2>
+                              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                                 {option.shortLabel}
                               </span>
                               {option.id === "live" ? (
                                 <HoverTooltip text="Kailangan nito ng totoong sign-in account at kumpletong live Firebase/SMS setup bago magamit sa actual barangay operations.">
-                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/80 bg-white text-muted-foreground">
+                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
                                     <CircleHelp className="h-3.5 w-3.5" />
                                   </span>
                                 </HoverTooltip>
                               ) : null}
                             </div>
-                            <p className="text-sm leading-6 text-muted-foreground">{option.description}</p>
+                            <p className="text-sm leading-6 text-slate-600">{option.description}</p>
                           </div>
                         </div>
-                        <ChevronRight className={cn("h-5 w-5 shrink-0 transition-transform", isSelected ? "translate-x-0 text-primary" : "text-muted-foreground")} />
+                        <ChevronRight className={cn("h-5 w-5 shrink-0 transition-transform", isSelected ? "translate-x-0 text-primary" : "text-slate-500")} />
                       </div>
 
                       {optionNotice ? (
@@ -391,12 +391,12 @@ export default function StartPage() {
           </div>
 
           {selectedApplication ? (
-            <form onSubmit={handleSurveySubmit} className="space-y-5 rounded-[calc(var(--radius)+10px)] border border-border/60 bg-[linear-gradient(180deg,#fbfcfb_0%,#f6f9f6_100%)] p-6">
+            <form onSubmit={handleSurveySubmit} className="space-y-5 rounded-[calc(var(--radius)+10px)] border border-slate-200 bg-[linear-gradient(180deg,#fbfcfb_0%,#f6f9f6_100%)] p-6">
               <div className="space-y-1 pb-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                   Step 2 · Role & Experience
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-slate-600">
                   Ibahagi ang iyong posisyon, edad, at tagal sa serbisyo para makapagrekomenda ang system ng pinakamagandang workspace.
                 </p>
               </div>
@@ -421,7 +421,7 @@ export default function StartPage() {
                   <option value="Barangay Kagawad" />
                   <option value="Municipal Agriculture Staff" />
                 </datalist>
-                <p className="text-xs leading-5 text-muted-foreground">
+                <p className="text-xs leading-5 text-slate-500">
                   Pumili mula sa mga karaniwang role sa dropdown o mag-type ng sarili mong posisyon.
                 </p>
               </div>
@@ -440,7 +440,7 @@ export default function StartPage() {
                     placeholder="Halimbawa: 32"
                     required
                   />
-                  <p className="text-xs leading-5 text-muted-foreground">
+                  <p className="text-xs leading-5 text-slate-500">
                     Ginagamit ito para ma-recommend kung Simple o Detalyado ang mas babagay sa iyong setup.
                   </p>
                 </div>
@@ -458,7 +458,7 @@ export default function StartPage() {
                     placeholder="Halimbawa: 3"
                     required
                   />
-                  <p className="text-xs leading-5 text-muted-foreground">
+                  <p className="text-xs leading-5 text-slate-500">
                     Tinutulungan nito ang system na tantiyahin kung gaano kasimple o kalawak ang unang workspace mo.
                   </p>
                 </div>
@@ -471,7 +471,7 @@ export default function StartPage() {
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                         Rekomendasyon sa workspace
                       </p>
-                      <p className="text-sm font-semibold text-foreground">
+                      <p className="text-sm font-semibold text-slate-900">
                         {workspaceRecommendation.title}
                       </p>
                     </div>
@@ -481,19 +481,19 @@ export default function StartPage() {
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
                     {workspaceRecommendation.description} Maaari mo pa ring piliin kung gusto mo ang
                     Simple o Detalyado sa ibaba.
                   </p>
                 </div>
               ) : null}
 
-              <div className="space-y-3.5 border-t border-border/70 pt-5">
+              <div className="space-y-3.5 border-t border-slate-200 pt-5">
                 <div className="space-y-1">
                   <Label className="block text-base font-semibold">
                     5. Ano ang mas gusto mong workspace?
                   </Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-600">
                     Step 3 · Piliin kung simple ang gusto mong galaw o detalyadong operational view ang mas bagay sa iyo.
                   </p>
                 </div>
@@ -512,31 +512,31 @@ export default function StartPage() {
                         "flex cursor-pointer items-start gap-4 rounded-[calc(var(--radius)+6px)] border bg-white p-4 shadow-sm transition-colors duration-150 ease-out",
                         preferredWorkspace === option.id
                           ? "border-primary/35 bg-[linear-gradient(180deg,#f7fbf8_0%,#eef7f1_100%)] ring-1 ring-primary/10"
-                          : "border-border/90 hover:border-primary/15 hover:bg-[#fbfcfb]"
+                          : "border-slate-200 hover:border-primary/15 hover:bg-[#fbfcfb]"
                       )}
                     >
                       <RadioGroupItem value={option.id} id={`workspace-${option.id}`} className="mt-1" />
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-foreground">{option.title}</p>
+                          <p className="font-semibold text-slate-900">{option.title}</p>
                           {recommendedWorkspace === option.id ? (
                             <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
                               Inirerekomenda
                             </span>
                           ) : null}
                         </div>
-                        <p className="text-sm leading-6 text-muted-foreground">{option.description}</p>
+                        <p className="text-sm leading-6 text-slate-600">{option.description}</p>
                       </div>
                     </label>
                   ))}
                 </RadioGroup>
               </div>
 
-              <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <Button type="button" variant="ghost" asChild className="sm:hidden">
                   <Link href="/">Bumalik sa startup page</Link>
                 </Button>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-slate-600">
                   Kapag pinili mo ang <strong>{preferredWorkspace === "simple" ? "Simple" : "Detalyado"}</strong>, iyon ang unang dashboard na bubukas para sa iyo.
                 </p>
                 <Button type="submit" disabled={submitting || !isSurveyComplete}>
@@ -545,7 +545,7 @@ export default function StartPage() {
               </div>
             </form>
           ) : (
-            <div className="rounded-[calc(var(--radius)+8px)] border border-dashed border-primary/20 bg-[#f7fbf8] px-5 py-6 text-sm text-muted-foreground">
+            <div className="rounded-[calc(var(--radius)+8px)] border border-dashed border-primary/20 bg-[#f7fbf8] px-5 py-6 text-sm text-slate-600">
               Pumili muna ng Demo Application o Live Application para lumabas ang maikling survey.
             </div>
           )}

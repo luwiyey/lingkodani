@@ -86,14 +86,14 @@ function VerifyPageContent() {
       )}
       <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-primary/40" />
       <div className="relative z-10 flex items-center justify-center h-full p-4">
-        <Card className="w-full max-w-md mx-auto shadow-2xl">
+        <Card className="auth-card-surface w-full max-w-md mx-auto shadow-2xl">
           <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-2 mb-2">
                 <ShieldCheck className="w-8 h-8 text-primary" />
                 <h1 className="text-3xl font-bold text-primary">Kumpirmahin ang Demo Login</h1>
             </div>
-            <CardTitle className="text-2xl">Demo session confirmation</CardTitle>
-            <CardDescription>
+            <CardTitle className="auth-card-title text-2xl">Demo session confirmation</CardTitle>
+            <CardDescription className="auth-card-description">
               Walang 6-digit code dito. Ito ay huling kumpirmasyon bago ka pumasok sa demo dashboard gamit ang sample barangay data.
             </CardDescription>
           </CardHeader>
@@ -124,7 +124,7 @@ function VerifyPageContent() {
             </form>
              <div className="mt-4 text-center text-sm">
                 <HoverTooltip text="Bumalik sa login kung gusto mong pumili ng ibang account o live mode.">
-                  <button onClick={() => router.push('/login')} className="underline text-muted-foreground">
+                  <button onClick={() => router.push('/login')} className="auth-card-link">
                     Bumalik sa login
                   </button>
                 </HoverTooltip>
