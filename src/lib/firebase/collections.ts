@@ -11,6 +11,8 @@ export const firebaseCollections = {
   knowledgeArticles: "knowledgeArticles",
   vouchers: "vouchers",
   users: "users",
+  accessRequests: "accessRequests",
+  systemHealth: "systemHealth",
   systemSettings: "systemSettings",
   logbookEntries: "logbookEntries",
   smsTrainingExamples: "smsTrainingExamples",

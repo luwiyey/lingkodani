@@ -183,8 +183,11 @@ function ResetPasswordPageContent() {
 
             <div className="mt-5 space-y-2 text-center text-sm">
               <p className="text-muted-foreground">
-                Wala ka pang live account? Makipag-ugnayan muna sa developer o barangay admin para ma-set up ang access mo.
+                Wala ka pang live account? Maaari kang humiling muna ng setup para ma-provision ang access mo.
               </p>
+              <Link href={`/request-access?source=reset_password&email=${encodeURIComponent(email.trim().toLowerCase())}`} className="text-muted-foreground underline hover:text-foreground">
+                Humiling ng access
+              </Link>
               <Link href="/login" className="text-muted-foreground underline hover:text-foreground">
                 Bumalik sa login
               </Link>

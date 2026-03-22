@@ -60,6 +60,42 @@ export type User = {
   lastLoginAt?: string;
 };
 
+export type AccessRequestStatus =
+  | 'pending_review'
+  | 'reviewed'
+  | 'provisioned'
+  | 'dismissed';
+
+export type AccessRequest = {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  barangay?: string;
+  title?: string;
+  message?: string;
+  source?: 'login' | 'reset_password' | 'public_page';
+  status: AccessRequestStatus;
+  requestedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  reviewNotes?: string;
+};
+
+export type RuntimeHealthStatus = 'ok' | 'warn' | 'error';
+
+export type RuntimeHealthRecord = {
+  id: string;
+  label: string;
+  status: RuntimeHealthStatus;
+  updatedAt: string;
+  lastRunAt?: string;
+  lastSuccessAt?: string;
+  lastFailureAt?: string;
+  lastError?: string;
+  meta?: Record<string, unknown>;
+};
+
 export type SystemTemplateCategoryId =
   | 'confirmation'
   | 'investigation'
@@ -392,6 +428,7 @@ export type OutboundMessagePurpose =
     | 'manual_reply'
     | 'auto_reply'
     | 'follow_up'
+    | 'resolution_confirmation'
     | 'official_reminder'
     | 'official_ack'
     | 'official_help'

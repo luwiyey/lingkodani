@@ -2,6 +2,7 @@ import type { SmsProvider } from "@/lib/providers/sms/types";
 import { normalizePhone } from "@/lib/sms-simulator";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import { sendOutboundMessage } from "@/lib/services/outbound-sms-service";
+import { requestFarmerResolutionConfirmation } from "@/lib/services/resolution-confirmation-service";
 import { applySmsStatusUpdate } from "@/lib/services/sms-workflow-service";
 import { defaultSystemSettings } from "@/lib/system-settings";
 import type { LogbookEntry, SmsMessage, SystemSettings, User } from "@/lib/types";
@@ -61,7 +62,7 @@ function buildOfficialAckBody(message: SmsMessage, action: "reply" | "resolve") 
   const caseId = message.caseId ?? message.id;
 
   if (action === "resolve") {
-    return `Lingkod-Ani: Naitala nang resolved ang ${caseId}. Salamat sa inyong follow-up.`;
+    return `Lingkod-Ani: Naipadala na sa farmer ang confirmation request para sa ${caseId}. Hihintayin ang YES/NO reply bago tuluyang isara ang case.`;
   }
 
   return `Lingkod-Ani: Naipadala na sa farmer ang inyong sagot para sa ${caseId}. Mag-RESOLVE ${caseId} <tala> kapag tapos na ang concern.`;
@@ -380,21 +381,27 @@ export async function processOfficialInboundSms(input: {
   const resolvedRecipientName = targetMessage.officialReminderRecipientName ?? input.official.name;
 
   if (parsed.action === "resolve") {
-    const updatedMessage: SmsMessage = {
-      ...targetMessage,
-      status:
-        targetMessage.respondedAt || targetMessage.autoReplySentAt
-          ? "replied"
-          : targetMessage.status,
-      assignedTo: targetMessage.assignedTo ?? input.official.name,
-      assignedAt: targetMessage.assignedAt ?? timestamp,
-      caseStatus: "closed",
-      closedAt: timestamp,
-      resolutionNote: parsed.content || targetMessage.resolutionNote || "Naresolba sa follow-up ng barangay official sa SMS.",
-      officialReminderRecipientName: resolvedRecipientName,
-      officialReminderRecipientPhone: resolvedRecipientPhone,
-      officialReminderDueAt: undefined,
-    };
+    const confirmationResult = await requestFarmerResolutionConfirmation({
+      message: {
+        ...targetMessage,
+        status:
+          targetMessage.respondedAt || targetMessage.autoReplySentAt
+            ? "replied"
+            : targetMessage.status,
+        assignedTo: targetMessage.assignedTo ?? input.official.name,
+        assignedAt: targetMessage.assignedAt ?? timestamp,
+        resolutionNote: parsed.content || targetMessage.resolutionNote || "Naresolba sa follow-up ng barangay official sa SMS.",
+        officialReminderRecipientName: resolvedRecipientName,
+        officialReminderRecipientPhone: resolvedRecipientPhone,
+        officialReminderDueAt: undefined,
+      },
+      provider: input.provider,
+      providerName: input.providerName,
+      actorName: input.actorName ?? input.official.name,
+      note: parsed.content || targetMessage.resolutionNote || "Naresolba sa follow-up ng barangay official sa SMS.",
+      now: input.now,
+    });
+    const updatedMessage: SmsMessage = confirmationResult.updatedMessage;
 
     if (input.official.phone) {
       await sendDirectOfficialSms({
@@ -413,9 +420,10 @@ export async function processOfficialInboundSms(input: {
           id: `AUD${Date.now()}-OFFICIAL-RESOLVE`,
           timestamp,
           user: input.actorName ?? input.official.name,
-          action: "OFFICIAL_SMS_CASE_RESOLVED",
-          details: `${updatedMessage.caseId ?? updatedMessage.id} minarkahang resolved sa SMS ni ${input.official.name}.`,
+          action: "OFFICIAL_SMS_CASE_READY_FOR_CONFIRMATION",
+          details: `${updatedMessage.caseId ?? updatedMessage.id} minarkahang handa nang isara sa SMS ni ${input.official.name}. Hihintayin ang kumpirmasyon ng magsasaka.`,
         }),
+        confirmationResult.auditLog,
       ],
       logbookEntries: [
         {
@@ -423,11 +431,12 @@ export async function processOfficialInboundSms(input: {
           farmerId: updatedMessage.farmerId,
           timestamp,
           type: "Tala sa Bukid",
-          title: "Kaso naresolba sa SMS",
-          description: updatedMessage.resolutionNote ?? "Naresolba sa SMS follow-up ng opisyal.",
+          title: "Handa nang isara ang case",
+          description: updatedMessage.resolutionNote ?? "Hinihintay ang kumpirmasyon ng magsasaka matapos ang SMS follow-up ng opisyal.",
         } satisfies LogbookEntry,
+        confirmationResult.logbookEntry,
       ],
-      outboundRecords: [],
+      outboundRecords: [confirmationResult.outboundRecord],
     };
   }
 

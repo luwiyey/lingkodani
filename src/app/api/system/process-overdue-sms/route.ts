@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { isLiveMode } from "@/lib/config/app-mode";
 import { withAutomationLock } from "@/lib/server/automation-lock";
 import { authenticateAutomationRequest } from "@/lib/server/automation-request";
+import { recordRuntimeHealthFailure, recordRuntimeHealthSuccess, recordRuntimeHealthWarning } from "@/lib/system-health";
 import { processLiveOverdueSmsMessages } from "@/lib/services/server-overdue-sms-service";
 
 async function handle(request: Request) {
@@ -27,6 +28,10 @@ async function handle(request: Request) {
     );
 
     if (!run.acquired) {
+      await recordRuntimeHealthSuccess("automation_overdue", "Overdue SMS Batch", {
+        skipped: true,
+        reason: "already_running",
+      });
       return NextResponse.json({
         checked: 0,
         processedCount: 0,
@@ -37,8 +42,22 @@ async function handle(request: Request) {
     }
 
     const result = run.result;
+    if (result.failedCount > 0) {
+      await recordRuntimeHealthWarning("automation_overdue", "Overdue SMS Batch", {
+        checked: result.checked,
+        processedCount: result.processedCount,
+        failedCount: result.failedCount,
+      });
+    } else {
+      await recordRuntimeHealthSuccess("automation_overdue", "Overdue SMS Batch", {
+        checked: result.checked,
+        processedCount: result.processedCount,
+        failedCount: result.failedCount,
+      });
+    }
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    await recordRuntimeHealthFailure("automation_overdue", "Overdue SMS Batch", error);
     return NextResponse.json(
       { error: "Hindi naproseso ang overdue SMS batch." },
       { status: 500 }

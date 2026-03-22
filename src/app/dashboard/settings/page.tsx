@@ -40,6 +40,7 @@ import { isSpreadsheetExtension, readSpreadsheetAsCsv } from '@/lib/spreadsheet-
 import type { SmsLexiconRule, SmsTone, SystemTemplate, SystemTemplateCategory } from '@/lib/types';
 import { defaultSystemSettings } from '@/lib/system-settings';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
+import { useRuntimeHealth } from '@/hooks/use-runtime-health';
 
 function downloadFile(filename: string, content: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -53,6 +54,18 @@ function downloadFile(filename: string, content: string, mimeType: string) {
 
 function getFileExtension(filename: string) {
   return filename.split('.').pop()?.toLowerCase() ?? '';
+}
+
+function formatRuntimeTimestamp(value?: string | null) {
+  if (!value) {
+    return 'Wala pa';
+  }
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
 }
 
 function createEmptyLexiconRule(): SmsLexiconRule {
@@ -87,6 +100,7 @@ export default function BarangaySettingsPage() {
     } = useData();
     const { currentUser, currentUserProfile } = useAuth();
     const { capabilities } = useRuntimeCapabilities();
+    const { runtimeHealth, runtimeHealthLoading } = useRuntimeHealth();
     const lexiconImportRef = useRef<HTMLInputElement>(null);
     const trainingImportRef = useRef<HTMLInputElement>(null);
     const [brgyDescription, setBrgyDescription] = useState(defaultSystemSettings.brgyDescription);
@@ -134,6 +148,10 @@ export default function BarangaySettingsPage() {
     const teachingCoverage = summarizeTeachingCoverage(smsLexiconRules, smsTrainingExamples);
     const pendingTrainingExamples = smsTrainingExamples.filter((example) => example.reviewStatus === 'needs_review').slice(0, 5);
     const pendingKnowledgeArticles = knowledgeArticles.filter((article) => article.reviewStatus === 'needs_review').slice(0, 5);
+    const overdueHealth = runtimeHealth.records.find((record) => record.id === 'automation_overdue');
+    const followUpHealth = runtimeHealth.records.find((record) => record.id === 'automation_followups');
+    const inboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_inbound');
+    const outboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_outbound');
 
     useEffect(() => {
         if (currentUserProfile && !canManageSettings) {
@@ -633,6 +651,46 @@ export default function BarangaySettingsPage() {
               <p className="text-sm text-muted-foreground">Automation mode</p>
               <p className="mt-2 text-sm font-semibold">{capabilities.automationMode ?? 'Manual / local only'}</p>
             </div>
+            <div className="rounded-lg border bg-background/80 p-4 sm:col-span-2 xl:col-span-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">Runtime Health</p>
+                <Badge variant="outline">{runtimeHealthLoading ? 'Refreshing...' : 'Live status'}</Badge>
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-sm font-medium text-foreground">Overdue SMS Batch</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Status: {overdueHealth?.status ?? 'Wala pa'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling success: {formatRuntimeTimestamp(overdueHealth?.lastSuccessAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling failure: {formatRuntimeTimestamp(overdueHealth?.lastFailureAt)}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-sm font-medium text-foreground">Follow-up Batch</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Status: {followUpHealth?.status ?? 'Wala pa'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling success: {formatRuntimeTimestamp(followUpHealth?.lastSuccessAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling failure: {formatRuntimeTimestamp(followUpHealth?.lastFailureAt)}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-sm font-medium text-foreground">Inbound SMS</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling event: {formatRuntimeTimestamp(inboundHealth?.updatedAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Latest case: {runtimeHealth.latestInbound?.caseId ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Source: {runtimeHealth.latestInbound?.sourceProvider ?? 'Wala pa'}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-sm font-medium text-foreground">Outbound SMS</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling event: {formatRuntimeTimestamp(outboundHealth?.updatedAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Latest status: {runtimeHealth.latestOutbound?.status ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Purpose: {runtimeHealth.latestOutbound?.purpose ?? 'Wala pa'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="rounded-lg border bg-background/80 p-4 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">Ano ang ibig sabihin nito</p>
@@ -1022,6 +1080,9 @@ export default function BarangaySettingsPage() {
             </p>
             <p>
               Kung kailangan mo ng mas madalas na unattended checks kaysa araw-araw, kakailanganin ng Pro cron schedule o mano-manong rerun mula sa page na ito.
+            </p>
+            <p>
+              Libre ring opsyon ang gumamit ng external scheduler na tatama sa automation endpoints gamit ang secure automation token, para hindi nakaasa lang sa daily Vercel Hobby cron.
             </p>
             <p>
               Maaari mo pa ring gamitin ang mga button sa ibaba para sa mano-manong rerun anumang oras, lalo na habang local testing o kapag gusto mong pilitin ang isang bagong batch check agad.

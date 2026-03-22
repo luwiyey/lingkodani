@@ -124,7 +124,7 @@ describe("staff SMS service", () => {
     expect(result.outboundRecords[0]?.purpose).toBe("manual_reply");
   });
 
-  it("lets an official resolve the case by SMS and stops the reminder loop", async () => {
+  it("asks the farmer for confirmation before finally closing a case resolved by official SMS", async () => {
     const provider = {
       sendMessage: jest.fn().mockResolvedValue({
         status: "sent",
@@ -157,9 +157,11 @@ describe("staff SMS service", () => {
     });
 
     expect(result.kind).toBe("resolve");
-    expect(result.message?.caseStatus).toBe("closed");
-    expect(result.message?.closedAt).toBe("2026-03-20T09:00:00.000Z");
+    expect(result.message?.caseStatus).toBe("assigned");
+    expect(result.message?.closedAt).toBeUndefined();
+    expect(result.message?.resolutionConfirmationStatus).toBe("awaiting_farmer");
     expect(result.message?.officialReminderDueAt).toBeUndefined();
-    expect(result.outboundRecords).toHaveLength(0);
+    expect(result.outboundRecords).toHaveLength(1);
+    expect(result.outboundRecords[0]?.purpose).toBe("resolution_confirmation");
   });
 });

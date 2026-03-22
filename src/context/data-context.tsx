@@ -50,6 +50,7 @@ import type { FarmerRegistrationValues, UserManagementValues } from '@/lib/schem
 import type { InboundSmsAnalysis } from '@/lib/sms-simulator';
 import { isDemoMode, isLiveMode } from '@/lib/config/app-mode';
 import { useAuth } from '@/context/auth-context';
+import { getClientAuth } from '@/lib/firebase/auth-client';
 import { getClientFirestore } from '@/lib/firebase/client';
 import { firebaseCollections } from '@/lib/firebase/collections';
 import { smsProvider } from '@/lib/providers/sms';
@@ -2380,6 +2381,59 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
         },
       });
+      return;
+    }
+
+    if (isLiveMode && outcomeStatus === 'resolved') {
+      void (async () => {
+        try {
+          const idToken = await getClientAuth().currentUser?.getIdToken();
+
+          if (!idToken) {
+            throw new Error('Walang authenticated live session para makapagpadala ng farmer confirmation.');
+          }
+
+          const response = await fetch('/api/sms-cases/request-resolution-confirmation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({
+              messageId,
+              note: updatedMessage.resolutionNote,
+            }),
+          });
+          const payload = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(payload.error ?? 'Hindi naipadala ang resolution confirmation SMS.');
+          }
+
+          const serverMessage = payload.message as SmsMessage | undefined;
+          const outboundRecord = payload.outboundRecord as OutboundMessage | undefined;
+
+          if (serverMessage) {
+            setSmsMessages((prev) =>
+              prev.map((message) => (message.id === messageId ? serverMessage : message))
+            );
+          }
+
+          if (outboundRecord) {
+            setOutboundMessages((prev) => [
+              outboundRecord,
+              ...prev.filter((record) => record.id !== outboundRecord.id),
+            ]);
+          }
+        } catch (error) {
+          setSmsMessages((prev) =>
+            prev.map((message) => (message.id === messageId ? currentMessage : message))
+          );
+          setAuditLogs((prev) => prev.filter((entry) => entry.id !== auditLog.id));
+          setLogbook((prev) => prev.filter((entry) => entry.id !== outcomeLogbookEntry.id));
+          console.error('Failed to request farmer confirmation for resolved case', error);
+        }
+      })();
       return;
     }
 

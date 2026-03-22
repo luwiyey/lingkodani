@@ -1,13 +1,13 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Shield, Edit, FileJson, Database } from 'lucide-react';
+import { PlusCircle, Trash2, Shield, Edit, FileJson, Database, RefreshCcw, UserRoundPlus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -32,18 +32,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { getManagedBarangayUsers, getPlatformDeveloperUsers } from '@/lib/access-control';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
-import type { User } from '@/lib/types';
+import type { AccessRequest, User } from '@/lib/types';
 import { getUserRecordId } from '@/lib/user-record';
 
 
 export default function DeveloperPage() {
+    const { currentUser } = useAuth();
     const { users, updateUser, deleteUser, auditLogs } = useData();
+    const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+    const [accessRequestsLoading, setAccessRequestsLoading] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [editingForm, setEditingForm] = useState({
       name: '',
@@ -62,6 +66,97 @@ export default function DeveloperPage() {
     const pendingSetupUsers = barangayUsers.filter((user) => user.status === 'pending_setup').length;
     const simpleWorkspaceUsers = barangayUsers.filter((user) => user.preferredWorkspace === 'simple').length;
     const namedAuditActors = new Set(auditLogs.filter((log) => log.user !== 'system').map((log) => log.user)).size;
+    const pendingAccessRequests = accessRequests.filter((request) => request.status === 'pending_review' || request.status === 'reviewed');
+
+    const loadAccessRequests = React.useCallback(async () => {
+        if (!isLiveMode) {
+            setAccessRequests([]);
+            return;
+        }
+
+        if (!currentUser) {
+            return;
+        }
+
+        setAccessRequestsLoading(true);
+
+        try {
+            const idToken = await getClientAuth().currentUser?.getIdToken();
+
+            if (!idToken) {
+                throw new Error('Walang authenticated developer session.');
+            }
+
+            const response = await fetch('/api/access-request', {
+                headers: {
+                    Authorization: `Bearer ${idToken}`,
+                },
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(payload.error ?? 'Hindi makuha ang access requests.');
+            }
+
+            setAccessRequests(Array.isArray(payload.requests) ? payload.requests : []);
+        } catch (error) {
+            toast({
+                title: 'Hindi makuha ang access requests',
+                description: error instanceof Error ? error.message : 'Subukan muli pagkatapos ng ilang sandali.',
+                variant: 'destructive',
+            });
+        } finally {
+            setAccessRequestsLoading(false);
+        }
+    }, [currentUser, toast]);
+
+    useEffect(() => {
+        void loadAccessRequests();
+    }, [loadAccessRequests]);
+
+    const updateAccessRequestStatus = async (requestId: string, status: AccessRequest['status'], reviewNotes?: string) => {
+        try {
+            const idToken = await getClientAuth().currentUser?.getIdToken();
+
+            if (!idToken) {
+                throw new Error('Walang authenticated developer session.');
+            }
+
+            const response = await fetch('/api/access-request', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({
+                    requestId,
+                    status,
+                    reviewNotes,
+                }),
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(payload.error ?? 'Hindi ma-update ang access request.');
+            }
+
+            setAccessRequests((current) =>
+                current.map((request) => (request.id === requestId ? payload.request : request))
+            );
+            toast({
+                title: 'Na-update ang request',
+                description: status === 'dismissed'
+                    ? 'Tinanggal sa active queue ang access request.'
+                    : 'Namarkahan na ang access request para sa susunod na provisioning step.',
+            });
+        } catch (error) {
+            toast({
+                title: 'Hindi ma-update ang request',
+                description: error instanceof Error ? error.message : 'Subukan muli pagkatapos ng ilang sandali.',
+                variant: 'destructive',
+            });
+        }
+    };
 
     const handleEditUser = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -237,6 +332,78 @@ export default function DeveloperPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserRoundPlus className="h-5 w-5" />
+              Mga Humihiling ng Access
+            </CardTitle>
+            <CardDescription>
+              Public requests mula sa login/reset-password flow para sa users na wala pang live account.
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => void loadAccessRequests()} disabled={accessRequestsLoading}>
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            {accessRequestsLoading ? 'Nagre-refresh...' : 'Refresh'}
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+            <Badge variant="outline">Pending: {pendingAccessRequests.length}</Badge>
+            <Badge variant="outline">Provisioned: {accessRequests.filter((request) => request.status === 'provisioned').length}</Badge>
+            <Badge variant="outline">Dismissed: {accessRequests.filter((request) => request.status === 'dismissed').length}</Badge>
+          </div>
+          {pendingAccessRequests.length > 0 ? (
+            <div className="space-y-3">
+              {pendingAccessRequests.slice(0, 8).map((request) => (
+                <div key={request.id} className="rounded-xl border bg-background/90 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">{request.name}</p>
+                      <p className="text-sm text-muted-foreground">{request.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {request.title ?? 'Walang inilagay na tungkulin'} {request.barangay ? `- ${request.barangay}` : ''}
+                      </p>
+                      {request.phone ? <p className="text-sm text-muted-foreground">Phone: {request.phone}</p> : null}
+                      {request.message ? <p className="text-sm text-muted-foreground">{request.message}</p> : null}
+                      <p className="text-xs text-muted-foreground">
+                        Source: {request.source ?? 'public_page'} - Requested: {new Date(request.requestedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                      >
+                        <Link href="/dashboard/developer/add-user">Mag-provision ng account</Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void updateAccessRequestStatus(request.id, 'reviewed', 'Na-review na at handa nang i-provision kapag available ang staff account slot.')}
+                      >
+                        Mark reviewed
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => void updateAccessRequestStatus(request.id, 'dismissed', 'Tinanggal mula sa active queue ng developer.')}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Wala pang active access requests sa ngayon.</p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader>

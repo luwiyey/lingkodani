@@ -70,10 +70,12 @@ function LoginPageContent() {
   const loginBg = PlaceHolderImages.find((img) => img.id === "login-bg");
   const selectedApplication = searchParams.get("application");
   const cameFromStart = searchParams.get("fromStart") === "1";
+  const requestedAccess = searchParams.get("requestedAccess") === "1";
   const [onboardingProfile, setOnboardingProfile] = useState<ReturnType<typeof readOnboardingProfile>>(null);
   const [showNotRegisteredDialog, setShowNotRegisteredDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [lastAttemptedEmail, setLastAttemptedEmail] = useState("");
   const [accessErrorMessage, setAccessErrorMessage] = useState(
     "Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa developer upang ma-access ang Lingkod-Ani."
   );
@@ -111,6 +113,7 @@ function LoginPageContent() {
     const passwordInput = form.elements.namedItem("password") as HTMLInputElement;
     const email = emailInput.value;
     const password = passwordInput.value;
+    setLastAttemptedEmail(email.trim().toLowerCase());
 
     if (isLiveMode) {
       try {
@@ -204,6 +207,12 @@ function LoginPageContent() {
               </div>
             ) : null}
 
+            {requestedAccess ? (
+              <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left text-sm text-emerald-900">
+                Naisumite na ang access request mo. Hintayin ang developer o barangay admin na ma-provision ang account bago subukang mag-login muli.
+              </div>
+            ) : null}
+
             <form onSubmit={handleLogin} className="mt-2 space-y-5">
               <HoverTooltip text="Ilagay ang email address na nakarehistro sa iyong account.">
                 <div className="space-y-2.5">
@@ -272,6 +281,11 @@ function LoginPageContent() {
                   Bumalik sa startup page
                 </Link>
               </div>
+              <div>
+                <Link href="/request-access?source=login" className="text-muted-foreground hover:text-foreground hover:underline">
+                  Wala ka pang account? Humiling ng access
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -294,6 +308,11 @@ function LoginPageContent() {
             <AlertDialogDescription>{accessErrorMessage}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <Button variant="outline" asChild>
+              <Link href={`/request-access?source=login&email=${encodeURIComponent(lastAttemptedEmail)}`}>
+                Humiling ng Access
+              </Link>
+            </Button>
             <AlertDialogAction onClick={() => setShowNotRegisteredDialog(false)}>Naiintindihan</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

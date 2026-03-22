@@ -77,6 +77,36 @@ function buildUserProfile(input: {
   });
 }
 
+async function markMatchingAccessRequestsProvisioned(input: {
+  email: string;
+  actorName: string;
+}) {
+  const db = getServerFirestore();
+  const snapshot = await db
+    .collection(firebaseCollections.accessRequests)
+    .where("email", "==", input.email)
+    .get();
+
+  const pendingRequests = snapshot.docs.filter((item) => {
+    const request = item.data() as { status?: string };
+    return request.status === "pending_review" || request.status === "reviewed";
+  });
+
+  await Promise.all(
+    pendingRequests.map((item) =>
+      item.ref.set(
+        {
+          status: "provisioned",
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: input.actorName,
+          reviewNotes: "Awtomatikong minarkahang provisioned matapos malikha ang live account.",
+        },
+        { merge: true }
+      )
+    )
+  );
+}
+
 export async function POST(request: Request) {
   const auth = await authenticateServerRequest(request, ["developer"]);
 
@@ -154,6 +184,10 @@ export async function POST(request: Request) {
     });
 
     await userRef.set(profile);
+    await markMatchingAccessRequestsProvisioned({
+      email,
+      actorName: auth.profile.name ?? auth.email,
+    });
     const auditLog = createAuditEntry({
       id: `AUD${Date.now()}-${firebaseUser.uid}`,
       user: auth.profile.name ?? auth.email,

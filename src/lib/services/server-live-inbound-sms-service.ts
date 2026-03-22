@@ -3,10 +3,15 @@ import { screenInboundSms } from "@/lib/inbound-sms-screening";
 import { getServerFirestore } from "@/lib/firebase/server";
 import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import { getServerSystemSettings } from "@/lib/server/system-settings";
+import { recordRuntimeHealthSuccess, recordRuntimeHealthWarning } from "@/lib/system-health";
 import { applyPriceWatchAdvice } from "@/lib/services/price-watch-service";
+import {
+  applyFarmerResolutionConfirmation,
+  parseFarmerResolutionConfirmationReply,
+} from "@/lib/services/resolution-confirmation-service";
 import { sendLiveSms } from "@/lib/services/server-live-outbound-sms-service";
 import { processInboundSms } from "@/lib/services/sms-workflow-service";
-import { processOfficialInboundSms } from "@/lib/services/staff-sms-service";
+import { processOfficialInboundSms, processOfficialReminderMessage } from "@/lib/services/staff-sms-service";
 import { buildPhoneLookupCandidates, normalizePhone } from "@/lib/sms-simulator";
 import type { Farmer, LogbookEntry, MarketPriceEntry, SmsMessage, User } from "@/lib/types";
 import type { InboundSmsAnalysis } from "@/lib/sms-simulator";
@@ -40,6 +45,26 @@ async function queryCollectionByPhone<T extends { id?: string; uid?: string }>(
   return Array.from(merged.values());
 }
 
+async function queryMessagesByPhone(phoneCandidates: string[]) {
+  const db = getServerFirestore();
+  const merged = new Map<string, SmsMessage>();
+
+  for (const candidate of phoneCandidates) {
+    const snapshot = await db
+      .collection(firebaseCollections.smsMessages)
+      .where("phone", "==", candidate)
+      .limit(25)
+      .get();
+
+    for (const item of snapshot.docs) {
+      const data = item.data() as SmsMessage;
+      merged.set(item.id, data);
+    }
+  }
+
+  return Array.from(merged.values());
+}
+
 export async function persistLiveInboundSms(input: {
   phone: string;
   message: string;
@@ -54,6 +79,10 @@ export async function persistLiveInboundSms(input: {
   });
 
   if (screening.ignored) {
+    await recordRuntimeHealthWarning("sms_inbound", "Live Inbound SMS", {
+      reason: screening.reason,
+      phone: input.phone,
+    });
     return {
       duplicate: false,
       ignored: true,
@@ -75,6 +104,10 @@ export async function persistLiveInboundSms(input: {
       .find((message) => message.sourceProvider === (input.sourceProvider ?? "unknown"));
 
     if (duplicate) {
+      await recordRuntimeHealthSuccess("sms_inbound", "Live Inbound SMS", {
+        duplicate: true,
+        sourceProvider: input.sourceProvider ?? "unknown",
+      });
       return {
         duplicate: true,
         message: duplicate,
@@ -90,9 +123,10 @@ export async function persistLiveInboundSms(input: {
       return sendLiveSms(payload);
     },
   };
-  const [users, farmers, marketPriceSnapshot, systemSettings] = await Promise.all([
+  const [users, farmers, existingPhoneMessages, marketPriceSnapshot, systemSettings] = await Promise.all([
     queryCollectionByPhone<User>(firebaseCollections.users, phoneCandidates),
     queryCollectionByPhone<Farmer>(firebaseCollections.farmers, phoneCandidates),
+    queryMessagesByPhone(phoneCandidates),
     db.collection(firebaseCollections.marketPrices).get(),
     getServerSystemSettings(),
   ]);
@@ -121,11 +155,20 @@ export async function persistLiveInboundSms(input: {
         aiAdvice: officialResult.message.aiAdvice,
         respondedAt: officialResult.message.respondedAt,
         caseStatus: officialResult.message.caseStatus,
+        caseOutcomeStatus: officialResult.message.caseOutcomeStatus,
+        caseOutcomeSummary: officialResult.message.caseOutcomeSummary,
+        caseOutcomeUpdatedAt: officialResult.message.caseOutcomeUpdatedAt,
+        caseOutcomeUpdatedBy: officialResult.message.caseOutcomeUpdatedBy,
         assignedTo: officialResult.message.assignedTo,
         assignedAt: officialResult.message.assignedAt,
         followUpDueAt: officialResult.message.followUpDueAt,
         closedAt: officialResult.message.closedAt,
         resolutionNote: officialResult.message.resolutionNote,
+        resolutionConfirmationStatus: officialResult.message.resolutionConfirmationStatus,
+        resolutionConfirmationRequestedAt: officialResult.message.resolutionConfirmationRequestedAt,
+        resolutionConfirmedAt: officialResult.message.resolutionConfirmedAt,
+        resolutionConfirmedBy: officialResult.message.resolutionConfirmedBy,
+        resolutionConfirmationNote: officialResult.message.resolutionConfirmationNote,
         officialReminderRecipientName: officialResult.message.officialReminderRecipientName,
         officialReminderRecipientPhone: officialResult.message.officialReminderRecipientPhone,
         officialReminderDueAt: officialResult.message.officialReminderDueAt,
@@ -144,11 +187,92 @@ export async function persistLiveInboundSms(input: {
       await db.collection(firebaseCollections.outboundMessages).doc(outboundRecord.id).set(outboundRecord);
     }
 
+    await recordRuntimeHealthSuccess("sms_inbound", "Live Inbound SMS", {
+      handledBy: "official",
+      official: matchingOfficial.name,
+      sourceProvider: input.sourceProvider ?? "unknown",
+    });
+
     return {
       duplicate: false,
       handledBy: "official" as const,
       persisted: false,
       message: officialResult.message ?? null,
+    };
+  }
+
+  const confirmationReply = parseFarmerResolutionConfirmationReply(input.message);
+  const awaitingConfirmationMessage = existingPhoneMessages
+    .filter((message) =>
+      normalizePhone(message.phone) === normalizedPhone &&
+      message.resolutionConfirmationStatus === "awaiting_farmer" &&
+      !message.closedAt
+    )
+    .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())[0];
+
+  if (confirmationReply && awaitingConfirmationMessage) {
+    const confirmationResult = applyFarmerResolutionConfirmation({
+      message: awaitingConfirmationMessage,
+      confirmationStatus: confirmationReply,
+      replyBody: input.message,
+    });
+
+    await db.collection(firebaseCollections.smsMessages).doc(awaitingConfirmationMessage.id).update(withoutUndefined({
+      caseStatus: confirmationResult.updatedMessage.caseStatus,
+      closedAt: confirmationResult.updatedMessage.closedAt,
+      caseOutcomeStatus: confirmationResult.updatedMessage.caseOutcomeStatus,
+      caseOutcomeSummary: confirmationResult.updatedMessage.caseOutcomeSummary,
+      caseOutcomeUpdatedAt: confirmationResult.updatedMessage.caseOutcomeUpdatedAt,
+      caseOutcomeUpdatedBy: confirmationResult.updatedMessage.caseOutcomeUpdatedBy,
+      resolutionConfirmationStatus: confirmationResult.updatedMessage.resolutionConfirmationStatus,
+      resolutionConfirmedAt: confirmationResult.updatedMessage.resolutionConfirmedAt,
+      resolutionConfirmedBy: confirmationResult.updatedMessage.resolutionConfirmedBy,
+      resolutionConfirmationNote: confirmationResult.updatedMessage.resolutionConfirmationNote,
+      followUpDueAt: confirmationResult.updatedMessage.followUpDueAt,
+    }));
+    await db.collection(firebaseCollections.auditLogs).doc(confirmationResult.auditLog.id).set(confirmationResult.auditLog);
+    await db.collection(firebaseCollections.logbookEntries).doc(confirmationResult.logbookEntry.id).set(confirmationResult.logbookEntry);
+
+    if (confirmationReply === "reopened") {
+      const reminderResult = await processOfficialReminderMessage({
+        message: confirmationResult.updatedMessage,
+        users: [],
+        settings: systemSettings,
+        provider: liveServerSmsProvider,
+        providerName,
+        actorName: "system",
+        force: true,
+      });
+
+      if (reminderResult) {
+        await db.collection(firebaseCollections.smsMessages).doc(awaitingConfirmationMessage.id).update(withoutUndefined({
+          assignedTo: reminderResult.updatedMessage.assignedTo,
+          assignedAt: reminderResult.updatedMessage.assignedAt,
+          caseStatus: reminderResult.updatedMessage.caseStatus,
+          officialReminderRecipientName: reminderResult.updatedMessage.officialReminderRecipientName,
+          officialReminderRecipientPhone: reminderResult.updatedMessage.officialReminderRecipientPhone,
+          officialReminderDueAt: reminderResult.updatedMessage.officialReminderDueAt,
+          officialReminderLastSentAt: reminderResult.updatedMessage.officialReminderLastSentAt,
+          officialReminderCount: reminderResult.updatedMessage.officialReminderCount,
+        }));
+        await db.collection(firebaseCollections.auditLogs).doc(reminderResult.auditLog.id).set(reminderResult.auditLog);
+        await db.collection(firebaseCollections.logbookEntries).doc(reminderResult.logbookEntry.id).set(reminderResult.logbookEntry);
+        await db.collection(firebaseCollections.outboundMessages).doc(reminderResult.outboundRecord.id).set(reminderResult.outboundRecord);
+      }
+    }
+
+    await recordRuntimeHealthSuccess("sms_inbound", "Live Inbound SMS", {
+      handledBy: "resolution_confirmation",
+      caseId: confirmationResult.updatedMessage.caseId ?? confirmationResult.updatedMessage.id,
+      confirmationStatus: confirmationReply,
+      sourceProvider: input.sourceProvider ?? "unknown",
+    });
+
+    return {
+      duplicate: false,
+      handledBy: "resolution_confirmation" as const,
+      persisted: false,
+      message: confirmationResult.updatedMessage,
     };
   }
 
@@ -185,6 +309,12 @@ export async function persistLiveInboundSms(input: {
   for (const update of workflow.farmerUpdates) {
     await db.collection(firebaseCollections.farmers).doc(update.farmerId).update(update.updates);
   }
+
+  await recordRuntimeHealthSuccess("sms_inbound", "Live Inbound SMS", {
+    handledBy: "farmer",
+    sourceProvider: input.sourceProvider ?? "unknown",
+    caseId: workflow.message.caseId ?? workflow.message.id,
+  });
 
   return {
     duplicate: false,

@@ -10,6 +10,7 @@ import {
 } from "@/lib/providers/sms/live-sms-config";
 import { getSmsgateAuthHeader, getSmsgateBaseUrl } from "@/lib/providers/sms/smsgate";
 import { isValidPhilippineMobileNumber } from "@/lib/sms-simulator";
+import { recordRuntimeHealthFailure, recordRuntimeHealthSuccess } from "@/lib/system-health";
 import { getTextbeeBaseUrl } from "@/lib/providers/sms/textbee";
 import type { SendSmsInput, SendSmsResult } from "@/lib/providers/sms/types";
 
@@ -254,6 +255,10 @@ async function sendLiveSmsInternal(input: SendSmsInput): Promise<SendSmsResult> 
 
 export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
   if (!isValidPhilippineMobileNumber(input.to)) {
+    await recordRuntimeHealthFailure("sms_outbound", "Live Outbound SMS", "Recipient phone must be a valid Philippine mobile number.", {
+      recipientPhone: input.to,
+      provider: getProvider(),
+    });
     return {
       status: "failed",
       errorMessage: "Recipient phone must be a valid Philippine mobile number.",
@@ -261,8 +266,27 @@ export async function sendLiveSms(input: SendSmsInput): Promise<SendSmsResult> {
   }
 
   try {
-    return await sendLiveSmsInternal(input);
+    const result = await sendLiveSmsInternal(input);
+
+    if (result.status === "failed") {
+      await recordRuntimeHealthFailure("sms_outbound", "Live Outbound SMS", result.errorMessage ?? "Live SMS send failed.", {
+        recipientPhone: input.to,
+        provider: getProvider(),
+      });
+    } else {
+      await recordRuntimeHealthSuccess("sms_outbound", "Live Outbound SMS", {
+        recipientPhone: input.to,
+        provider: getProvider(),
+        providerMessageId: result.providerMessageId,
+      });
+    }
+
+    return result;
   } catch (error) {
+    await recordRuntimeHealthFailure("sms_outbound", "Live Outbound SMS", error, {
+      recipientPhone: input.to,
+      provider: getProvider(),
+    });
     return {
       status: "failed",
       errorMessage: error instanceof Error ? error.message : "Live SMS send failed.",
