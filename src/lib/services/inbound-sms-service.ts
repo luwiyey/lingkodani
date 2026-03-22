@@ -10,6 +10,7 @@ export type CreateInboundSmsInput = {
   phone: string;
   message: string;
   farmers: Farmer[];
+  existingMessages?: SmsMessage[];
   analysis?: InboundSmsAnalysis;
   settings?: SystemSettings;
   timestamp?: string;
@@ -29,20 +30,46 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
   const settings = input.settings ?? defaultSystemSettings;
   const messageId = input.id ?? `SMS${Date.now()}`;
   const normalizedPhone = normalizePhone(input.phone);
+  const existingMessages = input.existingMessages ?? [];
   const farmer = input.farmers.find((item) => normalizePhone(item.phone) === normalizedPhone);
+  const activeRegistrationMessages = farmer
+    ? []
+    : existingMessages
+        .filter((item) =>
+          normalizePhone(item.phone) === normalizedPhone &&
+          !item.closedAt &&
+          (
+            item.registrationRequired ||
+            item.caseStatus === "awaiting_registration" ||
+            (item.parsedIntent === "REGISTER" && item.caseId)
+          )
+        )
+        .sort((left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime());
+  const registrationDraftCaseId = activeRegistrationMessages[0]?.caseId;
+  const hasOpenRegistrationDraft = activeRegistrationMessages.length > 0;
+  const registrationFragments = activeRegistrationMessages
+    .map((item) => item.message.replace(/^register\b/i, "").trim())
+    .filter(Boolean);
+  const currentRegistrationFragment = input.message.replace(/^register\b/i, "").trim();
+  const compiledRegistrationMessage = hasOpenRegistrationDraft || /^register\b/i.test(input.message.trim())
+    ? `REGISTER ${Array.from(new Set([
+        ...registrationFragments,
+        currentRegistrationFragment,
+      ].filter(Boolean))).join(" ")}`.trim()
+    : input.message;
   const registrationAssessment = farmer
     ? null
     : assessRegistrationMessage({
-        message: input.message,
+        message: compiledRegistrationMessage,
         phone: input.phone,
         timestamp,
       });
   const registrationCandidate = registrationAssessment?.farmer ?? null;
-  const isRegistrationIntent = registrationAssessment?.isRegistrationMessage ?? false;
+  const isRegistrationIntent = registrationAssessment?.isRegistrationMessage ?? hasOpenRegistrationDraft;
   const baseAnalysis =
-    input.analysis ?? analyzeInboundSms(input.message, farmer?.name ?? registrationCandidate?.name ?? "magsasaka", !!farmer);
+    input.analysis ?? analyzeInboundSms(compiledRegistrationMessage, farmer?.name ?? registrationCandidate?.name ?? "magsasaka", !!farmer);
   const enhancedAnalysis = enhanceInboundAnalysisWithClarification({
-    message: input.message,
+    message: compiledRegistrationMessage,
     analysis: baseAnalysis,
     knownFarmer: Boolean(farmer),
   });
@@ -71,7 +98,7 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
       : enhancedAnalysis;
   const effectiveFarmerId = farmer?.id ?? registrationCandidate?.id ?? `UNKNOWN-${Date.now()}`;
   const effectiveFarmerName = farmer?.name ?? registrationCandidate?.name ?? "Hindi pa nakilalang magsasaka";
-  const caseId = buildCaseId({
+  const caseId = registrationDraftCaseId ?? buildCaseId({
     farmerId: farmer?.id ?? registrationCandidate?.id,
     normalizedPhone,
     fallbackId: messageId,

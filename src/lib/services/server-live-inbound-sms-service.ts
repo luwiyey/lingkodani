@@ -280,6 +280,7 @@ export async function persistLiveInboundSms(input: {
     phone: input.phone,
     message: input.message,
     farmers,
+    existingMessages: existingPhoneMessages,
     analysis: input.analysis,
     settings: systemSettings,
     sourceProvider: input.sourceProvider,

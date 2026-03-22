@@ -48,4 +48,32 @@ describe("inbound-sms-service", () => {
     expect(created.message.aiAdvice).toContain("sitio o zone");
     expect(created.message.parsedIntent).toBe("REGISTER");
   });
+
+  it("merges follow-up registration replies into the same draft until complete", () => {
+    const firstMessage = createInboundSmsRecord({
+      id: "SMS-REGISTER-3A",
+      phone: "+639171234567",
+      message: "REGISTER Juan Dela Cruz",
+      farmers: [],
+      timestamp: "2026-03-22T08:00:00.000Z",
+    });
+
+    const secondMessage = createInboundSmsRecord({
+      id: "SMS-REGISTER-3B",
+      phone: "+639171234567",
+      message: "Zone 1",
+      farmers: [],
+      existingMessages: [firstMessage.message],
+      timestamp: "2026-03-22T08:02:00.000Z",
+    });
+
+    expect(firstMessage.newFarmer).toBeUndefined();
+    expect(firstMessage.message.caseStatus).toBe("awaiting_registration");
+    expect(secondMessage.newFarmer).toBeTruthy();
+    expect(secondMessage.newFarmer?.name).toBe("Juan Dela Cruz");
+    expect(secondMessage.newFarmer?.sitio).toBe("Zone 1");
+    expect(secondMessage.message.caseId).toBe(firstMessage.message.caseId);
+    expect(secondMessage.message.caseStatus).toBe("open");
+    expect(secondMessage.message.registrationRequired).toBe(false);
+  });
 });
