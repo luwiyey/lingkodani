@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
@@ -21,23 +22,28 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 
-
-const chartConfig = {
-    Tagalog: { label: "Tagalog", color: "hsl(var(--chart-1))" },
-    Taglish: { label: "Taglish", color: "hsl(var(--chart-2))" },
-} satisfies ChartConfig
-
 export function LanguageUsageChart() {
   const { languageUsageData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
   const { toast } = useToast();
+  const chartConfig = useMemo<ChartConfig>(() => (
+    languageUsageData.reduce<ChartConfig>((config, entry) => {
+      config[entry.language] = {
+        label: entry.language,
+        color: entry.fill,
+      };
+      return config;
+    }, {})
+  ), [languageUsageData]);
   
-  const topLanguage = languageUsageData.reduce((prev, current) => (prev.value > current.value) ? prev : current);
+  const topLanguage = languageUsageData.length > 0
+    ? languageUsageData.reduce((prev, current) => (prev.value > current.value) ? prev : current)
+    : { language: 'Wala pa', value: 0, fill: 'hsl(var(--muted-foreground))' };
   const total = languageUsageData.reduce((acc, current) => acc + current.value, 0);
   const topLanguagePercentage = total > 0 ? ((topLanguage.value / total) * 100).toFixed(1) : '0.0';
   const secondaryLanguage = languageUsageData
     .filter((entry) => entry.language !== topLanguage.language)
-    .reduce((prev, current) => (prev && prev.value > current.value ? prev : current), languageUsageData[0]);
+    .sort((left, right) => right.value - left.value)[0];
   
   const handleDownload = () => {
     toast({

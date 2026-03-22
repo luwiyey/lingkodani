@@ -76,4 +76,19 @@ describe("inbound-sms-service", () => {
     expect(secondMessage.message.caseStatus).toBe("open");
     expect(secondMessage.message.registrationRequired).toBe(false);
   });
+
+  it("asks for missing registration details in respectful English when the farmer texts in English", () => {
+    const created = createInboundSmsRecord({
+      id: "SMS-REGISTER-4",
+      phone: "+639171234568",
+      message: "REGISTER John Smith please",
+      farmers: [],
+      timestamp: "2026-03-22T08:05:00.000Z",
+    });
+
+    expect(created.newFarmer).toBeUndefined();
+    expect(created.message.detectedLanguage).toBe("English");
+    expect(created.message.aiAdvice).toContain("please send your");
+    expect(created.message.aiAdvice).toContain("sitio or zone");
+  });
 });

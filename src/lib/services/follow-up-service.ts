@@ -14,19 +14,29 @@ export function isFollowUpDue(message: SmsMessage, now = Date.now()) {
 }
 
 export function buildFollowUpBody(message: SmsMessage) {
+  const useEnglish = message.detectedLanguage === "English";
+
   if (message.registrationRequired) {
-    return "Kamusta po. Kung nais pa po ninyong ma-assist, pakisagot po ang kulang na registration details upang maitugma po namin ang inyong record sa system.";
+    return useEnglish
+      ? "Hello. If you still want assistance, please reply with the missing registration details so we can match your record in the system."
+      : "Kamusta po. Kung nais pa po ninyong ma-assist, pakisagot po ang kulang na registration details upang maitugma po namin ang inyong record sa system.";
   }
 
   if (message.clarificationNeeded) {
-    return "Kamusta po. Kung maaari po, pakisagot po ang huling clarification request upang makapagbigay po kami ng mas tumpak na payo.";
+    return useEnglish
+      ? "Hello. If possible, please reply to the last clarification request so we can give more accurate advice."
+      : "Kamusta po. Kung maaari po, pakisagot po ang huling clarification request upang makapagbigay po kami ng mas tumpak na payo.";
   }
 
   if (message.urgency === "high") {
-    return "Kamusta na po ang sitwasyon sa inyong bukid? Pakisabi kung lumalala pa ang problema upang ma-escalate agad namin ito.";
+    return useEnglish
+      ? "Hello. How is the situation in your field now? Please tell us if the problem is getting worse so we can escalate it quickly."
+      : "Kamusta na po ang sitwasyon sa inyong bukid? Pakisabi kung lumalala pa ang problema upang ma-escalate agad namin ito.";
   }
 
-  return "Kamusta po. Nakatulong po ba ang naunang payo? Maaari kayong mag-reply kung kailangan ninyo ng karagdagang gabay.";
+  return useEnglish
+    ? "Hello. Did the earlier advice help? You may reply if you still need additional guidance."
+    : "Kamusta po. Nakatulong po ba ang naunang payo? Maaari kayong mag-reply kung kailangan ninyo ng karagdagang gabay.";
 }
 
 export async function processDueFollowUpMessage(input: {

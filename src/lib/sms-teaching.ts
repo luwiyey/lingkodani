@@ -8,6 +8,7 @@ import type {
   SmsTrainingExample,
   SmsUrgency,
 } from "@/lib/types";
+import { normalizeSmsForMatching } from "@/lib/sms-normalization";
 
 type AnalysisLike = {
   parsedIntent: SmsIntent;
@@ -29,11 +30,7 @@ type MatchedLexiconRule = {
 const WORD_SEPARATOR = /[^\p{L}\p{N}]+/u;
 
 export function normalizeTeachingText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
+  return normalizeSmsForMatching(value).normalizedMessage;
 }
 
 export function tokenizeTeachingText(value: string) {

@@ -1,5 +1,15 @@
 import { findBestMatchingLexiconRule } from "@/lib/sms-teaching";
-import type { SafetyFlag, SmsIntent, SmsLexiconRule, SmsMessage } from "@/lib/types";
+import type {
+  SafetyFlag,
+  SmsDetectedLanguage,
+  SmsIntent,
+  SmsLexiconRule,
+  SmsMessage,
+} from "@/lib/types";
+import {
+  isFilipinoFamilyLanguage,
+  normalizeSmsMessage,
+} from "@/lib/sms-normalization";
 
 export type InboundSmsAnalysis = {
   parsedIntent: SmsIntent;
@@ -11,6 +21,7 @@ export type InboundSmsAnalysis = {
   analysisSource?: SmsMessage["analysisSource"];
   clarificationNeeded?: boolean;
   clarificationQuestion?: string;
+  detectedLanguage?: SmsDetectedLanguage;
 };
 
 const PHONE_NORMALIZER = /\D/g;
@@ -84,16 +95,23 @@ export function inferIntent(
     return matchedRule.intent;
   }
 
-  const lower = message.toLowerCase();
-  const tokens = tokenize(message);
+  const { normalizedMessage } = normalizeSmsMessage(message);
+  const lower = normalizedMessage.toLowerCase();
+  const tokens = tokenize(normalizedMessage);
   if (lower.startsWith("register")) return "REGISTER";
   if (hasPhrase(lower, "emergency", "baha", "bagyo", "lubog", "evacuate", "evacuation")) return "EMERGENCY";
-  if (hasWord(tokens, "peste", "uod", "daga", "leafminer", "borer") || hasPhrase(lower, "insekto", "may sakit")) return "PEST_DISEASE";
-  if (hasWord(tokens, "ulan", "panahon", "tubig") || hasPhrase(lower, "walang tubig", "kulang sa tubig", "malakas na ulan")) return "WEATHER_HELP";
-  if (hasWord(tokens, "sprayer", "hiram", "mahihiraman", "tractor")) return "REQUEST";
-  if (hasWord(tokens, "presyo")) return "PRICE_CHECK";
+  if (
+    hasWord(tokens, "peste", "uod", "daga", "leafminer", "borer", "bug", "worm", "kuhol") ||
+    hasPhrase(lower, "insekto", "may sakit", "rice bug", "black bug", "golden kuhol")
+  ) return "PEST_DISEASE";
+  if (
+    hasWord(tokens, "ulan", "panahon", "tubig", "drought", "rain", "flood", "flooded", "water") ||
+    hasPhrase(lower, "walang tubig", "kulang sa tubig", "malakas na ulan", "no water", "no irrigation")
+  ) return "WEATHER_HELP";
+  if (hasWord(tokens, "sprayer", "hiram", "mahihiraman", "tractor", "borrow", "need", "request", "pataba", "abono")) return "REQUEST";
+  if (hasWord(tokens, "presyo", "price", "market")) return "PRICE_CHECK";
   if (hasWord(tokens, "ani", "anihan", "harvest") || hasPhrase(lower, "nag ani", "mag-aani", "mag ani", "naani")) return "HARVEST";
-  if (hasWord(tokens, "tanim", "palay", "kamatis", "mais", "gulay", "okra", "sili") || hasPhrase(lower, "palayan", "pananim")) return "CROP_UPDATE";
+  if (hasWord(tokens, "tanim", "palay", "pagay", "kamatis", "mais", "gulay", "okra", "sili", "crop", "rice", "sitaw", "talong") || hasPhrase(lower, "palayan", "pananim", "rice field")) return "CROP_UPDATE";
   return "UNKNOWN";
 }
 
@@ -106,7 +124,7 @@ export function inferUrgency(
     return matchedRule.urgency;
   }
 
-  const lower = message.toLowerCase();
+  const lower = normalizeSmsMessage(message).normalizedMessage.toLowerCase();
   if (
     intent === "EMERGENCY" ||
     lower.includes("kagyat") ||
@@ -129,9 +147,9 @@ export function inferSafetyFlag(
     return matchedRule.safetyFlag;
   }
 
-  const lower = message.toLowerCase();
-  if (lower.includes("lason") || lower.includes("emergency") || lower.includes("baha")) return "High";
-  if (lower.includes("peste") || lower.includes("uod") || lower.includes("sira")) return "Medium";
+  const lower = normalizeSmsMessage(message).normalizedMessage.toLowerCase();
+  if (lower.includes("lason") || lower.includes("emergency") || lower.includes("baha") || lower.includes("flood")) return "High";
+  if (lower.includes("peste") || lower.includes("uod") || lower.includes("sira") || lower.includes("damage") || lower.includes("disease")) return "Medium";
   return "Low";
 }
 
@@ -144,9 +162,9 @@ export function inferTone(
     return matchedRule.tone;
   }
 
-  const lower = message.toLowerCase();
+  const lower = normalizeSmsMessage(message).normalizedMessage.toLowerCase();
   if (urgency === "high" || lower.includes("tulong") || lower.includes("kagyat")) return "Kritikal";
-  if (lower.includes("paano") || lower.includes("pwede") || lower.includes("po")) return "Nag-aalala";
+  if (lower.includes("paano") || lower.includes("pwede") || lower.includes("po") || lower.includes("please")) return "Nag-aalala";
   return "Neutral";
 }
 
@@ -154,31 +172,53 @@ export function inferAdvice(
   intent: SmsIntent,
   message: string,
   farmerName: string,
+  detectedLanguage: SmsDetectedLanguage,
   matchedRule?: SmsLexiconRule | null
 ) {
   if (matchedRule?.guidance.trim()) {
     return matchedRule.guidance.trim();
   }
 
+  const useEnglish = detectedLanguage === "English";
+  const useRespectfulFilipino = isFilipinoFamilyLanguage(detectedLanguage) || detectedLanguage === "Unknown";
+
   switch (intent) {
     case "REGISTER":
-      return `Opo, natanggap po namin ang inyong registration request, ${farmerName}. Susuriin po ito ng barangay team at magpapadala po kami ng kumpirmasyon kapag kumpleto na ang detalye.`;
+      return useEnglish
+        ? `We have received your registration request, ${farmerName}. The barangay team will review it and send confirmation once the details are complete.`
+        : `Opo, natanggap po namin ang inyong registration request, ${farmerName}. Susuriin po ito ng barangay team at magpapadala po kami ng kumpirmasyon kapag kumpleto na ang detalye.`;
     case "EMERGENCY":
-      return `Natanggap ang emergency report mula kay ${farmerName}. I-secure ang inyong taniman at hintayin ang susunod na alerto mula sa barangay habang sinusuri ng team ang sitwasyon.`;
+      return useEnglish
+        ? `We have received the emergency report from ${farmerName}. Please secure the farm area and wait for the next alert while the barangay team reviews the situation.`
+        : `Opo, natanggap po ang emergency report mula kay ${farmerName}. Paki-secure po ang inyong taniman at hintayin ang susunod na alerto habang sinusuri po ng barangay team ang sitwasyon.`;
     case "REQUEST":
-      return `Natanggap namin ang inyong kahilingan, ${farmerName}. Susuriin namin ang available na kagamitan o supply at magpapadala kami ng susunod na instruction sa inyo.`;
+      return useEnglish
+        ? `We have received your request, ${farmerName}. We will check the available equipment or supplies and send the next instructions shortly.`
+        : `Opo, natanggap po namin ang inyong kahilingan, ${farmerName}. Susuriin po namin ang available na kagamitan o supply at magpapadala po kami ng susunod na instruction sa inyo.`;
     case "PEST_DISEASE":
-      return `Salamat sa ulat, ${farmerName}. Sinuri ng system ang mensahe at minarkahan ito bilang posibleng concern sa peste o sakit. Magpapadala kami ng rekomendasyon matapos ang review ng AEW.`;
+      return useEnglish
+        ? `Thank you for the report, ${farmerName}. The system flagged this as a possible pest or disease concern. We will send guidance after AEW review.`
+        : `Salamat po sa ulat, ${farmerName}. Sinuri po ng system ang mensahe at minarkahan ito bilang posibleng concern sa peste o sakit. Magpapadala po kami ng rekomendasyon matapos ang review ng AEW.`;
     case "HARVEST":
-      return "Natanggap namin ang update tungkol sa ani. Maghahanda kami ng gabay sa susunod na hakbang para sa post-harvest handling at posibleng market coordination.";
+      return useEnglish
+        ? "We have received your harvest update. We will prepare guidance for the next steps on post-harvest handling and possible market coordination."
+        : "Opo, natanggap po namin ang update tungkol sa ani. Maghahanda po kami ng gabay sa susunod na hakbang para sa post-harvest handling at posibleng market coordination.";
     case "WEATHER_HELP":
-      return "Natanggap namin ang inyong ulat tungkol sa kondisyon ng panahon o tubig. Susuriin ito kasama ng iba pang field reports at magpapadala kami ng payo kung kinakailangan.";
+      return useEnglish
+        ? "We have received your report about weather or water conditions. We will review it with other field reports and send advice if needed."
+        : "Opo, natanggap po namin ang inyong ulat tungkol sa kondisyon ng panahon o tubig. Susuriin po ito kasama ng iba pang field reports at magpapadala po kami ng payo kung kinakailangan.";
     case "PRICE_CHECK":
-      return "Natanggap namin ang inyong tanong sa presyo. Susuriin ng system ang available market references at magpapadala kami ng sagot sa susunod na tugon.";
+      return useEnglish
+        ? "We have received your price inquiry. The system will check the available market references and send a response shortly."
+        : "Opo, natanggap po namin ang inyong tanong sa presyo. Susuriin po ng system ang available market references at magpapadala po kami ng sagot sa susunod na tugon.";
     case "CROP_UPDATE":
-      return "Natanggap ang inyong crop update. Idadagdag ito sa live feed para makita ng barangay agriculture team at ma-prioritize ang susunod na aksyon.";
+      return useEnglish
+        ? "We have received your crop update. It will be added to the live feed so the barangay agriculture team can review and prioritize the next action."
+        : "Opo, natanggap po ang inyong crop update. Idadagdag po ito sa live feed para makita ng barangay agriculture team at ma-prioritize ang susunod na aksyon.";
     default:
-      return `Natanggap namin ang inyong mensahe: "${message.slice(0, 60)}${message.length > 60 ? "..." : ""}". Susuriin ito ng barangay team at magpapadala kami ng tugon sa lalong madaling panahon.`;
+      return useEnglish
+        ? `We have received your message: "${message.slice(0, 60)}${message.length > 60 ? "..." : ""}". The barangay team will review it and send a response as soon as possible.`
+        : `${useRespectfulFilipino ? "Opo, " : ""}natanggap po namin ang inyong mensahe: "${message.slice(0, 60)}${message.length > 60 ? "..." : ""}". Susuriin po ito ng barangay team at magpapadala po kami ng tugon sa lalong madaling panahon.`;
   }
 }
 
@@ -188,6 +228,7 @@ export function analyzeInboundSms(
   knownFarmer = true,
   customRules: SmsLexiconRule[] = []
 ): InboundSmsAnalysis {
+  const normalization = normalizeSmsMessage(message);
   const matchedRule = findBestMatchingLexiconRule(message, customRules);
   const parsedIntent = inferIntent(message, matchedRule);
   const urgency = inferUrgency(message, parsedIntent, matchedRule);
@@ -211,8 +252,9 @@ export function analyzeInboundSms(
     urgency,
     safetyFlag,
     tone,
-    aiAdvice: inferAdvice(parsedIntent, message, farmerName, matchedRule),
+    aiAdvice: inferAdvice(parsedIntent, message, farmerName, normalization.detectedLanguage, matchedRule),
     aiConfidence: Math.max(baseConfidence, confidenceByIntent[parsedIntent]),
     analysisSource: "rules",
+    detectedLanguage: normalization.detectedLanguage,
   };
 }

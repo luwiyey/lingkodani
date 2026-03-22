@@ -192,6 +192,7 @@ export type FarmerEvidenceAttachment = {
 export type SmsMessageStatus = 'pending_approval' | 'approved' | 'replied' | 'rejected';
 
 export type SmsAnalysisSource = 'rules' | 'ai' | 'ai_fallback';
+export type SmsDetectedLanguage = 'Filipino' | 'English' | 'Taglish' | 'Ilocano' | 'Ilocano mix' | 'Unknown';
 export type SmsCaseStatus =
   | 'open'
   | 'awaiting_clarification'
@@ -247,6 +248,7 @@ export type SmsMessage = {
   officialReminderLastSentAt?: string;
   officialReminderCount?: number;
   analysisSource?: SmsAnalysisSource;
+  detectedLanguage?: SmsDetectedLanguage;
   clarificationNeeded?: boolean;
   clarificationQuestion?: string;
   parsedIntent: SmsIntent;

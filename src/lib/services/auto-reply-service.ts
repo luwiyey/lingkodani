@@ -46,14 +46,18 @@ export function buildAutoReplyBody(
   message: SmsMessage,
   settings: SystemSettings = defaultSystemSettings
 ) {
+  const useEnglish = message.detectedLanguage === "English";
+
   if (message.clarificationNeeded && message.clarificationQuestion) {
     const investigationTemplate = getSystemTemplate(settings, "investigation");
-    const baseBody = investigationTemplate
-      ? replaceSystemTemplateTokens(investigationTemplate.text, settings)
-      : message.clarificationQuestion;
+    const body = useEnglish
+      ? message.clarificationQuestion
+      : investigationTemplate
+        ? `${replaceSystemTemplateTokens(investigationTemplate.text, settings)} ${message.clarificationQuestion}`.trim()
+        : message.clarificationQuestion;
 
     return appendAfterHoursNotice(
-      `${baseBody} ${message.clarificationQuestion}`.trim(),
+      body,
       message,
       settings
     );
@@ -61,7 +65,9 @@ export function buildAutoReplyBody(
 
   if (message.urgency === "high" || message.parsedIntent === "EMERGENCY") {
     const emergencyTemplate = getSystemTemplate(settings, "emergency");
-    const body = emergencyTemplate
+    const body = useEnglish
+      ? `We have received your urgent report. While waiting for the AEW, please prioritize safety and avoid hazardous areas in the field. The barangay team will send follow-up guidance as soon as possible.`
+      : emergencyTemplate
       ? replaceSystemTemplateTokens(emergencyTemplate.text, settings)
       : `Natanggap ang inyong agarang ulat. Habang hinihintay ang AEW, unahin ang kaligtasan ng tao at iwasan muna ang mapanganib na bahagi ng bukid. Magpapadala ang barangay ng follow-up sa lalong madaling panahon.`;
 
@@ -74,7 +80,9 @@ export function buildAutoReplyBody(
   switch (message.parsedIntent) {
     case "PEST_DISEASE":
       return appendAfterHoursNotice(
-        confirmationTemplate
+        useEnglish
+          ? "We have received your report about a possible pest or disease issue. Please avoid applying chemicals until the barangay agriculture team has reviewed it."
+          : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
           : "Natanggap ang inyong ulat tungkol sa posibleng peste o sakit. Huwag munang mag-apply ng kemikal hangga't walang review mula sa barangay agriculture team. Magpapadala kami ng kasunod na payo sa lalong madaling panahon.",
         message,
@@ -82,7 +90,9 @@ export function buildAutoReplyBody(
       );
     case "REQUEST":
       return appendAfterHoursNotice(
-        resolutionTemplate
+        useEnglish
+          ? "We have received your request. We are checking the available equipment or supplies and will send the next update once the barangay team reviews it."
+          : resolutionTemplate
           ? replaceSystemTemplateTokens(resolutionTemplate.text, settings)
           : "Natanggap ang inyong kahilingan. Sinusuri na namin ang available na kagamitan o supply at magpapadala kami ng susunod na update kapag na-review na ito ng barangay team.",
         message,
@@ -90,7 +100,9 @@ export function buildAutoReplyBody(
       );
     case "WEATHER_HELP":
       return appendAfterHoursNotice(
-        confirmationTemplate
+        useEnglish
+          ? "We have received your report about weather or water conditions. Please continue monitoring your area while waiting for the next advisory from the barangay team."
+          : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
           : "Natanggap ang inyong ulat tungkol sa panahon o kondisyon ng tubig. Hinihiling namin na bantayan ang inyong lugar at hintayin ang kasunod na abiso mula sa barangay team.",
         message,
@@ -98,7 +110,9 @@ export function buildAutoReplyBody(
       );
     case "REGISTER":
       return appendAfterHoursNotice(
-        confirmationTemplate
+        useEnglish
+          ? "We have received your registration request. The barangay team will review the details and send confirmation after validation."
+          : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
           : "Opo, natanggap po ang inyong registration request. Susuriin po ng barangay team ang detalye at magpapadala po kami ng kumpirmasyon pagkatapos ng validation.",
         message,
@@ -106,7 +120,9 @@ export function buildAutoReplyBody(
       );
     default:
       return appendAfterHoursNotice(
-        confirmationTemplate
+        useEnglish
+          ? "We have received your message and placed it in the queue for barangay agriculture review. We will send a follow-up as soon as possible."
+          : confirmationTemplate
           ? replaceSystemTemplateTokens(confirmationTemplate.text, settings)
           : "Natanggap namin ang inyong mensahe at naka-queue na ito para sa agarang review ng barangay agriculture team. Magpapadala kami ng follow-up sa lalong madaling panahon.",
         message,

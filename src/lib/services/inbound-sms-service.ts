@@ -83,10 +83,10 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
         clarificationNeeded: true,
         clarificationQuestion:
           registrationAssessment?.clarificationPrompt ??
-          buildRegistrationPrompt(registrationAssessment?.missingFields),
+          buildRegistrationPrompt(registrationAssessment?.missingFields, registrationAssessment?.detectedLanguage),
         aiAdvice:
           registrationAssessment?.clarificationPrompt ??
-          buildRegistrationPrompt(registrationAssessment?.missingFields),
+          buildRegistrationPrompt(registrationAssessment?.missingFields, registrationAssessment?.detectedLanguage),
       }
     : isRegistrationIntent && registrationCandidate
       ? {
@@ -110,7 +110,7 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
   const aiAdvice =
     registrationRequired
       ? registrationAssessment?.clarificationPrompt ??
-        buildRegistrationPrompt(registrationAssessment?.missingFields)
+        buildRegistrationPrompt(registrationAssessment?.missingFields, registrationAssessment?.detectedLanguage)
       : analysis.aiAdvice;
 
   return {
@@ -131,6 +131,7 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
       slaDueAt: getSlaDueAt(timestamp, analysis.urgency),
       autoReplyEligibleAt: getAutoReplyEligibleAt(timestamp, settings),
       analysisSource: analysis.analysisSource ?? "rules",
+      detectedLanguage: analysis.detectedLanguage,
       clarificationNeeded: analysis.clarificationNeeded,
       clarificationQuestion: analysis.clarificationQuestion,
       parsedIntent: analysis.parsedIntent,

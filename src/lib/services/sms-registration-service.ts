@@ -1,4 +1,5 @@
-import type { Farmer } from "@/lib/types";
+import { normalizeSmsMessage } from "@/lib/sms-normalization";
+import type { Farmer, SmsDetectedLanguage } from "@/lib/types";
 
 const KNOWN_CROPS = [
   "palay",
@@ -87,45 +88,80 @@ function extractName(tokens: string[]) {
 }
 
 const REGISTRATION_REQUIRED_FIELDS = {
-  name: "buong pangalan",
-  sitio: "sitio o zone",
+  name: {
+    filipino: "buong pangalan",
+    english: "full name",
+  },
+  sitio: {
+    filipino: "sitio o zone",
+    english: "sitio or zone",
+  },
 } as const;
 
+type RegistrationRequiredField = keyof typeof REGISTRATION_REQUIRED_FIELDS;
+
+function describeRegistrationField(
+  field: RegistrationRequiredField,
+  detectedLanguage: SmsDetectedLanguage
+) {
+  return detectedLanguage === "English"
+    ? REGISTRATION_REQUIRED_FIELDS[field].english
+    : REGISTRATION_REQUIRED_FIELDS[field].filipino;
+}
+
 function getMissingRegistrationFields(farmer: Farmer) {
-  const missing: string[] = [];
+  const missing: RegistrationRequiredField[] = [];
 
   if (!farmer.name || farmer.name === "Hindi pa nakilalang magsasaka") {
-    missing.push(REGISTRATION_REQUIRED_FIELDS.name);
+    missing.push("name");
   }
 
   if (!farmer.sitio || farmer.sitio === "Hindi tukoy") {
-    missing.push(REGISTRATION_REQUIRED_FIELDS.sitio);
+    missing.push("sitio");
   }
 
   return missing;
 }
 
-function joinMissingFields(fields: string[]) {
-  if (fields.length === 0) {
+function joinMissingFields(fields: string[], detectedLanguage: SmsDetectedLanguage) {
+  const translatedFields = fields.map((field) =>
+    describeRegistrationField(field as RegistrationRequiredField, detectedLanguage)
+  );
+
+  if (translatedFields.length === 0) {
     return "";
   }
 
-  if (fields.length === 1) {
-    return fields[0];
+  if (translatedFields.length === 1) {
+    return translatedFields[0];
   }
 
-  if (fields.length === 2) {
-    return `${fields[0]} at ${fields[1]}`;
+  if (translatedFields.length === 2) {
+    return detectedLanguage === "English"
+      ? `${translatedFields[0]} and ${translatedFields[1]}`
+      : `${translatedFields[0]} at ${translatedFields[1]}`;
   }
 
-  return `${fields.slice(0, -1).join(", ")}, at ${fields[fields.length - 1]}`;
+  return detectedLanguage === "English"
+    ? `${translatedFields.slice(0, -1).join(", ")}, and ${translatedFields[translatedFields.length - 1]}`
+    : `${translatedFields.slice(0, -1).join(", ")}, at ${translatedFields[translatedFields.length - 1]}`;
 }
 
-export function buildRegistrationPrompt(missingFields?: string[]) {
+export function buildRegistrationPrompt(
+  missingFields?: RegistrationRequiredField[],
+  detectedLanguage: SmsDetectedLanguage = "Filipino"
+) {
   const normalizedMissingFields = (missingFields ?? []).filter(Boolean);
+  const useEnglish = detectedLanguage === "English";
 
   if (normalizedMissingFields.length > 0) {
-    return `Opo, natanggap po namin ang inyong registration request. Para maipasa po namin ito sa farmer approval, pakisend po ang ${joinMissingFields(normalizedMissingFields)}. Maaari rin po ninyong isama ang pangunahing pananim at lawak ng sakahan kung available.`;
+    return useEnglish
+      ? `We have received your registration request. To submit it for farmer approval, please send your ${joinMissingFields(normalizedMissingFields, detectedLanguage)}. You may also include your main crop and farm size if available.`
+      : `Opo, natanggap po namin ang inyong registration request. Para maipasa po namin ito sa farmer approval, pakisend po ang ${joinMissingFields(normalizedMissingFields, detectedLanguage)}. Maaari rin po ninyong isama ang pangunahing pananim at lawak ng sakahan kung available.`;
+  }
+
+  if (useEnglish) {
+    return "We could not yet match your registration details. Please reply using the format: REGISTER Name Zone MainCrop FarmSizeHa so we can submit it for farmer approval.";
   }
 
   return "Opo, hindi pa po namin kayo maitugma sa rehistro. Pakisagot po sa format na REGISTER Pangalan Zone PangunahingPananim LawakHa upang maipasa po namin kayo sa farmer approval.";
@@ -134,8 +170,9 @@ export function buildRegistrationPrompt(missingFields?: string[]) {
 export type RegistrationAssessment = {
   isRegistrationMessage: boolean;
   farmer: Farmer | null;
-  missingFields: string[];
+  missingFields: RegistrationRequiredField[];
   clarificationPrompt?: string;
+  detectedLanguage?: SmsDetectedLanguage;
 };
 
 export function assessRegistrationMessage(input: {
@@ -145,28 +182,31 @@ export function assessRegistrationMessage(input: {
   barangay?: string;
 }): RegistrationAssessment {
   const normalized = normalizeWhitespace(input.message);
+  const detectedLanguage = normalizeSmsMessage(input.message).detectedLanguage;
 
   if (!/^register\b/i.test(normalized)) {
     return {
       isRegistrationMessage: false,
       farmer: null,
       missingFields: [],
+      detectedLanguage,
     };
   }
 
   const payload = normalized.replace(/^register\b/i, "").trim();
 
   if (!payload) {
-    const missingFields = [
-      REGISTRATION_REQUIRED_FIELDS.name,
-      REGISTRATION_REQUIRED_FIELDS.sitio,
+    const missingFields: RegistrationRequiredField[] = [
+      "name",
+      "sitio",
     ];
 
     return {
       isRegistrationMessage: true,
       farmer: null,
       missingFields,
-      clarificationPrompt: buildRegistrationPrompt(missingFields),
+      clarificationPrompt: buildRegistrationPrompt(missingFields, detectedLanguage),
+      detectedLanguage,
     };
   }
 
@@ -192,7 +232,8 @@ export function assessRegistrationMessage(input: {
       isRegistrationMessage: true,
       farmer: null,
       missingFields,
-      clarificationPrompt: buildRegistrationPrompt(missingFields),
+      clarificationPrompt: buildRegistrationPrompt(missingFields, detectedLanguage),
+      detectedLanguage,
     };
   }
 
@@ -200,6 +241,7 @@ export function assessRegistrationMessage(input: {
     isRegistrationMessage: true,
     farmer,
     missingFields: [],
+    detectedLanguage,
   };
 }
 

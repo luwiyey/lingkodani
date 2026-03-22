@@ -7,6 +7,7 @@ import { useReportsTimeframe, type ReportsTimeframe } from '@/context/reports-ti
 import type { Resource, SmsMessage } from '@/lib/types';
 import { getEffectiveSmsCaseOutcome, isAwaitingFarmerConfirmation, isFarmerConfirmedResolution } from '@/lib/sms-case-outcomes';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
+import { normalizeSmsMessage } from '@/lib/sms-normalization';
 
 type Tone = 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
 type RiskAlertSeverity = 'Kritikal' | 'Babala';
@@ -38,6 +39,7 @@ const COLOR_1 = 'hsl(var(--chart-1))';
 const COLOR_2 = 'hsl(var(--chart-2))';
 const COLOR_3 = 'hsl(var(--chart-3))';
 const COLOR_4 = 'hsl(var(--chart-4))';
+const COLOR_5 = 'hsl(var(--chart-5))';
 const COLOR_DESTRUCTIVE = 'hsl(var(--destructive))';
 
 function asDate(value: string): Date {
@@ -87,7 +89,13 @@ function filterByTimeframe<T>(items: T[], getTimestamp: (item: T) => string, tim
 
 function tokensFromMessages(messages: SmsMessage[]): string[] {
   return messages
-    .flatMap((m) => m.message.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/))
+    .flatMap((message) =>
+      normalizeSmsMessage(message.message)
+        .normalizedMessage
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+    )
     .filter((t) => t.length >= 3 && !STOP_WORDS.has(t));
 }
 
@@ -116,11 +124,15 @@ function inferToneCounts(messages: SmsMessage[]) {
   return base;
 }
 
-function inferLanguage(message: string): 'Tagalog' | 'Taglish' {
-  const lower = message.toLowerCase();
+function inferLanguage(message: SmsMessage) {
+  if (message.detectedLanguage) {
+    return message.detectedLanguage;
+  }
+
+  const lower = message.message.toLowerCase();
   const englishHints = ['the', 'is', 'how', 'what', 'please', 'help', 'damage', 'leaf', 'borer', 'sprayer'];
   const englishHits = englishHints.filter((w) => lower.includes(w)).length;
-  return englishHits >= 2 ? 'Taglish' : 'Tagalog';
+  return englishHits >= 2 ? 'Taglish' : 'Filipino';
 }
 
 function countUniqueFarmers(messages: SmsMessage[]) {
@@ -133,7 +145,7 @@ function issueBreakdown(messages: SmsMessage[]) {
   let patubig = 0;
 
   for (const m of messages) {
-    const lower = m.message.toLowerCase();
+    const lower = normalizeSmsMessage(m.message).normalizedMessage.toLowerCase();
     const isPest = m.parsedIntent === 'PEST_DISEASE' || PEST_WORDS.some((w) => lower.includes(w));
     const isSakit = DISEASE_WORDS.some((w) => lower.includes(w));
     const isPatubig = m.parsedIntent === 'WEATHER_HELP' || WATER_WORDS.some((w) => lower.includes(w));
@@ -315,14 +327,17 @@ export function useAnalytics() {
       { tone: 'Positibo', count: toneCounts.Positibo, fill: COLOR_3 },
     ];
 
-    const languageCounts = { Tagalog: 0, Taglish: 0 };
+    const languageCounts = new Map<string, number>();
     for (const msg of sortedByTime) {
-      languageCounts[inferLanguage(msg.message)] += 1;
+      const language = inferLanguage(msg);
+      languageCounts.set(language, (languageCounts.get(language) ?? 0) + 1);
     }
-    const languageUsageData = [
-      { language: 'Tagalog', value: languageCounts.Tagalog, fill: COLOR_1 },
-      { language: 'Taglish', value: languageCounts.Taglish, fill: COLOR_2 },
-    ];
+    const languagePalette = [COLOR_1, COLOR_2, COLOR_3, COLOR_4, COLOR_5, COLOR_DESTRUCTIVE];
+    const languageUsageData = Array.from(languageCounts.entries()).map(([language, value], index) => ({
+      language,
+      value,
+      fill: languagePalette[index % languagePalette.length],
+    }));
 
     const messageLengthData = [
       { range: '1-20', count: 0 },
@@ -355,7 +370,7 @@ export function useAnalytics() {
       .map(([question, count]) => ({ question, count }));
     const highRiskKeywordData = RISK_WORDS.map((word) => ({
       word,
-      count: sortedByTime.filter((m) => m.message.toLowerCase().includes(word)).length,
+      count: sortedByTime.filter((message) => normalizeSmsMessage(message.message).normalizedMessage.toLowerCase().includes(word)).length,
     })).filter((item) => item.count > 0);
 
     const zoneCounter = new Map<string, number>();

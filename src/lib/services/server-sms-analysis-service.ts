@@ -4,6 +4,7 @@ import { isLiveMode } from "@/lib/config/app-mode";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
 import { enhanceInboundAnalysisWithClarification } from "@/lib/services/sms-clarification-service";
+import { ensureRespectfulSmsAdvice, normalizeSmsMessage } from "@/lib/sms-normalization";
 import {
   applyLexiconRuleToAnalysis,
   buildLexiconTeachingContext,
@@ -102,22 +103,23 @@ export async function analyzeInboundSmsWithFallback(input: {
 }): Promise<InboundSmsAnalysis> {
   const knownFarmer = Boolean(input.knownFarmer);
   const teachingData = await loadRuntimeTeachingData();
+  const normalization = normalizeSmsMessage(input.message);
   const matchedLexiconRule = findBestMatchingLexiconRule(
-    input.message,
+    normalization.normalizedMessage,
     teachingData.rules
   );
   const fallback = analyzeInboundSms(
-    input.message,
+    normalization.normalizedMessage,
     input.farmerName ?? "magsasaka",
     knownFarmer,
     teachingData.rules
   );
   const teachingContext = buildLexiconTeachingContext(
-    input.message,
+    normalization.normalizedMessage,
     teachingData.rules
   );
   const reviewedExamplesContext = buildReviewedExamplesContext(
-    input.message,
+    normalization.normalizedMessage,
     teachingData.examples
   );
 
@@ -125,7 +127,10 @@ export async function analyzeInboundSmsWithFallback(input: {
     return applyLexiconRuleToAnalysis(
       enhanceInboundAnalysisWithClarification({
         message: input.message,
-        analysis: fallback,
+        analysis: {
+          ...fallback,
+          detectedLanguage: normalization.detectedLanguage,
+        },
         knownFarmer,
       }),
       matchedLexiconRule
@@ -135,6 +140,8 @@ export async function analyzeInboundSmsWithFallback(input: {
   try {
     const output = await analyzeInboundSmsWithAi({
       message: input.message,
+      normalizedMessage: normalization.normalizedMessage,
+      detectedLanguage: normalization.detectedLanguage,
       farmerName: input.farmerName,
       knownFarmer: Boolean(input.knownFarmer),
       teachingContext: teachingContext || undefined,
@@ -150,11 +157,15 @@ export async function analyzeInboundSmsWithFallback(input: {
           urgency: output.urgency,
           safetyFlag: output.safetyFlag,
           tone: output.tone,
-          aiAdvice: sanitizeAdvice(output.aiAdvice, fallback.aiAdvice),
+          aiAdvice: ensureRespectfulSmsAdvice(
+            sanitizeAdvice(output.aiAdvice, fallback.aiAdvice),
+            normalization.detectedLanguage
+          ),
           aiConfidence: Number.isFinite(output.aiConfidence)
             ? Math.max(0, Math.min(1, output.aiConfidence))
             : fallback.aiConfidence,
           analysisSource: "ai",
+          detectedLanguage: normalization.detectedLanguage,
         },
       }),
       matchedLexiconRule
@@ -167,6 +178,7 @@ export async function analyzeInboundSmsWithFallback(input: {
         analysis: {
           ...fallback,
           analysisSource: "ai_fallback",
+          detectedLanguage: normalization.detectedLanguage,
         },
         knownFarmer,
       }),
