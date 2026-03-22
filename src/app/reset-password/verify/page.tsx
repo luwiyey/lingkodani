@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { buildLegalPageHref } from '@/lib/legal-links';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { PUBLIC_ENTRY_IMAGE_OVERLAY } from '@/lib/public-entry-theme';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 
 function readFriendlyVerificationError(error: unknown) {
@@ -179,7 +180,7 @@ function ResetPasswordVerifyPageContent() {
             data-ai-hint={resetBg.imageHint}
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,250,247,0.76),rgba(239,246,240,0.62),rgba(224,236,226,0.48))]" />
+        <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-1 items-center justify-center px-4 py-8">

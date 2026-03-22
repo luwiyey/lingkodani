@@ -32,6 +32,7 @@ import {
   type ApplicationChoice,
 } from "@/lib/onboarding";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { PUBLIC_ENTRY_IMAGE_OVERLAY } from "@/lib/public-entry-theme";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 import { cn } from "@/lib/utils";
 
@@ -265,7 +266,7 @@ export default function StartPage() {
             data-ai-hint={backgroundImage.imageHint}
           />
         )}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,250,247,0.78),rgba(239,246,240,0.64),rgba(224,236,226,0.5))]" />
+        <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center">
