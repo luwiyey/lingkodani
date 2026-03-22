@@ -33,7 +33,19 @@ jobs:
           BASE_URL: ${{ secrets.LINGKOD_ANI_BASE_URL }}
           AUTOMATION_TOKEN: ${{ secrets.SYSTEM_AUTOMATION_TOKEN }}
         run: |
-          curl --fail --show-error --silent \
+          RESPONSE_FILE="$(mktemp)"
+          HTTP_STATUS=$(curl --show-error --silent \
+            --output "$RESPONSE_FILE" \
+            --write-out "%{http_code}" \
             --request POST \
             --header "Authorization: Bearer ${AUTOMATION_TOKEN}" \
-            "${BASE_URL}/api/system/process-follow-ups"
+            "${BASE_URL}/api/system/process-follow-ups")
+
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat "$RESPONSE_FILE"
+          echo
+
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            exit 1
+          fi
