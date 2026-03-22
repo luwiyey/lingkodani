@@ -71,6 +71,22 @@ function getRiskBadgeClassName(flag: SmsMessage['safetyFlag']) {
   return successBadgeClassName;
 }
 
+function getAnalysisSourceLabel(analysisSource: SmsMessage["analysisSource"]) {
+  if (!isLiveMode) {
+    return "Demo";
+  }
+
+  if (analysisSource === "ai_fallback") {
+    return "AI fallback";
+  }
+
+  if (analysisSource === "rules") {
+    return "Rules";
+  }
+
+  return "AI";
+}
+
 function createReviewDraft(message: SmsMessage): ReviewDraft {
   return {
     aiAdvice: message.aiAdvice,
@@ -247,7 +263,7 @@ function SmsMessageCard({
                         <Badge variant="outline" className={getRiskBadgeClassName(message.safetyFlag)}>{message.safetyFlag} Risk</Badge>
                         <Badge variant="outline" className={neutralBadgeClassName}>Conf: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
                         <Badge variant="outline" className={neutralBadgeClassName}>
-                          Source: {message.analysisSource === 'ai_fallback' ? 'AI fallback' : message.analysisSource === 'rules' ? 'Rules' : 'AI'}
+                          Source: {getAnalysisSourceLabel(message.analysisSource)}
                         </Badge>
                         {message.caseStatus && <Badge variant="outline" className={neutralBadgeClassName}>Case: {message.caseStatus}</Badge>}
                         <CaseOutcomeBadge message={message} />
