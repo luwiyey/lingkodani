@@ -45,6 +45,10 @@ function readFriendlyResetError(error: unknown) {
     return 'Masyado nang maraming reset request. Maghintay muna ng ilang minuto bago subukan muli.';
   }
 
+  if (normalized.includes('user-not-found')) {
+    return 'Mukhang wala pang existing live account para sa email na ito. Kailangan muna itong i-set up ng developer o barangay admin bago magamit ang reset password.';
+  }
+
   return 'Hindi naipadala ang password reset email. Subukan muli pagkatapos ng ilang sandali.';
 }
 
@@ -156,6 +160,20 @@ function ResetPasswordPageContent() {
                 </div>
               </div>
 
+              <div className="rounded-[calc(var(--radius)+4px)] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <div className="flex items-start gap-3">
+                  <KeyRound className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="space-y-2">
+                    <p>
+                      Para lang ito sa <span className="font-semibold">existing live accounts</span> na na-set up na ng developer o barangay admin.
+                    </p>
+                    <p>
+                      Kung wala kang natanggap na reset email pagkatapos ng ilang minuto, malamang ay hindi pa naka-provision ang account mo o maling email ang nailagay.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <HoverTooltip text="Ipadala ang password reset email sa inilagay na address.">
                 <Button type="submit" className="mt-3 h-12 w-full text-base font-semibold" disabled={isSubmitting}>
                   {isSubmitting ? 'Nagpapadala ng email...' : 'Ipadala ang Reset Link'}
@@ -164,6 +182,9 @@ function ResetPasswordPageContent() {
             </form>
 
             <div className="mt-5 space-y-2 text-center text-sm">
+              <p className="text-muted-foreground">
+                Wala ka pang live account? Makipag-ugnayan muna sa developer o barangay admin para ma-set up ang access mo.
+              </p>
               <Link href="/login" className="text-muted-foreground underline hover:text-foreground">
                 Bumalik sa login
               </Link>

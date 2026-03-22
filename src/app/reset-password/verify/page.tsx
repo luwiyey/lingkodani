@@ -117,10 +117,10 @@ function ResetPasswordVerifyPageContent() {
     }
 
     if (emailFromQuery) {
-      return `Nagpadala kami ng password reset link sa ${emailFromQuery}. Tingnan ang inbox o spam folder, pagkatapos ay buksan ang link para maitakda ang bagong password.`;
+      return `Nagpadala kami ng password reset link sa ${emailFromQuery}. Tingnan ang inbox o spam folder, pagkatapos ay buksan ang link para maitakda ang bagong password. Kung walang dumating na email, maaaring hindi pa naka-provision ang account na ito sa live system.`;
     }
 
-    return 'Tingnan ang iyong inbox para sa password reset link. Depende sa Firebase setup ng project, maaaring sa hosted reset screen muna magbukas bago ka makabalik sa app.';
+    return 'Tingnan ang iyong inbox para sa password reset link. Depende sa Firebase setup ng project, maaaring sa hosted reset screen muna magbukas bago ka makabalik sa app. Kung walang dumating na email, maaaring hindi pa naka-provision ang account mo.';
   }, [codeError, emailFromQuery, isCheckingCode, isResetLinkMode]);
 
   const handleResetPassword = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -296,6 +296,9 @@ function ResetPasswordVerifyPageContent() {
                       </p>
                     </div>
                   </div>
+                </div>
+                <div className="rounded-[calc(var(--radius)+4px)] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  Kung wala kang natanggap na reset email sa loob ng ilang minuto, posibleng hindi pa naka-set up ng developer o barangay admin ang live account na ito.
                 </div>
                 <Button asChild className="w-full">
                   <Link href="/login">Bumalik sa login</Link>
