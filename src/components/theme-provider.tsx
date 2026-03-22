@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-type Theme = "light" | "night"
+type Theme = "light" | "dark"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -34,7 +34,7 @@ export function ThemeProvider({
     }
     const storedTheme = localStorage.getItem(storageKey);
     if (storedTheme === "dark" || storedTheme === "contrast-dark" || storedTheme === "night") {
-      return "night";
+      return "dark";
     }
     return "light";
   })
@@ -44,9 +44,6 @@ export function ThemeProvider({
 
     root.classList.remove("light", "dark", "night", "contrast-light", "contrast-dark")
     root.classList.add(theme)
-    if (theme === "night") {
-      root.classList.add("dark")
-    }
   }, [theme])
 
   const value = {
