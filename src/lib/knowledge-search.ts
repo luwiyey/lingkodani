@@ -11,6 +11,27 @@ export type SuggestedKnowledgeTopic = {
   keywords: string[];
 };
 
+function cleanSuggestionTerm(value: string) {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[?.,;:]+$/g, "");
+}
+
+function buildQuestionSuggestions(term: string) {
+  const cleaned = cleanSuggestionTerm(term);
+
+  if (!cleaned) {
+    return [] as string[];
+  }
+
+  return [
+    `Paano sugpuin ang ${cleaned}?`,
+    `Ano ang dapat gawin kapag may ${cleaned}?`,
+    `Mga senyales ng ${cleaned}`,
+  ];
+}
+
 export function buildKnowledgeAutocompleteSuggestions(
   query: string,
   articles: KnowledgeArticle[],
@@ -28,12 +49,14 @@ export function buildKnowledgeAutocompleteSuggestions(
     const title = article.title.trim();
     if (title.toLowerCase().includes(normalizedQuery)) {
       suggestions.add(title);
+      buildQuestionSuggestions(title).forEach((suggestion) => suggestions.add(suggestion));
     }
 
     for (const keyword of article.keywords) {
       const normalizedKeyword = keyword.trim();
       if (normalizedKeyword.toLowerCase().includes(normalizedQuery)) {
         suggestions.add(normalizedKeyword);
+        buildQuestionSuggestions(normalizedKeyword).forEach((suggestion) => suggestions.add(suggestion));
       }
     }
   }

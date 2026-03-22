@@ -67,6 +67,7 @@ export async function POST(request: Request) {
         directAnswer: fallback.directAnswer,
         relevantArticleIds: fallback.articles.map((article) => article.id),
         relevantArticles: fallback.articles,
+        answerMode: "local_only",
         usedWebGrounding: false,
         webSources: [],
         webSearchQueries: [],
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
           directAnswer: groundedResult.directAnswer,
           relevantArticleIds: prioritizedArticles.map((article) => article.id),
           relevantArticles: prioritizedArticles,
+          answerMode: groundedResult.usedWebGrounding ? "local_web" : "local_ai",
           usedWebGrounding: groundedResult.usedWebGrounding,
           webSources: groundedResult.webSources,
           webSearchQueries: groundedResult.webSearchQueries,
@@ -106,6 +108,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ...result,
       relevantArticles,
+      answerMode: "local_ai",
       usedWebGrounding: false,
       webSources: [],
       webSearchQueries: [],

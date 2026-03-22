@@ -51,5 +51,6 @@ describe("knowledge-search", () => {
 
     expect(suggestions).toContain("Gabay sa Rice Bugs");
     expect(suggestions).toContain("rice bugs");
+    expect(suggestions.some((suggestion) => suggestion.startsWith("Paano sugpuin ang"))).toBe(true);
   });
 });

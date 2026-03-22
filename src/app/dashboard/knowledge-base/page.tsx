@@ -27,10 +27,23 @@ import { Switch } from '@/components/ui/switch';
 type SearchResultsState = {
   directAnswer: string;
   articles: KnowledgeArticle[];
+  answerMode: 'local_only' | 'local_ai' | 'local_web';
   usedWebGrounding: boolean;
   webSearchQueries: string[];
   webSources: { title: string; url: string }[];
 };
+
+function getAnswerModeLabel(answerMode: SearchResultsState['answerMode']) {
+  if (answerMode === 'local_web') {
+    return 'Local + Gemini + Web';
+  }
+
+  if (answerMode === 'local_ai') {
+    return 'Local + Gemini';
+  }
+
+  return 'Local only';
+}
 
 export default function KnowledgeBasePage() {
   const { knowledgeArticles, addKnowledgeArticle, smsMessages } = useData();
@@ -201,6 +214,7 @@ export default function KnowledgeBasePage() {
               directAnswer?: string;
               relevantArticleIds?: string[];
               relevantArticles?: KnowledgeArticle[];
+              answerMode?: SearchResultsState['answerMode'];
               usedWebGrounding?: boolean;
               webSearchQueries?: string[];
               webSources?: { title?: string; url?: string }[];
@@ -214,6 +228,7 @@ export default function KnowledgeBasePage() {
             setSearchResults({
               directAnswer: payload.directAnswer?.trim() || localResult.directAnswer,
               articles: relevantArticles.length > 0 ? relevantArticles : localResult.articles,
+              answerMode: payload.answerMode ?? (payload.usedWebGrounding ? 'local_web' : 'local_ai'),
               usedWebGrounding: Boolean(payload.usedWebGrounding),
               webSearchQueries: Array.isArray(payload.webSearchQueries) ? payload.webSearchQueries.filter(Boolean) : [],
               webSources: Array.isArray(payload.webSources)
@@ -232,6 +247,7 @@ export default function KnowledgeBasePage() {
         setSearchResults({
           directAnswer: localResult.directAnswer,
           articles: localResult.articles,
+          answerMode: 'local_only',
           usedWebGrounding: false,
           webSearchQueries: [],
           webSources: [],
@@ -243,6 +259,7 @@ export default function KnowledgeBasePage() {
         setSearchResults({
           directAnswer: fallback.directAnswer,
           articles: fallback.articles,
+          answerMode: 'local_only',
           usedWebGrounding: false,
           webSearchQueries: [],
           webSources: [],
@@ -393,7 +410,9 @@ export default function KnowledgeBasePage() {
                 <CardHeader>
                     <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle className="flex items-center gap-2"><Bot className="text-primary"/> Sagot ng Search Assistant</CardTitle>
-                      <Badge variant="secondary">Gemini</Badge>
+                      <Badge variant={searchResults.answerMode === 'local_only' ? 'outline' : 'secondary'}>
+                        {getAnswerModeLabel(searchResults.answerMode)}
+                      </Badge>
                       <Badge variant="outline">Local knowledge</Badge>
                       {searchResults.usedWebGrounding ? <Badge variant="secondary">Web grounding</Badge> : null}
                       <HelpDialog title="Sagot ng Search Assistant" tooltipText="Unawain kung paano binuo ang sagot.">
@@ -405,6 +424,36 @@ export default function KnowledgeBasePage() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-foreground">{searchResults.directAnswer}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {searchResults.articles.map((article) => (
+                        <Button
+                          key={`citation-local-${article.id}`}
+                          asChild
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full"
+                        >
+                          <Link href={`/dashboard/knowledge-base/${article.id}`}>
+                            Lokal: {article.title}
+                          </Link>
+                        </Button>
+                      ))}
+                      {searchResults.webSources.map((source) => (
+                        <Button
+                          key={`citation-web-${source.url}`}
+                          asChild
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full"
+                        >
+                          <a href={source.url} target="_blank" rel="noreferrer">
+                            Web: {source.title}
+                          </a>
+                        </Button>
+                      ))}
+                    </div>
                     {searchResults.webSearchQueries.length > 0 ? (
                       <div className="mt-4 flex flex-wrap gap-2">
                         {searchResults.webSearchQueries.map((query) => (
