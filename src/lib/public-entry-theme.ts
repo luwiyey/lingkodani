@@ -4,4 +4,4 @@ export const PUBLIC_ENTRY_BACKGROUND_ALT =
 export const PUBLIC_ENTRY_BACKGROUND_HINT = "rice field";
 
 export const PUBLIC_ENTRY_IMAGE_OVERLAY =
-  "absolute inset-0 bg-[rgba(20,83,45,0.64)]";
+  "absolute inset-0 bg-[rgba(18,68,38,0.74)]";
