@@ -1,4 +1,4 @@
-export const PUBLIC_ENTRY_BACKGROUND_IMAGE = "/hero-farm.png";
+export const PUBLIC_ENTRY_BACKGROUND_IMAGE = "/public-entry-rice.jpg";
 export const PUBLIC_ENTRY_BACKGROUND_ALT =
   "Rice field landscape used across Lingkod-Ani public entry pages";
 export const PUBLIC_ENTRY_BACKGROUND_HINT = "rice field";
