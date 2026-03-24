@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { buildLegalPageHref } from "@/lib/legal-links";
 import {
   PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_BACKGROUND_IMAGE_CLASS,
   PUBLIC_ENTRY_IMAGE_OVERLAY,
 } from "@/lib/public-entry-theme";
 
@@ -68,7 +69,7 @@ export default function LandingPage() {
               src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
               alt="Rice field landscape for the Lingkod-Ani landing page"
               fill
-              className="object-cover"
+              className={PUBLIC_ENTRY_BACKGROUND_IMAGE_CLASS}
               priority
             />
             <div className={PUBLIC_ENTRY_IMAGE_OVERLAY} />

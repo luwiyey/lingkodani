@@ -24,6 +24,7 @@ import {
   PUBLIC_ENTRY_BACKGROUND_ALT,
   PUBLIC_ENTRY_BACKGROUND_HINT,
   PUBLIC_ENTRY_BACKGROUND_IMAGE,
+  PUBLIC_ENTRY_BACKGROUND_IMAGE_CLASS,
   PUBLIC_ENTRY_IMAGE_OVERLAY,
 } from '@/lib/public-entry-theme';
 
@@ -112,7 +113,7 @@ function RequestAccessPageContent() {
           src={PUBLIC_ENTRY_BACKGROUND_IMAGE}
           alt={PUBLIC_ENTRY_BACKGROUND_ALT}
           fill
-          className="object-cover"
+          className={PUBLIC_ENTRY_BACKGROUND_IMAGE_CLASS}
           priority
           data-ai-hint={PUBLIC_ENTRY_BACKGROUND_HINT}
         />
