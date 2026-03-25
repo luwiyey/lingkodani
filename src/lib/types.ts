@@ -21,6 +21,7 @@ export type UserPermissions = {
   manageSystemTeaching?: boolean;
   accessDataCenter?: boolean;
 };
+export type InviteDeliveryStatus = 'emailed' | 'manual_link' | 'email_failed';
 
 export type UserStatus = 'active' | 'pending_setup' | 'disabled';
 export type PreferredWorkspace = 'simple' | 'detailed';
@@ -55,6 +56,11 @@ export type User = {
   permissions?: UserPermissions;
   status?: UserStatus;
   preferredWorkspace?: PreferredWorkspace;
+  inviteDeliveryStatus?: InviteDeliveryStatus;
+  inviteSentAt?: string;
+  inviteDeliveryError?: string;
+  inviteDeliveryProvider?: string;
+  inviteSetupLinkGeneratedAt?: string;
   createdAt?: string;
   updatedAt?: string;
   lastLoginAt?: string;
@@ -207,7 +213,7 @@ export type SmsCaseOutcomeStatus =
   | 'needs_follow_up'
   | 'referred'
   | 'resolved';
-export type SmsSourceProvider = 'demo' | 'generic' | 'twilio' | 'semaphore' | 'smsgate' | 'textbee' | 'unknown';
+export type SmsSourceProvider = 'demo' | 'generic' | 'simulation' | 'twilio' | 'semaphore' | 'smsgate' | 'textbee' | 'unknown';
 
 export type SmsMessage = {
   id: string;
@@ -326,7 +332,7 @@ export type LogbookEntry = {
     title: string;
     description: string;
     icon?: LucideIcon;
-    data?: any;
+    data?: unknown;
 };
 
 export type AuditLog = {

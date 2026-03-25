@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import { randomBytes } from "crypto";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
 import { createAuditEntry } from "@/lib/services/audit-service";
+import {
+  sendProvisioningInviteEmail,
+  type SendProvisioningInviteResult,
+} from "@/lib/server/invite-email";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
+import {
+  recordRuntimeHealthFailure,
+  recordRuntimeHealthSuccess,
+  recordRuntimeHealthWarning,
+} from "@/lib/system-health";
 import type { User, UserRole } from "@/lib/types";
 import { withResolvedUserPermissions } from "@/lib/user-permissions";
 
@@ -58,6 +66,11 @@ function buildUserProfile(input: {
   status?: User["status"];
   preferredWorkspace?: User["preferredWorkspace"];
   existing?: Partial<User>;
+  inviteDeliveryStatus?: User["inviteDeliveryStatus"];
+  inviteSentAt?: string;
+  inviteDeliveryError?: string;
+  inviteDeliveryProvider?: string;
+  inviteSetupLinkGeneratedAt?: string;
 }): User {
   const timestamp = new Date().toISOString();
   return withResolvedUserPermissions<User>({
@@ -72,9 +85,69 @@ function buildUserProfile(input: {
     phone: input.phone ?? input.existing?.phone,
     status: input.status ?? input.existing?.status ?? "pending_setup",
     preferredWorkspace: input.preferredWorkspace ?? input.existing?.preferredWorkspace ?? (input.role === "developer" ? "detailed" : "simple"),
+    inviteDeliveryStatus: input.inviteDeliveryStatus ?? input.existing?.inviteDeliveryStatus,
+    inviteSentAt: input.inviteSentAt ?? input.existing?.inviteSentAt,
+    inviteDeliveryError: input.inviteDeliveryError ?? input.existing?.inviteDeliveryError,
+    inviteDeliveryProvider: input.inviteDeliveryProvider ?? input.existing?.inviteDeliveryProvider,
+    inviteSetupLinkGeneratedAt: input.inviteSetupLinkGeneratedAt ?? input.existing?.inviteSetupLinkGeneratedAt,
     createdAt: input.existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
   });
+}
+
+function resolveRequestOrigin(request: Request) {
+  const url = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+
+  if (forwardedHost) {
+    const protocol = forwardedProto?.trim() || url.protocol.replace(":", "");
+    return `${protocol}://${forwardedHost.trim()}`;
+  }
+
+  return url.origin;
+}
+
+function buildProvisioningContinueUrl(request: Request, email: string) {
+  return `${resolveRequestOrigin(request)}/reset-password/verify?email=${encodeURIComponent(email)}`;
+}
+
+async function buildProvisioningSetupLink(input: {
+  request: Request;
+  email: string;
+}) {
+  const adminAuth = getServerAuth();
+
+  return adminAuth.generatePasswordResetLink(input.email, {
+    url: buildProvisioningContinueUrl(input.request, input.email),
+  });
+}
+
+function summarizeInviteDelivery(result: SendProvisioningInviteResult) {
+  if (!result.configured) {
+    return {
+      inviteDeliveryStatus: "manual_link" as const,
+      inviteDeliveryProvider: "manual",
+      inviteDeliveryError: result.error,
+      includeSetupLinkInResponse: true,
+    };
+  }
+
+  if (result.sent) {
+    return {
+      inviteDeliveryStatus: "emailed" as const,
+      inviteDeliveryProvider: result.provider,
+      inviteDeliveryError: undefined,
+      includeSetupLinkInResponse: false,
+    };
+  }
+
+  return {
+    inviteDeliveryStatus: "email_failed" as const,
+    inviteDeliveryProvider: result.provider,
+    inviteDeliveryError: result.error,
+    includeSetupLinkInResponse: true,
+  };
 }
 
 async function markMatchingAccessRequestsProvisioned(input: {
@@ -122,7 +195,7 @@ export async function POST(request: Request) {
     const phone = normalizeText(body.phone);
     const requestedRole = normalizeRole(body.role);
     const role = allowDeveloperProvisioning() ? requestedRole : "barangay";
-    const status = normalizeStatus(body.status, "active");
+    const status = normalizeStatus(body.status, "pending_setup");
     const preferredWorkspace = normalizeWorkspace(body.preferredWorkspace, role);
 
     if (!email || !name || !title || !phone) {
@@ -142,7 +215,7 @@ export async function POST(request: Request) {
     const db = getServerFirestore();
     const adminAuth = getServerAuth();
     let firebaseUser = null;
-    let temporaryPassword: string | undefined;
+    let createdFirebaseUser = false;
 
     try {
       firebaseUser = await adminAuth.getUserByEmail(email);
@@ -154,12 +227,11 @@ export async function POST(request: Request) {
     }
 
     if (!firebaseUser) {
-      temporaryPassword = `Lingkod!${randomBytes(4).toString("hex")}`;
       firebaseUser = await adminAuth.createUser({
         email,
-        password: temporaryPassword,
         displayName: name,
       });
+      createdFirebaseUser = true;
     }
 
     const userRef = db.collection(firebaseCollections.users).doc(firebaseUser.uid);
@@ -172,6 +244,31 @@ export async function POST(request: Request) {
       );
     }
 
+    let setupLink = "";
+
+    try {
+      setupLink = await buildProvisioningSetupLink({
+        request,
+        email,
+      });
+    } catch (error) {
+      if (createdFirebaseUser) {
+        await adminAuth.deleteUser(firebaseUser.uid).catch(() => {
+          // Ignore rollback failures and surface the original invite-link error.
+        });
+      }
+
+      throw error;
+    }
+
+    const inviteResult = await sendProvisioningInviteEmail({
+      email,
+      name,
+      setupLink,
+    });
+    const inviteSummary = summarizeInviteDelivery(inviteResult);
+    const inviteTimestamp = new Date().toISOString();
+
     const profile = buildUserProfile({
       email,
       name,
@@ -181,9 +278,38 @@ export async function POST(request: Request) {
       phone,
       status,
       preferredWorkspace,
+      inviteDeliveryStatus: inviteSummary.inviteDeliveryStatus,
+      inviteSentAt: inviteTimestamp,
+      inviteDeliveryError: inviteSummary.inviteDeliveryError,
+      inviteDeliveryProvider: inviteSummary.inviteDeliveryProvider,
+      inviteSetupLinkGeneratedAt: inviteTimestamp,
     });
 
     await userRef.set(profile);
+
+    try {
+      if (!inviteResult.configured) {
+        await recordRuntimeHealthWarning("invite_email", "Invite Email", {
+          provider: inviteSummary.inviteDeliveryProvider,
+          email,
+          reason: inviteResult.error,
+        });
+      } else if (inviteResult.sent) {
+        await recordRuntimeHealthSuccess("invite_email", "Invite Email", {
+          provider: inviteResult.provider,
+          email,
+          messageId: inviteResult.messageId,
+        });
+      } else {
+        await recordRuntimeHealthFailure("invite_email", "Invite Email", inviteResult.error ?? "Hindi naipadala ang invite email.", {
+          provider: inviteResult.provider,
+          email,
+        });
+      }
+    } catch (error) {
+      console.error("Invite email runtime health logging failed.", error);
+    }
+
     await markMatchingAccessRequestsProvisioned({
       email,
       actorName: auth.profile.name ?? auth.email,
@@ -192,14 +318,17 @@ export async function POST(request: Request) {
       id: `AUD${Date.now()}-${firebaseUser.uid}`,
       user: auth.profile.name ?? auth.email,
       action: "CREATE_USER_ACCESS",
-      details: `${profile.name} (${profile.email}) - ${profile.role}, ${profile.status}, ${profile.preferredWorkspace}`,
+      details: `${profile.name} (${profile.email}) - ${profile.role}, ${profile.status}, ${profile.preferredWorkspace}, invite:${profile.inviteDeliveryStatus ?? "manual_link"}`,
     });
     await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
 
     return NextResponse.json({
       created: true,
       profile,
-      temporaryPassword,
+      provisioningMethod: "password_reset_link",
+      inviteDeliveryStatus: inviteSummary.inviteDeliveryStatus,
+      inviteEmailSent: inviteResult.sent,
+      setupLink: inviteSummary.includeSetupLinkInResponse ? setupLink : "",
     });
   } catch {
     return NextResponse.json(

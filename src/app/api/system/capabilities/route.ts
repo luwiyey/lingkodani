@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { RuntimeCapabilities } from "@/lib/runtime-capabilities";
+import { isLiveSmsTestModeEnabled } from "@/lib/live-sms-test-mode";
 import {
   readLiveSmsProvider,
   readSmsgateDeviceId,
@@ -9,6 +10,7 @@ import {
   readTextbeeApiKey,
   readTextbeeDeviceId,
 } from "@/lib/providers/sms/live-sms-config";
+import { resolveInviteEmailConfig } from "@/lib/server/invite-email";
 
 function isPresent(value: string | undefined) {
   return typeof value === "string" && value.trim().length > 0;
@@ -135,6 +137,8 @@ function resolveStorageUploadConfigured(mode: "demo" | "live") {
 export async function GET() {
   const mode = readMode();
   const realSmsEnabled = readRealSmsEnabled();
+  const liveSmsTestModeEnabled = mode === "live" && isLiveSmsTestModeEnabled(process.env);
+  const inviteEmailConfig = resolveInviteEmailConfig(process.env);
   const aiConfigured = isPresent(process.env.GOOGLE_GENAI_API_KEY) || isPresent(process.env.GEMINI_API_KEY);
   const firebaseAdminConfigured = resolveFirebaseAdminConfigured();
   const liveSmsStatus = resolveLiveSmsStatus(mode, realSmsEnabled);
@@ -148,6 +152,8 @@ export async function GET() {
     aiConfigured,
     realSmsEnabled,
     liveSmsConfigured: liveSmsStatus.configured,
+    liveSmsTestModeEnabled,
+    inviteEmailConfigured: inviteEmailConfig.configured,
     firebaseAdminConfigured,
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
@@ -157,11 +163,20 @@ export async function GET() {
       mode === "live"
         ? "Araw-araw na background checks sa kasalukuyang hosting setup, plus manual reruns kapag kailangan."
         : "Demo/manual automation only",
+    knownBuildWarnings: [
+      "Maaaring lumabas pa rin ang non-blocking Genkit/OpenTelemetry build warning. Kung successful ang build at gumagana ang AI routes, puwedeng magpatuloy ang deployment.",
+    ],
     reasons: {
       ai: aiConfigured
         ? "May configured AI credentials ang server. Hindi nito awtomatikong ibig sabihin na healthy ang model runtime sa bawat request, kaya kailangan pa ring bantayan ang fallback, latency, at human-review states."
         : "Naka-lock muna ang AI feature habang hindi pa configured ang Gemini/Genkit service sa server.",
       liveSms: liveSmsStatus.configured ? undefined : liveSmsStatus.reason,
+      liveSmsTestMode: liveSmsTestModeEnabled
+        ? "Naka-enable ngayon ang developer-only live SMS preview route para sa controlled smoke testing. I-disable muli ito pagkatapos ng tests."
+        : "Naka-lock ngayon ang live SMS preview route. I-enable lang ito sa controlled developer smoke tests.",
+      inviteEmail: inviteEmailConfig.configured
+        ? "Handa na ang automatic invite email delivery para sa bagong staff provisioning."
+        : inviteEmailConfig.reason,
       storageUpload: storageUploadConfigured
         ? undefined
         : "Naka-lock muna ang file upload habang hindi pa kumpleto ang live Firebase web/storage setup.",

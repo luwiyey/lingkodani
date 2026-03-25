@@ -474,7 +474,14 @@ export default function DeveloperPage() {
                     <TableCell className="px-2 py-4 md:px-4"><Badge variant="secondary">{user.role}</Badge></TableCell>
                     <TableCell className="px-2 py-4 md:px-4"><Badge variant="outline">{user.preferredWorkspace ?? 'simple'}</Badge></TableCell>
                     <TableCell className="px-2 py-4 md:px-4">
-                      <Badge variant={user.status === 'disabled' ? 'destructive' : user.status === 'active' ? 'default' : 'outline'}>{user.status ?? 'active'}</Badge>
+                      <div className="flex flex-col items-start gap-2">
+                        <Badge variant={user.status === 'disabled' ? 'destructive' : user.status === 'active' ? 'default' : 'outline'}>{user.status ?? 'active'}</Badge>
+                        {user.inviteDeliveryStatus ? (
+                          <Badge variant="outline">
+                            invite: {user.inviteDeliveryStatus}
+                          </Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right px-2 py-4 md:px-4">
                        <div className="flex flex-wrap gap-2 justify-end">

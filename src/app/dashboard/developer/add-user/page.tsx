@@ -18,11 +18,13 @@ import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
+import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 
 export default function AddUserPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { addUser, users } = useData();
+  const { capabilities } = useRuntimeCapabilities();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<UserManagementValues>({
@@ -33,7 +35,7 @@ export default function AddUserPage() {
       title: '',
       phone: '',
       role: 'barangay',
-      status: 'active',
+      status: 'pending_setup',
       preferredWorkspace: 'simple',
     },
   });
@@ -71,15 +73,18 @@ export default function AddUserPage() {
           throw new Error(payload.error ?? 'Hindi nagawa ang live user provisioning.');
         }
 
-        if (payload.temporaryPassword && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(payload.temporaryPassword);
+        if (payload.setupLink && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(payload.setupLink);
         }
 
         toast({
           title: 'Tagumpay!',
-          description: payload.temporaryPassword
-            ? `Nagawa ang live account ni ${data.name}. Nakopya na sa clipboard ang pansamantalang password.`
-            : `Nagawa ang live account ni ${data.name}.`,
+          description:
+            payload.inviteDeliveryStatus === 'emailed'
+              ? `Nagawa ang live account ni ${data.name}, at naipadala na ang secure setup email.`
+              : payload.setupLink
+                ? `Nagawa ang live account ni ${data.name}. Nakopya na sa clipboard ang secure setup link bilang manual fallback.`
+                : `Nagawa ang live account ni ${data.name}.`,
         });
       } else {
         addUser(data);
@@ -120,11 +125,24 @@ export default function AddUserPage() {
       <Card>
         <CardHeader>
             <CardTitle>Form ng Pagpaparehistro ng User</CardTitle>
-            <CardDescription>Punan ang mga detalye sa ibaba. Ang form na ito ay para sa barangay staff accounts lamang.</CardDescription>
+            <CardDescription>
+              Punan ang mga detalye sa ibaba. Ang form na ito ay para sa barangay staff accounts lamang.
+              {capabilities.inviteEmailConfigured
+                ? ' Awtomatikong magpapadala ang system ng secure setup email sa bagong user.'
+                : ' Kung wala pang configured invite email provider, secure setup link ang ibibigay bilang manual fallback sa halip na pansamantalang password.'}
+            </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleAddUser)} className="max-w-2xl space-y-6">
+              <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Provisioning mode</p>
+                <p className="mt-1">
+                  {capabilities.inviteEmailConfigured
+                    ? 'Automatic invite email ang gamit ngayon. Kapag naisave ang user, makakatanggap agad siya ng secure setup email.'
+                    : capabilities.reasons.inviteEmail ?? 'Naka-manual secure-link fallback pa ang provisioning habang wala pang configured invite email delivery.'}
+                </p>
+              </div>
               <FormField
                 control={form.control}
                 name="name"

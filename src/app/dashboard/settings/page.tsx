@@ -152,6 +152,7 @@ export default function BarangaySettingsPage() {
     const followUpHealth = runtimeHealth.records.find((record) => record.id === 'automation_followups');
     const inboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_inbound');
     const outboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_outbound');
+    const inviteEmailHealth = runtimeHealth.records.find((record) => record.id === 'invite_email');
 
     useEffect(() => {
         if (currentUserProfile && !canManageSettings) {
@@ -639,6 +640,16 @@ export default function BarangaySettingsPage() {
               <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.liveSms ?? capabilities.automationMode}</p>
             </div>
             <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Live SMS test mode</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.liveSmsTestModeEnabled ? 'Enabled' : 'Locked'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.liveSmsTestMode}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Invite email</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.inviteEmailConfigured ? 'Automatic' : 'Manual fallback'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.inviteEmail}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
               <p className="text-sm text-muted-foreground">Firebase Admin</p>
               <p className="mt-2 text-base font-semibold">{capabilities.firebaseAdminConfigured ? 'Ready' : 'Kulang pa'}</p>
             </div>
@@ -689,6 +700,16 @@ export default function BarangaySettingsPage() {
                     Purpose: {runtimeHealth.latestOutbound?.purpose ?? 'Wala pa'}
                   </p>
                 </div>
+                <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
+                  <p className="text-sm font-medium text-foreground">Invite Email</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Status: {inviteEmailHealth?.status ?? 'Wala pa'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling success: {formatRuntimeTimestamp(inviteEmailHealth?.lastSuccessAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling failure: {formatRuntimeTimestamp(inviteEmailHealth?.lastFailureAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Provider: {String(inviteEmailHealth?.meta?.provider ?? 'Wala pa')}</p>
+                  {inviteEmailHealth?.lastError ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {inviteEmailHealth.lastError}</p>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -698,6 +719,9 @@ export default function BarangaySettingsPage() {
               <p>1. Kapag naka-lock ang AI o uploads, huwag umasa na gagana ang related automation sa live use.</p>
               <p>2. Ang commit/build info ay madaling reference kung updated ba talaga ang deployed website.</p>
               <p>3. Ang teaching queue sa ibaba ang dapat mong unahin kapag may bagong imported file na hindi pa dapat pagkatiwalaan agad.</p>
+              {capabilities.knownBuildWarnings.length > 0 ? (
+                <p>4. Build note: {capabilities.knownBuildWarnings[0]}</p>
+              ) : null}
             </div>
           </div>
         </CardContent>

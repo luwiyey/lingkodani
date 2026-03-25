@@ -52,8 +52,8 @@ function getFileExtension(filename: string) {
   return filename.split('.').pop()?.toLowerCase() ?? '';
 }
 
-function formatTemporaryPasswordsAsCsv(rows: Array<Record<string, string>>) {
-  const headers = ['email', 'name', 'status', 'temporaryPassword', 'error'];
+function formatSetupLinksAsCsv(rows: Array<Record<string, string>>) {
+  const headers = ['email', 'name', 'status', 'inviteStatus', 'setupLink', 'error'];
   const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
   return [
@@ -457,25 +457,27 @@ export default function DataCenterPage() {
             email: row.email,
             name: row.name,
             status: response.ok ? 'created' : 'failed',
-            temporaryPassword: typeof payload.temporaryPassword === 'string' ? payload.temporaryPassword : '',
+            inviteStatus: typeof payload.inviteDeliveryStatus === 'string' ? payload.inviteDeliveryStatus : '',
+            setupLink: typeof payload.setupLink === 'string' ? payload.setupLink : '',
             error: response.ok ? '' : String(payload.error ?? 'Import failed'),
           });
         }
 
         const successCount = results.filter((item) => item.status === 'created').length;
-        const passwordRows = results.filter((item) => item.temporaryPassword);
+        const emailedCount = results.filter((item) => item.inviteStatus === 'emailed').length;
+        const setupLinkRows = results.filter((item) => item.setupLink);
 
-        if (passwordRows.length > 0) {
+        if (setupLinkRows.length > 0) {
           downloadFile(
-            `lingkod-ani-import-passwords-${new Date().toISOString().slice(0, 10)}.csv`,
-            formatTemporaryPasswordsAsCsv(passwordRows),
+            `lingkod-ani-import-setup-links-${new Date().toISOString().slice(0, 10)}.csv`,
+            formatSetupLinksAsCsv(setupLinkRows),
             'text/csv;charset=utf-8'
           );
         }
 
         toast({
           title: 'Natapos ang staff import',
-          description: `${successCount} sa ${rows.length} staff records ang na-provision. ${passwordRows.length > 0 ? 'Na-download din ang temporary passwords bilang CSV.' : ''}`,
+          description: `${successCount} sa ${rows.length} staff records ang na-provision. ${emailedCount > 0 ? `${emailedCount} ang na-email-an agad. ` : ''}${setupLinkRows.length > 0 ? 'Na-download din ang manual fallback setup links bilang CSV.' : ''}`,
           variant: successCount > 0 ? 'default' : 'destructive',
         });
       } else {
