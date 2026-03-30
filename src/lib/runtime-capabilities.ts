@@ -5,6 +5,7 @@ export type RuntimeCapabilities = {
   liveSmsConfigured: boolean;
   liveSmsTestModeEnabled: boolean;
   inviteEmailConfigured: boolean;
+  mobilePushConfigured: boolean;
   firebaseAdminConfigured: boolean;
   storageUploadConfigured: boolean;
   knowledgeAudioUploadConfigured: boolean;
@@ -17,6 +18,7 @@ export type RuntimeCapabilities = {
     liveSms?: string;
     liveSmsTestMode?: string;
     inviteEmail?: string;
+    mobilePush?: string;
     storageUpload?: string;
     knowledgeAudio?: string;
   };
@@ -45,6 +47,7 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
     liveSmsConfigured,
     liveSmsTestModeEnabled: false,
     inviteEmailConfigured: false,
+    mobilePushConfigured: false,
     firebaseAdminConfigured: false,
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
@@ -63,6 +66,8 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
         "Ang live SMS preview/testing route ay naka-lock by default at dapat lang buksan sa controlled developer smoke tests.",
       inviteEmail:
         "Naka-manual link fallback pa ang bagong staff provisioning habang wala pang configured invite email delivery provider.",
+      mobilePush:
+        "Kailangan muna ang Firebase Admin credentials at Android Firebase app ID bago maging live ang mobile push notifications.",
       storageUpload: storageUploadConfigured
         ? undefined
         : "Naka-lock muna ang file upload habang hindi pa kumpleto ang live Firebase storage setup.",

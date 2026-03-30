@@ -37,6 +37,37 @@ You can override them at build time:
 flutter run --dart-define=API_BASE_URL=https://lingkod-ani.com --dart-define=FIREBASE_WEB_API_KEY=YOUR_KEY
 ```
 
+## Real Android push notifications
+
+The mobile app now includes real Firebase Cloud Messaging registration and
+backend token storage for urgent case alerts.
+
+To make Android push notifications live, add the missing Android Firebase app
+ID during your local build:
+
+```bash
+flutter run --dart-define-from-file=firebase_push.env
+```
+
+Use [firebase_push.env.example](C:/Users/hwawei/Desktop/LINGKOD-ANI%20DEMO/lingkodani-demo/mobile_app/firebase_push.env.example)
+as your template and fill in:
+
+- `MOBILE_FIREBASE_ANDROID_APP_ID`
+- `FIREBASE_WEB_API_KEY` if you want to override the bundled default
+
+The backend route `/api/mobile/push` will register the device token and subscribe
+the device to the Lingkod-Ani staff alert topic. Urgent live SMS cases can then
+fan out to logged-in staff devices.
+
+If the Android Firebase app ID is missing, the mobile app will continue working,
+but push registration safely stays disabled instead of breaking sign-in.
+
+Official Firebase references:
+
+- [Flutter setup](https://firebase.google.com/docs/flutter/setup)
+- [Cloud Messaging for Flutter](https://firebase.google.com/docs/cloud-messaging/flutter/get-started)
+- [Send messages with the Admin SDK](https://firebase.google.com/docs/cloud-messaging/send/admin-sdk)
+
 ## Useful commands
 
 ```bash

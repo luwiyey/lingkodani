@@ -153,6 +153,7 @@ export default function BarangaySettingsPage() {
     const inboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_inbound');
     const outboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_outbound');
     const inviteEmailHealth = runtimeHealth.records.find((record) => record.id === 'invite_email');
+    const mobilePushHealth = runtimeHealth.records.find((record) => record.id === 'mobile_push');
 
     useEffect(() => {
         if (currentUserProfile && !canManageSettings) {
@@ -650,6 +651,11 @@ export default function BarangaySettingsPage() {
               <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.inviteEmail}</p>
             </div>
             <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Mobile push</p>
+              <p className="mt-2 text-base font-semibold">{capabilities.mobilePushConfigured ? 'Ready' : 'Kulang pa'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{capabilities.reasons.mobilePush}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-4">
               <p className="text-sm text-muted-foreground">Firebase Admin</p>
               <p className="mt-2 text-base font-semibold">{capabilities.firebaseAdminConfigured ? 'Ready' : 'Kulang pa'}</p>
             </div>
@@ -708,6 +714,16 @@ export default function BarangaySettingsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">Provider: {String(inviteEmailHealth?.meta?.provider ?? 'Wala pa')}</p>
                   {inviteEmailHealth?.lastError ? (
                     <p className="mt-1 text-xs text-muted-foreground">Error: {inviteEmailHealth.lastError}</p>
+                  ) : null}
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
+                  <p className="text-sm font-medium text-foreground">Mobile Push</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Status: {mobilePushHealth?.status ?? 'Wala pa'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling success: {formatRuntimeTimestamp(mobilePushHealth?.lastSuccessAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling failure: {formatRuntimeTimestamp(mobilePushHealth?.lastFailureAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling run: {formatRuntimeTimestamp(mobilePushHealth?.updatedAt)}</p>
+                  {mobilePushHealth?.lastError ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {mobilePushHealth.lastError}</p>
                   ) : null}
                 </div>
               </div>

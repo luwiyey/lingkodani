@@ -134,6 +134,15 @@ function resolveStorageUploadConfigured(mode: "demo" | "live") {
   );
 }
 
+function resolveMobilePushConfigured(firebaseAdminConfigured: boolean) {
+  return (
+    firebaseAdminConfigured &&
+    isPresent(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) &&
+    isPresent(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID) &&
+    isPresent(process.env.MOBILE_FIREBASE_ANDROID_APP_ID)
+  );
+}
+
 export async function GET() {
   const mode = readMode();
   const realSmsEnabled = readRealSmsEnabled();
@@ -141,6 +150,7 @@ export async function GET() {
   const inviteEmailConfig = resolveInviteEmailConfig(process.env);
   const aiConfigured = isPresent(process.env.GOOGLE_GENAI_API_KEY) || isPresent(process.env.GEMINI_API_KEY);
   const firebaseAdminConfigured = resolveFirebaseAdminConfigured();
+  const mobilePushConfigured = resolveMobilePushConfigured(firebaseAdminConfigured);
   const liveSmsStatus = resolveLiveSmsStatus(mode, realSmsEnabled);
   const storageUploadConfigured = resolveStorageUploadConfigured(mode);
   const knowledgeAudioUploadConfigured = storageUploadConfigured;
@@ -154,6 +164,7 @@ export async function GET() {
     liveSmsConfigured: liveSmsStatus.configured,
     liveSmsTestModeEnabled,
     inviteEmailConfigured: inviteEmailConfig.configured,
+    mobilePushConfigured,
     firebaseAdminConfigured,
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
@@ -177,6 +188,9 @@ export async function GET() {
       inviteEmail: inviteEmailConfig.configured
         ? "Handa na ang automatic invite email delivery para sa bagong staff provisioning."
         : inviteEmailConfig.reason,
+      mobilePush: mobilePushConfigured
+        ? "Handa na ang server-side mobile push broadcast para sa mga Android device na may Firebase Messaging setup."
+        : "Kailangan muna ang Firebase Admin credentials at MOBILE_FIREBASE_ANDROID_APP_ID bago maging live ang Android push notifications.",
       storageUpload: storageUploadConfigured
         ? undefined
         : "Naka-lock muna ang file upload habang hindi pa kumpleto ang live Firebase web/storage setup.",

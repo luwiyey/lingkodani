@@ -1,6 +1,7 @@
 import { applicationDefault, cert, getApp as getAdminApp, getApps as getAdminApps, initializeApp as initializeAdminApp, type App as AdminApp } from "firebase-admin/app";
 import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
+import { getMessaging as getAdminMessaging } from "firebase-admin/messaging";
 import firebaseAdminCredentialHelpers from "@/lib/firebase/admin-credentials";
 
 const { firebaseAdminCredentialHelpText, resolveFirebaseAdminCredentials } = firebaseAdminCredentialHelpers;
@@ -52,4 +53,8 @@ export function getServerFirestore() {
 
 export function getServerAuth() {
   return getAdminAuth(getServerAdminApp());
+}
+
+export function getServerMessaging() {
+  return getAdminMessaging(getServerAdminApp());
 }

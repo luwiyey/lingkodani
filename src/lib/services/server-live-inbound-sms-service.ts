@@ -4,6 +4,7 @@ import { getServerFirestore } from "@/lib/firebase/server";
 import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import { getServerSystemSettings } from "@/lib/server/system-settings";
 import { recordRuntimeHealthSuccess, recordRuntimeHealthWarning } from "@/lib/system-health";
+import { sendUrgentCasePush } from "@/lib/services/mobile-push-service";
 import { applyPriceWatchAdvice } from "@/lib/services/price-watch-service";
 import {
   applyFarmerResolutionConfirmation,
@@ -315,6 +316,10 @@ export async function persistLiveInboundSms(input: {
   for (const update of workflow.farmerUpdates) {
     await db.collection(firebaseCollections.farmers).doc(update.farmerId).update(update.updates);
   }
+
+  await sendUrgentCasePush({
+    message: workflow.message,
+  });
 
   await recordRuntimeHealthSuccess("sms_inbound", "Live Inbound SMS", {
     handledBy: "farmer",

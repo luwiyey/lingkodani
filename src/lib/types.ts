@@ -102,6 +102,23 @@ export type RuntimeHealthRecord = {
   meta?: Record<string, unknown>;
 };
 
+export type MobileDeviceTokenPlatform = 'android' | 'ios' | 'web' | 'unknown';
+
+export type MobileDeviceToken = {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  token: string;
+  platform: MobileDeviceTokenPlatform;
+  topic: string;
+  deviceLabel?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastSeenAt: string;
+};
+
 export type SystemTemplateCategoryId =
   | 'confirmation'
   | 'investigation'

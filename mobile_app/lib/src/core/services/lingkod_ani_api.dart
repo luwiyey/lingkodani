@@ -161,6 +161,37 @@ class LingkodAniApi {
     return SmsFeedItem.fromJson(response['message'] as Map<String, dynamic>? ?? const {});
   }
 
+  Future<void> registerPushToken(
+    String idToken, {
+    required String token,
+    required String platform,
+    String? deviceLabel,
+  }) async {
+    await _post(
+      '/api/mobile/push',
+      idToken: idToken,
+      body: {
+        'token': token,
+        'platform': platform,
+        if (deviceLabel != null && deviceLabel.isNotEmpty)
+          'deviceLabel': deviceLabel,
+      },
+    );
+  }
+
+  Future<void> unregisterPushToken(
+    String idToken, {
+    required String token,
+  }) async {
+    await _delete(
+      '/api/mobile/push',
+      idToken: idToken,
+      body: {
+        'token': token,
+      },
+    );
+  }
+
   Future<Map<String, dynamic>> _getWithCache(
     String path, {
     required String idToken,
@@ -210,6 +241,28 @@ class LingkodAniApi {
       },
       body: jsonEncode(body),
     );
+
+    return _decodeResponse(response);
+  }
+
+  Future<Map<String, dynamic>> _delete(
+    String path, {
+    required String idToken,
+    required Map<String, dynamic> body,
+  }) async {
+    final request = http.Request(
+      'DELETE',
+      Uri.parse('${AppConfig.baseUrl}$path'),
+    );
+    request.headers.addAll({
+      'Authorization': 'Bearer $idToken',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    });
+    request.body = jsonEncode(body);
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
 
     return _decodeResponse(response);
   }

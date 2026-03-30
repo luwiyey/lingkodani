@@ -16,4 +16,5 @@ export const firebaseCollections = {
   systemSettings: "systemSettings",
   logbookEntries: "logbookEntries",
   smsTrainingExamples: "smsTrainingExamples",
+  mobileDeviceTokens: "mobileDeviceTokens",
 } as const;

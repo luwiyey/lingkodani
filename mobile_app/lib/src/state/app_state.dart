@@ -3,16 +3,21 @@ import 'package:flutter/foundation.dart';
 import '../core/models/mobile_models.dart';
 import '../core/services/lingkod_ani_api.dart';
 import '../core/services/mobile_auth_service.dart';
+import '../core/services/push_notifications_service.dart';
 
 class AppState extends ChangeNotifier {
   AppState({
     MobileAuthService? authService,
     LingkodAniApi? api,
+    PushNotificationsService? pushNotifications,
   })  : _authService = authService ?? MobileAuthService(),
-        _api = api ?? const LingkodAniApi();
+        _api = api ?? const LingkodAniApi(),
+        _pushNotifications =
+            pushNotifications ?? PushNotificationsService();
 
   final MobileAuthService _authService;
   final LingkodAniApi _api;
+  final PushNotificationsService _pushNotifications;
 
   bool _bootstrapping = true;
   bool _submitting = false;
@@ -42,6 +47,10 @@ class AppState extends ChangeNotifier {
       } else {
         _session = restoredSession;
         _profile = await _api.fetchProfile(restoredSession.idToken);
+        await _pushNotifications.initializeForSession(
+          session: restoredSession,
+          profile: _profile!,
+        );
         _errorMessage = null;
       }
     } catch (error) {
@@ -71,6 +80,10 @@ class AppState extends ChangeNotifier {
       final nextProfile = await _api.fetchProfile(nextSession.idToken);
       _session = nextSession;
       _profile = nextProfile;
+      await _pushNotifications.initializeForSession(
+        session: nextSession,
+        profile: nextProfile,
+      );
     } catch (error) {
       _errorMessage = error.toString().replaceFirst('Exception: ', '');
       rethrow;
@@ -81,10 +94,18 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    final existingSession = _session;
     _session = null;
     _profile = null;
     _errorMessage = null;
     notifyListeners();
+    await _pushNotifications.unregisterForSession(existingSession);
     await _authService.clearSession();
+  }
+
+  @override
+  void dispose() {
+    _pushNotifications.dispose();
+    super.dispose();
   }
 }
