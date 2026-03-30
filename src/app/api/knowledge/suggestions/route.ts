@@ -5,7 +5,8 @@ import { isLiveMode } from "@/lib/config/app-mode";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
 import { buildSuggestedArticlesLocally } from "@/lib/knowledge-search";
-import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
+import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
+import { hasServerDemoPreviewAccess } from "@/lib/server/session-auth";
 
 function normalizeStringArray(value: unknown) {
   if (!Array.isArray(value)) {
@@ -34,10 +35,10 @@ async function listRecentLiveSmsReports() {
 
 export async function POST(request: Request) {
   if (isLiveMode) {
-    const session = await readServerSessionProfile();
+    const auth = await authenticateInteractiveRequest(request, ["barangay", "developer"]);
     const hasDemoAccess = await hasServerDemoPreviewAccess();
 
-    if (!session && !hasDemoAccess) {
+    if (!auth.ok && !hasDemoAccess) {
       return NextResponse.json({ error: "Unauthorized suggestion request." }, { status: 401 });
     }
   }

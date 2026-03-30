@@ -7,7 +7,8 @@ import { getServerFirestore } from "@/lib/firebase/server";
 import { normalizeKnowledgeQueryArticles } from "@/lib/knowledge-query";
 import { searchArticlesLocally } from "@/lib/knowledge-search";
 import { answerKnowledgeQueryWithGeminiGrounding } from "@/lib/services/gemini-grounded-knowledge-service";
-import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
+import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
+import { hasServerDemoPreviewAccess } from "@/lib/server/session-auth";
 import type { KnowledgeArticle } from "@/lib/types";
 
 async function listServerKnowledgeArticles() {
@@ -30,10 +31,10 @@ async function listServerKnowledgeArticles() {
 
 export async function POST(request: Request) {
   if (isLiveMode) {
-    const session = await readServerSessionProfile();
+    const auth = await authenticateInteractiveRequest(request, ["barangay", "developer"]);
     const hasDemoAccess = await hasServerDemoPreviewAccess();
 
-    if (!session && !hasDemoAccess) {
+    if (!auth.ok && !hasDemoAccess) {
       return NextResponse.json({ error: "Unauthorized knowledge search request." }, { status: 401 });
     }
   }
