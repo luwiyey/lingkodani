@@ -1,8 +1,14 @@
+// ignore_for_file: unused_element
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/models/mobile_models.dart';
 import '../state/app_state.dart';
+import 'farmer_detail_screen.dart';
+import 'mobile_alerts_tab.dart';
+import 'mobile_farmers_tab.dart';
+import 'mobile_sms_feed_tab.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -14,6 +20,34 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
+  void _openFarmerDetail(MobileSession session, FarmerSummary farmer) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FarmerDetailScreen(
+          session: session,
+          farmerId: farmer.id,
+          title: farmer.name,
+        ),
+      ),
+    );
+  }
+
+  void _openFarmerDetailById(
+    MobileSession session,
+    String farmerId,
+    String title,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FarmerDetailScreen(
+          session: session,
+          farmerId: farmerId,
+          title: title,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -21,13 +55,31 @@ class _HomeShellState extends State<HomeShell> {
 
     final tabs = [
       _OverviewTab(session: appState.session!, profile: profile),
-      _SmsFeedTab(session: appState.session!),
-      _FarmersTab(session: appState.session!),
+      MobileAlertsTab(
+        session: appState.session!,
+        onOpenFarmer: (farmerId, title) =>
+            _openFarmerDetailById(appState.session!, farmerId, title),
+        onOpenSms: () {
+          setState(() {
+            _currentIndex = 2;
+          });
+        },
+      ),
+      MobileSmsFeedTab(
+        session: appState.session!,
+        onOpenFarmer: (farmerId, title) =>
+            _openFarmerDetailById(appState.session!, farmerId, title),
+      ),
+      MobileFarmersTab(
+        session: appState.session!,
+        onOpenFarmer: (farmer) => _openFarmerDetail(appState.session!, farmer),
+      ),
       _KnowledgeTab(session: appState.session!),
     ];
 
     final titles = [
       'Overview',
+      'Alerts',
       'SMS Feed',
       'Farmers',
       'Knowledge',
@@ -69,6 +121,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard_rounded),
             label: 'Overview',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notifications_none_rounded),
+            selectedIcon: Icon(Icons.notifications_rounded),
+            label: 'Alerts',
           ),
           NavigationDestination(
             icon: Icon(Icons.sms_outlined),

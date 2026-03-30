@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     .slice(0, 40)
     .map((message) => ({
       id: message.id,
+      caseId: message.caseId,
       farmerId: message.farmerId,
       farmerName: message.farmerName,
       phone: message.phone,
@@ -44,8 +45,12 @@ export async function GET(request: Request) {
       parsedIntent: message.parsedIntent,
       aiAdvice: message.aiAdvice,
       safetyFlag: message.safetyFlag,
+      tone: message.tone,
       assignedTo: message.assignedTo,
       officialReminderCount: message.officialReminderCount,
+      caseOutcomeStatus: message.caseOutcomeStatus,
+      caseOutcomeSummary: message.caseOutcomeSummary,
+      resolutionConfirmationStatus: message.resolutionConfirmationStatus,
     }));
 
   return NextResponse.json({ messages });
