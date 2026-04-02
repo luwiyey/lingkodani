@@ -134,6 +134,16 @@ class AppState extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  List<MobileQueuedAction> pendingActionsForFieldVisit(String visitId) {
+    return _pendingActions
+        .where(
+          (action) =>
+              action.type == MobileQueuedActionType.fieldVisitStatus &&
+              action.messageId == visitId,
+        )
+        .toList(growable: false);
+  }
+
   bool hasPendingActionForMessage(String messageId) {
     return _pendingActions.any((action) => action.messageId == messageId);
   }
@@ -239,6 +249,55 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<MobileActionSubmissionResult> updateFieldVisitStatus({
+    required String visitId,
+    required String status,
+    String note = '',
+    Map<String, dynamic>? verification,
+  }) async {
+    final session = _requireSession();
+    final payload = <String, dynamic>{
+      'status': status,
+      if (note.trim().isNotEmpty) 'note': note.trim(),
+      if (verification != null) 'verification': verification,
+    };
+
+    try {
+      await _api.updateFieldVisitStatus(
+        session.idToken,
+        visitId: visitId,
+        status: status,
+        note: note,
+        verification: verification,
+      );
+      await _removeQueuedAction(
+        userId: session.localId,
+        type: MobileQueuedActionType.fieldVisitStatus,
+        messageId: visitId,
+      );
+
+      return const MobileActionSubmissionResult(
+        status: MobileActionSubmissionStatus.sent,
+      );
+    } on LingkodAniApiException {
+      rethrow;
+    } catch (error) {
+      await _queueAction(
+        userId: session.localId,
+        type: MobileQueuedActionType.fieldVisitStatus,
+        messageId: visitId,
+        payload: payload,
+        error: error,
+      );
+
+      return const MobileActionSubmissionResult(
+        status: MobileActionSubmissionStatus.queued,
+        detail:
+            'Na-save offline ang field visit update at isi-sync ito kapag may signal.',
+      );
+    }
+  }
+
   Future<void> syncPendingActions({bool notify = true}) async {
     final session = _session;
 
@@ -318,6 +377,15 @@ class AppState extends ChangeNotifier {
           session.idToken,
           messageId: action.messageId,
           note: '${action.payload['note'] ?? ''}',
+        );
+        return;
+      case MobileQueuedActionType.fieldVisitStatus:
+        await _api.updateFieldVisitStatus(
+          session.idToken,
+          visitId: action.messageId,
+          status: '${action.payload['status'] ?? 'in_progress'}',
+          note: '${action.payload['note'] ?? ''}',
+          verification: action.payload['verification'] as Map<String, dynamic>?,
         );
         return;
     }

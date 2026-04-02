@@ -1,7 +1,6 @@
 
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
@@ -632,6 +631,12 @@ export default function FarmerLogbookPage() {
         return 'destructive' as const;
     };
 
+    const getVisitVerificationBadgeVariant = (status?: FieldVisitTask['verificationStatus']) => {
+        if (status === 'gps_captured') return 'default' as const;
+        if (status === 'manual_only') return 'outline' as const;
+        return 'secondary' as const;
+    };
+
     const handleCreateAssistance = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
@@ -694,8 +699,21 @@ export default function FarmerLogbookPage() {
 
     const handleAdvanceVisit = (task: FieldVisitTask) => {
         const nextStatus = task.status === 'scheduled' ? 'in_progress' : 'completed';
-        updateFieldVisitTaskStatus(task.id, nextStatus);
-        toast({ title: "Na-update ang field visit", description: `${task.title} ay naka-${nextStatus}.` });
+        updateFieldVisitTaskStatus(task.id, nextStatus, {
+            verificationStatus: task.verificationStatus === 'gps_captured' ? 'gps_captured' : 'manual_only',
+            verificationSource: task.verificationStatus === 'gps_captured' ? task.verificationSource : 'manual_dashboard',
+            verificationCapturedAt: task.verificationStatus === 'gps_captured' ? task.verificationCapturedAt : new Date().toISOString(),
+            verificationNote:
+              task.verificationStatus === 'gps_captured'
+                ? task.verificationNote
+                : nextStatus === 'completed'
+                  ? 'Nakompleto mula sa web dashboard nang walang mobile GPS capture.'
+                  : 'Sinimulan mula sa web dashboard nang walang mobile GPS capture.',
+        });
+        toast({
+          title: "Na-update ang field visit",
+          description: `${task.title} ay naka-${nextStatus}. ${task.verificationStatus === 'gps_captured' ? 'Nanatili ang GPS verification.' : 'Manual verification ang ilalagay sa record na ito.'}`,
+        });
     };
 
   return (
@@ -766,6 +784,9 @@ export default function FarmerLogbookPage() {
                           <p className="text-xs text-muted-foreground">Ina-upload ang bagong profile photo...</p>
                         ) : null}
                         <p><strong>Telepono:</strong> {farmer.phone}</p>
+                        {farmer.phoneHistory && farmer.phoneHistory.length > 1 ? (
+                          <p><strong>Dating mga numero:</strong> {farmer.phoneHistory.filter((phone) => phone !== farmer.phone).join(', ')}</p>
+                        ) : null}
                         <p><strong>Edad:</strong> {farmer.age}</p>
                         <p><strong>Kasarian:</strong> {farmer.gender}</p>
                         <p><strong>Lokasyon:</strong> {farmer.sitio}, {farmer.barangay}</p>
@@ -1066,12 +1087,38 @@ export default function FarmerLogbookPage() {
                                         <p className="font-medium">{task.title}</p>
                                         <Badge variant="outline">{task.priority} priority</Badge>
                                         <Badge variant={getVisitBadgeVariant(task.status)}>{task.status}</Badge>
+                                        <Badge variant={getVisitVerificationBadgeVariant(task.verificationStatus)}>
+                                          {task.verificationStatus === 'gps_captured'
+                                            ? 'GPS verified'
+                                            : task.verificationStatus === 'manual_only'
+                                              ? 'Manual verification'
+                                              : 'Unverified'}
+                                        </Badge>
                                     </div>
                                     <p className="mt-2 text-sm text-muted-foreground">{task.purpose}</p>
                                     <p className="mt-1 text-sm text-muted-foreground">Assigned to: {task.assignedTo}</p>
                                     <p className="mt-1 text-sm text-muted-foreground">
                                         Schedule: {isClient ? new Date(task.scheduledFor).toLocaleString() : ''}
                                     </p>
+                                    {task.verificationStatus === 'gps_captured' ? (
+                                      <p className="mt-1 text-sm text-muted-foreground">
+                                        GPS captured
+                                        {typeof task.verificationAccuracyMeters === 'number'
+                                          ? ` · accuracy ${Math.round(task.verificationAccuracyMeters)}m`
+                                          : ''}
+                                        {task.verificationCapturedAt && isClient
+                                          ? ` · ${new Date(task.verificationCapturedAt).toLocaleString()}`
+                                          : ''}
+                                        {typeof task.verificationLat === 'number' && typeof task.verificationLng === 'number'
+                                          ? ` · ${task.verificationLat.toFixed(5)}, ${task.verificationLng.toFixed(5)}`
+                                          : ''}
+                                      </p>
+                                    ) : null}
+                                    {task.verificationStatus === 'manual_only' && task.verificationNote ? (
+                                      <p className="mt-1 text-sm text-muted-foreground">
+                                        Verification note: {task.verificationNote}
+                                      </p>
+                                    ) : null}
                                     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                                         {task.status !== 'completed' && task.status !== 'cancelled' ? (
                                             <Button size="sm" className="h-auto min-h-11 whitespace-normal break-words px-4 py-3 text-center leading-snug" onClick={() => handleAdvanceVisit(task)}>

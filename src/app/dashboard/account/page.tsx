@@ -43,7 +43,7 @@ export default function AccountSettingsPage() {
   const { toast } = useToast();
   const photoUploadRef = React.useRef<HTMLInputElement>(null);
   const { currentUser, currentUserProfile } = useAuth();
-  const { updateUser, users, resetDemoData } = useData();
+  const { updateUser, users, farmers, resetDemoData } = useData();
   const [newEmailAddress, setNewEmailAddress] = React.useState('');
   const [workspacePreference, setWorkspacePreference] = React.useState<User['preferredWorkspace']>('simple');
   const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
@@ -288,12 +288,6 @@ export default function AccountSettingsPage() {
           await reauthenticateWithCredential(liveUser, credential);
           await updateEmail(liveUser, nextEmail);
 
-          const nextProfile: User = {
-            ...profile,
-            email: nextEmail,
-            updatedAt: new Date().toISOString(),
-          };
-
           await saveLiveProfile({
             email: nextEmail,
           });
@@ -334,6 +328,10 @@ export default function AccountSettingsPage() {
     .slice(0, 2)
     .toUpperCase();
   const assignmentLabel = profile.role === 'developer' ? 'Area / Assignment' : 'Barangay / Assignment';
+  const archivedFarmerCount = React.useMemo(
+    () => farmers.filter((farmer) => farmer.status === 'archived').length,
+    [farmers]
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -542,7 +540,8 @@ export default function AccountSettingsPage() {
                 <CardTitle>Mga Pananggalang sa Privacy ng Data</CardTitle>
                 <HelpDialog title="Privacy ng Data" tooltipText="Alamin ang tungkol sa proteksyon ng data.">
                     <p>Ang sistemang ito ay idinisenyo upang sumunod sa Data Privacy Act of 2012 ng Pilipinas.</p>
-                    <p>Kabilang sa mga feature na ipapatupad sa hinaharap ang pag-mask ng numero ng telepono, consent tagging, at awtomatikong data retention rules.</p>
+                    <p>Available na ngayon ang non-destructive farmer archiving para mapanatili ang audit trail nang hindi nananatili sa active roster ang lumang record.</p>
+                    <p>Susunod pang hardening step ang awtomatikong redaction, consent tagging, at retention timers.</p>
                 </HelpDialog>
             </div>
             <CardDescription>
@@ -550,8 +549,18 @@ export default function AccountSettingsPage() {
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <p>Ang live user profile at role record ay hiwalay ngunit nakakabit sa authenticated account upang suportahan ang access control at accountability sa dashboard.</p>
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+            <p className="font-medium text-foreground">Archive-Based Retention</p>
+            <p className="mt-1 text-muted-foreground">
+              Ang farmer records na moved away, duplicate, o hindi na aktibo ay maaari nang i-archive sa halip na permanenteng burahin.
+              Kasalukuyang archived records: <strong>{archivedFarmerCount}</strong>.
+            </p>
+          </div>
+          <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+            Planned pa rin ang automatic redaction after retention windows, pero hindi na kailangan mag-delete agad ng old farmer records para lang luminis ang roster.
+          </div>
         </CardContent>
       </Card>
 

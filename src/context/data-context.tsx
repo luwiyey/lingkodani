@@ -63,6 +63,8 @@ import { sendOutboundMessage } from '@/lib/services/outbound-sms-service';
 import { applyPriceWatchAdvice } from '@/lib/services/price-watch-service';
 import { createSmsTrainingExample } from '@/lib/services/sms-training-service';
 import { applySmsStatusUpdate, processInboundSms } from '@/lib/services/sms-workflow-service';
+import { filterVisibleInboundSmsMessages, screenInboundSms } from '@/lib/inbound-sms-screening';
+import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 import { getCaseStatusForOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
 import {
   appendOfflineMutation,
@@ -125,6 +127,21 @@ type NewFieldVisitTaskData = {
   relatedSmsId?: string;
 };
 
+type FarmerStatusUpdateOptions = {
+  archiveReason?: string;
+};
+
+type FieldVisitStatusUpdateOptions = {
+  notes?: string;
+  verificationStatus?: FieldVisitTask['verificationStatus'];
+  verificationSource?: FieldVisitTask['verificationSource'];
+  verificationCapturedAt?: string;
+  verificationLat?: number;
+  verificationLng?: number;
+  verificationAccuracyMeters?: number;
+  verificationNote?: string;
+};
+
 export type NewKnowledgeArticleData = {
   title: string;
   summary: string;
@@ -152,20 +169,26 @@ interface DataContextType {
   farmers: Farmer[];
   setFarmers: React.Dispatch<React.SetStateAction<Farmer[]>>;
   updateFarmerRecord: (farmerId: string, updates: Partial<Farmer>) => void;
-  updateFarmerStatus: (farmerId: string, status: Farmer['status']) => void;
+  updateFarmerStatus: (
+    farmerId: string,
+    status: Farmer['status'],
+    options?: FarmerStatusUpdateOptions
+  ) => void;
   updateManyFarmerStatuses: (farmerIds: string[], status: Farmer['status']) => number;
+  mergeFarmerRecords: (sourceFarmerId: string, targetFarmerId: string) => Promise<boolean>;
   deleteFarmerRecord: (farmerId: string) => void;
   smsMessages: SmsMessage[];
   outboundMessages: OutboundMessage[];
-  addInboundSms: (data: NewInboundSmsData) => SmsMessage;
+  addInboundSms: (data: NewInboundSmsData) => SmsMessage | null;
+  addSmsPreview: (message: SmsMessage) => SmsMessage;
   webhookBridgeStatus: 'idle' | 'syncing' | 'error';
   updateSmsMessage: (
     messageId: string,
     updates: Partial<Pick<SmsMessage, 'status' | 'aiAdvice' | 'parsedIntent' | 'urgency' | 'safetyFlag' | 'tone'>>
   ) => void;
   assignSmsMessage: (messageId: string, assigneeName?: string) => void;
-  updateSmsCaseOutcome: (messageId: string, outcomeStatus: SmsCaseOutcomeStatus, summary: string) => void;
-  closeSmsCase: (messageId: string, resolutionNote?: string) => void;
+  updateSmsCaseOutcome: (messageId: string, outcomeStatus: SmsCaseOutcomeStatus, summary: string) => boolean;
+  closeSmsCase: (messageId: string, resolutionNote?: string) => boolean;
   confirmSmsCaseResolution: (
     messageId: string,
     confirmationStatus: SmsResolutionConfirmationStatus,
@@ -194,7 +217,11 @@ interface DataContextType {
   updateAssistanceRecordStatus: (recordId: string, status: AssistanceStatus) => void;
   fieldVisitTasks: FieldVisitTask[];
   scheduleFieldVisit: (data: NewFieldVisitTaskData) => FieldVisitTask;
-  updateFieldVisitTaskStatus: (taskId: string, status: FieldVisitStatus) => void;
+  updateFieldVisitTaskStatus: (
+    taskId: string,
+    status: FieldVisitStatus,
+    options?: FieldVisitStatusUpdateOptions
+  ) => void;
   smsTrainingExamples: SmsTrainingExample[];
   exportPortableBackup: () => PortableAppBackup;
   importPortableBackup: (backup: PortableAppBackup) => Promise<{ importedCollections: string[]; importedRecords: number }>;
@@ -234,6 +261,10 @@ function createEntityId(prefix: string) {
   return `${prefix}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function normalizeFarmerPhone(value?: string) {
+  return (value ?? "").replace(/\D/g, "");
+}
+
 function normalizeTimestamp(value: string) {
   const timestamp = new Date(value).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
@@ -263,6 +294,10 @@ function sortByDateDescending<T>(items: T[], getDateValue: (item: T) => string) 
   return [...items].sort((left, right) => normalizeTimestamp(getDateValue(right)) - normalizeTimestamp(getDateValue(left)));
 }
 
+function sortVisibleSmsMessages(items: SmsMessage[]) {
+  return sortByDateDescending(filterVisibleInboundSmsMessages(items), (item) => item.timestamp);
+}
+
 function sortByDateAscending<T>(items: T[], getDateValue: (item: T) => string) {
   return [...items].sort((left, right) => normalizeTimestamp(getDateValue(left)) - normalizeTimestamp(getDateValue(right)));
 }
@@ -286,6 +321,34 @@ function isLikelyOfflinePersistenceError(error: unknown) {
   );
 }
 
+function getFieldVisitVerificationSummary(task: Pick<
+  FieldVisitTask,
+  | 'verificationStatus'
+  | 'verificationSource'
+  | 'verificationAccuracyMeters'
+  | 'verificationNote'
+>) {
+  if (task.verificationStatus === 'gps_captured') {
+    const accuracyText =
+      typeof task.verificationAccuracyMeters === 'number'
+        ? ` (accuracy ${Math.round(task.verificationAccuracyMeters)}m)`
+        : '';
+    return `GPS verified${accuracyText}`;
+  }
+
+  if (task.verificationStatus === 'manual_only') {
+    const source =
+      task.verificationSource === 'manual_dashboard'
+        ? 'manual dashboard update'
+        : 'manual mobile fallback';
+    return task.verificationNote
+      ? `Manual verification via ${source}: ${task.verificationNote}`
+      : `Manual verification via ${source}`;
+  }
+
+  return 'Unverified visit metadata';
+}
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { authLoading, currentUser, currentUserProfile } = useAuth();
   const autoReplyInFlight = React.useRef<Set<string>>(new Set());
@@ -293,7 +356,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   
   const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers);
-  const [smsMessages, setSmsMessages] = useState<SmsMessage[]>(initialSmsMessages);
+  const [smsMessages, setSmsMessages] = useState<SmsMessage[]>(sortVisibleSmsMessages(initialSmsMessages));
   const [resources, setResources] = useState<Resource[]>(initialResources);
   const [marketPrices, setMarketPrices] = useState<MarketPriceEntry[]>(initialMarketPrices);
   const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>(initialKnowledgeArticles);
@@ -409,6 +472,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             body: mutation.payload.outboundReply.body,
             provider: smsProvider,
             providerName: mutation.payload.outboundReply.providerName,
+            audience: mutation.payload.outboundReply.audience,
+            purpose: mutation.payload.outboundReply.purpose,
           });
           setOutboundMessages((records) => [outboundRecord, ...records]);
           await outboundMessageRepository.createOutboundMessage(outboundRecord);
@@ -488,7 +553,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (storedFarmers) setFarmers(JSON.parse(storedFarmers));
 
       const storedSms = localStorage.getItem('smsMessages');
-      if (storedSms) setSmsMessages(JSON.parse(storedSms));
+      if (storedSms) setSmsMessages(sortVisibleSmsMessages(JSON.parse(storedSms) as SmsMessage[]));
 
       const storedResources = localStorage.getItem('resources');
       if (storedResources) setResources(JSON.parse(storedResources));
@@ -605,7 +670,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           setFarmers(snapshot.docs.map((item) => item.data() as Farmer));
         }),
         onSnapshot(query(collection(db, firebaseCollections.smsMessages), orderBy('timestamp', 'desc')), (snapshot) => {
-          setSmsMessages(snapshot.docs.map((item) => item.data() as SmsMessage));
+          setSmsMessages(sortVisibleSmsMessages(snapshot.docs.map((item) => item.data() as SmsMessage)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.auditLogs), orderBy('timestamp', 'desc')), (snapshot) => {
           setAuditLogs(snapshot.docs.map((item) => item.data() as AuditLog));
@@ -690,6 +755,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (!active) return;
 
         for (const item of items) {
+          const screening = screenInboundSms({
+            phone: item.phone,
+            message: item.message,
+          });
+
+          if (screening.ignored) {
+            continue;
+          }
+
           const timestamp = new Date().toISOString();
           const workflow = processInboundSms({
             phone: item.phone,
@@ -743,7 +817,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       active = false;
       window.clearInterval(interval);
     };
-  }, [farmers, hydrated, marketPrices, systemSettings]);
+  }, [farmers, hydrated, marketPrices, smsMessages, systemSettings]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -1165,8 +1239,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const importPortableBackup = async (backup: PortableAppBackup) => {
+    const importableSmsMessages = filterVisibleInboundSmsMessages(backup.data.smsMessages);
     const mergedFarmers = mergeById(farmers, backup.data.farmers);
-    const mergedSmsMessages = mergeById(smsMessages, backup.data.smsMessages);
+    const mergedSmsMessages = mergeById(smsMessages, importableSmsMessages);
     const mergedOutboundMessages = mergeById(outboundMessages, backup.data.outboundMessages);
     const mergedResources = mergeById(resources, backup.data.resources);
     const mergedMarketPrices = mergeById(marketPrices, backup.data.marketPrices);
@@ -1182,7 +1257,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
     const importedCollections = Object.entries({
       farmers: backup.data.farmers.length,
-      smsMessages: backup.data.smsMessages.length,
+      smsMessages: importableSmsMessages.length,
       outboundMessages: backup.data.outboundMessages.length,
       resources: backup.data.resources.length,
       marketPrices: backup.data.marketPrices.length,
@@ -1200,7 +1275,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .map(([collectionName]) => collectionName);
     const importedRecords =
       backup.data.farmers.length +
-      backup.data.smsMessages.length +
+      importableSmsMessages.length +
       backup.data.outboundMessages.length +
       backup.data.resources.length +
       backup.data.marketPrices.length +
@@ -1221,7 +1296,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     setFarmers(sortByDateDescending(mergedFarmers.items, (item) => item.registrationDate));
-    setSmsMessages(sortByDateDescending(mergedSmsMessages.items, (item) => item.timestamp));
+    setSmsMessages(sortVisibleSmsMessages(mergedSmsMessages.items));
     setOutboundMessages(sortByDateDescending(mergedOutboundMessages.items, (item) => item.createdAt));
     setResources(sortByDateDescending(mergedResources.items, (item) => item.lastUpdated));
     setMarketPrices(sortByDateDescending(mergedMarketPrices.items, (item) => item.updatedAt));
@@ -1238,7 +1313,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (isLiveMode) {
       await Promise.all([
         ...backup.data.farmers.map((item) => farmerRepository.createFarmer(item)),
-        ...backup.data.smsMessages.map((item) => smsRepository.createInboundMessage(item)),
+        ...importableSmsMessages.map((item) => smsRepository.createInboundMessage(item)),
         ...backup.data.outboundMessages.map((item) => outboundMessageRepository.createOutboundMessage(item)),
         ...backup.data.resources.map((item) => resourceRepository.createResource(item)),
         ...backup.data.marketPrices.map((item) => marketPriceRepository.createMarketPriceEntry(item)),
@@ -1325,7 +1400,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const updateFarmerStatus = (farmerId: string, status: Farmer['status']) => {
+  const updateFarmerStatus = (
+    farmerId: string,
+    status: Farmer['status'],
+    options?: FarmerStatusUpdateOptions
+  ) => {
     const currentFarmer = farmers.find((farmer) => farmer.id === farmerId);
 
     if (!currentFarmer || currentFarmer.status === status) {
@@ -1339,30 +1418,57 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         ? 'APPROVE_FARMER_REGISTRATION'
         : status === 'rejected'
           ? 'REJECT_FARMER_REGISTRATION'
+          : status === 'archived'
+            ? 'ARCHIVE_FARMER'
           : 'UPDATE_FARMER_STATUS';
+    const archiveUpdates: Partial<Farmer> =
+      status === 'archived'
+        ? {
+            archivedAt: timestamp,
+            archivedBy: actorName,
+            archiveReason: options?.archiveReason?.trim() || 'Archived from active farmer roster.',
+          }
+        : currentFarmer.status === 'archived'
+          ? {
+              archivedAt: undefined,
+              archivedBy: undefined,
+              archiveReason: undefined,
+            }
+          : {};
+    const nextFarmer: Farmer = {
+      ...currentFarmer,
+      status,
+      ...archiveUpdates,
+    };
     const auditLog: AuditLog = {
       id: createEntityId('AUD'),
       timestamp,
       user: actorName,
       action,
-      details: `${currentFarmer.name} (${currentFarmer.id}) -> ${status}`,
+      details:
+        status === 'archived' && nextFarmer.archiveReason
+          ? `${currentFarmer.name} (${currentFarmer.id}) -> archived (${nextFarmer.archiveReason})`
+          : `${currentFarmer.name} (${currentFarmer.id}) -> ${status}`,
     };
 
     setFarmers(prev => prev.map((farmer) => (
       farmer.id === farmerId
-        ? { ...farmer, status }
+        ? nextFarmer
         : farmer
     )));
     setAuditLogs(prev => [auditLog, ...prev]);
 
-    void farmerRepository.updateFarmer(farmerId, { status }).then(() => {
+    void farmerRepository.updateFarmer(farmerId, {
+      status,
+      ...archiveUpdates,
+    }).then(() => {
       return auditRepository.createAuditLog(auditLog).catch((error) => {
         console.error("Failed to persist farmer status audit log", error);
       });
     }).catch((error) => {
       setFarmers(prev => prev.map((farmer) => (
         farmer.id === farmerId
-          ? { ...farmer, status: currentFarmer.status }
+          ? currentFarmer
           : farmer
       )));
       setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
@@ -1442,6 +1548,237 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist farmer deletion", error);
     });
+  };
+
+  const mergeFarmerRecords = async (sourceFarmerId: string, targetFarmerId: string) => {
+    const sourceFarmer = farmers.find((farmer) => farmer.id === sourceFarmerId);
+    const targetFarmer = farmers.find((farmer) => farmer.id === targetFarmerId);
+
+    if (!sourceFarmer || !targetFarmer || sourceFarmer.id === targetFarmer.id) {
+      return false;
+    }
+
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const timestamp = new Date().toISOString();
+    const mergedPhoneHistory = Array.from(
+      new Set(
+        [
+          ...(targetFarmer.phoneHistory ?? []),
+          targetFarmer.phone,
+          ...(sourceFarmer.phoneHistory ?? []),
+          sourceFarmer.phone,
+        ]
+          .map((phone) => phone?.trim())
+          .filter((phone): phone is string => Boolean(phone))
+      )
+    );
+    const mergedFromFarmerIds = Array.from(
+      new Set([
+        ...(targetFarmer.mergedFromFarmerIds ?? []),
+        ...(sourceFarmer.mergedFromFarmerIds ?? []),
+        sourceFarmer.id,
+      ])
+    );
+    const lastSmsActivity =
+      normalizeTimestamp(sourceFarmer.lastSmsActivity) > normalizeTimestamp(targetFarmer.lastSmsActivity)
+        ? sourceFarmer.lastSmsActivity
+        : targetFarmer.lastSmsActivity;
+    const mergedTargetUpdates: Partial<Farmer> = {
+      lastSmsActivity,
+      phoneHistory: mergedPhoneHistory,
+      mergedFromFarmerIds,
+      crops: Array.from(new Set([...targetFarmer.crops, ...sourceFarmer.crops])),
+      farmSize: Math.max(targetFarmer.farmSize, sourceFarmer.farmSize),
+      age: targetFarmer.age || sourceFarmer.age,
+      gender:
+        targetFarmer.gender && targetFarmer.gender !== 'Hindi natukoy'
+          ? targetFarmer.gender
+          : sourceFarmer.gender,
+      sitio:
+        targetFarmer.sitio && targetFarmer.sitio !== 'Hindi tukoy'
+          ? targetFarmer.sitio
+          : sourceFarmer.sitio,
+      barangay:
+        targetFarmer.barangay && targetFarmer.barangay !== 'Hindi tukoy'
+          ? targetFarmer.barangay
+          : sourceFarmer.barangay,
+    };
+    const mergedSourceUpdates: Partial<Farmer> = {
+      status: 'inactive',
+      mergedIntoFarmerId: targetFarmer.id,
+      phoneHistory: Array.from(
+        new Set([
+          ...(sourceFarmer.phoneHistory ?? []),
+          sourceFarmer.phone,
+        ])
+      ),
+    };
+    const nextTargetFarmer: Farmer = {
+      ...targetFarmer,
+      ...mergedTargetUpdates,
+    };
+    const nextSourceFarmer: Farmer = {
+      ...sourceFarmer,
+      ...mergedSourceUpdates,
+    };
+    const smsToMove = smsMessages.filter((message) => message.farmerId === sourceFarmer.id);
+    const assistanceToMove = assistanceRecords.filter((record) => record.farmerId === sourceFarmer.id);
+    const visitsToMove = fieldVisitTasks.filter((task) => task.farmerId === sourceFarmer.id);
+    const vouchersToMove = vouchers.filter((voucher) => voucher.farmerId === sourceFarmer.id);
+    const logbookToMove = logbook.filter((entry) => entry.farmerId === sourceFarmer.id);
+    const trainingExamplesToMove = smsTrainingExamples.filter((example) => example.farmerId === sourceFarmer.id);
+    const auditLog: AuditLog = {
+      id: createEntityId('AUD'),
+      timestamp,
+      user: actorName,
+      action: 'MERGE_FARMER_RECORDS',
+      details: `${sourceFarmer.name} (${sourceFarmer.id}) -> ${targetFarmer.name} (${targetFarmer.id})`,
+    };
+
+    const previousFarmers = farmers;
+    const previousSmsMessages = smsMessages;
+    const previousAssistanceRecords = assistanceRecords;
+    const previousFieldVisitTasks = fieldVisitTasks;
+    const previousVouchers = vouchers;
+    const previousLogbook = logbook;
+    const previousTrainingExamples = smsTrainingExamples;
+    const previousAuditLogs = auditLogs;
+
+    setFarmers((prev) =>
+      sortByDateDescending(
+        prev.map((farmer) => {
+          if (farmer.id === sourceFarmer.id) return nextSourceFarmer;
+          if (farmer.id === targetFarmer.id) return nextTargetFarmer;
+          return farmer;
+        }),
+        (farmer) => farmer.registrationDate
+      )
+    );
+    setSmsMessages((prev) =>
+      sortVisibleSmsMessages(
+        prev.map((message) =>
+          message.farmerId === sourceFarmer.id
+            ? {
+                ...message,
+                farmerId: targetFarmer.id,
+                farmerName: nextTargetFarmer.name,
+              }
+            : message
+        )
+      )
+    );
+    setAssistanceRecords((prev) =>
+      sortByDateDescending(
+        prev.map((record) =>
+          record.farmerId === sourceFarmer.id
+            ? { ...record, farmerId: targetFarmer.id }
+            : record
+        ),
+        (record) => record.updatedAt
+      )
+    );
+    setFieldVisitTasks((prev) =>
+      sortByDateAscending(
+        prev.map((task) =>
+          task.farmerId === sourceFarmer.id
+            ? { ...task, farmerId: targetFarmer.id }
+            : task
+        ),
+        (task) => task.scheduledFor
+      )
+    );
+    setVouchers((prev) =>
+      sortByDateDescending(
+        prev.map((voucher) =>
+          voucher.farmerId === sourceFarmer.id
+            ? { ...voucher, farmerId: targetFarmer.id }
+            : voucher
+        ),
+        (voucher) => voucher.issueDate
+      )
+    );
+    setLogbook((prev) =>
+      sortByDateDescending(
+        prev.map((entry) =>
+          entry.farmerId === sourceFarmer.id
+            ? { ...entry, farmerId: targetFarmer.id }
+            : entry
+        ),
+        (entry) => entry.timestamp
+      )
+    );
+    setSmsTrainingExamples((prev) =>
+      sortByDateDescending(
+        prev.map((example) =>
+          example.farmerId === sourceFarmer.id
+            ? {
+                ...example,
+                farmerId: targetFarmer.id,
+                farmerName: nextTargetFarmer.name,
+                phone:
+                  normalizeFarmerPhone(example.phone) === normalizeFarmerPhone(sourceFarmer.phone)
+                    ? sourceFarmer.phone
+                    : example.phone,
+              }
+            : example
+        ),
+        (example) => example.finalReview.reviewedAt
+      )
+    );
+    setAuditLogs((prev) => [auditLog, ...prev]);
+
+    try {
+      await Promise.all([
+        farmerRepository.updateFarmer(targetFarmer.id, mergedTargetUpdates),
+        farmerRepository.updateFarmer(sourceFarmer.id, mergedSourceUpdates),
+        ...smsToMove.map((message) =>
+          smsRepository.updateMessage(message.id, {
+            farmerId: targetFarmer.id,
+            farmerName: nextTargetFarmer.name,
+          })
+        ),
+        ...assistanceToMove.map((record) =>
+          assistanceRepository.updateAssistanceRecord(record.id, {
+            farmerId: targetFarmer.id,
+          })
+        ),
+        ...visitsToMove.map((task) =>
+          fieldVisitRepository.updateFieldVisitTask(task.id, {
+            farmerId: targetFarmer.id,
+          })
+        ),
+        ...vouchersToMove.map((voucher) =>
+          voucherRepository.updateVoucher(voucher.id, {
+            farmerId: targetFarmer.id,
+          })
+        ),
+        ...logbookToMove.map((entry) =>
+          logbookRepository.updateEntry(entry.id, {
+            farmerId: targetFarmer.id,
+          })
+        ),
+        ...trainingExamplesToMove.map((example) =>
+          smsTrainingRepository.updateTrainingExample(example.id, {
+            farmerId: targetFarmer.id,
+            farmerName: nextTargetFarmer.name,
+          })
+        ),
+        auditRepository.createAuditLog(auditLog),
+      ]);
+
+      return true;
+    } catch (error) {
+      setFarmers(previousFarmers);
+      setSmsMessages(previousSmsMessages);
+      setAssistanceRecords(previousAssistanceRecords);
+      setFieldVisitTasks(previousFieldVisitTasks);
+      setVouchers(previousVouchers);
+      setLogbook(previousLogbook);
+      setSmsTrainingExamples(previousTrainingExamples);
+      setAuditLogs(previousAuditLogs);
+      console.error("Failed to merge farmer records", error);
+      return false;
+    }
   };
 
   const addPendingFarmer = (farmerData: FarmerRegistrationValues) => {
@@ -1882,6 +2219,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       updatedAt: timestamp,
       notes: data.notes,
       relatedSmsId: data.relatedSmsId,
+      verificationStatus: 'unverified',
     };
     const farmer = farmers.find((entry) => entry.id === data.farmerId);
     const logbookEntry: LogbookEntry = {
@@ -1942,7 +2280,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return nextTask;
   };
 
-  const updateFieldVisitTaskStatus = (taskId: string, status: FieldVisitStatus) => {
+  const updateFieldVisitTaskStatus = (
+    taskId: string,
+    status: FieldVisitStatus,
+    options?: FieldVisitStatusUpdateOptions
+  ) => {
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
     const timestamp = new Date().toISOString();
     const currentTask = fieldVisitTasks.find((task) => task.id === taskId);
@@ -1951,10 +2293,52 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const shouldApplyManualVerification =
+      (status === 'in_progress' || status === 'completed') &&
+      options?.verificationStatus == null &&
+      currentTask.verificationStatus !== 'gps_captured';
+    const verificationStatus =
+      options?.verificationStatus ??
+      (shouldApplyManualVerification
+        ? 'manual_only'
+        : currentTask.verificationStatus ?? 'unverified');
+    const verificationSource =
+      options?.verificationSource ??
+      (shouldApplyManualVerification ? 'manual_dashboard' : currentTask.verificationSource);
+    const verificationCapturedAt =
+      options?.verificationCapturedAt ??
+      (shouldApplyManualVerification ? timestamp : currentTask.verificationCapturedAt);
+    const verificationNote =
+      options?.verificationNote ??
+      (shouldApplyManualVerification
+        ? 'Na-update mula sa dashboard nang walang GPS metadata.'
+        : currentTask.verificationNote);
     const nextTask: FieldVisitTask = {
       ...currentTask,
       status,
       updatedAt: timestamp,
+      notes: options?.notes ?? currentTask.notes,
+      startedAt:
+        status === 'in_progress'
+          ? currentTask.startedAt ?? timestamp
+          : currentTask.startedAt,
+      completedAt:
+        status === 'completed'
+          ? timestamp
+          : status === 'cancelled'
+            ? undefined
+            : currentTask.completedAt,
+      verificationStatus,
+      verificationSource,
+      verificationCapturedAt,
+      verificationLat:
+        options?.verificationLat ?? (verificationStatus === 'gps_captured' ? currentTask.verificationLat : undefined),
+      verificationLng:
+        options?.verificationLng ?? (verificationStatus === 'gps_captured' ? currentTask.verificationLng : undefined),
+      verificationAccuracyMeters:
+        options?.verificationAccuracyMeters ??
+        (verificationStatus === 'gps_captured' ? currentTask.verificationAccuracyMeters : undefined),
+      verificationNote,
     };
     const farmer = farmers.find((entry) => entry.id === currentTask.farmerId);
     const logbookEntry: LogbookEntry = {
@@ -1963,14 +2347,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       timestamp,
       type: 'Tala sa Bukid',
       title: `Na-update ang field visit: ${currentTask.title}`,
-      description: `Status: ${status}`,
+      description: `Status: ${status}. ${getFieldVisitVerificationSummary(nextTask)}`,
     };
     const auditLog: AuditLog = {
       id: createEntityId('AUD'),
       timestamp,
       user: actorName,
       action: 'UPDATE_FIELD_VISIT_STATUS',
-      details: `${farmer?.name ?? currentTask.farmerId}: ${currentTask.title} -> ${status}`,
+      details: `${farmer?.name ?? currentTask.farmerId}: ${currentTask.title} -> ${status} (${nextTask.verificationStatus ?? 'unverified'})`,
+    };
+    const taskUpdates: Partial<FieldVisitTask> = {
+      status: nextTask.status,
+      updatedAt: nextTask.updatedAt,
+      notes: nextTask.notes,
+      startedAt: nextTask.startedAt,
+      completedAt: nextTask.completedAt,
+      verificationStatus: nextTask.verificationStatus,
+      verificationSource: nextTask.verificationSource,
+      verificationCapturedAt: nextTask.verificationCapturedAt,
+      verificationLat: nextTask.verificationLat,
+      verificationLng: nextTask.verificationLng,
+      verificationAccuracyMeters: nextTask.verificationAccuracyMeters,
+      verificationNote: nextTask.verificationNote,
     };
 
     setFieldVisitTasks(prev => prev.map((task) => task.id === taskId ? nextTask : task));
@@ -1984,10 +2382,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         createdAt: timestamp,
         payload: {
           taskId,
-          updates: {
-            status: nextTask.status,
-            updatedAt: nextTask.updatedAt,
-          },
+          updates: taskUpdates,
           logbookEntry: sanitizeLogbookEntry(logbookEntry),
           auditLog,
         },
@@ -1996,10 +2391,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     void Promise.all([
-      fieldVisitRepository.updateFieldVisitTask(taskId, {
-        status: nextTask.status,
-        updatedAt: nextTask.updatedAt,
-      }),
+      fieldVisitRepository.updateFieldVisitTask(taskId, taskUpdates),
       logbookRepository.createEntry(logbookEntry),
       auditRepository.createAuditLog(auditLog),
     ]).catch((error) => {
@@ -2010,10 +2402,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           createdAt: timestamp,
           payload: {
             taskId,
-            updates: {
-              status: nextTask.status,
-              updatedAt: nextTask.updatedAt,
-            },
+            updates: taskUpdates,
             logbookEntry: sanitizeLogbookEntry(logbookEntry),
             auditLog,
           },
@@ -2025,6 +2414,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addInboundSms = (data: NewInboundSmsData) => {
+    const screening = screenInboundSms({
+      phone: data.phone,
+      message: data.message,
+    });
+
+    if (screening.ignored) {
+      return null;
+    }
+
     const workflow = processInboundSms({
       phone: data.phone,
       message: data.message,
@@ -2077,6 +2475,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     return newMessage;
+  };
+
+  const addSmsPreview = (message: SmsMessage) => {
+    setSmsMessages((previous) => sortVisibleSmsMessages([message, ...previous]));
+    return message;
   };
 
   const updateSmsMessage = (
@@ -2154,6 +2557,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             sourceMessage: nextMessage,
             body: nextMessage.aiAdvice,
             providerName: isDemoMode ? 'mock-sms-provider' : 'live-sms-provider',
+            audience: 'farmer' as const,
+            purpose: 'manual_reply' as const,
           }
         : undefined;
 
@@ -2195,6 +2600,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           body: outboundReply.body,
           provider: smsProvider,
           providerName: outboundReply.providerName,
+          audience: outboundReply.audience,
+          purpose: outboundReply.purpose,
         });
         setOutboundMessages((records) => [record, ...records]);
         await outboundMessageRepository.createOutboundMessage(record);
@@ -2300,7 +2707,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const currentMessage = smsMessages.find((message) => message.id === messageId);
 
     if (!currentMessage) {
-      return;
+      return false;
+    }
+
+    if (outcomeStatus === 'resolved') {
+      const resolutionReadiness = getSmsCaseResolutionReadiness({
+        message: currentMessage,
+        assistanceRecords,
+        fieldVisitTasks,
+      });
+
+      if (!resolutionReadiness.ready) {
+        return false;
+      }
     }
 
     const updatedMessage: SmsMessage = {
@@ -2383,7 +2802,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           logbookEntry: sanitizeLogbookEntry(outcomeLogbookEntry),
         },
       });
-      return;
+      return true;
     }
 
     if (isLiveMode && outcomeStatus === 'resolved') {
@@ -2436,7 +2855,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           console.error('Failed to request farmer confirmation for resolved case', error);
         }
       })();
-      return;
+      return true;
     }
 
     void Promise.all([
@@ -2460,10 +2879,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
       console.error("Failed to persist SMS case outcome update", error);
     });
+
+    return true;
   };
 
   const closeSmsCase = (messageId: string, resolutionNote?: string) => {
-    updateSmsCaseOutcome(messageId, 'resolved', resolutionNote?.trim() || 'Minarkahang handa nang isara ng barangay team. Hihintayin pa ang kumpirmasyon ng magsasaka.');
+    return updateSmsCaseOutcome(messageId, 'resolved', resolutionNote?.trim() || 'Minarkahang handa nang isara ng barangay team. Hihintayin pa ang kumpirmasyon ng magsasaka.');
   };
 
   const confirmSmsCaseResolution = (
@@ -2574,6 +2995,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       body: currentRecord.body,
       provider: smsProvider,
       providerName: isDemoMode ? 'mock-sms-provider' : 'live-sms-provider',
+      audience: currentRecord.audience,
+      purpose: currentRecord.purpose,
     });
     const retryRecord: OutboundMessage = {
       ...resendRecord,
@@ -2636,7 +3059,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const resetDemoData = () => {
     setFarmers(initialFarmers);
-    setSmsMessages(initialSmsMessages);
+    setSmsMessages(sortVisibleSmsMessages(initialSmsMessages));
     setResources(initialResources);
     setMarketPrices(initialMarketPrices);
     setKnowledgeArticles(initialKnowledgeArticles);
@@ -2677,10 +3100,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     updateFarmerRecord,
     updateFarmerStatus,
     updateManyFarmerStatuses,
+    mergeFarmerRecords,
     deleteFarmerRecord,
     smsMessages,
     outboundMessages,
     addInboundSms,
+    addSmsPreview,
     webhookBridgeStatus,
     updateSmsMessage,
     assignSmsMessage,

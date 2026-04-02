@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight, User, ArrowRightLeft } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight, User, ArrowRightLeft, Archive, ArchiveRestore } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,7 +66,7 @@ function downloadFile(filename: string, content: string, mimeType: string) {
 }
 
 export default function FarmersPage() {
-  const { farmers, updateFarmerRecord, mergeFarmerRecords, deleteFarmerRecord } = useData();
+  const { farmers, updateFarmerRecord, updateFarmerStatus, mergeFarmerRecords, deleteFarmerRecord } = useData();
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
@@ -89,8 +89,19 @@ export default function FarmersPage() {
   const activeFarmers = farmers.filter(
     (f) => (f.status === 'active' || f.status === 'inactive') && !f.mergedIntoFarmerId
   );
-  const allSitios = [...new Set(farmers.map((f) => f.sitio))].sort();
-  const allCrops = [...new Set(farmers.flatMap((f) => f.crops))];
+  const archivedFarmers = useMemo(
+    () =>
+      farmers
+        .filter((farmer) => farmer.status === 'archived' && !farmer.mergedIntoFarmerId)
+        .sort(
+          (left, right) =>
+            new Date(right.archivedAt ?? right.registrationDate).getTime() -
+            new Date(left.archivedAt ?? left.registrationDate).getTime()
+        ),
+    [farmers]
+  );
+  const allSitios = [...new Set(activeFarmers.map((f) => f.sitio))].sort();
+  const allCrops = [...new Set(activeFarmers.flatMap((f) => f.crops))];
   const allStatuses: Farmer['status'][] = ['active', 'inactive'];
 
   const handleFilterChange = (
@@ -161,6 +172,24 @@ export default function FarmersPage() {
   const handleDeleteFarmer = (farmerId: string) => {
     deleteFarmerRecord(farmerId);
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
+  };
+
+  const handleArchiveFarmer = (farmer: Farmer) => {
+    updateFarmerStatus(farmer.id, 'archived', {
+      archiveReason: 'Moved away, duplicate cleanup, or retained only for audit trail.',
+    });
+    toast({
+      title: 'Na-archive ang farmer record',
+      description: `Nakatago na sa active roster si ${farmer.name}, pero nananatili ang history para sa audit at reporting.`,
+    });
+  };
+
+  const handleRestoreFarmer = (farmer: Farmer) => {
+    updateFarmerStatus(farmer.id, 'inactive');
+    toast({
+      title: 'Naibalik ang farmer record',
+      description: `Naibalik si ${farmer.name} sa inactive roster para ma-reactivate kung kinakailangan.`,
+    });
   };
 
   const mergeCandidates = useMemo(
@@ -465,6 +494,25 @@ export default function FarmersPage() {
                             </HoverTooltip>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
+                                <HoverTooltip text="I-archive para manatiling nasa audit history">
+                                  <Button variant="outline" size="icon" className="h-8 w-8"><Archive className="h-4 w-4" /></Button>
+                                </HoverTooltip>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>I-archive ang farmer record?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                      Hindi ito permanenteng mabubura. Aalis lang ito sa active roster pero mananatili ang SMS history, assistance ledger, at audit trail.
+                                      </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleArchiveFarmer(farmer)}>I-archive</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
                                 <HoverTooltip text="Alisin">
                                   <Button variant="destructive" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
                                 </HoverTooltip>
@@ -492,6 +540,57 @@ export default function FarmersPage() {
                 </TableBody>
               </Table>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Archived Farmer Records</h2>
+                <p className="text-sm text-muted-foreground">
+                  Mga record na hindi na aktibong kasama sa roster pero nananatiling traceable para sa audit at historical reporting.
+                </p>
+              </div>
+              <Badge variant="outline">{archivedFarmers.length}</Badge>
+            </div>
+
+            {archivedFarmers.length === 0 ? (
+              <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                Wala pang archived farmer records.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {archivedFarmers.map((farmer) => (
+                  <div key={farmer.id} className="flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{farmer.name}</span>
+                        <Badge variant="secondary">archived</Badge>
+                        {farmer.phone ? <Badge variant="outline">{farmer.phone}</Badge> : null}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {farmer.sitio}, {farmer.barangay}
+                        {farmer.archiveReason ? ` · ${farmer.archiveReason}` : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Archived {farmer.archivedAt ? new Date(farmer.archivedAt).toLocaleString() : 'recently'}
+                        {farmer.archivedBy ? ` by ${farmer.archivedBy}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleRestoreFarmer(farmer)}>
+                        <ArchiveRestore className="mr-2 h-4 w-4" />
+                        Restore as inactive
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => router.push(`/dashboard/farmers/${farmer.id}`)}>
+                        Buksan ang profile
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

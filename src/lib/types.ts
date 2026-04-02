@@ -172,7 +172,12 @@ export type SystemSettings = {
   updatedBy?: string;
 };
 
-export type FarmerStatus = 'pending_approval' | 'active' | 'inactive' | 'rejected';
+export type FarmerStatus =
+  | 'pending_approval'
+  | 'active'
+  | 'inactive'
+  | 'rejected'
+  | 'archived';
 
 export type Farmer = {
   id: string; // Corresponds to farmerId
@@ -188,6 +193,12 @@ export type Farmer = {
   lastSmsActivity: string;
   avatarUrl?: string;
   status: FarmerStatus;
+  phoneHistory?: string[];
+  mergedFromFarmerIds?: string[];
+  mergedIntoFarmerId?: string;
+  archivedAt?: string;
+  archivedBy?: string;
+  archiveReason?: string;
 };
 
 export type FarmerEvidenceType = 'document' | 'field_photo' | 'audio';
@@ -261,6 +272,8 @@ export type SmsMessage = {
   resolutionConfirmationNote?: string;
   possibleDuplicateOfCaseId?: string;
   possibleDuplicateReason?: string;
+  threadConfidence?: number;
+  threadReason?: string;
   caseOutcomeStatus?: SmsCaseOutcomeStatus;
   caseOutcomeSummary?: string;
   caseOutcomeUpdatedAt?: string;
@@ -418,6 +431,7 @@ export type AssistanceStatus = 'planned' | 'in_progress' | 'completed';
 export type FarmerAssistanceRecord = {
     id: string;
     farmerId: string;
+    relatedSmsId?: string;
     type: AssistanceType;
     title: string;
     details: string;
@@ -433,6 +447,11 @@ export type FarmerAssistanceRecord = {
 
 export type FieldVisitPriority = 'high' | 'medium' | 'low';
 export type FieldVisitStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type FieldVisitVerificationStatus = 'unverified' | 'gps_captured' | 'manual_only';
+export type FieldVisitVerificationSource =
+  | 'mobile_gps'
+  | 'mobile_manual'
+  | 'manual_dashboard';
 
 export type FieldVisitTask = {
     id: string;
@@ -447,6 +466,15 @@ export type FieldVisitTask = {
     updatedAt: string;
     notes?: string;
     relatedSmsId?: string;
+    startedAt?: string;
+    completedAt?: string;
+    verificationStatus?: FieldVisitVerificationStatus;
+    verificationSource?: FieldVisitVerificationSource;
+    verificationCapturedAt?: string;
+    verificationLat?: number;
+    verificationLng?: number;
+    verificationAccuracyMeters?: number;
+    verificationNote?: string;
 };
 
 export type OutboundMessageStatus = 'queued' | 'sent' | 'failed' | 'delivered' | 'retried';
@@ -467,6 +495,8 @@ export type OutboundMessage = {
     recipientPhone: string;
     audience?: OutboundMessageAudience;
     purpose?: OutboundMessagePurpose;
+    queuePriority?: number;
+    queuePriorityLabel?: 'critical' | 'high' | 'normal' | 'low';
     body: string;
     status: OutboundMessageStatus;
     provider: string;

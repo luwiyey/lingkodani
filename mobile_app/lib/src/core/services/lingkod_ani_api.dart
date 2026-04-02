@@ -161,6 +161,28 @@ class LingkodAniApi {
     return SmsFeedItem.fromJson(response['message'] as Map<String, dynamic>? ?? const {});
   }
 
+  Future<FieldVisitSummary> updateFieldVisitStatus(
+    String idToken, {
+    required String visitId,
+    required String status,
+    String note = '',
+    Map<String, dynamic>? verification,
+  }) async {
+    final response = await _patch(
+      '/api/mobile/field-visits/${Uri.encodeComponent(visitId)}',
+      idToken: idToken,
+      body: {
+        'status': status,
+        if (note.trim().isNotEmpty) 'note': note.trim(),
+        if (verification != null) 'verification': verification,
+      },
+    );
+
+    return FieldVisitSummary.fromJson(
+      response['task'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
   Future<void> registerPushToken(
     String idToken, {
     required String token,
@@ -263,6 +285,24 @@ class LingkodAniApi {
 
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
+
+    return _decodeResponse(response);
+  }
+
+  Future<Map<String, dynamic>> _patch(
+    String path, {
+    required String idToken,
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await http.patch(
+      Uri.parse('${AppConfig.baseUrl}$path'),
+      headers: {
+        'Authorization': 'Bearer $idToken',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(body),
+    );
 
     return _decodeResponse(response);
   }

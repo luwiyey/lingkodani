@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/models/mobile_models.dart';
+import '../core/services/field_visit_location_service.dart';
 import '../state/app_state.dart';
 
 class FarmerDetailScreen extends StatefulWidget {
@@ -22,6 +23,9 @@ class FarmerDetailScreen extends StatefulWidget {
 
 class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
   late Future<FarmerDetail> _future;
+  final FieldVisitLocationService _locationService =
+      const FieldVisitLocationService();
+  String? _visitActionId;
 
   @override
   void initState() {
@@ -36,8 +40,65 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
         .fetchFarmerDetail(widget.session.idToken, widget.farmerId);
   }
 
+  Future<void> _handleVisitStatus(FieldVisitSummary visit) async {
+    final appState = context.read<AppState>();
+    final nextStatus = visit.status == 'scheduled' ? 'in_progress' : 'completed';
+
+    setState(() {
+      _visitActionId = visit.id;
+    });
+
+    try {
+      final verification = await _locationService.captureVerification();
+      final result = await appState.updateFieldVisitStatus(
+        visitId: visit.id,
+        status: nextStatus,
+        verification: verification,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final usedManualFallback =
+          '${verification['status'] ?? ''}' == 'manual_only';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.queued
+                ? result.detail
+                : usedManualFallback
+                    ? 'Na-update ang visit, pero manual verification lang ang na-save dahil walang GPS lock.'
+                    : 'Na-update ang field visit at naka-save ang GPS verification.',
+          ),
+        ),
+      );
+
+      if (!result.queued) {
+        setState(() => _future = _load());
+        await _future;
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _visitActionId = null;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -132,21 +193,29 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          _MetaLine(label: 'Huling SMS activity', value: farmer.lastSmsActivity),
-                          _MetaLine(label: 'Registration date', value: farmer.registrationDate),
+                          _MetaLine(
+                            label: 'Huling SMS activity',
+                            value: farmer.lastSmsActivity,
+                          ),
+                          _MetaLine(
+                            label: 'Registration date',
+                            value: farmer.registrationDate,
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _SectionTitle(
+                  const _SectionTitle(
                     title: 'Pinakahuling SMS',
                     subtitle:
                         'Makikita rito ang pinakabagong usapan at case status.',
                   ),
                   const SizedBox(height: 8),
                   if (detail.recentMessages.isEmpty)
-                    const _EmptyCard(message: 'Wala pang naka-link na SMS record.')
+                    const _EmptyCard(
+                      message: 'Wala pang naka-link na SMS record.',
+                    )
                   else
                     ...detail.recentMessages.map(
                       (message) => Card(
@@ -191,7 +260,7 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                       ),
                     ),
                   const SizedBox(height: 20),
-                  _SectionTitle(
+                  const _SectionTitle(
                     title: 'Tulong at serbisyo',
                     subtitle:
                         'Mga naitalang assistance, vouchers, o support entries.',
@@ -199,7 +268,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                   const SizedBox(height: 8),
                   if (detail.assistanceRecords.isEmpty)
                     const _EmptyCard(
-                      message: 'Wala pang assistance record para sa farmer na ito.',
+                      message:
+                          'Wala pang assistance record para sa farmer na ito.',
                     )
                   else
                     ...detail.assistanceRecords.map(
@@ -219,7 +289,7 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                       ),
                     ),
                   const SizedBox(height: 20),
-                  _SectionTitle(
+                  const _SectionTitle(
                     title: 'Field visits',
                     subtitle:
                         'Mga naka-assign o natapos na pagbisita kaugnay ng concern.',
@@ -227,26 +297,139 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                   const SizedBox(height: 8),
                   if (detail.fieldVisitTasks.isEmpty)
                     const _EmptyCard(
-                      message: 'Wala pang field visit task para sa farmer na ito.',
+                      message:
+                          'Wala pang field visit task para sa farmer na ito.',
                     )
                   else
-                    ...detail.fieldVisitTasks.map(
-                      (visit) => Card(
+                    ...detail.fieldVisitTasks.map((visit) {
+                      final pendingVisitActions =
+                          appState.pendingActionsForFieldVisit(visit.id);
+                      final pendingVisitAction = pendingVisitActions.isEmpty
+                          ? null
+                          : pendingVisitActions.last;
+                      final pendingPayloadStatus =
+                          pendingVisitAction?.payload['status']?.toString() ?? '';
+                      final pendingVerification =
+                          pendingVisitAction?.payload['verification'];
+                      final pendingVerificationStatus = pendingVerification is Map
+                          ? '${pendingVerification['status'] ?? ''}'
+                          : '';
+                      final effectiveStatus = pendingPayloadStatus.isNotEmpty
+                          ? pendingPayloadStatus
+                          : visit.status;
+                      final effectiveVerificationStatus =
+                          pendingVerificationStatus.isNotEmpty
+                              ? pendingVerificationStatus
+                              : visit.verificationStatus;
+                      final busy = _visitActionId == visit.id;
+                      final actionBlocked = busy || pendingVisitAction != null;
+
+                      return Card(
                         margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          title: Text(visit.title),
-                          subtitle: Text(
-                            [
-                              visit.purpose,
-                              visit.scheduledFor,
-                              visit.assignedTo,
-                              if (visit.notes.isNotEmpty) visit.notes,
-                            ].where((part) => part.isNotEmpty).join(' • '),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Text(
+                                    visit.title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  _Pill(text: effectiveStatus),
+                                  _Pill(
+                                    text: effectiveVerificationStatus ==
+                                            'gps_captured'
+                                        ? 'GPS verified'
+                                        : effectiveVerificationStatus ==
+                                                'manual_only'
+                                            ? 'Manual verification'
+                                            : 'Unverified',
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                [
+                                  visit.purpose,
+                                  visit.scheduledFor,
+                                  visit.assignedTo,
+                                  if (visit.notes.isNotEmpty) visit.notes,
+                                ].where((part) => part.isNotEmpty).join(' • '),
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  height: 1.4,
+                                ),
+                              ),
+                              if (visit.gpsVerified) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  [
+                                    if (visit.verificationCapturedAt.isNotEmpty)
+                                      'Captured ${visit.verificationCapturedAt}',
+                                    if (visit.verificationAccuracyMeters != null)
+                                      'accuracy ${visit.verificationAccuracyMeters!.round()}m',
+                                    if (visit.verificationLat != null &&
+                                        visit.verificationLng != null)
+                                      '${visit.verificationLat!.toStringAsFixed(5)}, ${visit.verificationLng!.toStringAsFixed(5)}',
+                                  ].join(' • '),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                              if (visit.manualVerification &&
+                                  visit.verificationNote.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  visit.verificationNote,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                              if (pendingVisitAction != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  pendingVisitAction.lastError == null
+                                      ? 'Pending visit sync • attempts: ${pendingVisitAction.attempts}'
+                                      : 'Visit retry needed • attempts: ${pendingVisitAction.attempts} • ${pendingVisitAction.lastError}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: pendingVisitAction.lastError == null
+                                        ? Colors.grey.shade700
+                                        : Colors.red.shade700,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              if (effectiveStatus != 'completed' &&
+                                  effectiveStatus != 'cancelled')
+                                FilledButton.tonal(
+                                  onPressed: actionBlocked
+                                      ? null
+                                      : () => _handleVisitStatus(visit),
+                                  child: Text(
+                                    busy
+                                        ? 'Ina-update...'
+                                        : effectiveStatus == 'scheduled'
+                                            ? 'Simulan ang visit'
+                                            : 'Markahang tapos',
+                                  ),
+                                ),
+                            ],
                           ),
-                          trailing: _Pill(text: visit.status),
                         ),
-                      ),
-                    ),
+                      );
+                    }),
                 ],
               ),
             );

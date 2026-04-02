@@ -316,6 +316,15 @@ class FieldVisitSummary {
     required this.priority,
     required this.status,
     required this.notes,
+    required this.startedAt,
+    required this.completedAt,
+    required this.verificationStatus,
+    required this.verificationSource,
+    required this.verificationCapturedAt,
+    required this.verificationLat,
+    required this.verificationLng,
+    required this.verificationAccuracyMeters,
+    required this.verificationNote,
   });
 
   final String id;
@@ -326,6 +335,18 @@ class FieldVisitSummary {
   final String priority;
   final String status;
   final String notes;
+  final String startedAt;
+  final String completedAt;
+  final String verificationStatus;
+  final String verificationSource;
+  final String verificationCapturedAt;
+  final double? verificationLat;
+  final double? verificationLng;
+  final double? verificationAccuracyMeters;
+  final String verificationNote;
+
+  bool get gpsVerified => verificationStatus == 'gps_captured';
+  bool get manualVerification => verificationStatus == 'manual_only';
 
   factory FieldVisitSummary.fromJson(Map<String, dynamic> json) {
     return FieldVisitSummary(
@@ -337,6 +358,16 @@ class FieldVisitSummary {
       priority: '${json['priority'] ?? 'medium'}',
       status: '${json['status'] ?? 'scheduled'}',
       notes: '${json['notes'] ?? ''}',
+      startedAt: '${json['startedAt'] ?? ''}',
+      completedAt: '${json['completedAt'] ?? ''}',
+      verificationStatus: '${json['verificationStatus'] ?? 'unverified'}',
+      verificationSource: '${json['verificationSource'] ?? ''}',
+      verificationCapturedAt: '${json['verificationCapturedAt'] ?? ''}',
+      verificationLat: (json['verificationLat'] as num?)?.toDouble(),
+      verificationLng: (json['verificationLng'] as num?)?.toDouble(),
+      verificationAccuracyMeters:
+          (json['verificationAccuracyMeters'] as num?)?.toDouble(),
+      verificationNote: '${json['verificationNote'] ?? ''}',
     );
   }
 }
@@ -513,4 +544,123 @@ class KnowledgeSearchResult {
       sources: [...localSources, ...webSources],
     );
   }
+}
+
+enum MobileQueuedActionType {
+  smsReply,
+  resolutionConfirmation,
+  fieldVisitStatus,
+}
+
+extension MobileQueuedActionTypeValue on MobileQueuedActionType {
+  String get value {
+    switch (this) {
+      case MobileQueuedActionType.smsReply:
+        return 'sms_reply';
+      case MobileQueuedActionType.resolutionConfirmation:
+        return 'resolution_confirmation';
+      case MobileQueuedActionType.fieldVisitStatus:
+        return 'field_visit_status';
+    }
+  }
+}
+
+MobileQueuedActionType mobileQueuedActionTypeFromValue(String value) {
+  switch (value) {
+    case 'field_visit_status':
+      return MobileQueuedActionType.fieldVisitStatus;
+    case 'resolution_confirmation':
+      return MobileQueuedActionType.resolutionConfirmation;
+    case 'sms_reply':
+    default:
+      return MobileQueuedActionType.smsReply;
+  }
+}
+
+class MobileQueuedAction {
+  const MobileQueuedAction({
+    required this.id,
+    required this.userId,
+    required this.type,
+    required this.messageId,
+    required this.createdAt,
+    required this.payload,
+    this.attempts = 0,
+    this.lastAttemptAt,
+    this.lastError,
+  });
+
+  final String id;
+  final String userId;
+  final MobileQueuedActionType type;
+  final String messageId;
+  final DateTime createdAt;
+  final Map<String, dynamic> payload;
+  final int attempts;
+  final DateTime? lastAttemptAt;
+  final String? lastError;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'type': type.value,
+      'messageId': messageId,
+      'createdAt': createdAt.toIso8601String(),
+      'payload': payload,
+      'attempts': attempts,
+      if (lastAttemptAt != null) 'lastAttemptAt': lastAttemptAt!.toIso8601String(),
+      if (lastError != null) 'lastError': lastError,
+    };
+  }
+
+  factory MobileQueuedAction.fromJson(Map<String, dynamic> json) {
+    return MobileQueuedAction(
+      id: '${json['id'] ?? ''}',
+      userId: '${json['userId'] ?? ''}',
+      type: mobileQueuedActionTypeFromValue('${json['type'] ?? 'sms_reply'}'),
+      messageId: '${json['messageId'] ?? ''}',
+      createdAt: DateTime.tryParse('${json['createdAt'] ?? ''}') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      payload: Map<String, dynamic>.from(json['payload'] as Map? ?? const {}),
+      attempts: (json['attempts'] as num?)?.toInt() ?? 0,
+      lastAttemptAt: DateTime.tryParse('${json['lastAttemptAt'] ?? ''}'),
+      lastError: json['lastError'] == null ? null : '${json['lastError']}',
+    );
+  }
+
+  MobileQueuedAction copyWith({
+    int? attempts,
+    DateTime? lastAttemptAt,
+    String? lastError,
+  }) {
+    return MobileQueuedAction(
+      id: id,
+      userId: userId,
+      type: type,
+      messageId: messageId,
+      createdAt: createdAt,
+      payload: payload,
+      attempts: attempts ?? this.attempts,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+      lastError: lastError ?? this.lastError,
+    );
+  }
+}
+
+enum MobileActionSubmissionStatus {
+  sent,
+  queued,
+}
+
+class MobileActionSubmissionResult {
+  const MobileActionSubmissionResult({
+    required this.status,
+    this.detail = '',
+  });
+
+  final MobileActionSubmissionStatus status;
+  final String detail;
+
+  bool get queued => status == MobileActionSubmissionStatus.queued;
+  bool get sent => status == MobileActionSubmissionStatus.sent;
 }
