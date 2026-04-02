@@ -68,6 +68,23 @@ function formatRuntimeTimestamp(value?: string | null) {
   }
 }
 
+function formatDeliveryState(value?: string | null) {
+  switch (value) {
+    case 'delivered':
+      return 'Delivered';
+    case 'failed':
+      return 'Failed';
+    case 'awaiting_receipt':
+      return 'Awaiting receipt';
+    case 'queued':
+      return 'Queued';
+    case 'sent':
+      return 'Sent';
+    default:
+      return value ?? 'Unknown';
+  }
+}
+
 function createEmptyLexiconRule(): SmsLexiconRule {
   return {
     id: `LEX-${Date.now()}`,
@@ -152,8 +169,11 @@ export default function BarangaySettingsPage() {
     const followUpHealth = runtimeHealth.records.find((record) => record.id === 'automation_followups');
     const inboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_inbound');
     const outboundHealth = runtimeHealth.records.find((record) => record.id === 'sms_outbound');
+    const webhookHealth = runtimeHealth.records.find((record) => record.id === 'sms_outbound_webhook');
     const inviteEmailHealth = runtimeHealth.records.find((record) => record.id === 'invite_email');
     const mobilePushHealth = runtimeHealth.records.find((record) => record.id === 'mobile_push');
+    const outboundSummary = runtimeHealth.outboundDeliverySummary;
+    const outboundAttentionItems = runtimeHealth.outboundAttentionItems;
 
     useEffect(() => {
         if (currentUserProfile && !canManageSettings) {
@@ -674,6 +694,30 @@ export default function BarangaySettingsPage() {
                 <Badge variant="outline">{runtimeHealthLoading ? 'Refreshing...' : 'Live status'}</Badge>
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
+                  <p className="text-sm font-medium text-foreground">Operations Watch</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Last failed subsystem: {runtimeHealth.latestFailure?.label ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Failure time: {formatRuntimeTimestamp(runtimeHealth.latestFailure?.lastFailureAt ?? runtimeHealth.latestFailure?.updatedAt)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Last automation failure: {runtimeHealth.latestAutomationFailure?.label ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Automation failure time: {formatRuntimeTimestamp(runtimeHealth.latestAutomationFailure?.lastFailureAt ?? runtimeHealth.latestAutomationFailure?.updatedAt)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Last inbound farmer: {runtimeHealth.latestInbound?.farmerName ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Recent outbound needing attention: {outboundSummary.needsAttentionCount} / {outboundSummary.recentCount}
+                  </p>
+                  {runtimeHealth.latestFailure?.lastError ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestFailure.lastError}</p>
+                  ) : null}
+                </div>
                 <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-sm font-medium text-foreground">Overdue SMS Batch</p>
                   <p className="mt-1 text-xs text-muted-foreground">Status: {overdueHealth?.status ?? 'Wala pa'}</p>
@@ -695,6 +739,12 @@ export default function BarangaySettingsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     Source: {runtimeHealth.latestInbound?.sourceProvider ?? 'Wala pa'}
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Farmer: {runtimeHealth.latestInbound?.farmerName ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Preview: {runtimeHealth.latestInbound?.messagePreview ?? 'Wala pa'}
+                  </p>
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-sm font-medium text-foreground">Outbound SMS</p>
@@ -705,6 +755,82 @@ export default function BarangaySettingsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     Purpose: {runtimeHealth.latestOutbound?.purpose ?? 'Wala pa'}
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Audience: {runtimeHealth.latestOutbound?.audience ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Priority: {runtimeHealth.latestOutbound?.queuePriorityLabel ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Provider message ID: {runtimeHealth.latestOutbound?.providerMessageId ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Delivered at: {formatRuntimeTimestamp(runtimeHealth.latestOutbound?.deliveryReceivedAt)}
+                  </p>
+                  {runtimeHealth.latestOutbound?.errorMessage ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestOutbound.errorMessage}</p>
+                  ) : null}
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-sm font-medium text-foreground">Outbound Webhook</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Status: {webhookHealth?.status ?? runtimeHealth.latestWebhook?.status ?? 'Wala pa'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Huling event: {formatRuntimeTimestamp(runtimeHealth.latestWebhook?.updatedAt ?? webhookHealth?.updatedAt)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Provider message ID: {String(runtimeHealth.latestWebhook?.meta?.providerMessageId ?? 'Wala pa')}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Outbound ID: {String(runtimeHealth.latestWebhook?.meta?.outboundId ?? 'Wala pa')}
+                  </p>
+                  {runtimeHealth.latestWebhook?.lastError ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestWebhook.lastError}</p>
+                  ) : null}
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-foreground">Outbound Delivery Watch</p>
+                    <Badge variant="outline">Delivered {outboundSummary.deliveredCount}</Badge>
+                    <Badge variant="outline">Awaiting {outboundSummary.awaitingReceiptCount}</Badge>
+                    <Badge variant="outline">Queued {outboundSummary.queuedCount}</Badge>
+                    <Badge variant="outline">Failed {outboundSummary.failedCount}</Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Latest delivered: {formatRuntimeTimestamp(runtimeHealth.latestDeliveredOutbound?.deliveryReceivedAt ?? runtimeHealth.latestDeliveredOutbound?.lastStatusAt)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Last delivered recipient: {runtimeHealth.latestDeliveredOutbound?.recipientPhone ?? 'Wala pa'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Last delivered purpose: {runtimeHealth.latestDeliveredOutbound?.purpose ?? 'Wala pa'}
+                  </p>
+                  {outboundAttentionItems.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      {outboundAttentionItems.map((item) => (
+                        <div key={item.id} className="rounded-md border bg-background/70 p-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline">{formatDeliveryState(item.deliveryState)}</Badge>
+                            <Badge variant="outline">{item.purpose}</Badge>
+                            <Badge variant="outline">{item.audience}</Badge>
+                            {item.queuePriorityLabel ? <Badge variant="outline">{item.queuePriorityLabel}</Badge> : null}
+                          </div>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Recipient: {item.recipientPhone} · Provider: {item.provider}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Created: {formatRuntimeTimestamp(item.createdAt)} · Last status: {formatRuntimeTimestamp(item.lastStatusAt)}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Reason: {item.attentionReason ?? item.errorMessage ?? 'Needs manual review'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Walang recent outbound messages na kailangan ng manual attention.
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
                   <p className="text-sm font-medium text-foreground">Invite Email</p>
@@ -721,7 +847,9 @@ export default function BarangaySettingsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">Status: {mobilePushHealth?.status ?? 'Wala pa'}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Huling success: {formatRuntimeTimestamp(mobilePushHealth?.lastSuccessAt)}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Huling failure: {formatRuntimeTimestamp(mobilePushHealth?.lastFailureAt)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Huling run: {formatRuntimeTimestamp(mobilePushHealth?.updatedAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling run: {formatRuntimeTimestamp(runtimeHealth.latestPush?.updatedAt ?? mobilePushHealth?.updatedAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Last action: {String(runtimeHealth.latestPush?.meta?.action ?? 'Wala pa')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Last case: {String(runtimeHealth.latestPush?.meta?.caseId ?? 'Wala pa')}</p>
                   {mobilePushHealth?.lastError ? (
                     <p className="mt-1 text-xs text-muted-foreground">Error: {mobilePushHealth.lastError}</p>
                   ) : null}

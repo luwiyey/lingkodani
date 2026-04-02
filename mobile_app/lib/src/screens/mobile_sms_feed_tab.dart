@@ -34,7 +34,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
   }
 
   Future<void> _sendReply(SmsFeedItem message) async {
-    final api = context.read<AppState>().api;
+    final appState = context.read<AppState>();
     final messenger = ScaffoldMessenger.of(context);
     final reply = await showModalBottomSheet<String>(
       context: context,
@@ -57,16 +57,15 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
     });
 
     try {
-      await api.sendSmsReply(
-            widget.session.idToken,
-            messageId: message.id,
-            reply: normalizedReply,
-            status: shouldMarkApproved ? 'approved' : 'replied',
-            parsedIntent: message.parsedIntent,
-            urgency: message.urgency,
-            safetyFlag: message.safetyFlag,
-            tone: message.tone,
-          );
+      final result = await appState.sendSmsReply(
+        messageId: message.id,
+        reply: normalizedReply,
+        status: shouldMarkApproved ? 'approved' : 'replied',
+        parsedIntent: message.parsedIntent,
+        urgency: message.urgency,
+        safetyFlag: message.safetyFlag,
+        tone: message.tone,
+      );
 
       if (!mounted) {
         return;
@@ -75,16 +74,20 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            shouldMarkApproved
-                ? 'Naaprubahan at naipadala ang payo kay ${message.farmerName}.'
-                : 'Naipadala ang tugon kay ${message.farmerName}.',
+            result.queued
+                ? result.detail
+                : shouldMarkApproved
+                    ? 'Naaprubahan at naipadala ang payo kay ${message.farmerName}.'
+                    : 'Naipadala ang tugon kay ${message.farmerName}.',
           ),
         ),
       );
-      setState(() {
-        _future = _load();
-      });
-      await _future;
+      if (!result.queued) {
+        setState(() {
+          _future = _load();
+        });
+        await _future;
+      }
     } catch (error) {
       if (!mounted) {
         return;
@@ -103,7 +106,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
   }
 
   Future<void> _requestResolution(SmsFeedItem message) async {
-    final api = context.read<AppState>().api;
+    final appState = context.read<AppState>();
     final messenger = ScaffoldMessenger.of(context);
     final note = await showModalBottomSheet<String>(
       context: context,
@@ -120,11 +123,10 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
     });
 
     try {
-      await api.requestResolutionConfirmation(
-            widget.session.idToken,
-            messageId: message.id,
-            note: note.trim(),
-          );
+      final result = await appState.requestResolutionConfirmation(
+        messageId: message.id,
+        note: note.trim(),
+      );
 
       if (!mounted) {
         return;
@@ -133,14 +135,18 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Naipadala ang YES/NO confirmation kay ${message.farmerName}.',
+            result.queued
+                ? result.detail
+                : 'Naipadala ang YES/NO confirmation kay ${message.farmerName}.',
           ),
         ),
       );
-      setState(() {
-        _future = _load();
-      });
-      await _future;
+      if (!result.queued) {
+        setState(() {
+          _future = _load();
+        });
+        await _future;
+      }
     } catch (error) {
       if (!mounted) {
         return;
@@ -160,6 +166,8 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+
     return FutureBuilder<List<SmsFeedItem>>(
       future: _future,
       builder: (context, snapshot) {
@@ -178,6 +186,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
 
         return RefreshIndicator(
           onRefresh: () async {
+            await appState.syncPendingActions();
             setState(() => _future = _load());
             await _future;
           },
@@ -187,6 +196,8 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
             itemBuilder: (context, index) {
               final message = messages[index];
               final actionBusy = _actionMessageId == message.id;
+              final pendingActions =
+                  appState.pendingActionsForMessage(message.id);
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -236,10 +247,49 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                           MobileInfoChip(text: message.caseStatus),
                           MobileInfoChip(text: message.parsedIntent),
                           MobileInfoChip(text: message.status),
+                          for (final pendingAction in pendingActions)
+                            MobileInfoChip(
+                              text: pendingAction.type ==
+                                      MobileQueuedActionType.smsReply
+                                  ? 'Pending reply sync'
+                                  : 'Pending resolve sync',
+                            ),
                           if (message.assignedTo.isNotEmpty)
                             MobileInfoChip(text: 'Owner: ${message.assignedTo}'),
                         ],
                       ),
+                      if (pendingActions.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Text(
+                            'May ${pendingActions.length} pending mobile action na isi-sync kapag bumalik ang signal.',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...pendingActions.map(
+                          (pendingAction) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              pendingAction.lastError == null ||
+                                      pendingAction.lastError!.isEmpty
+                                  ? '${pendingAction.type == MobileQueuedActionType.smsReply ? 'Reply' : 'Resolve'} queued · attempts: ${pendingAction.attempts}'
+                                  : '${pendingAction.type == MobileQueuedActionType.smsReply ? 'Reply' : 'Resolve'} retry needed · attempts: ${pendingAction.attempts} · ${pendingAction.lastError}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: pendingAction.lastError == null
+                                    ? Colors.grey.shade700
+                                    : Colors.red.shade700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       if (message.aiAdvice.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Text(

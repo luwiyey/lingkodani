@@ -20,6 +20,27 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
+  Future<void> _syncPendingActions() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final appState = context.read<AppState>();
+    await appState.syncPendingActions();
+
+    if (!mounted) {
+      return;
+    }
+
+    final pendingCount = appState.pendingActionCount;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          pendingCount == 0
+              ? 'Na-sync na ang lahat ng pending mobile actions.'
+              : '$pendingCount mobile action pa ang naghihintay ng signal o retry.',
+        ),
+      ),
+    );
+  }
+
   void _openFarmerDetail(MobileSession session, FarmerSummary farmer) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -92,12 +113,72 @@ class _HomeShellState extends State<HomeShell> {
         foregroundColor: const Color(0xFF1F2937),
         elevation: 0,
         actions: [
+          IconButton(
+            tooltip: 'I-sync ang pending actions',
+            onPressed: appState.syncingPendingActions ? null : _syncPendingActions,
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  appState.syncingPendingActions
+                      ? Icons.sync_rounded
+                      : Icons.cloud_sync_outlined,
+                ),
+                if (appState.pendingActionCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB91C1C),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${appState.pendingActionCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
-              child: Text(
-                profile.name,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    profile.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  if (appState.pendingActionCount > 0)
+                    Text(
+                      '${appState.pendingActionCount} pending sync',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  if (appState.pendingSyncError != null)
+                    Text(
+                      'May retry needed',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
