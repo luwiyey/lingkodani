@@ -29,7 +29,7 @@ Option A: direct env values
 ```env
 FIREBASE_ADMIN_PROJECT_ID=...
 FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+FIREBASE_PRIVATE_KEY="[PASTE_YOUR_ESCAPED_PRIVATE_KEY_HERE]"
 ```
 
 Option B: downloaded service-account JSON path
@@ -47,7 +47,7 @@ GOOGLE_APPLICATION_CREDENTIALS=C:\path\to\lingkod-ani-firebase-adminsdk.json
 Option D: full JSON blob in one variable
 
 ```env
-FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"..."}
+FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...","private_key":"[PASTE_ESCAPED_PRIVATE_KEY_HERE]","client_email":"..."}
 ```
 
 Option E: application default credentials

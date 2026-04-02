@@ -29,9 +29,9 @@ Farmers still use SMS. Staff can now use both web and mobile.
 The app defaults to:
 
 - `API_BASE_URL=https://lingkod-ani.com`
-- the current Firebase web API key used by the web app
+- no bundled Firebase web API key
 
-You can override them at build time:
+Provide the Firebase values at build time:
 
 ```bash
 flutter run --dart-define=API_BASE_URL=https://lingkod-ani.com --dart-define=FIREBASE_WEB_API_KEY=YOUR_KEY
@@ -53,7 +53,7 @@ Use [firebase_push.env.example](C:/Users/hwawei/Desktop/LINGKOD-ANI%20DEMO/lingk
 as your template and fill in:
 
 - `MOBILE_FIREBASE_ANDROID_APP_ID`
-- `FIREBASE_WEB_API_KEY` if you want to override the bundled default
+- `FIREBASE_WEB_API_KEY`
 
 The backend route `/api/mobile/push` will register the device token and subscribe
 the device to the Lingkod-Ani staff alert topic. Urgent live SMS cases can then
@@ -61,6 +61,22 @@ fan out to logged-in staff devices.
 
 If the Android Firebase app ID is missing, the mobile app will continue working,
 but push registration safely stays disabled instead of breaking sign-in.
+
+Before the first physical-device run, you can check your local Android readiness with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-android-readiness.ps1
+```
+
+This checks:
+
+- `flutter` in PATH
+- `adb` in PATH
+- `google-services.json`
+- `firebase_push.env`
+- the required Firebase Android keys
+
+It will also run `flutter doctor -v` and show connected Android devices when those tools are available.
 
 Official Firebase references:
 

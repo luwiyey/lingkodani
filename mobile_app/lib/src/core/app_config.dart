@@ -6,7 +6,7 @@ class AppConfig {
 
   static const firebaseWebApiKey = String.fromEnvironment(
     'FIREBASE_WEB_API_KEY',
-    defaultValue: 'AIzaSyBOvgBtkbfyUGrn8qmz5HCxQzM5IwVH7Ag',
+    defaultValue: '',
   );
 
   static const firebaseProjectId = String.fromEnvironment(

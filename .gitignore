@@ -34,6 +34,12 @@ yarn-error.log*
 firebase-admin*.json
 service-account*.json
 *-firebase-adminsdk-*.json
+mobile_app/firebase_push.env
+mobile_app/android/app/google-services.json
+mobile_app/android/app/src/**/google-services.json
+mobile_app/GoogleService-Info.plist
+mobile_app/.dart_tool/
+mobile_app/build/
 
 # vercel
 .vercel
