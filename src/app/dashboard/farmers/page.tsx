@@ -1,7 +1,6 @@
 
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
-import Image from 'next/image';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useRouter } from 'next/navigation';
@@ -11,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight, ArrowLeft, User } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight, User, ArrowRightLeft } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +51,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatFarmerRegistrationsAsCsv } from '@/lib/data-portability';
+import { findPossibleFarmerDuplicates } from '@/lib/farmer-duplicates';
 
 type SortableKeys = keyof Farmer | 'location';
 
@@ -66,18 +66,14 @@ function downloadFile(filename: string, content: string, mimeType: string) {
 }
 
 export default function FarmersPage() {
-  const { farmers, updateFarmerRecord, deleteFarmerRecord } = useData();
+  const { farmers, updateFarmerRecord, mergeFarmerRecords, deleteFarmerRecord } = useData();
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
+  const [mergeSourceFarmer, setMergeSourceFarmer] = useState<Farmer | null>(null);
+  const [mergeTargetFarmerId, setMergeTargetFarmerId] = useState<string>('');
   const { toast } = useToast();
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const [filters, setFilters] = useState<{
     sitios: string[];
     crops: string[];
@@ -90,7 +86,9 @@ export default function FarmersPage() {
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
 
-  const activeFarmers = farmers.filter(f => f.status === 'active' || f.status === 'inactive');
+  const activeFarmers = farmers.filter(
+    (f) => (f.status === 'active' || f.status === 'inactive') && !f.mergedIntoFarmerId
+  );
   const allSitios = [...new Set(farmers.map((f) => f.sitio))].sort();
   const allCrops = [...new Set(farmers.flatMap((f) => f.crops))];
   const allStatuses: Farmer['status'][] = ['active', 'inactive'];
@@ -165,6 +163,63 @@ export default function FarmersPage() {
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
   };
 
+  const mergeCandidates = useMemo(
+    () =>
+      activeFarmers.filter((farmer) => farmer.id !== mergeSourceFarmer?.id),
+    [activeFarmers, mergeSourceFarmer?.id]
+  );
+  const duplicateHints = useMemo(
+    () =>
+      new Map(
+        activeFarmers.map((farmer) => [
+          farmer.id,
+          findPossibleFarmerDuplicates(farmer, activeFarmers)
+            .map((match) => ({
+              ...match,
+              farmer: activeFarmers.find((candidate) => candidate.id === match.farmerId),
+            }))
+            .filter((match) => Boolean(match.farmer))
+            .slice(0, 2),
+        ])
+      ),
+    [activeFarmers]
+  );
+
+  const handleMergeFarmer = async () => {
+    if (!mergeSourceFarmer || !mergeTargetFarmerId) {
+      return;
+    }
+
+    const targetFarmer = farmers.find((farmer) => farmer.id === mergeTargetFarmerId);
+
+    if (!targetFarmer) {
+      toast({
+        title: 'Walang target farmer',
+        description: 'Pumili muna ng tamang farmer record na paglalagyan ng merged history.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const merged = await mergeFarmerRecords(mergeSourceFarmer.id, mergeTargetFarmerId);
+
+    if (!merged) {
+      toast({
+        title: 'Hindi natuloy ang merge',
+        description: 'Walang nabagong farmer records. Pakisubukang muli kapag stable ang koneksyon.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Na-merge ang farmer records',
+      description: `Ang history ni ${mergeSourceFarmer.name} ay nailipat na kay ${targetFarmer.name}. Mananatiling traceable ang lumang number sa phone history.`,
+    });
+    setMergeSourceFarmer(null);
+    setMergeTargetFarmerId('');
+  };
+
   const filteredFarmers = useMemo(() => activeFarmers.filter(farmer => {
     const searchMatch = (
       farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,7 +235,7 @@ export default function FarmersPage() {
   }), [activeFarmers, searchTerm, filters]);
   
   const sortedFarmers = useMemo(() => {
-    let sortableItems = [...filteredFarmers];
+    const sortableItems = [...filteredFarmers];
     if (sortConfig !== null) {
         sortableItems.sort((a, b) => {
             let aValue: string | number = '';
@@ -370,7 +425,19 @@ export default function FarmersPage() {
                                     <User className="h-4 w-4 text-muted-foreground" />
                                 </AvatarFallback>
                             </Avatar>
-                              <span className="truncate">{farmer.name}</span>
+                              <div className="min-w-0">
+                                <span className="truncate block">{farmer.name}</span>
+                                {duplicateHints.get(farmer.id)?.length ? (
+                                  <div className="mt-1 space-y-1">
+                                    <Badge variant="outline">Possible duplicate</Badge>
+                                    {duplicateHints.get(farmer.id)?.map((hint) => (
+                                      <p key={hint.farmerId} className="text-xs text-muted-foreground">
+                                        {hint.farmer?.name} · {hint.reasons.join(', ')}
+                                      </p>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
                             </div>
                         </TableCell>
                       <TableCell className="px-2 py-4 md:px-4">{farmer.sitio}, {farmer.barangay}</TableCell>
@@ -382,6 +449,19 @@ export default function FarmersPage() {
                         <div className="flex flex-wrap justify-end gap-1">
                             <HoverTooltip text="I-edit">
                               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditingFarmer(farmer)}><Edit className="h-4 w-4" /></Button>
+                            </HoverTooltip>
+                            <HoverTooltip text="I-merge sa ibang farmer record">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  setMergeSourceFarmer(farmer);
+                                  setMergeTargetFarmerId('');
+                                }}
+                              >
+                                <ArrowRightLeft className="h-4 w-4" />
+                              </Button>
                             </HoverTooltip>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -494,6 +574,52 @@ export default function FarmersPage() {
                 </DialogFooter>
               </form>
             </DialogContent>
+        </Dialog>
+      )}
+
+      {mergeSourceFarmer && (
+        <Dialog open={!!mergeSourceFarmer} onOpenChange={() => {
+          setMergeSourceFarmer(null);
+          setMergeTargetFarmerId('');
+        }}>
+          <DialogContent className="sm:max-w-[460px]">
+            <DialogHeader>
+              <DialogTitle>I-merge ang farmer record</DialogTitle>
+              <DialogDescription>
+                Gamitin ito kung nagpalit ng SIM ang magsasaka o may duplicate profile. Ililipat ang SMS case ownership, assistance, visits, vouchers, at phone history sa napiling target record.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="rounded-xl border bg-muted/30 p-3 text-sm">
+                <p className="font-medium text-foreground">Source record</p>
+                <p className="mt-1">{mergeSourceFarmer.name}</p>
+                <p className="text-muted-foreground">{mergeSourceFarmer.phone} · {mergeSourceFarmer.sitio}, {mergeSourceFarmer.barangay}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="merge-target">Target farmer record</Label>
+                <Select value={mergeTargetFarmerId} onValueChange={setMergeTargetFarmerId}>
+                  <SelectTrigger id="merge-target">
+                    <SelectValue placeholder="Piliin ang farmer na magmamana ng history" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mergeCandidates.map((farmer) => (
+                      <SelectItem key={farmer.id} value={farmer.id}>
+                        {farmer.name} · {farmer.phone} · {farmer.sitio}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Kanselahin</Button>
+              </DialogClose>
+              <Button type="button" onClick={handleMergeFarmer} disabled={!mergeTargetFarmerId}>
+                I-merge ang records
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       )}
     </>

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { Check, Download, Search, Upload, X } from 'lucide-react';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ import {
   formatFarmerRegistrationsAsCsv,
   parseFarmerRegistrationsCsv,
 } from '@/lib/data-portability';
+import { findPossibleFarmerDuplicates } from '@/lib/farmer-duplicates';
 import { cn } from '@/lib/utils';
 
 function downloadFile(filename: string, content: string, mimeType: string) {
@@ -73,6 +75,26 @@ function ApprovalsPageContent() {
   }, [focusedFarmerId, farmers.length]);
 
   const pendingFarmers = farmers.filter(f => f.status === 'pending_approval');
+  const duplicateHints = React.useMemo(() => {
+    const activeOrInactive = farmers.filter(
+      (farmer) =>
+        (farmer.status === 'active' || farmer.status === 'inactive') &&
+        !farmer.mergedIntoFarmerId
+    );
+
+    return new Map(
+      pendingFarmers.map((farmer) => [
+        farmer.id,
+        findPossibleFarmerDuplicates(farmer, activeOrInactive)
+          .map((match) => ({
+            ...match,
+            farmer: activeOrInactive.find((candidate) => candidate.id === match.farmerId),
+          }))
+          .filter((match) => Boolean(match.farmer))
+          .slice(0, 3),
+      ])
+    );
+  }, [farmers, pendingFarmers]);
 
   const handleApproval = (farmerId: string, isApproved: boolean) => {
     const farmerToUpdate = farmers.find(f => f.id === farmerId);
@@ -256,7 +278,21 @@ function ApprovalsPageContent() {
                     >
                       <TableCell className="font-medium px-2 py-4 md:px-4 break-words">{farmer.name}</TableCell>
                       <TableCell className="break-all px-2 py-4 md:px-4">{farmer.phone}</TableCell>
-                      <TableCell className="break-words px-2 py-4 md:px-4">{farmer.sitio}, {farmer.barangay}</TableCell>
+                      <TableCell className="break-words px-2 py-4 md:px-4">
+                        <div className="space-y-2">
+                          <p>{farmer.sitio}, {farmer.barangay}</p>
+                          {duplicateHints.get(farmer.id)?.length ? (
+                            <div className="space-y-1">
+                              <Badge variant="outline">Possible duplicate</Badge>
+                              {duplicateHints.get(farmer.id)?.map((hint) => (
+                                <p key={hint.farmerId} className="text-xs text-muted-foreground">
+                                  Match: {hint.farmer?.name} ({hint.farmer?.phone}) · {hint.reasons.join(', ')}
+                                </p>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      </TableCell>
                       <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
                       <TableCell className="text-right px-2 py-4 md:px-4">
                         <div className="flex justify-end gap-2">
