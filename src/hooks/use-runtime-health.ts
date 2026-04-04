@@ -54,6 +54,13 @@ type RuntimeHealthPayload = {
     deliveredCount: number;
     needsAttentionCount: number;
   };
+  outboundReconciliationSummary: {
+    healthyCount: number;
+    providerIdMissingCount: number;
+    statusMismatchCount: number;
+    timestampMissingCount: number;
+    retryableCount: number;
+  };
   outboundAttentionItems: Array<{
     id: string;
     createdAt: string;
@@ -70,7 +77,10 @@ type RuntimeHealthPayload = {
     errorMessage: string | null;
     needsAttention: boolean;
     attentionReason: string | null;
+    attentionCategory: string | null;
+    recoveryAction: string | null;
     deliveryState: string;
+    reconciliationState: string;
   }>;
   recentOutboundWatch: Array<{
     id: string;
@@ -88,7 +98,10 @@ type RuntimeHealthPayload = {
     errorMessage: string | null;
     needsAttention: boolean;
     attentionReason: string | null;
+    attentionCategory: string | null;
+    recoveryAction: string | null;
     deliveryState: string;
+    reconciliationState: string;
   }>;
   latestFailure: {
     id: string;
@@ -146,6 +159,13 @@ export function useRuntimeHealth() {
       queuedCount: 0,
       deliveredCount: 0,
       needsAttentionCount: 0,
+    },
+    outboundReconciliationSummary: {
+      healthyCount: 0,
+      providerIdMissingCount: 0,
+      statusMismatchCount: 0,
+      timestampMissingCount: 0,
+      retryableCount: 0,
     },
     outboundAttentionItems: [],
     recentOutboundWatch: [],

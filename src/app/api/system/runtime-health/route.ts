@@ -89,8 +89,52 @@ function normalizeOutboundAttention(message: OutboundMessage) {
   };
 }
 
+function getAttentionCategory(message: OutboundMessage) {
+  if (message.status === "failed") {
+    return "failed_send" as const;
+  }
+
+  if (message.status === "queued") {
+    return "stale_queue" as const;
+  }
+
+  return "awaiting_receipt" as const;
+}
+
+function getRecoveryAction(message: OutboundMessage) {
+  if (message.status === "failed") {
+    return "I-retry ang send o suriin ang provider error bago ulitin ang mensahe.";
+  }
+
+  if (message.status === "queued") {
+    return "Suriin kung may stuck queue, missing provider handoff, o offline bridge issue bago mag-manual resend.";
+  }
+
+  return "Hintayin muna ang receipt. Kapag tumagal pa, buksan ang SMS feed at magpasya kung kailangan ng manual follow-up.";
+}
+
+function getReconciliationState(message: OutboundMessage) {
+  if (message.deliveryReceivedAt && message.status !== "delivered") {
+    return "status_mismatch" as const;
+  }
+
+  if (message.status === "delivered" && !message.deliveryReceivedAt) {
+    return "timestamp_missing" as const;
+  }
+
+  if (
+    ["sent", "retried", "delivered", "failed"].includes(message.status) &&
+    !message.providerMessageId
+  ) {
+    return "provider_id_missing" as const;
+  }
+
+  return "healthy" as const;
+}
+
 function serializeOutboundWatch(message: OutboundMessage) {
   const attention = normalizeOutboundAttention(message);
+  const reconciliationState = getReconciliationState(message);
 
   return {
     id: message.id,
@@ -108,7 +152,10 @@ function serializeOutboundWatch(message: OutboundMessage) {
     errorMessage: message.errorMessage ?? null,
     needsAttention: attention.needsAttention,
     attentionReason: attention.attentionReason,
+    attentionCategory: attention.needsAttention ? getAttentionCategory(message) : null,
+    recoveryAction: attention.needsAttention ? getRecoveryAction(message) : null,
     deliveryState: attention.deliveryState,
+    reconciliationState,
   };
 }
 
@@ -155,6 +202,13 @@ export async function GET(request: Request) {
     deliveredCount: recentOutboundWatch.filter((item) => item.deliveryState === "delivered").length,
     needsAttentionCount: outboundAttentionItems.length,
   };
+  const outboundReconciliationSummary = {
+    healthyCount: recentOutboundWatch.filter((item) => item.reconciliationState === "healthy").length,
+    providerIdMissingCount: recentOutboundWatch.filter((item) => item.reconciliationState === "provider_id_missing").length,
+    statusMismatchCount: recentOutboundWatch.filter((item) => item.reconciliationState === "status_mismatch").length,
+    timestampMissingCount: recentOutboundWatch.filter((item) => item.reconciliationState === "timestamp_missing").length,
+    retryableCount: recentOutboundWatch.filter((item) => item.attentionCategory === "failed_send").length,
+  };
 
   return NextResponse.json({
     records,
@@ -184,6 +238,7 @@ export async function GET(request: Request) {
       : null,
     latestDeliveredOutbound: latestDeliveredOutbound ? serializeOutboundWatch(latestDeliveredOutbound) : null,
     outboundDeliverySummary,
+    outboundReconciliationSummary,
     outboundAttentionItems,
     recentOutboundWatch,
     latestFailure: serializeRuntimeRecord(latestFailure),

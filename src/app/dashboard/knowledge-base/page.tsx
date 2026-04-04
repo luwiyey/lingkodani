@@ -7,7 +7,7 @@ import type { KnowledgeArticle } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, Search, Volume2, FileText, ArrowUpRight, PlusCircle, Copy } from 'lucide-react';
+import { Bot, Search, Volume2, FileText, ArrowUpRight, PlusCircle, Copy, AlertTriangle, ShieldCheck, BookCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
-import { buildKnowledgeAutocompleteSuggestions, buildSuggestedArticlesLocally, isKnowledgeArticleApproved, searchArticlesLocally, type SuggestedKnowledgeTopic } from '@/lib/knowledge-search';
+import {
+  buildKnowledgeAutocompleteSuggestions,
+  buildKnowledgeSupportInsight,
+  buildSuggestedArticlesLocally,
+  isKnowledgeArticleApproved,
+  searchArticlesLocally,
+  type KnowledgeSupportInsight,
+  type SuggestedKnowledgeTopic,
+} from '@/lib/knowledge-search';
 import { uploadKnowledgeAudioFile } from '@/lib/services/knowledge-file-service';
 import { transcribeAudioUpload } from '@/lib/services/audio-transcription-service';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
@@ -33,6 +41,7 @@ type SearchResultsState = {
   usedWebGrounding: boolean;
   webSearchQueries: string[];
   webSources: { title: string; url: string }[];
+  supportInsight: KnowledgeSupportInsight;
 };
 
 function getAnswerModeLabel(answerMode: SearchResultsState['answerMode']) {
@@ -45,6 +54,18 @@ function getAnswerModeLabel(answerMode: SearchResultsState['answerMode']) {
   }
 
   return 'Local only';
+}
+
+function getConfidenceBadgeVariant(confidenceTier: KnowledgeSupportInsight['confidenceTier']) {
+  if (confidenceTier === 'high') {
+    return 'secondary' as const;
+  }
+
+  if (confidenceTier === 'medium') {
+    return 'outline' as const;
+  }
+
+  return 'destructive' as const;
 }
 
 export default function KnowledgeBasePage() {
@@ -297,6 +318,14 @@ export default function KnowledgeBasePage() {
                     }))
                     .filter((source) => source.title && source.url)
                 : [],
+              supportInsight: buildKnowledgeSupportInsight({
+                query: normalizedQuery,
+                relevantArticles: relevantArticles.length > 0 ? relevantArticles : localResult.articles,
+                approvedArticles: approvedKnowledgeArticles,
+                answerMode: payload.answerMode ?? (payload.usedWebGrounding ? 'local_web' : 'local_ai'),
+                usedWebGrounding: Boolean(payload.usedWebGrounding),
+                smsMessages,
+              }),
             });
             return;
           }
@@ -309,6 +338,14 @@ export default function KnowledgeBasePage() {
           usedWebGrounding: false,
           webSearchQueries: [],
           webSources: [],
+          supportInsight: buildKnowledgeSupportInsight({
+            query: normalizedQuery,
+            relevantArticles: localResult.articles,
+            approvedArticles: approvedKnowledgeArticles,
+            answerMode: 'local_only',
+            usedWebGrounding: false,
+            smsMessages,
+          }),
         });
 
     } catch (error) {
@@ -321,6 +358,14 @@ export default function KnowledgeBasePage() {
           usedWebGrounding: false,
           webSearchQueries: [],
           webSources: [],
+          supportInsight: buildKnowledgeSupportInsight({
+            query: normalizedQuery,
+            relevantArticles: fallback.articles,
+            approvedArticles: approvedKnowledgeArticles,
+            answerMode: 'local_only',
+            usedWebGrounding: false,
+            smsMessages,
+          }),
         });
         toast({
             title: "Gumamit muna ng lokal na search",
@@ -578,6 +623,106 @@ export default function KnowledgeBasePage() {
                       </div>
                     ) : null}
                 </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    Reliability at Coverage Watch
+                  </CardTitle>
+                  <Badge variant={getConfidenceBadgeVariant(searchResults.supportInsight.confidenceTier)}>
+                    {searchResults.supportInsight.confidenceLabel} confidence
+                  </Badge>
+                  <Badge variant="outline">
+                    Local coverage {(searchResults.supportInsight.localCoverageRatio * 100).toFixed(0)}%
+                  </Badge>
+                </div>
+                <CardDescription>
+                  Para malinaw kung gaano katibay ang local support ng sagot, kung may dapat bantayan sa source mix, at kung may kulang pang gabay.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div className="rounded-lg border bg-muted/20 p-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Confidence</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">
+                      {(searchResults.supportInsight.confidenceScore * 100).toFixed(0)}%
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/20 p-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Historical cases</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">
+                      {searchResults.supportInsight.usageSummary.referencedCases}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/20 p-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Confirmed</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">
+                      {searchResults.supportInsight.usageSummary.confirmedResolved}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/20 p-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Reopened</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">
+                      {searchResults.supportInsight.usageSummary.reopenedCases}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+                  <div className="rounded-xl border p-4">
+                    <div className="flex items-center gap-2">
+                      <BookCheck className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-semibold text-foreground">Evidence panel</p>
+                    </div>
+                    <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      {searchResults.supportInsight.evidenceItems.map((item) => (
+                        <p key={item}>{item}</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <p className="text-sm font-semibold text-foreground">Conflict watch</p>
+                      </div>
+                      {searchResults.supportInsight.conflictWarnings.length > 0 ? (
+                        <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                          {searchResults.supportInsight.conflictWarnings.map((item) => (
+                            <p key={item}>{item}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-sm text-muted-foreground">
+                          Wala pang malinaw na source conflict sa mga resultang ginamit ng sagot na ito.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <Bot className="h-4 w-4 text-primary" />
+                        <p className="text-sm font-semibold text-foreground">Knowledge gap watch</p>
+                      </div>
+                      {searchResults.supportInsight.gapWarnings.length > 0 ? (
+                        <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                          {searchResults.supportInsight.gapWarnings.map((item) => (
+                            <p key={item}>{item}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-sm text-muted-foreground">
+                          Sapat ang local coverage ng query na ito para sa kasalukuyang answer flow.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
 
             {searchResults.articles.length > 0 && (

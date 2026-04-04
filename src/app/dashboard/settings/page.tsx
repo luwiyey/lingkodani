@@ -108,6 +108,8 @@ export default function BarangaySettingsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const {
+      auditLogs,
+      farmers,
       systemSettings,
       saveSystemSettings,
       runDataRetentionSweep,
@@ -182,6 +184,24 @@ export default function BarangaySettingsPage() {
     const retentionHealth = runtimeHealth.records.find((record) => record.id === 'data_retention');
     const outboundSummary = runtimeHealth.outboundDeliverySummary;
     const outboundAttentionItems = runtimeHealth.outboundAttentionItems;
+    const archivedFarmerCount = farmers.filter((farmer) => farmer.status === 'archived').length;
+    const redactedArchivedFarmerCount = farmers.filter((farmer) => Boolean(farmer.retentionRedactedAt)).length;
+    const redactedAuditLogCount = auditLogs.filter((entry) => Boolean(entry.retentionRedactedAt)).length;
+    const now = Date.now();
+    const pendingArchivedRedactionCount = farmers.filter((farmer) => {
+      if (farmer.status !== 'archived' || farmer.retentionRedactedAt || !farmer.archivedAt) {
+        return false;
+      }
+
+      return now - new Date(farmer.archivedAt).getTime() >= archivedFarmerRedactionDays * 24 * 60 * 60 * 1000;
+    }).length;
+    const pendingAuditRedactionCount = auditLogs.filter((entry) => {
+      if (entry.retentionRedactedAt) {
+        return false;
+      }
+
+      return now - new Date(entry.timestamp).getTime() >= auditLogRedactionDays * 24 * 60 * 60 * 1000;
+    }).length;
 
     useEffect(() => {
         if (currentUserProfile && !canAccessSettingsWorkspace) {
@@ -1074,6 +1094,28 @@ export default function BarangaySettingsPage() {
                         </p>
                       </div>
                     </div>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-md border bg-background/70 p-3 text-sm">
+                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Archived farmers</p>
+                        <p className="mt-2 text-lg font-semibold text-foreground">{archivedFarmerCount}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{pendingArchivedRedactionCount} ready for next redaction sweep</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3 text-sm">
+                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Farmer PII redacted</p>
+                        <p className="mt-2 text-lg font-semibold text-foreground">{redactedArchivedFarmerCount}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Records retained for audit history without direct PII.</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3 text-sm">
+                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Audit logs redacted</p>
+                        <p className="mt-2 text-lg font-semibold text-foreground">{redactedAuditLogCount}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{pendingAuditRedactionCount} old logs already due for the next sweep</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3 text-sm">
+                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Privacy flow</p>
+                        <p className="mt-2 text-sm font-medium text-foreground">Archive to wait to redact</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Mas ligtas ito kaysa agad mag-delete, dahil nananatili ang counts at audit trail.</p>
+                      </div>
+                    </div>
                     <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
                       <p className="font-medium text-foreground">Retention runtime</p>
                       <p className="mt-1">Status: {retentionHealth?.status ?? 'Wala pa'}</p>
@@ -1084,6 +1126,12 @@ export default function BarangaySettingsPage() {
                       {retentionHealth?.lastError ? (
                         <p className="mt-1">Error: {retentionHealth.lastError}</p>
                       ) : null}
+                    </div>
+                    <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground">Paano gamitin ang privacy controls</p>
+                      <p className="mt-1">1. I-archive ang farmer record kung moved away, duplicate, o hindi na aktibo.</p>
+                      <p className="mt-1">2. Hintayin ang retention window bago i-redact ng system ang direct PII.</p>
+                      <p className="mt-1">3. Gamitin ang retention sweep kung kailangan ng immediate cleanup para sa testing o audit prep.</p>
                     </div>
                     <div className="flex justify-end">
                       <Button

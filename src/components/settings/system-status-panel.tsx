@@ -102,10 +102,11 @@ function DetailList({
 export function SystemStatusPanel() {
   const { toast } = useToast();
   const { currentUser, currentUserProfile } = useAuth();
-  const { runDataRetentionSweep } = useData();
+  const { retryOutboundMessage, runDataRetentionSweep } = useData();
   const { capabilities, capabilitiesLoading } = useRuntimeCapabilities();
   const { runtimeHealth, runtimeHealthLoading } = useRuntimeHealth();
   const [runningAutomation, setRunningAutomation] = useState<AutomationTarget | null>(null);
+  const [retryingOutboundId, setRetryingOutboundId] = useState<string | null>(null);
 
   const canOpenDataCenter = canAccessDataCenter(currentUserProfile);
   const loading = capabilitiesLoading || runtimeHealthLoading;
@@ -115,6 +116,7 @@ export function SystemStatusPanel() {
   const mobilePushHealth = runtimeHealth.records.find((record) => record.id === "mobile_push");
   const retentionHealth = runtimeHealth.records.find((record) => record.id === "data_retention");
   const outboundSummary = runtimeHealth.outboundDeliverySummary;
+  const outboundReconciliation = runtimeHealth.outboundReconciliationSummary;
   const outboundAttentionItems = runtimeHealth.outboundAttentionItems;
 
   const smsCapability = buildCapabilityState(capabilities.liveSmsConfigured);
@@ -155,9 +157,40 @@ export function SystemStatusPanel() {
     priorityItems.push("Kung gagamitin ang mobile app sa field, tapusin ang Firebase mobile push setup.");
   }
 
+  if (outboundReconciliation.statusMismatchCount > 0 || outboundReconciliation.providerIdMissingCount > 0) {
+    priorityItems.push(
+      `${outboundReconciliation.statusMismatchCount + outboundReconciliation.providerIdMissingCount} outbound record ang may reconciliation mismatch o kulang na provider metadata.`
+    );
+  }
+
   if (priorityItems.length === 0) {
     priorityItems.push("Maayos ang pangunahing live features ngayon. Bantayan na lang ang bagong SMS, alerts, at training review queue.");
   }
+
+  const handleRetryOutbound = async (outboundId: string) => {
+    setRetryingOutboundId(outboundId);
+
+    try {
+      const retried = await retryOutboundMessage(outboundId);
+
+      if (!retried) {
+        throw new Error("Hindi mahanap ang outbound record para sa retry.");
+      }
+
+      toast({
+        title: "Na-queue ang retry",
+        description: "Gumawa ang system ng bagong outbound retry record para sa mensaheng ito.",
+      });
+    } catch (error) {
+      toast({
+        title: "Hindi natuloy ang retry",
+        description: error instanceof Error ? error.message : "Subukan muli pagkatapos ng ilang sandali.",
+        variant: "destructive",
+      });
+    } finally {
+      setRetryingOutboundId(null);
+    }
+  };
 
   const runAutomation = async (target: AutomationTarget) => {
     if (target === "retention" && !isLiveMode) {
@@ -439,14 +472,40 @@ export function SystemStatusPanel() {
             <Badge variant="outline">
               {outboundSummary.failedCount} failed outbound
             </Badge>
+            <Badge variant="outline">
+              {outboundReconciliation.retryableCount} puwedeng i-retry agad
+            </Badge>
+            <Badge variant="outline">
+              {outboundReconciliation.statusMismatchCount + outboundReconciliation.timestampMissingCount} reconciliation mismatch
+            </Badge>
           </div>
           {outboundAttentionItems.length > 0 ? outboundAttentionItems.map((item) => (
             <div key={item.id} className="rounded-xl border p-3 text-sm">
               <p className="font-medium">{item.purpose} • {item.recipientPhone}</p>
               <p className="mt-1 text-muted-foreground">{item.attentionReason ?? "Kailangan ng manual review."}</p>
+              {item.recoveryAction ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Susunod na aksyon: {item.recoveryAction}
+                </p>
+              ) : null}
               <p className="mt-2 text-xs text-muted-foreground">
                 Last status: {formatRuntimeTimestamp(item.lastStatusAt ?? item.createdAt)}
               </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {item.attentionCategory === "failed_send" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void handleRetryOutbound(item.id)}
+                    disabled={retryingOutboundId === item.id}
+                  >
+                    {retryingOutboundId === item.id ? "Ni-reretry..." : "I-retry ang send"}
+                  </Button>
+                ) : null}
+                <Button size="sm" variant="outline" asChild>
+                  <Link href="/dashboard/sms-feed">Buksan sa SMS feed</Link>
+                </Button>
+              </div>
             </div>
           )) : (
             <p className="text-sm text-muted-foreground">Wala pang stuck outbound items sa kasalukuyang status view.</p>
@@ -623,6 +682,8 @@ export function SystemStatusPanel() {
                       <p>Awaiting receipt: {outboundSummary.awaitingReceiptCount}</p>
                       <p>Queued: {outboundSummary.queuedCount}</p>
                       <p>Failed: {outboundSummary.failedCount}</p>
+                      <p>Provider ID missing: {outboundReconciliation.providerIdMissingCount}</p>
+                      <p>Status mismatch: {outboundReconciliation.statusMismatchCount}</p>
                     </div>
                   ),
                 },
@@ -648,6 +709,11 @@ export function SystemStatusPanel() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       Reason: {item.attentionReason ?? item.errorMessage ?? "Needs manual review"}
                     </p>
+                    {item.recoveryAction ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Next action: {item.recoveryAction}
+                      </p>
+                    ) : null}
                   </div>
                 ))}
               </div>
