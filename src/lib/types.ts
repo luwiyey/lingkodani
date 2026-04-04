@@ -22,6 +22,20 @@ export type UserPermissions = {
   accessDataCenter?: boolean;
 };
 export type InviteDeliveryStatus = 'emailed' | 'manual_link' | 'email_failed';
+export type UserOnboardingStepId =
+  | 'profile_details'
+  | 'contact_number'
+  | 'workspace'
+  | 'privacy'
+  | 'security';
+export type UserOnboardingState = {
+  version: number;
+  completedStepIds: UserOnboardingStepId[];
+  startedAt?: string;
+  completedAt?: string;
+  lastUpdatedAt?: string;
+  lastUpdatedBy?: string;
+};
 
 export type UserStatus = 'active' | 'pending_setup' | 'disabled';
 export type PreferredWorkspace = 'simple' | 'detailed';
@@ -38,6 +52,27 @@ export type SmsIntent =
 export type SafetyFlag = 'Low' | 'Medium' | 'High';
 export type SmsUrgency = 'low' | 'medium' | 'high';
 export type SmsTone = 'Neutral' | 'Nag-aalala' | 'Kritikal' | 'Positibo';
+export type SmsSentiment = 'neutral' | 'concerned' | 'frustrated' | 'distressed';
+export type SmsNormalizationKind =
+  | 'shortcut'
+  | 'local_term'
+  | 'crop_alias'
+  | 'pest_alias'
+  | 'service_alias'
+  | 'known_term'
+  | 'unknown';
+export type SmsNormalizationMatch = {
+  from: string;
+  to: string;
+  kind: Exclude<SmsNormalizationKind, 'known_term' | 'unknown'>;
+  confidence?: number;
+};
+export type SmsNormalizationToken = {
+  raw: string;
+  normalized: string;
+  kind: SmsNormalizationKind;
+  confidence: number;
+};
 export type SmsResolutionConfirmationStatus =
   | 'awaiting_farmer'
   | 'confirmed_by_farmer'
@@ -61,6 +96,17 @@ export type User = {
   inviteDeliveryError?: string;
   inviteDeliveryProvider?: string;
   inviteSetupLinkGeneratedAt?: string;
+  inviteExpiresAt?: string;
+  inviteAcceptedAt?: string;
+  inviteRevokedAt?: string;
+  inviteRevokedBy?: string;
+  inviteRevocationReason?: string;
+  inviteLastResentAt?: string;
+  inviteResendCount?: number;
+  phoneVerifiedAt?: string;
+  privacyAcknowledgedAt?: string;
+  securityReviewVerifiedAt?: string;
+  onboarding?: UserOnboardingState;
   createdAt?: string;
   updatedAt?: string;
   lastLoginAt?: string;
@@ -81,8 +127,12 @@ export type AccessRequest = {
   title?: string;
   message?: string;
   source?: 'login' | 'reset_password' | 'public_page';
+  normalizedPhone?: string;
   status: AccessRequestStatus;
   requestedAt: string;
+  lastSubmittedAt?: string;
+  submissionCount?: number;
+  submissionSources?: Array<NonNullable<AccessRequest["source"]>>;
   reviewedAt?: string;
   reviewedBy?: string;
   reviewNotes?: string;
@@ -168,6 +218,11 @@ export type SystemSettings = {
   smsLexiconRules: SmsLexiconRule[];
   autoReplyEnabled: boolean;
   autoReplyTimeoutMinutes: number;
+  retentionPolicy: {
+    autoRedactionEnabled: boolean;
+    auditLogRedactionDays: number;
+    archivedFarmerRedactionDays: number;
+  };
   updatedAt?: string;
   updatedBy?: string;
 };
@@ -178,6 +233,51 @@ export type FarmerStatus =
   | 'inactive'
   | 'rejected'
   | 'archived';
+
+export type FarmerIdentityTrustLevel = 'unknown' | 'probable' | 'verified';
+export type FarmerDuplicateRiskLevel =
+  | 'none'
+  | 'shared_household'
+  | 'possible_duplicate'
+  | 'high_duplicate';
+export type FarmerProfileRevisionSource =
+  | 'sms_registration'
+  | 'manual_registration'
+  | 'approval_review'
+  | 'profile_edit'
+  | 'household_update'
+  | 'merge'
+  | 'system_reconciliation';
+
+export type FarmerProfileSnapshot = {
+  name: string;
+  phone: string;
+  barangay: string;
+  sitio: string;
+  crops: string[];
+  farmSize: number;
+  age: number;
+  gender: string;
+  status: FarmerStatus;
+  householdId?: string;
+  householdLabel?: string;
+  sharedPhone?: boolean;
+  sharedPhoneNotes?: string;
+  identityTrustLevel?: FarmerIdentityTrustLevel;
+  identityConfidenceScore?: number;
+  duplicateRiskLevel?: FarmerDuplicateRiskLevel;
+};
+
+export type FarmerProfileRevision = {
+  id: string;
+  version: number;
+  changedAt: string;
+  changedBy: string;
+  source: FarmerProfileRevisionSource;
+  reason?: string;
+  changedFields: string[];
+  snapshot: FarmerProfileSnapshot;
+};
 
 export type Farmer = {
   id: string; // Corresponds to farmerId
@@ -196,9 +296,21 @@ export type Farmer = {
   phoneHistory?: string[];
   mergedFromFarmerIds?: string[];
   mergedIntoFarmerId?: string;
+  householdId?: string;
+  householdLabel?: string;
+  sharedPhone?: boolean;
+  sharedPhoneNotes?: string;
+  identityTrustLevel?: FarmerIdentityTrustLevel;
+  identityConfidenceScore?: number;
+  identityConfidenceReasons?: string[];
+  duplicateRiskLevel?: FarmerDuplicateRiskLevel;
+  profileVersion?: number;
+  profileHistory?: FarmerProfileRevision[];
   archivedAt?: string;
   archivedBy?: string;
   archiveReason?: string;
+  retentionRedactedAt?: string;
+  retentionRedactionReason?: string;
 };
 
 export type FarmerEvidenceType = 'document' | 'field_photo' | 'audio';
@@ -227,6 +339,33 @@ export type SmsMessageStatus = 'pending_approval' | 'approved' | 'replied' | 're
 
 export type SmsAnalysisSource = 'rules' | 'ai' | 'ai_fallback';
 export type SmsDetectedLanguage = 'Filipino' | 'English' | 'Taglish' | 'Ilocano' | 'Ilocano mix' | 'Unknown';
+export type SmsCropStage =
+  | 'seedling'
+  | 'vegetative'
+  | 'flowering'
+  | 'fruiting'
+  | 'pre_harvest'
+  | 'harvest_ready'
+  | 'unknown';
+export type SmsTriageField =
+  | 'crop'
+  | 'symptom'
+  | 'severity'
+  | 'location'
+  | 'crop_stage'
+  | 'timing'
+  | 'resource'
+  | 'identity';
+export type SmsTriageUncertainty =
+  | 'clear'
+  | 'probable'
+  | 'ambiguous'
+  | 'needs_symptom_details'
+  | 'needs_severity'
+  | 'needs_location'
+  | 'needs_crop_stage'
+  | 'needs_identity'
+  | 'insufficient_details';
 export type SmsCaseStatus =
   | 'open'
   | 'awaiting_clarification'
@@ -274,6 +413,10 @@ export type SmsMessage = {
   possibleDuplicateReason?: string;
   threadConfidence?: number;
   threadReason?: string;
+  threadReviewStatus?: 'pending' | 'confirmed' | 'split' | 'merged';
+  threadReviewedAt?: string;
+  threadReviewedBy?: string;
+  threadReviewNote?: string;
   caseOutcomeStatus?: SmsCaseOutcomeStatus;
   caseOutcomeSummary?: string;
   caseOutcomeUpdatedAt?: string;
@@ -287,8 +430,20 @@ export type SmsMessage = {
   officialReminderCount?: number;
   analysisSource?: SmsAnalysisSource;
   detectedLanguage?: SmsDetectedLanguage;
+  normalizationMatches?: SmsNormalizationMatch[];
+  normalizationTokens?: SmsNormalizationToken[];
+  normalizationUnknownTokens?: string[];
   clarificationNeeded?: boolean;
   clarificationQuestion?: string;
+  candidateIntents?: SmsIntent[];
+  sentiment?: SmsSentiment;
+  cropStage?: SmsCropStage;
+  triageConfidence?: number;
+  triageUncertainty?: SmsTriageUncertainty;
+  triageMissingFields?: SmsTriageField[];
+  triageNextQuestion?: string;
+  multiConcernDetected?: boolean;
+  multiConcernReason?: string;
   parsedIntent: SmsIntent;
   urgency: SmsUrgency;
   status: SmsMessageStatus;
@@ -298,6 +453,14 @@ export type SmsMessage = {
   respondedAt?: string;
   knowledgeBaseId?: string;
   tone?: SmsTone;
+};
+
+export type SmsLexiconLearningCandidate = {
+  token: string;
+  occurrences: number;
+  detectedLanguages: SmsDetectedLanguage[];
+  exampleMessages: string[];
+  suggestedIntent?: SmsIntent;
 };
 
 export type ResourceCategory = 'Pataba' | 'Binhi' | 'Kagamitan' | 'Paggawa';
@@ -371,6 +534,8 @@ export type AuditLog = {
     user: string;
     action: string;
     details: string;
+    retentionRedactedAt?: string;
+    retentionRedactionReason?: string;
 }
 
 export type VoucherStatus = 'issued' | 'redeemed' | 'expired' | 'voided';

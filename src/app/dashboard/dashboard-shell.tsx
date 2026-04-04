@@ -20,6 +20,8 @@ const developerAllowedPrefixes = [
   "/dashboard/developer",
   "/dashboard/data-center",
   "/dashboard/account",
+  "/dashboard/settings",
+  "/dashboard/system-status",
 ];
 
 export function DashboardShell({

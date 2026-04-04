@@ -22,7 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
-import { canAccessDataCenter, canManageBarangaySettings } from '@/lib/access-control';
+import { canAccessBarangaySettingsWorkspace, canAccessDataCenter } from '@/lib/access-control';
 import { isLiveMode } from '@/lib/config/app-mode';
 import {
   extractSmsTrainingExamplesFromJson,
@@ -35,6 +35,7 @@ import {
   formatSmsLexiconRulesAsCsv,
   parseSmsLexiconRulesCsv,
 } from '@/lib/sms-lexicon-portability';
+import { buildSmsLexiconLearningQueue } from '@/lib/sms-lexicon-learning';
 import { summarizeTeachingCoverage } from '@/lib/sms-teaching';
 import { isSpreadsheetExtension, readSpreadsheetAsCsv } from '@/lib/spreadsheet-import';
 import type { SmsLexiconRule, SmsTone, SystemTemplate, SystemTemplateCategory } from '@/lib/types';
@@ -109,6 +110,8 @@ export default function BarangaySettingsPage() {
     const {
       systemSettings,
       saveSystemSettings,
+      runDataRetentionSweep,
+      smsMessages,
       smsTrainingExamples,
       knowledgeArticles,
       importSmsTrainingExamples,
@@ -157,12 +160,16 @@ export default function BarangaySettingsPage() {
 
     const [autoReplyEnabled, setAutoReplyEnabled] = useState(defaultSystemSettings.autoReplyEnabled);
     const [autoReplyTimeout, setAutoReplyTimeout] = useState(defaultSystemSettings.autoReplyTimeoutMinutes);
-    const [runningAutomation, setRunningAutomation] = useState<null | 'overdue' | 'followup'>(null);
+    const [retentionEnabled, setRetentionEnabled] = useState(defaultSystemSettings.retentionPolicy.autoRedactionEnabled);
+    const [auditLogRedactionDays, setAuditLogRedactionDays] = useState(defaultSystemSettings.retentionPolicy.auditLogRedactionDays);
+    const [archivedFarmerRedactionDays, setArchivedFarmerRedactionDays] = useState(defaultSystemSettings.retentionPolicy.archivedFarmerRedactionDays);
+    const [runningAutomation, setRunningAutomation] = useState<null | 'overdue' | 'followup' | 'retention'>(null);
     const [isImportingLexicon, setIsImportingLexicon] = useState(false);
     const [isImportingTraining, setIsImportingTraining] = useState(false);
-    const canManageSettings = canManageBarangaySettings(currentUserProfile);
+    const canAccessSettingsWorkspace = canAccessBarangaySettingsWorkspace(currentUserProfile);
     const canOpenDataCenter = canAccessDataCenter(currentUserProfile);
     const teachingCoverage = summarizeTeachingCoverage(smsLexiconRules, smsTrainingExamples);
+    const learningQueue = buildSmsLexiconLearningQueue(smsMessages);
     const pendingTrainingExamples = smsTrainingExamples.filter((example) => example.reviewStatus === 'needs_review').slice(0, 5);
     const pendingKnowledgeArticles = knowledgeArticles.filter((article) => article.reviewStatus === 'needs_review').slice(0, 5);
     const overdueHealth = runtimeHealth.records.find((record) => record.id === 'automation_overdue');
@@ -172,14 +179,15 @@ export default function BarangaySettingsPage() {
     const webhookHealth = runtimeHealth.records.find((record) => record.id === 'sms_outbound_webhook');
     const inviteEmailHealth = runtimeHealth.records.find((record) => record.id === 'invite_email');
     const mobilePushHealth = runtimeHealth.records.find((record) => record.id === 'mobile_push');
+    const retentionHealth = runtimeHealth.records.find((record) => record.id === 'data_retention');
     const outboundSummary = runtimeHealth.outboundDeliverySummary;
     const outboundAttentionItems = runtimeHealth.outboundAttentionItems;
 
     useEffect(() => {
-        if (currentUserProfile && !canManageSettings) {
+        if (currentUserProfile && !canAccessSettingsWorkspace) {
             router.replace('/dashboard');
         }
-    }, [canManageSettings, currentUserProfile, router]);
+    }, [canAccessSettingsWorkspace, currentUserProfile, router]);
     
     useEffect(() => {
         setBrgyDescription(systemSettings.brgyDescription);
@@ -191,6 +199,9 @@ export default function BarangaySettingsPage() {
         setSmsLexiconRules(systemSettings.smsLexiconRules);
         setAutoReplyEnabled(systemSettings.autoReplyEnabled);
         setAutoReplyTimeout(systemSettings.autoReplyTimeoutMinutes);
+        setRetentionEnabled(systemSettings.retentionPolicy.autoRedactionEnabled);
+        setAuditLogRedactionDays(systemSettings.retentionPolicy.auditLogRedactionDays);
+        setArchivedFarmerRedactionDays(systemSettings.retentionPolicy.archivedFarmerRedactionDays);
     }, [systemSettings]);
 
     const handleOpenEditDialog = (categoryId: string, template: SystemTemplate) => {
@@ -549,6 +560,11 @@ export default function BarangaySettingsPage() {
             smsLexiconRules,
             autoReplyEnabled,
             autoReplyTimeoutMinutes: Math.max(1, autoReplyTimeout),
+            retentionPolicy: {
+              autoRedactionEnabled: retentionEnabled,
+              auditLogRedactionDays: Math.max(30, auditLogRedactionDays),
+              archivedFarmerRedactionDays: Math.max(30, archivedFarmerRedactionDays),
+            },
         });
         toast({
             title: "Tagumpay!",
@@ -568,7 +584,7 @@ export default function BarangaySettingsPage() {
         });
     }
 
-    const runAutomation = async (target: 'overdue' | 'followup') => {
+    const runAutomation = async (target: 'overdue' | 'followup' | 'retention') => {
         if (!currentUser) {
             toast({
                 title: "Walang live session",
@@ -584,7 +600,9 @@ export default function BarangaySettingsPage() {
             const token = await currentUser.getIdToken();
             const path = target === 'overdue'
                 ? '/api/system/process-overdue-sms'
-                : '/api/system/process-follow-ups';
+                : target === 'followup'
+                  ? '/api/system/process-follow-ups'
+                  : '/api/system/process-data-retention';
             const response = await fetch(path, {
                 method: 'POST',
                 headers: {
@@ -598,10 +616,17 @@ export default function BarangaySettingsPage() {
             }
 
             toast({
-                title: target === 'overdue' ? 'Natapos ang overdue SMS check' : 'Natapos ang follow-up check',
+                title:
+                    target === 'overdue'
+                      ? 'Natapos ang overdue SMS check'
+                      : target === 'followup'
+                        ? 'Natapos ang follow-up check'
+                        : 'Natapos ang data retention sweep',
                 description: payload.skipped
                     ? 'May kasalukuyang automation run na isinasagawa sa ibang session.'
-                    : `${payload.processedCount ?? 0} item ang naproseso sa batch na ito.`,
+                    : target === 'retention'
+                      ? `${payload.redactedAuditLogs ?? 0} audit log at ${payload.redactedArchivedFarmers ?? 0} archived farmer record ang na-redact.`
+                      : `${payload.processedCount ?? 0} item ang naproseso sa batch na ito.`,
             });
         } catch (error) {
             toast({
@@ -614,14 +639,27 @@ export default function BarangaySettingsPage() {
         }
     };
 
-    if (currentUserProfile && !canManageSettings) {
+    const handleRunRetentionSweep = async () => {
+        if (isLiveMode) {
+            await runAutomation('retention');
+            return;
+        }
+
+        const result = await runDataRetentionSweep();
+        toast({
+            title: 'Natapos ang data retention sweep',
+            description: `${result.redactedAuditLogs} audit log at ${result.redactedArchivedFarmers} archived farmer record ang na-redact sa kasalukuyang local dataset.`,
+        });
+    };
+
+    if (currentUserProfile && !canAccessSettingsWorkspace) {
         return (
           <div className="flex min-h-[40vh] items-center justify-center">
             <Card className="max-w-lg border-amber-300/40 bg-amber-50/60">
               <CardHeader>
                 <CardTitle>Limitado ang Access sa Settings</CardTitle>
                 <CardDescription>
-                  Ang page na ito ay para lamang sa barangay managers at developers. Ibinabalik ka na sa dashboard.
+                  Ang page na ito ay available lamang para sa barangay at developer accounts. Ibinabalik ka na sa dashboard.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -633,9 +671,37 @@ export default function BarangaySettingsPage() {
     <div className="flex flex-col gap-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Mga Setting ng Barangay</h1>
-        <p className="text-muted-foreground">Pamahalaan ang mga detalye tungkol sa iyong barangay at i-configure ang mga setting ng system.</p>
+        <p className="text-muted-foreground">
+          Dito lang inilalagay ang mga editable na setting para sa barangay. Ang technical health, live SMS watch, at automation diagnostics ay nasa hiwalay na page na ngayon.
+        </p>
       </div>
 
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle>Technical Status ay Nasa Hiwalay na Page</CardTitle>
+          <CardDescription>
+            Para mas malinaw ang settings page, ang runtime health, delivery watch, at automation diagnostics ay nasa bagong Katayuan ng System page na.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border bg-background/80 p-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">Makikita mo na roon ang:</p>
+            <div className="mt-3 space-y-2">
+              <p>1. Live SMS readiness at huling natanggap o naipadalang mensahe</p>
+              <p>2. AI, uploads, invite-email, at mobile push setup status</p>
+              <p>3. Overdue SMS, follow-up, at retention batch diagnostics</p>
+              <p>4. Delivery watch, webhook details, at manual rerun buttons</p>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="justify-end">
+          <Button asChild>
+            <Link href="/dashboard/system-status">Buksan ang Katayuan ng System</Link>
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {false ? (
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader>
           <CardTitle>System Health at Bersyon</CardTitle>
@@ -715,7 +781,7 @@ export default function BarangaySettingsPage() {
                     Recent outbound needing attention: {outboundSummary.needsAttentionCount} / {outboundSummary.recentCount}
                   </p>
                   {runtimeHealth.latestFailure?.lastError ? (
-                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestFailure.lastError}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestFailure?.lastError}</p>
                   ) : null}
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-3">
@@ -768,7 +834,7 @@ export default function BarangaySettingsPage() {
                     Delivered at: {formatRuntimeTimestamp(runtimeHealth.latestOutbound?.deliveryReceivedAt)}
                   </p>
                   {runtimeHealth.latestOutbound?.errorMessage ? (
-                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestOutbound.errorMessage}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestOutbound?.errorMessage}</p>
                   ) : null}
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-3">
@@ -784,7 +850,7 @@ export default function BarangaySettingsPage() {
                     Outbound ID: {String(runtimeHealth.latestWebhook?.meta?.outboundId ?? 'Wala pa')}
                   </p>
                   {runtimeHealth.latestWebhook?.lastError ? (
-                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestWebhook.lastError}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {runtimeHealth.latestWebhook?.lastError}</p>
                   ) : null}
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
@@ -839,7 +905,7 @@ export default function BarangaySettingsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">Huling failure: {formatRuntimeTimestamp(inviteEmailHealth?.lastFailureAt)}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Provider: {String(inviteEmailHealth?.meta?.provider ?? 'Wala pa')}</p>
                   {inviteEmailHealth?.lastError ? (
-                    <p className="mt-1 text-xs text-muted-foreground">Error: {inviteEmailHealth.lastError}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {inviteEmailHealth?.lastError}</p>
                   ) : null}
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
@@ -851,7 +917,19 @@ export default function BarangaySettingsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">Last action: {String(runtimeHealth.latestPush?.meta?.action ?? 'Wala pa')}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Last case: {String(runtimeHealth.latestPush?.meta?.caseId ?? 'Wala pa')}</p>
                   {mobilePushHealth?.lastError ? (
-                    <p className="mt-1 text-xs text-muted-foreground">Error: {mobilePushHealth.lastError}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {mobilePushHealth?.lastError}</p>
+                  ) : null}
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3 md:col-span-2">
+                  <p className="text-sm font-medium text-foreground">Data Retention</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Status: {retentionHealth?.status ?? 'Wala pa'}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Huling run: {formatRuntimeTimestamp(retentionHealth?.updatedAt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Audit logs redacted: {String(retentionHealth?.meta?.redactedAuditLogs ?? 0)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Archived farmers redacted: {String(retentionHealth?.meta?.redactedArchivedFarmers ?? 0)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Checked audit logs: {String(retentionHealth?.meta?.checkedAuditLogs ?? 0)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Checked farmers: {String(retentionHealth?.meta?.checkedFarmers ?? 0)}</p>
+                  {retentionHealth?.lastError ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Error: {retentionHealth?.lastError}</p>
                   ) : null}
                 </div>
               </div>
@@ -870,13 +948,14 @@ export default function BarangaySettingsPage() {
           </div>
         </CardContent>
       </Card>
+      ) : null}
 
       <Tabs defaultValue="barangay" className="space-y-6">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/60 p-1 md:grid-cols-4">
           <TabsTrigger value="barangay">Barangay Info</TabsTrigger>
           <TabsTrigger value="templates">Mga Template</TabsTrigger>
           <TabsTrigger value="teaching">Pagtuturo</TabsTrigger>
-          <TabsTrigger value="automation">Automation</TabsTrigger>
+          <TabsTrigger value="emergency">Emergency</TabsTrigger>
         </TabsList>
 
         <TabsContent value="barangay" className="space-y-6">
@@ -954,6 +1033,70 @@ export default function BarangaySettingsPage() {
                      <p className="text-sm text-muted-foreground">
                         Ang numerong ito ay ilalagay sa after-hours advisory notice.
                      </p>
+                </div>
+                <div className="rounded-lg border p-4 space-y-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <Label className="text-base">Data Retention at Privacy</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Awtomatikong i-redact ang lumang audit-log PII at mga archived farmer record na lampas na sa retention window.
+                          </p>
+                        </div>
+                        <Switch checked={retentionEnabled} onCheckedChange={setRetentionEnabled} />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="audit-redaction-days">Audit log redaction window (days)</Label>
+                        <Input
+                          id="audit-redaction-days"
+                          type="number"
+                          min={30}
+                          value={auditLogRedactionDays}
+                          onChange={(e) => setAuditLogRedactionDays(Number(e.target.value))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Pagkalipas ng panahong ito, ang pangalan at detalye sa audit log ay ire-redact pero mananatili ang action at timestamp.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="archived-farmer-redaction-days">Archived farmer redaction window (days)</Label>
+                        <Input
+                          id="archived-farmer-redaction-days"
+                          type="number"
+                          min={30}
+                          value={archivedFarmerRedactionDays}
+                          onChange={(e) => setArchivedFarmerRedactionDays(Number(e.target.value))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Para sa mga na-archive nang farmer, ire-redact ang direct PII pagkatapos ng retention window habang nananatili ang historical counts.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground">Retention runtime</p>
+                      <p className="mt-1">Status: {retentionHealth?.status ?? 'Wala pa'}</p>
+                      <p className="mt-1">Huling run: {formatRuntimeTimestamp(retentionHealth?.updatedAt)}</p>
+                      <p className="mt-1">
+                        Huling redaction: audit logs {String(retentionHealth?.meta?.redactedAuditLogs ?? 0)}, archived farmers {String(retentionHealth?.meta?.redactedArchivedFarmers ?? 0)}
+                      </p>
+                      {retentionHealth?.lastError ? (
+                        <p className="mt-1">Error: {retentionHealth.lastError}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={handleRunRetentionSweep}
+                        disabled={runningAutomation === 'retention'}
+                      >
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                        {runningAutomation === 'retention'
+                          ? 'Pinoproseso ang retention...'
+                          : 'Patakbuhin ngayon ang retention sweep'}
+                      </Button>
+                    </div>
                 </div>
             </div>
 
@@ -1050,6 +1193,40 @@ export default function BarangaySettingsPage() {
               <div className="rounded-lg border bg-muted/30 p-4">
                 <p className="text-sm text-muted-foreground">Accepted file types</p>
                 <p className="mt-2 text-sm font-medium">CSV, Excel, JSON, PDF, larawan, audio</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+              <div className="space-y-1">
+                <h3 className="font-semibold text-foreground">Learning Queue para sa mga salitang hindi pa kilala ng system</h3>
+                <p className="text-sm text-muted-foreground">
+                  Kapag paulit-ulit na may nakikitang lokal na salita ang Lingkod-Ani pero wala pa itong cue rule, lalabas dito ang mga posibleng susunod ninyong ituro.
+                </p>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {learningQueue.length > 0 ? learningQueue.map((candidate) => (
+                  <div key={candidate.token} className="rounded-lg border bg-background/80 p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-semibold">{candidate.token}</span>
+                      <Badge variant="outline">{candidate.occurrences} beses nakita</Badge>
+                      {candidate.suggestedIntent ? <Badge variant="outline">Madaling iugnay sa {candidate.suggestedIntent}</Badge> : null}
+                      {candidate.detectedLanguages.length > 0 ? (
+                        <Badge variant="outline">{candidate.detectedLanguages.join(", ")}</Badge>
+                      ) : null}
+                    </div>
+                    {candidate.exampleMessages.length > 0 ? (
+                      <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                        {candidate.exampleMessages.map((exampleMessage, index) => (
+                          <p key={`${candidate.token}-${index}`}>• {exampleMessage}</p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )) : (
+                  <div className="rounded-lg border border-dashed bg-background/60 p-4 text-sm text-muted-foreground">
+                    Wala pang paulit-ulit na unknown local terms na kailangang gawing cue rule sa ngayon.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1233,8 +1410,8 @@ export default function BarangaySettingsPage() {
         </Card>
         </TabsContent>
 
-        <TabsContent value="automation" className="space-y-6">
-      {isLiveMode ? (
+        <TabsContent value="emergency" className="space-y-6">
+      {false && isLiveMode ? (
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle>Automation sa Free Hosting</CardTitle>
@@ -1271,6 +1448,14 @@ export default function BarangaySettingsPage() {
             >
               <RefreshCcw className="mr-2 h-4 w-4" />
               {runningAutomation === 'followup' ? 'Pinoproseso ang follow-up...' : 'Patakbuhin ang Follow-up Check'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => runAutomation('retention')}
+              disabled={runningAutomation !== null}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {runningAutomation === 'retention' ? 'Pinoproseso ang retention...' : 'Patakbuhin ang Data Retention Sweep'}
             </Button>
           </CardFooter>
         </Card>

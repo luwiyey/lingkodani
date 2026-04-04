@@ -31,4 +31,12 @@ describe("sms-normalization", () => {
     expect(normalized.normalizedMessage).toContain("palay");
     expect(normalized.detectedLanguage).toMatch(/Ilocano/);
   });
+
+  it("keeps token confidence details and unknown local words for review", () => {
+    const normalized = normalizeSmsMessage("May garud po na lamisaan sa palay at dakkel na area");
+
+    expect(normalized.tokens.some((token) => token.raw === "dakkel" && token.normalized === "malaki")).toBe(true);
+    expect(normalized.tokens.some((token) => token.raw === "lamisaan" && token.kind === "unknown")).toBe(true);
+    expect(normalized.unknownTokens).toContain("lamisaan");
+  });
 });

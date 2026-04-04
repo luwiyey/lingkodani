@@ -1,4 +1,5 @@
 import {
+  canAccessBarangaySettingsWorkspace,
   canAccessDataCenter,
   canManageBarangaySettings,
   canManageAutomation,
@@ -42,6 +43,11 @@ describe("access-control", () => {
     expect(canManageBarangaySettings(aewUser)).toBe(false);
   });
 
+  it("still lets barangay staff open the Barangay Settings workspace", () => {
+    expect(canAccessBarangaySettingsWorkspace(aewUser)).toBe(true);
+    expect(canAccessBarangaySettingsWorkspace(barangayAdmin)).toBe(true);
+  });
+
   it("respects explicit permission flags when present", () => {
     expect(
       canManageAutomation({
@@ -53,9 +59,10 @@ describe("access-control", () => {
     ).toBe(true);
   });
 
-  it("treats the data center as developer-only and disables live SMS simulation", () => {
+  it("treats the data center as developer-only and keeps live SMS testing developer-only", () => {
     expect(canAccessDataCenter(developerUser)).toBe(true);
-    expect(canUseLiveSmsSimulation(developerUser)).toBe(false);
+    expect(canUseLiveSmsSimulation(developerUser)).toBe(true);
+    expect(canUseLiveSmsSimulation(barangayAdmin)).toBe(false);
   });
 
   it("splits barangay users from platform developers cleanly", () => {

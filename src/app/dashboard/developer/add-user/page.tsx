@@ -5,6 +5,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { SensitiveActionReauthDialog } from '@/components/auth/sensitive-action-reauth-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,8 @@ export default function AddUserPage() {
   const { addUser, users } = useData();
   const { capabilities } = useRuntimeCapabilities();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [showStepUpDialog, setShowStepUpDialog] = React.useState(false);
+  const [pendingSubmission, setPendingSubmission] = React.useState<UserManagementValues | null>(null);
 
   const form = useForm<UserManagementValues>({
     resolver: zodResolver(userManagementSchema),
@@ -40,7 +43,7 @@ export default function AddUserPage() {
     },
   });
 
-  const handleAddUser = async (data: UserManagementValues) => {
+  const submitAddUser = async (data: UserManagementValues) => {
     if (users.some(u => u.email === data.email)) {
       form.setError('email', {
         type: 'manual',
@@ -70,6 +73,11 @@ export default function AddUserPage() {
         const payload = await response.json().catch(() => ({}));
 
         if (!response.ok) {
+          if (payload.code === 'step_up_required') {
+            setPendingSubmission(data);
+            setShowStepUpDialog(true);
+            return;
+          }
           throw new Error(payload.error ?? 'Hindi nagawa ang live user provisioning.');
         }
 
@@ -82,6 +90,8 @@ export default function AddUserPage() {
           description:
             payload.inviteDeliveryStatus === 'emailed'
               ? `Nagawa ang live account ni ${data.name}, at naipadala na ang secure setup email.`
+              : payload.statusAdjusted
+                ? `Nagawa ang account ni ${data.name} bilang pending setup muna. Maa-activate ito kapag nakumpleto ang onboarding checklist ng user.`
               : payload.setupLink
                 ? `Nagawa ang live account ni ${data.name}. Nakopya na sa clipboard ang secure setup link bilang manual fallback.`
                 : `Nagawa ang live account ni ${data.name}.`,
@@ -104,6 +114,10 @@ export default function AddUserPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddUser = async (data: UserManagementValues) => {
+    await submitAddUser(data);
   };
 
   return (
@@ -255,6 +269,21 @@ export default function AddUserPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <SensitiveActionReauthDialog
+        open={showStepUpDialog}
+        onOpenChange={setShowStepUpDialog}
+        title="Kumpirmahin ang password bago mag-provision"
+        description="Sensitive ang staff provisioning, kaya kailangan muna ng fresh password verification bago gumawa o magpadala ng bagong invite."
+        submitLabel="I-verify at ipagpatuloy"
+        onVerified={async () => {
+          if (pendingSubmission) {
+            const nextSubmission = pendingSubmission;
+            setPendingSubmission(null);
+            await submitAddUser(nextSubmission);
+          }
+        }}
+      />
     </div>
   );
 }

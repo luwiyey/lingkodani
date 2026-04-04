@@ -1,0 +1,51 @@
+name: Lingkod-Ani Data Retention Automation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 2 * * *"
+
+concurrency:
+  group: lingkod-ani-retention-automation
+  cancel-in-progress: false
+
+jobs:
+  ping-retention-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        env:
+          BASE_URL: ${{ secrets.LINGKOD_ANI_BASE_URL }}
+          AUTOMATION_TOKEN: ${{ secrets.SYSTEM_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "Missing LINGKOD_ANI_BASE_URL secret."
+            exit 1
+          fi
+
+          if [ -z "$AUTOMATION_TOKEN" ]; then
+            echo "Missing SYSTEM_AUTOMATION_TOKEN secret."
+            exit 1
+          fi
+
+      - name: Run data retention sweep
+        env:
+          BASE_URL: ${{ secrets.LINGKOD_ANI_BASE_URL }}
+          AUTOMATION_TOKEN: ${{ secrets.SYSTEM_AUTOMATION_TOKEN }}
+        run: |
+          RESPONSE_FILE="$(mktemp)"
+          HTTP_STATUS=$(curl --show-error --silent \
+            --output "$RESPONSE_FILE" \
+            --write-out "%{http_code}" \
+            --request POST \
+            --header "Authorization: Bearer ${AUTOMATION_TOKEN}" \
+            "${BASE_URL}/api/system/process-data-retention")
+
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat "$RESPONSE_FILE"
+          echo
+
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            exit 1
+          fi

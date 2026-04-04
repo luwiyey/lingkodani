@@ -9,7 +9,7 @@ type ClarificationDecision = {
   clarificationQuestion?: string;
 };
 
-type IntentSignal = {
+export type IntentSignal = {
   intent: SmsIntent;
   score: number;
 };
@@ -20,7 +20,7 @@ const INTENT_SIGNAL_MAP: Record<SmsIntent, string[]> = {
   HARVEST: ["ani", "anihan", "harvest", "naani", "post-harvest"],
   REQUEST: ["hiram", "sprayer", "tractor", "pataba", "abono", "supply", "kahilingan", "request", "need"],
   PEST_DISEASE: ["peste", "uod", "kuhol", "daga", "leafminer", "borer", "insekto", "sakit", "dilaw", "spot"],
-  WEATHER_HELP: ["ulan", "bagyo", "tubig", "patubig", "irrigation", "flood", "rain", "baha", "tagtuyot", "walang tubig"],
+  WEATHER_HELP: ["ulan", "bagyo", "tubig", "patubig", "irrigation", "flood", "rain", "baha", "tagtuyot", "walang tubig", "danum", "agtudo"],
   PRICE_CHECK: ["presyo", "price", "market", "palengke", "bili", "benta"],
   EMERGENCY: ["emergency", "kagyat", "lubog", "evacuate", "delikado"],
   UNKNOWN: [],
@@ -83,7 +83,7 @@ const INTENT_TOPIC_LABELS: Record<SmsIntent, { fil: string; eng: string; shortFi
   },
 };
 
-function scoreIntentSignals(message: string): IntentSignal[] {
+export function getIntentSignals(message: string): IntentSignal[] {
   const { normalizedMessage } = normalizeSmsMessage(message);
   const lower = normalizedMessage.toLowerCase();
 
@@ -196,7 +196,7 @@ export function getClarificationDecision(input: {
     return { clarificationNeeded: false };
   }
 
-  const signals = scoreIntentSignals(message);
+  const signals = getIntentSignals(message);
   const bestSignal = signals[0];
   const secondSignal = signals[1];
   const lowConfidence = analysis.aiConfidence < CLARIFICATION_CONFIDENCE_THRESHOLD;

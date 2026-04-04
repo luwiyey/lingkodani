@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/context/data-context';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 
 const alertIcons: Record<string, React.ElementType> = {
@@ -52,6 +53,7 @@ export default function AlertsPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
   const { alertHistory, broadcastAlert } = useData();
+  const { outbreakClusters } = useAnalytics();
   const { capabilities, capabilitiesLoading } = useRuntimeCapabilities();
   const aiAlertLocked = !capabilities.aiConfigured;
   const liveBroadcastLocked =
@@ -194,6 +196,40 @@ export default function AlertsPage() {
           description={broadcastLockMessage}
         />
       ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><ShieldAlert /> Auto-detected Outbreak Signals</CardTitle>
+          <CardDescription>
+            Mga clustered na ulat batay sa zone, crop, at symptom pattern. Ito ay decision support lamang at kailangan pa ring i-validate bago i-broadcast.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {outbreakClusters.slice(0, 4).map((cluster) => (
+            <div key={cluster.key} className="rounded-xl border p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">{cluster.zone}</p>
+                <Badge variant={cluster.stage === 'strong' ? 'destructive' : 'secondary'}>
+                  {cluster.stage === 'strong' ? 'Strong cluster' : cluster.stage === 'suspected' ? 'Suspected cluster' : 'Weak cluster'}
+                </Badge>
+                <Badge variant="outline">{cluster.crop}</Badge>
+                <Badge variant="outline">{cluster.signal}</Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {cluster.reportCount} magkakaugnay na ulat, {cluster.affectedFarmers} apektadong farmer, {cluster.unresolvedCount} hindi pa resolved.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Latest seen: {new Date(cluster.latestObservedAt).toLocaleString()} · Cluster score: {cluster.score}
+              </p>
+            </div>
+          ))}
+          {outbreakClusters.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Wala pang sapat na magkakatugmang ulat para sa outbreak cluster detection sa kasalukuyang dataset.
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Dialog>
         <Card>

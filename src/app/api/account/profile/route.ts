@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { isUserOnboardingComplete, syncUserOnboardingState } from "@/lib/onboarding-checklist";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
 import type { PreferredWorkspace, User } from "@/lib/types";
@@ -32,6 +33,21 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
+    const timestamp = new Date().toISOString();
+
+    if (body.securityReviewVerifiedAt) {
+      const stepUpAuth = await authenticateServerRequest(request, ["barangay", "developer"], {
+        requireRecentLogin: true,
+      });
+
+      if (!stepUpAuth.ok) {
+        return NextResponse.json(
+          { error: stepUpAuth.error, code: "code" in stepUpAuth ? stepUpAuth.code : undefined },
+          { status: stepUpAuth.status }
+        );
+      }
+    }
+
     const db = getServerFirestore();
     const userRef = db.collection(firebaseCollections.users).doc(auth.userId);
     const existingSnapshot = await userRef.get();
@@ -49,21 +65,47 @@ export async function PATCH(request: Request) {
     });
 
     const nextEmail = normalizeEmail(body.email) || existingProfile.email;
-    const nextProfile = withResolvedUserPermissions<User>({
+    const nextPhone = normalizeText(body.phone);
+    const phoneChanged =
+      nextPhone.length > 0 &&
+      nextPhone !== (existingProfile.phone ?? "");
+    const nextProfileBase = withResolvedUserPermissions<User>({
       ...existingProfile,
       email: nextEmail,
       name: normalizeText(body.name) || existingProfile.name,
       title: normalizeText(body.title) || existingProfile.title,
       barangay: normalizeText(body.barangay) || existingProfile.barangay,
-      phone: normalizeText(body.phone) || existingProfile.phone,
+      phone: nextPhone || existingProfile.phone,
       avatarUrl: typeof body.avatarUrl === "string" ? body.avatarUrl : existingProfile.avatarUrl,
+      phoneVerifiedAt: body.phoneVerifiedAt ? timestamp : phoneChanged ? "" : existingProfile.phoneVerifiedAt,
+      privacyAcknowledgedAt: body.privacyAcknowledgedAt ? timestamp : existingProfile.privacyAcknowledgedAt,
+      securityReviewVerifiedAt: body.securityReviewVerifiedAt ? timestamp : existingProfile.securityReviewVerifiedAt,
       preferredWorkspace: normalizeWorkspace(
         body.preferredWorkspace,
         existingProfile.role,
         existingProfile.preferredWorkspace ?? (existingProfile.role === "developer" ? "detailed" : "simple")
       ),
-      updatedAt: new Date().toISOString(),
+      updatedAt: timestamp,
     });
+    const nextProfile = syncUserOnboardingState(
+      nextProfileBase,
+      auth.profile.name ?? auth.email,
+      timestamp
+    );
+
+    if (body.phoneVerifiedAt && !nextProfile.phone?.trim()) {
+      return NextResponse.json(
+        { error: "Maglagay muna ng mobile number bago ito markahang confirmed." },
+        { status: 400 }
+      );
+    }
+
+    if (body.completeOnboarding && !isUserOnboardingComplete(nextProfile)) {
+      return NextResponse.json(
+        { error: "Kumpletuhin muna ang lahat ng onboarding checklist items bago i-activate ang account." },
+        { status: 400 }
+      );
+    }
 
     await userRef.set(nextProfile, { merge: true });
 
@@ -72,7 +114,7 @@ export async function PATCH(request: Request) {
       user: auth.profile.name ?? auth.email,
       action: "UPDATE_OWN_PROFILE",
       details: `${nextProfile.name} updated account profile and workspace preferences.`,
-      timestamp: nextProfile.updatedAt,
+      timestamp,
     });
     await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
 

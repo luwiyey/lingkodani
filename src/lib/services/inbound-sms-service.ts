@@ -1,8 +1,10 @@
 import { analyzeInboundSms, normalizePhone, type InboundSmsAnalysis } from "@/lib/sms-simulator";
+import { normalizeSmsMessage } from "@/lib/sms-normalization";
 import { getAutoReplyEligibleAt } from "@/lib/services/auto-reply-service";
 import { buildCaseId, deriveInitialCaseStatus, getSlaDueAt } from "@/lib/services/sms-case-service";
 import { enhanceInboundAnalysisWithClarification } from "@/lib/services/sms-clarification-service";
 import { assessRegistrationMessage, buildRegistrationPrompt } from "@/lib/services/sms-registration-service";
+import { buildSmsTriageAssessment } from "@/lib/services/sms-triage-service";
 import { defaultSystemSettings } from "@/lib/system-settings";
 import type { Farmer, SmsDetectedLanguage, SmsMessage, SystemSettings } from "@/lib/types";
 
@@ -43,6 +45,114 @@ const NON_REGISTRATION_CONCERN_HINTS = [
   "help",
   "tulong",
 ];
+
+const THREAD_CROP_HINTS = [
+  "palay",
+  "mais",
+  "kamatis",
+  "talong",
+  "sitaw",
+  "sibuyas",
+  "gulay",
+  "okra",
+  "sili",
+  "tubo",
+  "tabako",
+  "monggo",
+  "ampalaya",
+];
+
+const THREAD_SYMPTOM_HINTS = [
+  "uod",
+  "peste",
+  "sakit",
+  "dilaw",
+  "leafminer",
+  "borer",
+  "baha",
+  "ulan",
+  "tubig",
+  "daga",
+  "kuhol",
+  "insekto",
+  "damage",
+  "spot",
+  "brown",
+];
+
+const THREAD_WEATHER_HINTS = [
+  "baha",
+  "ulan",
+  "tubig",
+  "patubig",
+  "flood",
+  "rain",
+  "danum",
+];
+
+const THREAD_NEW_CASE_HINTS = [
+  "bagong problema",
+  "iba naman",
+  "another issue",
+  "new problem",
+  "panibagong",
+];
+
+type UnknownConcernThreadMatch = {
+  caseId: string;
+  confidence: number;
+  reason: string;
+};
+
+type UnknownConcernThreadCandidate = {
+  item: SmsMessage;
+  score: number;
+  reason: string;
+};
+
+function getSharedTokens(left: Set<string>, right: Set<string>) {
+  return [...left].filter((token) => right.has(token));
+}
+
+function buildThreadSignature(message: string) {
+  const normalization = normalizeSmsMessage(message);
+  const originalNormalized = normalization.originalMessage.toLowerCase();
+  const normalizedText = normalization.normalizedMessage.toLowerCase();
+  const normalizedTokens = normalization.normalizedMessage.split(/\s+/).filter(Boolean);
+  const originalTokens = originalNormalized.split(/\s+/).filter(Boolean);
+  const tokenSet = new Set([...originalTokens, ...normalizedTokens]);
+  const crops = new Set(THREAD_CROP_HINTS.filter((hint) => tokenSet.has(hint)));
+  const symptoms = new Set(THREAD_SYMPTOM_HINTS.filter((hint) => tokenSet.has(hint)));
+  const weatherSignals = new Set(THREAD_WEATHER_HINTS.filter((hint) => tokenSet.has(hint)));
+  const locations = new Set(
+    [...originalNormalized.matchAll(/\b(?:zone|sitio|barangay)\s*[a-z0-9-]+\b/gi)].map(
+      (match) => match[0].toLowerCase()
+    )
+  );
+  const multiConcernDetected =
+    (crops.size >= 2 && /\b(?:pero|samantala|kabilang lote|bukod pa|also|another|iba naman)\b/i.test(normalizedText)) ||
+    (symptoms.size > 0 &&
+      weatherSignals.size > 0 &&
+      /\b(?:pero|samantala|habang|kabilang lote|bukod pa|also)\b/i.test(normalizedText));
+
+  return {
+    crops,
+    symptoms,
+    weatherSignals,
+    locations,
+    shortReply: originalTokens.length > 0 && originalTokens.length <= 6,
+    looksLikePromptAnswer:
+      originalTokens.length > 0 &&
+      originalTokens.length <= 8 &&
+      !/[?.!]/.test(originalNormalized) &&
+      !THREAD_NEW_CASE_HINTS.some((hint) => originalNormalized.includes(hint)),
+    startsNewCase: THREAD_NEW_CASE_HINTS.some((hint) => originalNormalized.includes(hint)),
+    multiConcernDetected,
+    multiConcernReason: multiConcernDetected
+      ? "Mukhang may hiwalay na concern o ibang lote/pananim sa parehong mensahe."
+      : undefined,
+  };
+}
 
 function looksLikeRegistrationFollowUp(message: string) {
   const normalized = message.trim().toLowerCase();
@@ -103,32 +213,153 @@ function appendIdentityPrompt(body: string, identityPrompt?: string) {
   return `${trimmedBody} ${trimmedPrompt}`.trim();
 }
 
-function findContinuableUnknownConcernCaseId(input: {
+function getUnknownConcernThreadCandidates(input: {
   existingMessages: SmsMessage[];
   normalizedPhone: string;
   parsedIntent: SmsMessage["parsedIntent"];
   timestamp: string;
-}) {
-  if (input.parsedIntent === "REGISTER" || input.parsedIntent === "UNKNOWN") {
-    return undefined;
+  message: string;
+}): UnknownConcernThreadCandidate[] {
+  const currentSignature = buildThreadSignature(input.message);
+
+  if (
+    input.parsedIntent === "REGISTER" ||
+    (input.parsedIntent === "UNKNOWN" && !currentSignature.looksLikePromptAnswer)
+  ) {
+    return [];
   }
 
   const currentTime = new Date(input.timestamp).getTime();
 
-  const candidate = input.existingMessages
+  return input.existingMessages
     .filter((item) => normalizePhone(item.phone) === input.normalizedPhone)
     .filter((item) => !item.closedAt)
     .filter((item) => !item.registrationRequired)
-    .filter((item) => item.parsedIntent === input.parsedIntent)
     .filter((item) => Boolean(item.caseId))
     .filter((item) => {
       const itemTime = new Date(item.timestamp).getTime();
       const hoursApart = Math.abs(currentTime - itemTime) / (1000 * 60 * 60);
-      return hoursApart <= 12;
+      return hoursApart <= 18;
     })
-    .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())[0];
+    .map((item) => {
+      const itemTime = new Date(item.timestamp).getTime();
+      const hoursApart = Math.abs(currentTime - itemTime) / (1000 * 60 * 60);
+      const candidateSignature = buildThreadSignature(item.message);
+      const sharedCrops = getSharedTokens(currentSignature.crops, candidateSignature.crops);
+      const sharedSymptoms = getSharedTokens(currentSignature.symptoms, candidateSignature.symptoms);
+      const sharedWeatherSignals = getSharedTokens(currentSignature.weatherSignals, candidateSignature.weatherSignals);
+      const sharedLocations = getSharedTokens(currentSignature.locations, candidateSignature.locations);
+      const reasons: string[] = [];
+      let score = 0;
 
-  return candidate?.caseId;
+      if (item.parsedIntent === input.parsedIntent) {
+        score += 0.42;
+        reasons.push("parehong intent");
+      }
+
+      if (
+        currentSignature.looksLikePromptAnswer &&
+        (item.clarificationNeeded || item.identityDetailsNeeded || item.caseStatus === "awaiting_clarification")
+      ) {
+        score += 0.46;
+        reasons.push("mukhang sagot sa naunang prompt");
+      }
+
+      if (sharedCrops.length > 0) {
+        score += 0.18;
+        reasons.push(`parehong pananim: ${sharedCrops.join(", ")}`);
+      } else if (currentSignature.crops.size > 0 && candidateSignature.crops.size > 0) {
+        score -= 0.34;
+        reasons.push("magkaibang pananim");
+      }
+
+      if (sharedSymptoms.length > 0) {
+        score += 0.16;
+        reasons.push(`parehong sintomas: ${sharedSymptoms.join(", ")}`);
+      } else if (currentSignature.symptoms.size > 0 && candidateSignature.symptoms.size > 0) {
+        score -= 0.12;
+      }
+
+      if (sharedWeatherSignals.length > 0) {
+        score += 0.14;
+        reasons.push(`parehong weather/water cues: ${sharedWeatherSignals.join(", ")}`);
+      }
+
+      if (sharedLocations.length > 0) {
+        score += 0.12;
+        reasons.push(`parehong lokasyon: ${sharedLocations.join(", ")}`);
+      }
+
+      if (hoursApart <= 4) {
+        score += 0.08;
+      } else if (hoursApart > 12) {
+        score -= 0.08;
+      }
+
+      if (currentSignature.startsNewCase) {
+        score -= 0.4;
+      }
+
+      if (currentSignature.multiConcernDetected) {
+        score -= 0.2;
+      }
+
+      return {
+        item,
+        score,
+        reason:
+          reasons.length > 0
+            ? `Ipinagpatuloy ang case dahil sa ${reasons.join("; ")}.`
+            : "Ipinagpatuloy ang case dahil sa pinakamalapit na naunang thread.",
+      };
+    })
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+
+      return new Date(right.item.timestamp).getTime() - new Date(left.item.timestamp).getTime();
+    });
+}
+
+function findContinuableUnknownConcernCase(input: {
+  existingMessages: SmsMessage[];
+  normalizedPhone: string;
+  parsedIntent: SmsMessage["parsedIntent"];
+  timestamp: string;
+  message: string;
+}): UnknownConcernThreadMatch | undefined {
+  const scoredCandidates = getUnknownConcernThreadCandidates(input);
+
+  const bestCandidate = scoredCandidates[0];
+  const secondCandidate = scoredCandidates[1];
+
+  if (!bestCandidate) {
+    return undefined;
+  }
+
+  const threshold =
+    bestCandidate.item.clarificationNeeded || bestCandidate.item.identityDetailsNeeded
+      ? 0.48
+      : 0.56;
+
+  if (bestCandidate.score < threshold) {
+    return undefined;
+  }
+
+  if (
+    secondCandidate &&
+    secondCandidate.score >= threshold &&
+    Math.abs(bestCandidate.score - secondCandidate.score) < 0.08
+  ) {
+    return undefined;
+  }
+
+  return {
+    caseId: bestCandidate.item.caseId!,
+    confidence: Number(bestCandidate.score.toFixed(2)),
+    reason: bestCandidate.reason,
+  };
 }
 
 export type CreateInboundSmsInput = {
@@ -222,6 +453,14 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
           clarificationQuestion: undefined,
         }
       : enhancedAnalysis;
+  const triageAssessment =
+    isRegistrationIntent
+      ? null
+      : buildSmsTriageAssessment({
+          message: compiledRegistrationMessage,
+          analysis,
+          knownFarmer: Boolean(farmer || registrationCandidate),
+        });
   const identityDetailsNeeded =
     !farmer &&
     !registrationCandidate &&
@@ -231,31 +470,58 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
     : undefined;
   const effectiveFarmerId = farmer?.id ?? registrationCandidate?.id ?? `UNKNOWN-${Date.now()}`;
   const effectiveFarmerName = farmer?.name ?? registrationCandidate?.name ?? "Hindi pa nakilalang magsasaka";
-  const continuingUnknownConcernCaseId =
+  const continuingUnknownConcernMatch =
     !farmer && !registrationCandidate && !shouldContinueRegistrationDraft
-      ? findContinuableUnknownConcernCaseId({
+      ? findContinuableUnknownConcernCase({
           existingMessages,
           normalizedPhone,
           parsedIntent: analysis.parsedIntent,
           timestamp,
+          message: input.message,
         })
       : undefined;
-  const caseId = (shouldContinueRegistrationDraft ? registrationDraftCaseId : undefined) ?? continuingUnknownConcernCaseId ?? buildCaseId({
+  const threadReviewCandidate =
+    !farmer && !registrationCandidate && !shouldContinueRegistrationDraft
+      ? getUnknownConcernThreadCandidates({
+          existingMessages,
+          normalizedPhone,
+          parsedIntent: analysis.parsedIntent,
+          timestamp,
+          message: input.message,
+        })[0]
+      : undefined;
+  const effectiveUrgency = triageAssessment?.recommendedUrgency ?? analysis.urgency;
+  const effectiveClarificationNeeded = registrationRequired
+    ? true
+    : triageAssessment?.clarificationNeeded ?? analysis.clarificationNeeded;
+  const effectiveClarificationQuestion = registrationRequired
+    ? registrationAssessment?.clarificationPrompt ??
+      buildRegistrationPrompt(registrationAssessment?.missingFields, registrationAssessment?.detectedLanguage)
+    : triageAssessment?.clarificationQuestion ?? analysis.clarificationQuestion;
+  const caseId = (shouldContinueRegistrationDraft ? registrationDraftCaseId : undefined) ?? continuingUnknownConcernMatch?.caseId ?? buildCaseId({
     farmerId: farmer?.id ?? registrationCandidate?.id,
     normalizedPhone: "",
     fallbackId: messageId,
   });
   const caseStatus = deriveInitialCaseStatus({
-    clarificationNeeded: analysis.clarificationNeeded,
+    clarificationNeeded: effectiveClarificationNeeded,
     registrationRequired,
   });
   const aiAdvice =
     registrationRequired
       ? registrationAssessment?.clarificationPrompt ??
         buildRegistrationPrompt(registrationAssessment?.missingFields, registrationAssessment?.detectedLanguage)
-      : analysis.clarificationNeeded
-        ? analysis.aiAdvice
+      : effectiveClarificationNeeded
+        ? effectiveClarificationQuestion ?? analysis.aiAdvice
         : appendIdentityPrompt(analysis.aiAdvice, identityPrompt);
+  const normalization = normalizeSmsMessage(input.message);
+  const possibleDuplicateThread =
+    !continuingUnknownConcernMatch &&
+    threadReviewCandidate &&
+    threadReviewCandidate.item.caseId &&
+    (threadReviewCandidate.score >= 0.32 || triageAssessment?.multiConcernDetected)
+      ? threadReviewCandidate
+      : undefined;
 
   return {
     matchedFarmerId: farmer?.id ?? registrationCandidate?.id,
@@ -270,18 +536,47 @@ export function createInboundSmsRecord(input: CreateInboundSmsInput): CreatedInb
       sourceProvider: input.sourceProvider ?? "demo",
       externalId: input.externalId,
       caseId,
+      threadConfidence: shouldContinueRegistrationDraft ? 1 : continuingUnknownConcernMatch?.confidence,
+      threadReason:
+        shouldContinueRegistrationDraft
+          ? "Ipinagpatuloy ang kasalukuyang registration draft mula sa parehong sender."
+          : continuingUnknownConcernMatch?.reason,
+      threadReviewStatus: possibleDuplicateThread ? "pending" : undefined,
+      possibleDuplicateOfCaseId:
+        possibleDuplicateThread && possibleDuplicateThread.item.caseId !== caseId
+          ? possibleDuplicateThread.item.caseId
+          : undefined,
+      possibleDuplicateReason:
+        possibleDuplicateThread && possibleDuplicateThread.item.caseId !== caseId
+          ? triageAssessment?.multiConcernDetected
+            ? triageAssessment.multiConcernReason ??
+              `May naunang bukas na case (${possibleDuplicateThread.item.caseId}) mula sa parehong sender.`
+            : possibleDuplicateThread.reason
+          : undefined,
       caseStatus,
       registrationRequired,
       identityDetailsNeeded,
       identityPrompt,
-      slaDueAt: getSlaDueAt(timestamp, analysis.urgency),
+      slaDueAt: getSlaDueAt(timestamp, effectiveUrgency),
       autoReplyEligibleAt: getAutoReplyEligibleAt(timestamp, settings),
       analysisSource: analysis.analysisSource ?? "rules",
       detectedLanguage: analysis.detectedLanguage,
-      clarificationNeeded: analysis.clarificationNeeded,
-      clarificationQuestion: analysis.clarificationQuestion,
+      normalizationMatches: normalization.matches,
+      normalizationTokens: normalization.tokens,
+      normalizationUnknownTokens: normalization.unknownTokens,
+      clarificationNeeded: effectiveClarificationNeeded,
+      clarificationQuestion: effectiveClarificationQuestion,
+      candidateIntents: triageAssessment?.candidateIntents,
+      sentiment: triageAssessment?.sentiment,
+      cropStage: triageAssessment?.cropStage,
+      triageConfidence: triageAssessment?.triageConfidence ?? analysis.aiConfidence,
+      triageUncertainty: triageAssessment?.uncertainty,
+      triageMissingFields: triageAssessment?.missingFields,
+      triageNextQuestion: triageAssessment?.nextQuestion,
+      multiConcernDetected: triageAssessment?.multiConcernDetected,
+      multiConcernReason: triageAssessment?.multiConcernReason,
       parsedIntent: analysis.parsedIntent,
-      urgency: analysis.urgency,
+      urgency: effectiveUrgency,
       status: "pending_approval",
       aiAdvice,
       aiConfidence: analysis.aiConfidence,

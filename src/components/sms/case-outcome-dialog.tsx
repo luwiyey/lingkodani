@@ -33,6 +33,9 @@ export function CaseOutcomeDialog({
   farmerName,
   initialStatus,
   initialSummary,
+  resolutionReady = true,
+  resolutionBlockers = [],
+  resolutionEvidenceSummary,
   onSubmit,
 }: {
   open: boolean;
@@ -40,6 +43,9 @@ export function CaseOutcomeDialog({
   farmerName?: string;
   initialStatus?: SmsCaseOutcomeStatus | null;
   initialSummary?: string;
+  resolutionReady?: boolean;
+  resolutionBlockers?: string[];
+  resolutionEvidenceSummary?: string;
   onSubmit: (status: SmsCaseOutcomeStatus, summary: string) => void;
 }) {
   const [status, setStatus] = React.useState<SmsCaseOutcomeStatus>(
@@ -59,6 +65,7 @@ export function CaseOutcomeDialog({
   const handleSubmit = () => {
     onSubmit(status, summary.trim());
   };
+  const resolvedBlocked = status === "resolved" && !resolutionReady;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,9 +102,23 @@ export function CaseOutcomeDialog({
               {SMS_CASE_OUTCOME_META[status].helper}
             </p>
             {status === "resolved" ? (
-              <p className="text-xs text-amber-700 dark:text-amber-200">
-                Kapag pinili ang "Nalutas", hindi pa agad tuluyang isasara ang case. Hihintayin muna ng system ang kumpirmasyon ng magsasaka o manual confirmation ng barangay team.
-              </p>
+              <div className="space-y-2">
+                <p className="text-xs text-amber-700 dark:text-amber-200">
+                  Kapag pinili ang "Nalutas", hindi pa agad tuluyang isasara ang case. Hihintayin muna ng system ang kumpirmasyon ng magsasaka o manual confirmation ng barangay team.
+                </p>
+                {resolutionEvidenceSummary ? (
+                  <p className="text-xs text-muted-foreground">
+                    Evidence check: {resolutionEvidenceSummary}
+                  </p>
+                ) : null}
+                {resolvedBlocked ? (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                    {resolutionBlockers.map((blocker) => (
+                      <p key={blocker}>{blocker}</p>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <div className="space-y-2">
@@ -118,7 +139,7 @@ export function CaseOutcomeDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Kanselahin
           </Button>
-          <Button onClick={handleSubmit}>I-save ang outcome</Button>
+          <Button onClick={handleSubmit} disabled={resolvedBlocked}>I-save ang outcome</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

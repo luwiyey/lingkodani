@@ -89,9 +89,9 @@ function RequestAccessPageContent() {
       }
 
       toast({
-        title: payload.duplicatePending ? 'May pending request na' : 'Naisumite ang access request',
+        title: payload.duplicatePending ? 'Na-update ang pending request' : 'Naisumite ang access request',
         description: payload.duplicatePending
-          ? 'May nauna ka nang pending request. Hintayin ang developer o barangay admin na mag-provision ng account.'
+          ? 'Na-merge ang bagong detalye mo sa kasalukuyang pending request para hindi dumami ang duplicate entries sa review queue.'
           : 'Naipasa na ang iyong detalye para ma-review at ma-set up ang account.',
       });
       router.push(`/login?requestedAccess=1&email=${encodeURIComponent(normalizedEmail)}`);

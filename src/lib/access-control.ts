@@ -5,6 +5,12 @@ export function isDeveloperUser(user?: Pick<User, "role"> | null) {
   return user?.role === "developer";
 }
 
+export function canAccessBarangaySettingsWorkspace(
+  user?: Pick<User, "role" | "title" | "permissions"> | null
+) {
+  return isDeveloperUser(user) || user?.role === "barangay";
+}
+
 export function isBarangayManager(user?: Pick<User, "role" | "title" | "permissions"> | null) {
   if (isDeveloperUser(user)) {
     return true;
@@ -34,7 +40,7 @@ export function canAccessDataCenter(user?: Pick<User, "role" | "title" | "permis
 }
 
 export function canUseLiveSmsSimulation(user?: Pick<User, "role"> | null) {
-  return false;
+  return isDeveloperUser(user);
 }
 
 export function getManagedBarangayUsers(users: User[]) {

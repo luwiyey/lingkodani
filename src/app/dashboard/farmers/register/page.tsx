@@ -8,7 +8,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { farmerRegistrationSchema, type FarmerRegistrationValues } from '@/lib/schemas';
 import { useData } from '@/context/data-context';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function RegisterFarmerPage() {
   const router = useRouter();
@@ -31,8 +31,12 @@ export default function RegisterFarmerPage() {
       sitio: '',
       crops: '',
       gender: '',
+      sharedPhone: false,
+      householdLabel: '',
+      sharedPhoneNotes: '',
     },
   });
+  const sharedPhone = form.watch('sharedPhone');
 
   const handleRegisterFarmer = (data: FarmerRegistrationValues) => {
     addPendingFarmer(data);
@@ -97,6 +101,29 @@ export default function RegisterFarmerPage() {
                   />
                   <FormField
                     control={form.control}
+                    name="sharedPhone"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2 rounded-xl border bg-muted/20 p-4">
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <Checkbox
+                              checked={Boolean(field.value)}
+                              onCheckedChange={(checked) => field.onChange(Boolean(checked))}
+                            />
+                          </FormControl>
+                          <div className="space-y-1">
+                            <FormLabel className="text-base">Shared household number</FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              I-enable ito kung may higit sa isang magsasaka sa iisang numero ng telepono.
+                            </p>
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="barangay"
                     render={({ field }) => (
                       <FormItem>
@@ -108,6 +135,39 @@ export default function RegisterFarmerPage() {
                       </FormItem>
                     )}
                   />
+                  {sharedPhone ? (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="householdLabel"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Household Label</FormLabel>
+                            <FormControl>
+                              <Input placeholder="hal. Sambahayan nina Dela Cruz" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground">
+                              Makakatulong ito para ma-link ang magkakahiwalay na farmer profiles sa iisang household.
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="sharedPhoneNotes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Household Notes</FormLabel>
+                            <FormControl>
+                              <Input placeholder="hal. Mag-ama ang gumagamit ng numerong ito" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  ) : null}
                   <FormField
                     control={form.control}
                     name="sitio"

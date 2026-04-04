@@ -5,6 +5,7 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 import { getClientFirestore } from "@/lib/firebase/client";
@@ -26,5 +27,14 @@ export const liveLogbookRepository: LogbookRepository = {
     const db = getClientFirestore();
     await setDoc(doc(db, firebaseCollections.logbookEntries, entry.id), entry);
     return entry;
+  },
+
+  async updateEntry(id, updates) {
+    const db = getClientFirestore();
+    await updateDoc(doc(db, firebaseCollections.logbookEntries, id), updates);
+    return {
+      id,
+      ...updates,
+    } as LogbookEntry;
   },
 };

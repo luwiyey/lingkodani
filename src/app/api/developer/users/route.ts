@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
+import { buildInviteLifecycleFields, getInviteLifecycleSummary } from "@/lib/invite-lifecycle";
+import { isUserOnboardingComplete, syncUserOnboardingState } from "@/lib/onboarding-checklist";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import {
   sendProvisioningInviteEmail,
@@ -71,9 +73,23 @@ function buildUserProfile(input: {
   inviteDeliveryError?: string;
   inviteDeliveryProvider?: string;
   inviteSetupLinkGeneratedAt?: string;
+  inviteExpiresAt?: string;
+  inviteAcceptedAt?: string;
+  inviteRevokedAt?: string;
+  inviteRevokedBy?: string;
+  inviteRevocationReason?: string;
+  inviteLastResentAt?: string;
+  inviteResendCount?: number;
+  phoneVerifiedAt?: string;
+  privacyAcknowledgedAt?: string;
+  securityReviewVerifiedAt?: string;
+  onboarding?: User["onboarding"];
 }): User {
   const timestamp = new Date().toISOString();
-  return withResolvedUserPermissions<User>({
+  const hasInviteRevokedAt = "inviteRevokedAt" in input;
+  const hasInviteRevokedBy = "inviteRevokedBy" in input;
+  const hasInviteRevocationReason = "inviteRevocationReason" in input;
+  return syncUserOnboardingState(withResolvedUserPermissions<User>({
     ...input.existing,
     id: input.uid,
     uid: input.uid,
@@ -90,9 +106,20 @@ function buildUserProfile(input: {
     inviteDeliveryError: input.inviteDeliveryError ?? input.existing?.inviteDeliveryError,
     inviteDeliveryProvider: input.inviteDeliveryProvider ?? input.existing?.inviteDeliveryProvider,
     inviteSetupLinkGeneratedAt: input.inviteSetupLinkGeneratedAt ?? input.existing?.inviteSetupLinkGeneratedAt,
+    inviteExpiresAt: input.inviteExpiresAt ?? input.existing?.inviteExpiresAt,
+    inviteAcceptedAt: input.inviteAcceptedAt ?? input.existing?.inviteAcceptedAt,
+    inviteRevokedAt: hasInviteRevokedAt ? input.inviteRevokedAt : input.existing?.inviteRevokedAt,
+    inviteRevokedBy: hasInviteRevokedBy ? input.inviteRevokedBy : input.existing?.inviteRevokedBy,
+    inviteRevocationReason: hasInviteRevocationReason ? input.inviteRevocationReason : input.existing?.inviteRevocationReason,
+    inviteLastResentAt: input.inviteLastResentAt ?? input.existing?.inviteLastResentAt,
+    inviteResendCount: input.inviteResendCount ?? input.existing?.inviteResendCount,
+    phoneVerifiedAt: input.phoneVerifiedAt ?? input.existing?.phoneVerifiedAt,
+    privacyAcknowledgedAt: input.privacyAcknowledgedAt ?? input.existing?.privacyAcknowledgedAt,
+    securityReviewVerifiedAt: input.securityReviewVerifiedAt ?? input.existing?.securityReviewVerifiedAt,
+    onboarding: input.onboarding ?? input.existing?.onboarding,
     createdAt: input.existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
-  });
+  }), input.name, timestamp);
 }
 
 function resolveRequestOrigin(request: Request) {
@@ -150,6 +177,87 @@ function summarizeInviteDelivery(result: SendProvisioningInviteResult) {
   };
 }
 
+function buildAuthFailureResponse(
+  auth:
+    | Awaited<ReturnType<typeof authenticateServerRequest>>
+    | Awaited<ReturnType<typeof authenticateServerRequest>>
+) {
+  return NextResponse.json(
+    {
+      error: auth.error,
+      code: "code" in auth ? auth.code : undefined,
+    },
+    { status: auth.status }
+  );
+}
+
+async function logInviteRuntimeHealth(input: {
+  email: string;
+  inviteResult: SendProvisioningInviteResult;
+  inviteSummary: ReturnType<typeof summarizeInviteDelivery>;
+}) {
+  try {
+    if (!input.inviteResult.configured) {
+      await recordRuntimeHealthWarning("invite_email", "Invite Email", {
+        provider: input.inviteSummary.inviteDeliveryProvider,
+        email: input.email,
+        reason: input.inviteResult.error,
+      });
+    } else if (input.inviteResult.sent) {
+      await recordRuntimeHealthSuccess("invite_email", "Invite Email", {
+        provider: input.inviteResult.provider,
+        email: input.email,
+        messageId: input.inviteResult.messageId,
+      });
+    } else {
+      await recordRuntimeHealthFailure(
+        "invite_email",
+        "Invite Email",
+        input.inviteResult.error ?? "Hindi naipadala ang invite email.",
+        {
+          provider: input.inviteResult.provider,
+          email: input.email,
+        }
+      );
+    }
+  } catch (error) {
+    console.error("Invite email runtime health logging failed.", error);
+  }
+}
+
+async function createAndDeliverSetupLink(input: {
+  request: Request;
+  email: string;
+  name: string;
+  existing?: Partial<User>;
+}) {
+  const setupLink = await buildProvisioningSetupLink({
+    request: input.request,
+    email: input.email,
+  });
+  const inviteResult = await sendProvisioningInviteEmail({
+    email: input.email,
+    name: input.name,
+    setupLink,
+  });
+  const inviteSummary = summarizeInviteDelivery(inviteResult);
+  const inviteTimestamp = new Date().toISOString();
+
+  await logInviteRuntimeHealth({
+    email: input.email,
+    inviteResult,
+    inviteSummary,
+  });
+
+  return {
+    setupLink,
+    inviteResult,
+    inviteSummary,
+    inviteTimestamp,
+    lifecycleFields: buildInviteLifecycleFields(input.existing, inviteTimestamp),
+  };
+}
+
 async function markMatchingAccessRequestsProvisioned(input: {
   email: string;
   actorName: string;
@@ -181,10 +289,12 @@ async function markMatchingAccessRequestsProvisioned(input: {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticateServerRequest(request, ["developer"]);
+  const auth = await authenticateServerRequest(request, ["developer"], {
+    requireRecentLogin: true,
+  });
 
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return buildAuthFailureResponse(auth);
   }
 
   try {
@@ -195,7 +305,8 @@ export async function POST(request: Request) {
     const phone = normalizeText(body.phone);
     const requestedRole = normalizeRole(body.role);
     const role = allowDeveloperProvisioning() ? requestedRole : "barangay";
-    const status = normalizeStatus(body.status, "pending_setup");
+    const requestedStatus = normalizeStatus(body.status, "pending_setup");
+    const status: NonNullable<User["status"]> = requestedStatus === "active" ? "pending_setup" : requestedStatus;
     const preferredWorkspace = normalizeWorkspace(body.preferredWorkspace, role);
 
     if (!email || !name || !title || !phone) {
@@ -244,12 +355,53 @@ export async function POST(request: Request) {
       );
     }
 
-    let setupLink = "";
-
     try {
-      setupLink = await buildProvisioningSetupLink({
+      const delivery = await createAndDeliverSetupLink({
         request,
         email,
+        name,
+      });
+      const profile = buildUserProfile({
+        email,
+        name,
+        role,
+        uid: firebaseUser.uid,
+        title,
+        phone,
+        status,
+        preferredWorkspace,
+        inviteDeliveryStatus: delivery.inviteSummary.inviteDeliveryStatus,
+        inviteSentAt: delivery.inviteTimestamp,
+        inviteDeliveryError: delivery.inviteSummary.inviteDeliveryError,
+        inviteDeliveryProvider: delivery.inviteSummary.inviteDeliveryProvider,
+        inviteSetupLinkGeneratedAt: delivery.inviteTimestamp,
+        inviteExpiresAt: delivery.lifecycleFields.inviteExpiresAt,
+        inviteLastResentAt: delivery.lifecycleFields.inviteLastResentAt,
+        inviteResendCount: delivery.lifecycleFields.inviteResendCount,
+      });
+
+      await userRef.set(profile);
+
+      await markMatchingAccessRequestsProvisioned({
+        email,
+        actorName: auth.profile.name ?? auth.email,
+      });
+      const auditLog = createAuditEntry({
+        id: `AUD${Date.now()}-${firebaseUser.uid}`,
+        user: auth.profile.name ?? auth.email,
+        action: "CREATE_USER_ACCESS",
+        details: `${profile.name} (${profile.email}) - ${profile.role}, ${profile.status}, ${profile.preferredWorkspace}, invite:${profile.inviteDeliveryStatus ?? "manual_link"}`,
+      });
+      await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
+
+      return NextResponse.json({
+        created: true,
+        profile,
+        provisioningMethod: "password_reset_link",
+        inviteDeliveryStatus: delivery.inviteSummary.inviteDeliveryStatus,
+        inviteEmailSent: delivery.inviteResult.sent,
+        statusAdjusted: requestedStatus === "active",
+        setupLink: delivery.inviteSummary.includeSetupLinkInResponse ? delivery.setupLink : "",
       });
     } catch (error) {
       if (createdFirebaseUser) {
@@ -260,76 +412,6 @@ export async function POST(request: Request) {
 
       throw error;
     }
-
-    const inviteResult = await sendProvisioningInviteEmail({
-      email,
-      name,
-      setupLink,
-    });
-    const inviteSummary = summarizeInviteDelivery(inviteResult);
-    const inviteTimestamp = new Date().toISOString();
-
-    const profile = buildUserProfile({
-      email,
-      name,
-      role,
-      uid: firebaseUser.uid,
-      title,
-      phone,
-      status,
-      preferredWorkspace,
-      inviteDeliveryStatus: inviteSummary.inviteDeliveryStatus,
-      inviteSentAt: inviteTimestamp,
-      inviteDeliveryError: inviteSummary.inviteDeliveryError,
-      inviteDeliveryProvider: inviteSummary.inviteDeliveryProvider,
-      inviteSetupLinkGeneratedAt: inviteTimestamp,
-    });
-
-    await userRef.set(profile);
-
-    try {
-      if (!inviteResult.configured) {
-        await recordRuntimeHealthWarning("invite_email", "Invite Email", {
-          provider: inviteSummary.inviteDeliveryProvider,
-          email,
-          reason: inviteResult.error,
-        });
-      } else if (inviteResult.sent) {
-        await recordRuntimeHealthSuccess("invite_email", "Invite Email", {
-          provider: inviteResult.provider,
-          email,
-          messageId: inviteResult.messageId,
-        });
-      } else {
-        await recordRuntimeHealthFailure("invite_email", "Invite Email", inviteResult.error ?? "Hindi naipadala ang invite email.", {
-          provider: inviteResult.provider,
-          email,
-        });
-      }
-    } catch (error) {
-      console.error("Invite email runtime health logging failed.", error);
-    }
-
-    await markMatchingAccessRequestsProvisioned({
-      email,
-      actorName: auth.profile.name ?? auth.email,
-    });
-    const auditLog = createAuditEntry({
-      id: `AUD${Date.now()}-${firebaseUser.uid}`,
-      user: auth.profile.name ?? auth.email,
-      action: "CREATE_USER_ACCESS",
-      details: `${profile.name} (${profile.email}) - ${profile.role}, ${profile.status}, ${profile.preferredWorkspace}, invite:${profile.inviteDeliveryStatus ?? "manual_link"}`,
-    });
-    await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
-
-    return NextResponse.json({
-      created: true,
-      profile,
-      provisioningMethod: "password_reset_link",
-      inviteDeliveryStatus: inviteSummary.inviteDeliveryStatus,
-      inviteEmailSent: inviteResult.sent,
-      setupLink: inviteSummary.includeSetupLinkInResponse ? setupLink : "",
-    });
   } catch {
     return NextResponse.json(
       { error: "Hindi nagawa ang live user provisioning." },
@@ -339,15 +421,18 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const auth = await authenticateServerRequest(request, ["developer"]);
+  const auth = await authenticateServerRequest(request, ["developer"], {
+    requireRecentLogin: true,
+  });
 
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return buildAuthFailureResponse(auth);
   }
 
   try {
     const body = await request.json();
     const userId = normalizeText(body.userId);
+    const action = normalizeText(body.action);
 
     if (!userId) {
       return NextResponse.json(
@@ -369,12 +454,109 @@ export async function PATCH(request: Request) {
     }
 
     const existingProfile = existingSnapshot.data() as User;
+    const actorName = auth.profile.name ?? auth.email;
 
     if (existingProfile.role === "developer" && !allowDeveloperProvisioning()) {
       return NextResponse.json(
         { error: "Ang developer accounts ay hindi ini-edit mula sa dashboard na ito." },
         { status: 403 }
       );
+    }
+
+    if (action === "revoke_invite") {
+      const inviteSummary = getInviteLifecycleSummary(existingProfile);
+
+      if (inviteSummary.status === "accepted") {
+        return NextResponse.json(
+          { error: "Hindi na puwedeng i-revoke ang invite dahil nagamit na ito ng user." },
+          { status: 400 }
+        );
+      }
+
+      const timestamp = new Date().toISOString();
+      const revocationReason =
+        normalizeText(body.inviteRevocationReason) ||
+        "Pansamantalang naka-hold ang onboarding habang nire-review muli ang access.";
+      const nextProfile = buildUserProfile({
+        email: existingProfile.email,
+        name: existingProfile.name,
+        role: existingProfile.role,
+        uid: userId,
+        title: existingProfile.title,
+        phone: existingProfile.phone,
+        status: existingProfile.status ?? "pending_setup",
+        preferredWorkspace: existingProfile.preferredWorkspace,
+        existing: existingProfile,
+        inviteRevokedAt: timestamp,
+        inviteRevokedBy: actorName,
+        inviteRevocationReason: revocationReason,
+      });
+
+      await userRef.set(nextProfile, { merge: true });
+
+      const auditLog = createAuditEntry({
+        id: `AUD${Date.now()}-${userId}`,
+        user: actorName,
+        action: "REVOKE_USER_INVITE",
+        details: `${nextProfile.email} invite revoked: ${revocationReason}`,
+      });
+      await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
+
+      return NextResponse.json({
+        updated: true,
+        action: "revoke_invite",
+        profile: nextProfile,
+      });
+    }
+
+    if (action === "resend_invite") {
+      const delivery = await createAndDeliverSetupLink({
+        request,
+        email: existingProfile.email,
+        name: existingProfile.name,
+        existing: existingProfile,
+      });
+      const nextProfile = buildUserProfile({
+        email: existingProfile.email,
+        name: existingProfile.name,
+        role: existingProfile.role,
+        uid: userId,
+        title: existingProfile.title,
+        phone: existingProfile.phone,
+        status: existingProfile.status ?? "pending_setup",
+        preferredWorkspace: existingProfile.preferredWorkspace,
+        existing: existingProfile,
+        inviteDeliveryStatus: delivery.inviteSummary.inviteDeliveryStatus,
+        inviteSentAt: delivery.inviteTimestamp,
+        inviteDeliveryError: delivery.inviteSummary.inviteDeliveryError,
+        inviteDeliveryProvider: delivery.inviteSummary.inviteDeliveryProvider,
+        inviteSetupLinkGeneratedAt: delivery.inviteTimestamp,
+        inviteExpiresAt: delivery.lifecycleFields.inviteExpiresAt,
+        inviteRevokedAt: "",
+        inviteRevokedBy: "",
+        inviteRevocationReason: "",
+        inviteLastResentAt: delivery.lifecycleFields.inviteLastResentAt,
+        inviteResendCount: delivery.lifecycleFields.inviteResendCount,
+      });
+
+      await userRef.set(nextProfile, { merge: true });
+
+      const auditLog = createAuditEntry({
+        id: `AUD${Date.now()}-${userId}`,
+        user: actorName,
+        action: "RESEND_USER_INVITE",
+        details: `${nextProfile.email} invite resent via ${nextProfile.inviteDeliveryStatus ?? "manual_link"}.`,
+      });
+      await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
+
+      return NextResponse.json({
+        updated: true,
+        action: "resend_invite",
+        profile: nextProfile,
+        inviteDeliveryStatus: delivery.inviteSummary.inviteDeliveryStatus,
+        inviteEmailSent: delivery.inviteResult.sent,
+        setupLink: delivery.inviteSummary.includeSetupLinkInResponse ? delivery.setupLink : "",
+      });
     }
 
     const nextRole = allowDeveloperProvisioning()
@@ -384,6 +566,7 @@ export async function PATCH(request: Request) {
     const nextName = normalizeText(body.name) || existingProfile.name;
     const nextTitle = normalizeText(body.title) || existingProfile.title || "";
     const nextPhone = normalizeText(body.phone) || existingProfile.phone || "";
+    const phoneChanged = nextPhone !== (existingProfile.phone ?? "");
     const nextStatus = normalizeStatus(body.status, existingProfile.status ?? "active");
     const nextWorkspace = normalizeWorkspace(
       body.preferredWorkspace,
@@ -437,13 +620,21 @@ export async function PATCH(request: Request) {
       status: nextStatus,
       preferredWorkspace: nextWorkspace,
       existing: existingProfile,
+      phoneVerifiedAt: phoneChanged ? "" : existingProfile.phoneVerifiedAt,
     });
+
+    if (nextStatus === "active" && !isUserOnboardingComplete(nextProfile)) {
+      return NextResponse.json(
+        { error: "Hindi pa maaaring gawing active ang account hangga't hindi kumpleto ang onboarding checklist ng staff user." },
+        { status: 400 }
+      );
+    }
 
     await userRef.set(nextProfile, { merge: true });
 
     const auditLog = createAuditEntry({
       id: `AUD${Date.now()}-${userId}`,
-      user: auth.profile.name ?? auth.email,
+      user: actorName,
       action: "UPDATE_USER_ACCESS",
       details: `${nextProfile.name} (${nextProfile.email}) - ${nextProfile.role}, ${nextProfile.status}, ${nextProfile.preferredWorkspace}`,
     });
@@ -462,10 +653,12 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = await authenticateServerRequest(request, ["developer"]);
+  const auth = await authenticateServerRequest(request, ["developer"], {
+    requireRecentLogin: true,
+  });
 
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return buildAuthFailureResponse(auth);
   }
 
   try {

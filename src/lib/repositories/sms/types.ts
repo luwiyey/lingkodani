@@ -33,10 +33,19 @@ export type SmsMessageUpdate = Partial<
     | "caseOutcomeSummary"
     | "caseOutcomeUpdatedAt"
     | "caseOutcomeUpdatedBy"
+    | "farmerId"
+    | "farmerName"
+    | "caseId"
     | "parsedIntent"
     | "urgency"
     | "safetyFlag"
     | "tone"
+    | "threadConfidence"
+    | "threadReason"
+    | "threadReviewStatus"
+    | "threadReviewedAt"
+    | "threadReviewedBy"
+    | "threadReviewNote"
   >
 >;
 

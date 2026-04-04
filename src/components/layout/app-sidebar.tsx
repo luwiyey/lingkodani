@@ -49,7 +49,7 @@ import {
 import type { NavItem } from "@/lib/types";
 import { useData } from "@/context/data-context";
 import { useAuth } from "@/context/auth-context";
-import { canManageBarangaySettings } from "@/lib/access-control";
+import { canAccessBarangaySettingsWorkspace } from "@/lib/access-control";
 import { getPreferredDashboardRoute, getPreferredWorkspace } from "@/lib/user-workspace";
 
 function NavMenu({ items }: { items: NavItem[] }) {
@@ -188,7 +188,7 @@ export function AppSidebar() {
   const homeHref = getPreferredDashboardRoute(currentUserProfile);
   const activeWorkspace = getPreferredWorkspace(currentUserProfile);
   const isDeveloper = currentUserProfile?.role === 'developer';
-  const canSeeBarangaySettings = canManageBarangaySettings(currentUserProfile);
+  const canSeeBarangaySettings = canAccessBarangaySettingsWorkspace(currentUserProfile);
   
   const detailedBarangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -279,9 +279,13 @@ export function AppSidebar() {
   const barangayNavItems = currentUserProfile?.role === 'barangay' && activeWorkspace === 'simple'
     ? simpleBarangayNavItems
     : detailedBarangayNavItems;
+  const barangayWorkspaceOnlyRoutes = new Set([
+    "/dashboard/settings",
+    "/dashboard/system-status",
+  ]);
   const filteredBarangayNavItems = canSeeBarangaySettings
     ? barangayNavItems
-    : barangayNavItems.filter((item) => item.href !== "/dashboard/settings");
+    : barangayNavItems.filter((item) => !barangayWorkspaceOnlyRoutes.has(item.href));
   const developerNavItems: NavItem[] = [
       { title: "Developer Home", href: "/dashboard/developer", icon: Shield },
       { title: "Magdagdag ng User", href: "/dashboard/developer/add-user", icon: Users },
@@ -297,7 +301,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <div className="flex h-16 items-center border-b border-sidebar-border px-4">
         {!isCollapsed && (
-          <Link href={homeHref} className="flex items-center gap-3 rounded-xl transition-colors hover:bg-sidebar-accent/70">
+          <Link
+            href={homeHref}
+            className="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/30"
+          >
               <Image src="/logo.png" width={36} height={36} alt="Lingkod-Ani Logo" style={{ height: 'auto' }} />
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold tracking-tight text-sidebar-foreground">Lingkod-Ani</p>

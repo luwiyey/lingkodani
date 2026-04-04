@@ -930,7 +930,7 @@ function InventoryPageContent() {
             </p>
           </div>
 
-          <Table>
+          <Table className="min-w-[980px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('name')}>
@@ -941,10 +941,10 @@ function InventoryPageContent() {
                     </div>
                   </div>
                 </TableHead>
-                <TableHead>Grupo / Uri</TableHead>
-                <TableHead>Para saan</TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('stock')}>
-                  <div className="flex items-center">
+                <TableHead className="text-center">Grupo / Uri</TableHead>
+                <TableHead className="text-center">Para saan</TableHead>
+                <TableHead className="cursor-pointer text-center hover:bg-muted/50" onClick={() => requestSort('stock')}>
+                  <div className="flex items-center justify-center text-center">
                     Kasalukuyang Stak
                     <div className="w-8 flex-shrink-0 flex justify-center">
                       {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
@@ -996,21 +996,21 @@ function InventoryPageContent() {
                         <p className="text-xs text-muted-foreground">Base category: {resource.category}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="break-words">
-                      <div className="flex flex-col gap-1">
-                        <Badge variant="secondary" className="w-fit">
+                    <TableCell className="break-words text-center align-middle">
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <Badge variant="secondary" className="max-w-full whitespace-normal text-center leading-snug">
                           {resource.inventoryGroup}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{resource.subcategory}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="break-words">
+                    <TableCell className="break-words text-center align-middle">
                       <span className="text-sm text-foreground">{resource.intendedUse}</span>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
+                    <TableCell className="text-center align-middle">
+                      <div className="flex flex-col items-center gap-2 text-center">
                         <span className="font-medium">{resource.stock}</span>
-                        <Badge variant="outline" className={cn('w-fit', stockBadge.className)}>
+                        <Badge variant="outline" className={cn('w-fit text-center', stockBadge.className)}>
                           {stockBadge.label}
                         </Badge>
                       </div>

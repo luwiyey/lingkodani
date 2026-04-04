@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import type { Resource, ResourceCategory } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -102,7 +102,7 @@ export default function DisasterInventoryPage() {
   );
 
   const sortedResources = useMemo(() => {
-    let sortableItems = [...filteredResources];
+    const sortableItems = [...filteredResources];
     if (sortConfig !== null) {
         sortableItems.sort((a, b) => {
             const aValue = sortConfig.key === 'lastUpdated'
@@ -227,7 +227,7 @@ export default function DisasterInventoryPage() {
             <Card>
               <CardContent className="p-0">
                 <div className="relative w-full overflow-auto">
-                  <Table>
+                  <Table className="min-w-[760px]">
                     <TableHeader>
                       <TableRow>
                           <HoverTooltip text="Pindutin upang i-sort ayon sa pangalan (A-Z o Z-A).">
@@ -240,10 +240,10 @@ export default function DisasterInventoryPage() {
                                   </div>
                               </TableHead>
                           </HoverTooltip>
-                        <TableHead className="px-2 md:px-4">Kategorya</TableHead>
+                        <TableHead className="px-2 text-center md:px-4">Kategorya</TableHead>
                         <HoverTooltip text="Pindutin upang i-sort ayon sa dami (pataas o pababa).">
-                              <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('stock')}>
-                                  <div className="flex items-center">
+                              <TableHead className="cursor-pointer px-2 text-center hover:bg-muted/50 md:px-4" onClick={() => requestSort('stock')}>
+                                  <div className="flex items-center justify-center text-center">
                                       Kasalukuyang Stak
                                       <div className="w-8 flex-shrink-0 flex justify-center">
                                           {sortConfig?.key === 'stock' && (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
@@ -278,8 +278,12 @@ export default function DisasterInventoryPage() {
                       {sortedResources.map((resource) => (
                         <TableRow key={resource.id}>
                           <TableCell className="font-medium break-words px-2 py-4 md:px-4">{resource.name}</TableCell>
-                          <TableCell className="px-2 py-4 md:px-4"><Badge variant="secondary">{resource.category}</Badge></TableCell>
-                          <TableCell className="px-2 py-4 md:px-4">{resource.stock}</TableCell>
+                          <TableCell className="px-2 py-4 text-center align-middle md:px-4">
+                            <div className="flex justify-center">
+                              <Badge variant="secondary" className="max-w-full whitespace-normal text-center leading-snug">{resource.category}</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-2 py-4 text-center align-middle md:px-4">{resource.stock}</TableCell>
                           <TableCell className="break-words px-2 py-4 md:px-4">{resource.unit}</TableCell>
                           <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(resource.lastUpdated).toLocaleDateString() : ''}</TableCell>
                           <TableCell className="text-right px-2 py-4 md:px-4">

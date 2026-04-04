@@ -15,10 +15,33 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
 import { CaseOutcomeDialog } from '@/components/sms/case-outcome-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { getSmsCaseExceptionFlags } from '@/lib/sms-case-exceptions';
 import { findPotentialDuplicateCase } from '@/lib/sms-case-linking';
 import { isAwaitingFarmerConfirmation } from '@/lib/sms-case-outcomes';
+import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 
 const actionButtonClassName = 'h-auto min-h-12 w-full whitespace-normal break-words px-4 py-3 text-center leading-snug';
+
+function getTriageLabel(value: SmsMessage['triageUncertainty']) {
+  switch (value) {
+    case 'ambiguous':
+      return 'May halong concern';
+    case 'needs_severity':
+      return 'Kulang ang lawak';
+    case 'needs_location':
+      return 'Kulang ang lokasyon';
+    case 'needs_crop_stage':
+      return 'Kulang ang stage';
+    case 'needs_symptom_details':
+      return 'Kulang ang sintomas';
+    case 'insufficient_details':
+      return 'Kulang ang detalye';
+    case 'probable':
+      return 'May kaunting duda';
+    default:
+      return null;
+  }
+}
 
 function TaskCard({
   href,
@@ -60,6 +83,7 @@ function MessageTaskRow({
   onRetry,
   onRecordOutcome,
   onConfirmResolution,
+  exceptionFlags = [],
 }: {
   message: SmsMessage;
   latestOutbound?: OutboundMessage;
@@ -67,6 +91,7 @@ function MessageTaskRow({
   onRetry: (message: SmsMessage) => void;
   onRecordOutcome: (message: SmsMessage) => void;
   onConfirmResolution: (message: SmsMessage, confirmed: boolean) => void;
+  exceptionFlags?: ReturnType<typeof getSmsCaseExceptionFlags>;
 }) {
   const router = useRouter();
   const awaitingConfirmation = isAwaitingFarmerConfirmation(message);
@@ -86,7 +111,15 @@ function MessageTaskRow({
             {message.assignedTo ? <Badge variant="outline">Owner: {message.assignedTo}</Badge> : null}
             {message.registrationRequired ? <Badge variant="outline">Need registration</Badge> : null}
             {message.clarificationNeeded ? <Badge variant="outline">Need clarification</Badge> : null}
+            {message.triageUncertainty && getTriageLabel(message.triageUncertainty) ? (
+              <Badge variant="outline">{getTriageLabel(message.triageUncertainty)}</Badge>
+            ) : null}
             {latestOutbound?.status === 'failed' ? <Badge variant="destructive">Send failed</Badge> : null}
+            {exceptionFlags.length > 0 ? (
+              <Badge variant={exceptionFlags.some((flag) => flag.severity === 'high') ? 'destructive' : 'outline'}>
+                {exceptionFlags.length} supervisor flag{exceptionFlags.length > 1 ? 's' : ''}
+              </Badge>
+            ) : null}
           </div>
           <p className="text-sm text-muted-foreground">{message.phone}</p>
           <p className="break-words text-sm leading-relaxed">{message.message}</p>
@@ -102,6 +135,18 @@ function MessageTaskRow({
               <p className="mt-1 leading-relaxed">
                 Maaaring kaugnay ito ng {message.possibleDuplicateOfCaseId}. {message.possibleDuplicateReason ?? 'Suriin muna kung kailangan ba ng bagong case o pagpapatuloy lang ng naunang concern.'}
               </p>
+            </div>
+          ) : null}
+          {message.multiConcernDetected && message.multiConcernReason ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+              <p className="font-medium">May posibleng halong concern</p>
+              <p className="mt-1 leading-relaxed">{message.multiConcernReason}</p>
+            </div>
+          ) : null}
+          {exceptionFlags.length > 0 ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-100">
+              <p className="font-medium">Supervisor review needed</p>
+              <p className="mt-1 leading-relaxed">{exceptionFlags[0]?.reason}</p>
             </div>
           ) : null}
         </div>
@@ -188,7 +233,7 @@ function MessageTaskRow({
 export default function OperationsPage() {
   const router = useRouter();
   const { currentUserProfile } = useAuth();
-  const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, farmers } = useData();
+  const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, farmers, assistanceRecords, fieldVisitTasks } = useData();
   const { toast, dismiss } = useToast();
   const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
   const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
@@ -226,6 +271,25 @@ export default function OperationsPage() {
     }
     return map;
   }, [smsMessages]);
+  const exceptionFlagsByMessage = React.useMemo(() => {
+    const now = new Date().toISOString();
+    const map = new Map<string, ReturnType<typeof getSmsCaseExceptionFlags>>();
+
+    for (const message of smsMessages) {
+      map.set(
+        message.id,
+        getSmsCaseExceptionFlags({
+          message,
+          assistanceRecords,
+          fieldVisitTasks,
+          outboundMessages,
+          now,
+        })
+      );
+    }
+
+    return map;
+  }, [assistanceRecords, fieldVisitTasks, outboundMessages, smsMessages]);
 
   const urgentQueue = React.useMemo(
     () => smsMessages.filter((message) => message.status === 'pending_approval' && message.urgency === 'high' && !message.closedAt && !message.assignedTo),
@@ -251,9 +315,28 @@ export default function OperationsPage() {
     () => smsMessages.filter((message) => !message.closedAt && message.assignedTo === activeOperatorName),
     [activeOperatorName, smsMessages]
   );
+  const supervisorReviewQueue = React.useMemo(
+    () =>
+      smsMessages.filter((message) => {
+        const flags = exceptionFlagsByMessage.get(message.id) ?? [];
+        return flags.some((flag) => flag.severity === 'high' || flag.id === 'reporting_incomplete');
+      }),
+    [exceptionFlagsByMessage, smsMessages]
+  );
   const pendingApprovals = React.useMemo(
     () => farmers.filter((farmer) => farmer.status === 'pending_approval'),
     [farmers]
+  );
+  const outcomeReadiness = React.useMemo(
+    () =>
+      outcomeMessage
+        ? getSmsCaseResolutionReadiness({
+            message: outcomeMessage,
+            assistanceRecords,
+            fieldVisitTasks,
+          })
+        : null,
+    [assistanceRecords, fieldVisitTasks, outcomeMessage]
   );
 
   const handleAssign = (message: SmsMessage) => {
@@ -271,7 +354,19 @@ export default function OperationsPage() {
       return;
     }
 
-    updateSmsCaseOutcome(outcomeMessage.id, outcomeStatus, summary);
+    const updated = updateSmsCaseOutcome(outcomeMessage.id, outcomeStatus, summary);
+
+    if (!updated) {
+      toast({
+        title: 'Kulang pa ang closeout evidence',
+        description:
+          outcomeReadiness?.blockers[0] ??
+          'Mag-log muna ng actual action taken bago markahang resolved ang high-risk case.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({
       title: 'Na-save ang outcome',
       description: `Na-update na ang case outcome ni ${outcomeMessage.farmerName}.`,
@@ -360,6 +455,7 @@ export default function OperationsPage() {
         <TaskCard href="/dashboard/sms-feed" title="Failed Sends" description="Mga SMS na kailangang i-retry." count={failedSendQueue.length} icon={RefreshCcw} />
         <TaskCard href="/dashboard/follow-up" title="Due Follow-up" description="Mga dapat balikan sa magsasaka." count={followUpQueue.length} icon={BellRing} />
         <TaskCard href="/dashboard/sms-feed" title="Aking Queue" description="Mga task na naka-assign sa iyo." count={myQueue.length} icon={CheckCircle2} />
+        <TaskCard href="/dashboard/reports" title="Supervisor Review" description="Mga case na may hidden risk o kulang na closeout." count={supervisorReviewQueue.length} icon={ClipboardList} />
       </div>
 
       <Card>
@@ -383,6 +479,7 @@ export default function OperationsPage() {
               onRetry={handleRetry}
               onRecordOutcome={setOutcomeMessage}
               onConfirmResolution={handleConfirmResolution}
+              exceptionFlags={exceptionFlagsByMessage.get(message.id)}
             />
           )) : <p className="text-sm text-muted-foreground">Walang urgent na pending SMS sa ngayon.</p>}
         </CardContent>
@@ -410,6 +507,7 @@ export default function OperationsPage() {
                 onRetry={handleRetry}
                 onRecordOutcome={setOutcomeMessage}
                 onConfirmResolution={handleConfirmResolution}
+                exceptionFlags={exceptionFlagsByMessage.get(message.id)}
               />
             ))}
             {registrationQueue.length + clarificationQueue.length === 0 ? (
@@ -447,6 +545,7 @@ export default function OperationsPage() {
                 onRetry={handleRetry}
                 onRecordOutcome={setOutcomeMessage}
                 onConfirmResolution={handleConfirmResolution}
+                exceptionFlags={exceptionFlagsByMessage.get(message.id)}
               />
             ))}
             {failedSendQueue.length + followUpQueue.length === 0 ? (
@@ -477,6 +576,7 @@ export default function OperationsPage() {
               onRetry={handleRetry}
               onRecordOutcome={setOutcomeMessage}
               onConfirmResolution={handleConfirmResolution}
+              exceptionFlags={exceptionFlagsByMessage.get(message.id)}
             />
           )) : (
             <p className="text-sm text-muted-foreground">Wala pang task na naka-assign sa iyo. Puwede kang mag-assign mula sa mga urgent at pending na ulat sa itaas.</p>
@@ -494,6 +594,13 @@ export default function OperationsPage() {
         farmerName={outcomeMessage?.farmerName}
         initialStatus={outcomeMessage?.caseOutcomeStatus}
         initialSummary={outcomeMessage?.caseOutcomeSummary}
+        resolutionReady={outcomeReadiness?.ready ?? true}
+        resolutionBlockers={outcomeReadiness?.blockers ?? []}
+        resolutionEvidenceSummary={
+          outcomeReadiness
+            ? `Assistance: ${outcomeReadiness.assistanceCount}, completed field visits: ${outcomeReadiness.completedVisitCount}`
+            : undefined
+        }
         onSubmit={handleSaveOutcome}
       />
     </div>

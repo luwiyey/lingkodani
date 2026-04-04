@@ -12,6 +12,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'Lingkod-Ani: Plataporma para sa Matalinong Pagsasaka',
   description: 'Platform ng payo sa agrikultura na pinapagana ng AI at suporta sa pagpapasya ng barangay.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

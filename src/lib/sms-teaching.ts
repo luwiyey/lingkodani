@@ -3,7 +3,6 @@ import type {
   SmsAnalysisSource,
   SmsIntent,
   SmsLexiconRule,
-  SmsMessage,
   SmsTone,
   SmsTrainingExample,
   SmsUrgency,

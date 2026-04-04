@@ -358,7 +358,7 @@ function coerceUserManagementValue(record: Record<string, unknown>) {
     title: asString(record.title).trim(),
     phone: asString(record.phone).trim(),
     role: asString(record.role).trim() || "barangay",
-    status: asString(record.status).trim() || "active",
+    status: asString(record.status).trim() || "pending_setup",
     preferredWorkspace: asString(record.preferredWorkspace).trim() || "simple",
   });
 
@@ -469,6 +469,9 @@ function coerceFarmerRegistrationRecord(record: Record<string, unknown>) {
     farmSize: asString(record.farmSize).trim() || undefined,
     age: asString(record.age).trim() || undefined,
     gender: asString(record.gender).trim() || undefined,
+    sharedPhone: record.sharedPhone ?? record.shared_phone ?? undefined,
+    householdLabel: asString(record.householdLabel ?? record.household_label).trim() || undefined,
+    sharedPhoneNotes: asString(record.sharedPhoneNotes ?? record.shared_phone_notes).trim() || undefined,
   });
 
   return parsed.success ? parsed.data : null;
@@ -476,7 +479,20 @@ function coerceFarmerRegistrationRecord(record: Record<string, unknown>) {
 
 export function formatFarmerRegistrationsAsCsv(farmers: Farmer[]) {
   const rows = [
-    ["name", "phone", "barangay", "sitio", "crops", "farmSize", "age", "gender", "status"],
+    [
+      "name",
+      "phone",
+      "barangay",
+      "sitio",
+      "crops",
+      "farmSize",
+      "age",
+      "gender",
+      "sharedPhone",
+      "householdLabel",
+      "sharedPhoneNotes",
+      "status",
+    ],
     ...farmers.map((farmer) => [
       farmer.name,
       farmer.phone,
@@ -486,6 +502,9 @@ export function formatFarmerRegistrationsAsCsv(farmers: Farmer[]) {
       String(farmer.farmSize),
       String(farmer.age),
       farmer.gender,
+      String(Boolean(farmer.sharedPhone)),
+      farmer.householdLabel ?? "",
+      farmer.sharedPhoneNotes ?? "",
       farmer.status,
     ]),
   ];

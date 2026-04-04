@@ -2,9 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  Activity,
   AlertTriangle,
   Bell,
   BadgeCheck,
@@ -486,6 +487,12 @@ export function Header() {
               <Link href="/dashboard/account">
                 <User className="mr-2" />
                 Account
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href="/dashboard/system-status">
+                <Activity className="mr-2" />
+                Katayuan ng System
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

@@ -43,4 +43,12 @@ describe("sms-simulator", () => {
     expect(analysis.tone).toBe("Kritikal");
     expect(analysis.aiAdvice).toContain("Armyworm");
   });
+
+  it("lowers fallback confidence when the message includes several unknown local terms", () => {
+    const familiar = analyzeInboundSms("May uod sa palay namin dito sa Zone 1.", "Juan dela Cruz", true);
+    const unfamiliar = analyzeInboundSms("May lamisaan at garud sa palay namin dito sa Zone 1.", "Juan dela Cruz", true);
+
+    expect(unfamiliar.normalizationUnknownTokens).toContain("lamisaan");
+    expect(unfamiliar.aiConfidence).toBeLessThan(familiar.aiConfidence);
+  });
 });

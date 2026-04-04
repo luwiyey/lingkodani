@@ -5,6 +5,7 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 import { getClientFirestore } from "@/lib/firebase/client";
@@ -26,5 +27,14 @@ export const liveSmsTrainingRepository: SmsTrainingRepository = {
     const db = getClientFirestore();
     await setDoc(doc(db, firebaseCollections.smsTrainingExamples, example.id), example);
     return example;
+  },
+
+  async updateTrainingExample(id, updates) {
+    const db = getClientFirestore();
+    await updateDoc(doc(db, firebaseCollections.smsTrainingExamples, id), updates);
+    return {
+      id,
+      ...updates,
+    } as SmsTrainingExample;
   },
 };

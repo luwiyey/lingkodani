@@ -1,8 +1,11 @@
 'use server';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'zod';
-import { googleSearchTool } from '../tools/google-search';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+
+import { answerKnowledgeQuery } from '@/ai/flows/answer-knowledge-query';
+import { answerKnowledgeQueryWithGeminiGrounding } from '@/lib/services/gemini-grounded-knowledge-service';
+import type { KnowledgeArticle } from '@/lib/types';
 
 const ArticleForSearchSchema = z.object({
   id: z.string(),
@@ -92,40 +95,30 @@ function buildFallbackSearchResult(input: SearchKnowledgeBaseInput): SearchKnowl
   };
 }
 
-const prompt = ai.definePrompt({
-  name: 'searchKnowledgeBasePrompt',
-  input: {schema: SearchKnowledgeBaseInputSchema},
-  output: {schema: SearchKnowledgeBaseOutputSchema},
-  tools: [googleSearchTool],
-  prompt: `You are an expert agricultural assistant for Filipino farmers. Your response must be in Filipino (Tagalog).
+function toKnowledgeArticles(input: SearchKnowledgeBaseInput): KnowledgeArticle[] {
+  const timestamp = new Date().toISOString();
 
-Your task is to answer the user's query by combining information from two sources:
-1.  The internal knowledge base articles provided.
-2.  Up-to-date information from the internet, which you can get by using the 'googleSearchTool'.
+  return input.articles.map((article) => ({
+    id: article.id,
+    title: article.title,
+    summary: article.summary,
+    content: article.summary,
+    keywords: article.keywords,
+    lastUpdated: timestamp,
+    author: 'Lingkod-Ani Knowledge',
+    type: article.type,
+  }));
+}
 
-**User Query:**
-"{{{query}}}"
+function prioritizeArticles(input: SearchKnowledgeBaseInput) {
+  const mappedArticles = toKnowledgeArticles(input);
+  const fallback = buildFallbackSearchResult(input);
+  const ordered = fallback.relevantArticleIds
+    .map((articleId) => mappedArticles.find((article) => article.id === articleId))
+    .filter((article): article is KnowledgeArticle => Boolean(article));
 
-**Available Internal Articles & Audio Stories:**
-{{#if articles}}
-  {{#each articles}}
-  - ID: {{this.id}}
-    Type: {{this.type}}
-    Title: {{this.title}}
-    Summary: {{this.summary}}
-    Keywords: {{#each this.keywords}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
-  {{/each}}
-{{else}}
-  No internal articles available.
-{{/if}}
-
-**Process:**
-1.  **Analyze the Query:** Understand what the user is asking.
-2.  **Decide to Search:** If the internal articles are insufficient or the topic requires very current information (like market prices or new pest alerts), use the 'googleSearchTool' with a relevant search query.
-3.  **Synthesize and Answer:** Create a comprehensive but concise 'directAnswer' in Tagalog. Combine the most useful information from both the internal articles and the web search results. Prioritize information from the internal articles if it's relevant.
-4.  **Cite Sources:** Identify the 'relevantArticleIds' from the internal knowledge base that you used or are relevant.
-`,
-});
+  return ordered.length > 0 ? ordered : mappedArticles.slice(0, 6);
+}
 
 const searchKnowledgeBaseFlow = ai.defineFlow(
   {
@@ -133,17 +126,38 @@ const searchKnowledgeBaseFlow = ai.defineFlow(
     inputSchema: SearchKnowledgeBaseInputSchema,
     outputSchema: SearchKnowledgeBaseOutputSchema,
   },
-  async input => {
-    try {
-      const {output} = await prompt(input);
+  async (input) => {
+    const fallback = buildFallbackSearchResult(input);
+    const prioritizedArticles = prioritizeArticles(input);
 
-      if (output) {
-        return output;
-      }
-    } catch (error) {
-      console.error('searchKnowledgeBaseFlow fallback triggered', error);
+    if (prioritizedArticles.length === 0) {
+      return fallback;
     }
 
-    return buildFallbackSearchResult(input);
+    if (process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY) {
+      try {
+        const grounded = await answerKnowledgeQueryWithGeminiGrounding({
+          query: input.query,
+          articles: prioritizedArticles,
+        });
+
+        return {
+          directAnswer: grounded.directAnswer,
+          relevantArticleIds: prioritizedArticles.map((article) => article.id),
+        };
+      } catch (error) {
+        console.error('searchKnowledgeBaseFlow grounding fallback triggered', error);
+      }
+    }
+
+    try {
+      return await answerKnowledgeQuery({
+        query: input.query,
+        articles: prioritizedArticles,
+      });
+    } catch (error) {
+      console.error('searchKnowledgeBaseFlow local AI fallback triggered', error);
+      return fallback;
+    }
   }
 );

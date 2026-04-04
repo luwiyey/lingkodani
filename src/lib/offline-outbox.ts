@@ -62,6 +62,8 @@ export type OfflineMutation =
         sourceMessage: SmsMessage;
         body: string;
         providerName: string;
+        audience?: "farmer" | "official";
+        purpose?: "manual_reply" | "auto_reply" | "follow_up" | "resolution_confirmation" | "official_reminder" | "official_ack" | "official_help" | "other";
       };
     }>
   | OfflineMutationBase<"assign-sms-message", {

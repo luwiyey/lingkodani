@@ -1,6 +1,7 @@
 import type { SmsProvider } from "@/lib/providers/sms/types";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { compareMessagesForOutboundPriority } from "@/lib/outbound-priority";
 import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import { getServerSystemSettings } from "@/lib/server/system-settings";
 import { processOverdueSmsMessage } from "@/lib/services/overdue-sms-service";
@@ -28,7 +29,9 @@ export async function processLiveOverdueSmsMessages(actorName = "system") {
     .where("status", "==", "pending_approval")
     .get();
   const userSnapshot = await db.collection(firebaseCollections.users).get();
-  const messages = snapshot.docs.map((item) => item.data() as SmsMessage);
+  const messages = snapshot.docs
+    .map((item) => item.data() as SmsMessage)
+    .sort((left, right) => compareMessagesForOutboundPriority(left, right, "auto_reply"));
   const users = userSnapshot.docs.map((item) => item.data() as User);
   const processed: Array<{ id: string; autoReplySentAt?: string }> = [];
   const failed: Array<{ id: string; error: string }> = [];

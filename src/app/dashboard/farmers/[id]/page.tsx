@@ -9,7 +9,7 @@ import { getLogbookEntryIcon } from '@/lib/logbook';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, User, MessageSquare, Send, CheckCircle2, ClipboardList, HeartHandshake, MapPinned, Download, ExternalLink, FileAudio, FileImage, FileText, Loader2 } from 'lucide-react';
+import { FilePen, PlusCircle, Camera, Mic, Edit, Archive, Upload, ArrowLeft, MessageSquare, Send, CheckCircle2, ClipboardList, HeartHandshake, MapPinned, Download, ExternalLink, FileAudio, FileImage, FileText, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { FarmerAvatar } from '@/components/farmers/farmer-avatar';
 import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
 import { getFarmerEvidenceAttachment, getFarmerEvidenceTypeLabel, buildFarmerEvidenceLogbookData, describeFarmerEvidenceAttachment } from '@/lib/farmer-evidence';
@@ -598,6 +598,9 @@ export default function FarmerLogbookPage() {
             farmSize: Number(formData.get('farm-size') as string),
             age: Number(formData.get('age') as string),
             gender: formData.get('gender') as string,
+            sharedPhone: formData.get('shared-phone') === 'on',
+            householdLabel: ((formData.get('household-label') as string) || '').trim() || undefined,
+            sharedPhoneNotes: ((formData.get('shared-phone-notes') as string) || '').trim() || undefined,
         };
         
         updateFarmerRecord(updatedFarmer.id, updatedFarmer);
@@ -748,19 +751,19 @@ export default function FarmerLogbookPage() {
             description={fileUploadLockMessage}
           />
         ) : null}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 flex flex-col gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="min-w-0 lg:col-span-1 flex flex-col gap-6">
                 <Card>
                     <CardHeader>
                         <div className="flex flex-col items-center pt-4 gap-4">
                             <HoverTooltip text="Mag-click para mag-upload ng bagong larawan">
                                 <button onClick={() => avatarUploadRef.current?.click()} className="relative group" disabled={isUploadingAvatar}>
-                                    <Avatar className="h-24 w-24 border">
-                                        {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
-                                        <AvatarFallback className="bg-muted">
-                                            <User className="h-12 w-12 text-muted-foreground" />
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <FarmerAvatar
+                                      name={farmer.name}
+                                      avatarUrl={farmer.avatarUrl}
+                                      className="h-24 w-24 border"
+                                      fallbackClassName="text-3xl"
+                                    />
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                                         <Upload className="h-8 w-8 text-white" />
                                     </div>
@@ -783,9 +786,31 @@ export default function FarmerLogbookPage() {
                         {isUploadingAvatar ? (
                           <p className="text-xs text-muted-foreground">Ina-upload ang bagong profile photo...</p>
                         ) : null}
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline">
+                            Identity: {farmer.identityTrustLevel ?? 'unknown'}
+                          </Badge>
+                          {farmer.duplicateRiskLevel && farmer.duplicateRiskLevel !== 'none' ? (
+                            <Badge variant="outline">
+                              {farmer.duplicateRiskLevel === 'shared_household'
+                                ? 'Shared household'
+                                : farmer.duplicateRiskLevel === 'high_duplicate'
+                                  ? 'High duplicate risk'
+                                  : 'Duplicate review'}
+                            </Badge>
+                          ) : null}
+                          {farmer.sharedPhone ? <Badge variant="outline">Shared phone</Badge> : null}
+                          <Badge variant="secondary">Profile v{farmer.profileVersion ?? 1}</Badge>
+                        </div>
                         <p><strong>Telepono:</strong> {farmer.phone}</p>
                         {farmer.phoneHistory && farmer.phoneHistory.length > 1 ? (
                           <p><strong>Dating mga numero:</strong> {farmer.phoneHistory.filter((phone) => phone !== farmer.phone).join(', ')}</p>
+                        ) : null}
+                        {farmer.householdLabel ? (
+                          <p><strong>Household:</strong> {farmer.householdLabel}</p>
+                        ) : null}
+                        {farmer.sharedPhoneNotes ? (
+                          <p><strong>Shared phone notes:</strong> {farmer.sharedPhoneNotes}</p>
                         ) : null}
                         <p><strong>Edad:</strong> {farmer.age}</p>
                         <p><strong>Kasarian:</strong> {farmer.gender}</p>
@@ -793,6 +818,36 @@ export default function FarmerLogbookPage() {
                         <p><strong>Sukat ng Bukid:</strong> {farmer.farmSize} ha</p>
                         <p><strong>Mga Pananim:</strong> {farmer.crops.join(', ')}</p>
                         <p><strong>Petsa ng Pagpaparehistro:</strong> {isClient ? new Date(farmer.registrationDate).toLocaleDateString() : ''}</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Kasaysayan ng Profile</CardTitle>
+                        <CardDescription>Traceable ang mga pagbabago sa pagkakakilanlan at household details ng magsasaka.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                        {farmer.profileHistory && farmer.profileHistory.length > 0 ? (
+                          [...farmer.profileHistory]
+                            .slice(-4)
+                            .reverse()
+                            .map((revision) => (
+                              <div key={revision.id} className="rounded-xl border p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="font-medium">Version {revision.version}</p>
+                                  <Badge variant="outline">{revision.source}</Badge>
+                                </div>
+                                <p className="mt-1 text-muted-foreground">
+                                  {revision.changedFields.join(', ')}
+                                </p>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  {isClient ? new Date(revision.changedAt).toLocaleString() : ''} · {revision.changedBy}
+                                  {revision.reason ? ` · ${revision.reason}` : ''}
+                                </p>
+                              </div>
+                            ))
+                        ) : (
+                          <p className="text-muted-foreground">Wala pang recorded profile revisions para sa farmer na ito.</p>
+                        )}
                     </CardContent>
                 </Card>
                  <Card>
@@ -814,7 +869,7 @@ export default function FarmerLogbookPage() {
                         </HoverTooltip>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="overflow-hidden">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Camera /> Field Evidence</CardTitle>
                         <CardDescription>Mga larawan at audio note na nakadugtong sa support journey ni {farmer.name}.</CardDescription>
@@ -832,7 +887,7 @@ export default function FarmerLogbookPage() {
                         <CardTitle className="flex items-center gap-2"><FilePen /> Magdagdag ng Tala sa Bukid</CardTitle>
                         <CardDescription>Mag-log ng obserbasyon, mag-upload ng larawan, o mag-save ng audio evidence mula sa field.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="min-w-0 space-y-4">
                         <HoverTooltip text="Isulat dito ang iyong mga napansin, rekomendasyon, o anumang mahalagang impormasyon mula sa iyong pagbisita sa bukid.">
                             <Textarea 
                                 placeholder="Isulat ang iyong mga obserbasyon dito..." 
@@ -843,15 +898,25 @@ export default function FarmerLogbookPage() {
                         <p className="text-xs leading-5 text-muted-foreground">
                           Tip: kung may nakasulat kang tala bago mag-upload ng larawan o audio, isasama iyon bilang note sa evidence file para mas malinaw ang context sa susunod na follow-up.
                         </p>
-                        <div className="flex flex-col gap-4 sm:flex-row">
+                        <div className="grid gap-3 sm:grid-cols-2">
                              <HoverTooltip text="Mag-upload ng larawan mula sa iyong pagbisita.">
-                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => fieldPhotoUploadRef.current?.click()} disabled={uploadingEvidenceType !== null}>
+                                <Button
+                                  variant="outline"
+                                  className="h-auto min-h-12 w-full min-w-0 justify-center whitespace-normal break-words px-4 py-3 text-center leading-snug"
+                                  onClick={() => fieldPhotoUploadRef.current?.click()}
+                                  disabled={uploadingEvidenceType !== null}
+                                >
                                   {uploadingEvidenceType === 'field_photo' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2"/>}
                                   {uploadingEvidenceType === 'field_photo' ? 'Ina-upload...' : 'Mag-upload ng Larawan'}
                                 </Button>
                             </HoverTooltip>
                               <HoverTooltip text="Mag-record ng audio note o panayam sa magsasaka.">
-                                <Button variant="outline" className="w-full sm:flex-1" onClick={() => audioUploadRef.current?.click()} disabled={uploadingEvidenceType !== null}>
+                                <Button
+                                  variant="outline"
+                                  className="h-auto min-h-12 w-full min-w-0 justify-center whitespace-normal break-words px-4 py-3 text-center leading-snug"
+                                  onClick={() => audioUploadRef.current?.click()}
+                                  disabled={uploadingEvidenceType !== null}
+                                >
                                   {uploadingEvidenceType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2"/>}
                                   {uploadingEvidenceType === 'audio' ? 'Ina-upload...' : 'Mag-record ng Audio'}
                                 </Button>
@@ -865,7 +930,7 @@ export default function FarmerLogbookPage() {
                     </CardFooter>
                 </Card>
             </div>
-            <div className="lg:col-span-2 space-y-6">
+            <div className="min-w-0 lg:col-span-2 space-y-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Case Journey at Follow-through</CardTitle>
@@ -943,10 +1008,11 @@ export default function FarmerLogbookPage() {
                             return (
                                 <div key={message.id} className="rounded-[10px] border border-border bg-muted/20 p-4">
                                     <div className="flex items-start gap-3">
-                                        <Avatar className="h-10 w-10 border border-border">
-                                            {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
-                                            <AvatarFallback>{farmer.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
+                                        <FarmerAvatar
+                                          name={farmer.name}
+                                          avatarUrl={farmer.avatarUrl}
+                                          className="h-10 w-10 border border-border"
+                                        />
                                         <div className="min-w-0 max-w-[88%] space-y-2">
                                             <div className="rounded-[18px] border border-border bg-background px-4 py-3 shadow-sm">
                                                 <div className="flex flex-wrap items-center gap-2">
@@ -1258,6 +1324,27 @@ export default function FarmerLogbookPage() {
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="edit-phone" className="text-right">Telepono</Label>
                         <Input id="edit-phone" name="phone" defaultValue={editingFarmer.phone} required className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-shared-phone" className="text-right">Shared Phone</Label>
+                        <label className="col-span-3 flex items-center gap-3 text-sm text-muted-foreground">
+                          <input
+                            id="edit-shared-phone"
+                            name="shared-phone"
+                            type="checkbox"
+                            defaultChecked={Boolean(editingFarmer.sharedPhone)}
+                            className="h-4 w-4 rounded border-input"
+                          />
+                          I-check ito kung may higit sa isang farmer na gumagamit ng numerong ito.
+                        </label>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-household-label" className="text-right">Household</Label>
+                        <Input id="edit-household-label" name="household-label" defaultValue={editingFarmer.householdLabel ?? ''} className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-shared-phone-notes" className="text-right">Notes</Label>
+                        <Input id="edit-shared-phone-notes" name="shared-phone-notes" defaultValue={editingFarmer.sharedPhoneNotes ?? ''} className="col-span-3" />
                       </div>
                        <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="edit-age" className="text-right">Edad</Label>

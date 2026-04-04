@@ -152,6 +152,22 @@ describe("inbound-sms-service", () => {
     expect(created.message.aiAdvice).toContain("panahon, tubig, o patubig");
   });
 
+  it("stores richer triage details for severity, stage, and sentiment-sensitive pest cases", () => {
+    const created = createInboundSmsRecord({
+      id: "SMS-CONCERN-1D",
+      phone: "+639171239996",
+      message: "May uod sa palay namin pero wala pa ring sagot at namumulaklak na ito",
+      farmers: [],
+      timestamp: "2026-03-22T08:13:00.000Z",
+    });
+
+    expect(created.message.cropStage).toBe("flowering");
+    expect(created.message.sentiment).toBe("frustrated");
+    expect(created.message.triageUncertainty).toBe("needs_severity");
+    expect(created.message.triageNextQuestion).toContain("Gaano po kalawak");
+    expect(created.message.clarificationNeeded).toBe(true);
+  });
+
   it("keeps emergency concerns open even when the sender is not yet registered", () => {
     const created = createInboundSmsRecord({
       id: "SMS-EMERGENCY-1",
@@ -240,6 +256,30 @@ describe("inbound-sms-service", () => {
     expect(secondMessage.message.message).toContain("mais");
   });
 
+  it("flags mixed-concern messages for manual thread review instead of silently merging them", () => {
+    const firstMessage = createInboundSmsRecord({
+      id: "SMS-CONCERN-2G",
+      phone: "+639171230014",
+      message: "May uod po sa palay namin sa Zone 1",
+      farmers: [],
+      timestamp: "2026-03-22T08:52:00.000Z",
+    });
+
+    const secondMessage = createInboundSmsRecord({
+      id: "SMS-CONCERN-2H",
+      phone: "+639171230014",
+      message: "May uod sa palay pero baha naman sa mais sa kabilang lote",
+      farmers: [],
+      existingMessages: [firstMessage.message],
+      timestamp: "2026-03-22T08:58:00.000Z",
+    });
+
+    expect(secondMessage.message.caseId).not.toBe(firstMessage.message.caseId);
+    expect(secondMessage.message.multiConcernDetected).toBe(true);
+    expect(secondMessage.message.threadReviewStatus).toBe("pending");
+    expect(secondMessage.message.possibleDuplicateOfCaseId).toBe(firstMessage.message.caseId);
+  });
+
   it("creates a new case id when a known farmer sends a separate new concern", () => {
     const farmers = [
       {
@@ -292,5 +332,18 @@ describe("inbound-sms-service", () => {
     expect(created.message.detectedLanguage).toBe("English");
     expect(created.message.aiAdvice).toContain("please send your");
     expect(created.message.aiAdvice).toContain("sitio or zone");
+  });
+
+  it("keeps unknown tokens so the lexicon learning queue can review them later", () => {
+    const created = createInboundSmsRecord({
+      id: "SMS-CONCERN-4A",
+      phone: "+639171230020",
+      message: "May lamisaan po sa pagay dito sa Zone 2",
+      farmers: [],
+      timestamp: "2026-03-22T08:30:00.000Z",
+    });
+
+    expect(created.message.normalizationUnknownTokens).toContain("lamisaan");
+    expect(created.message.normalizationTokens?.some((token) => token.raw === "pagay" && token.normalized === "palay")).toBe(true);
   });
 });

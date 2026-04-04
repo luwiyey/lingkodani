@@ -14,6 +14,32 @@ describe("inbound-sms-screening", () => {
     });
   });
 
+  it("ignores carrier alias variants such as TNT PH", () => {
+    expect(
+      screenInboundSms({
+        phone: "TNT PH",
+        message: "May latest offers at free data ka ngayon.",
+      })
+    ).toEqual({
+      ignored: true,
+      reason: "carrier_promo",
+      normalizedPhone: "",
+    });
+  });
+
+  it("ignores strong carrier promo content even when it comes from a full mobile number", () => {
+    expect(
+      screenInboundSms({
+        phone: "+639171234567",
+        message: "FREE DATA unlocked. Open the Smart App to claim your latest offers.",
+      })
+    ).toEqual({
+      ignored: true,
+      reason: "carrier_promo",
+      normalizedPhone: "639171234567",
+    });
+  });
+
   it("ignores malformed non-phone senders even when they are not obvious promos", () => {
     expect(
       screenInboundSms({

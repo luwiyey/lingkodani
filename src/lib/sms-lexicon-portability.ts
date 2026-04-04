@@ -1,6 +1,5 @@
 import { parseCsvRows } from "@/lib/data-portability";
 import type {
-  SafetyFlag,
   SmsIntent,
   SmsLexiconRule,
   SmsTone,
@@ -19,7 +18,6 @@ const VALID_INTENTS: SmsIntent[] = [
   "UNKNOWN",
 ];
 const VALID_URGENCY: SmsUrgency[] = ["low", "medium", "high"];
-const VALID_SAFETY: SafetyFlag[] = ["Low", "Medium", "High"];
 const VALID_TONES: SmsTone[] = [
   "Neutral",
   "Nag-aalala",

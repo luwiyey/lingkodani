@@ -29,6 +29,11 @@ describe("offline-outbox", () => {
           smsLexiconRules: [],
           autoReplyEnabled: true,
           autoReplyTimeoutMinutes: 3,
+          retentionPolicy: {
+            autoRedactionEnabled: true,
+            auditLogRedactionDays: 730,
+            archivedFarmerRedactionDays: 365,
+          },
         },
       },
     };

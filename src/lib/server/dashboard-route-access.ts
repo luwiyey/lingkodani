@@ -1,4 +1,7 @@
-import { canAccessDataCenter, canManageBarangaySettings } from "@/lib/access-control";
+import {
+  canAccessBarangaySettingsWorkspace,
+  canAccessDataCenter,
+} from "@/lib/access-control";
 import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 
@@ -17,6 +20,10 @@ export async function resolveDashboardRouteAccess(kind: GuardKind): Promise<Guar
   const hasDemoPreviewAccess = await hasServerDemoPreviewAccess();
 
   if (!session) {
+    if (hasDemoPreviewAccess && kind === "settings") {
+      return { allowed: true };
+    }
+
     return {
       allowed: false,
       redirectTo: resolveUnauthenticatedRedirect(hasDemoPreviewAccess),
@@ -35,7 +42,7 @@ export async function resolveDashboardRouteAccess(kind: GuardKind): Promise<Guar
       : { allowed: false, redirectTo: getPreferredDashboardRoute(session.profile) };
   }
 
-  return canManageBarangaySettings(session.profile)
+  return canAccessBarangaySettingsWorkspace(session.profile)
     ? { allowed: true }
     : { allowed: false, redirectTo: getPreferredDashboardRoute(session.profile) };
 }

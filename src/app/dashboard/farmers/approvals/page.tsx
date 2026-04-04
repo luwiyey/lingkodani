@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useData } from '@/context/data-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +22,7 @@ import {
   formatFarmerRegistrationsAsCsv,
   parseFarmerRegistrationsCsv,
 } from '@/lib/data-portability';
-import { findPossibleFarmerDuplicates } from '@/lib/farmer-duplicates';
+import { getFarmerIdentityAssessment } from '@/lib/farmer-identity';
 import { cn } from '@/lib/utils';
 
 function downloadFile(filename: string, content: string, mimeType: string) {
@@ -42,6 +41,50 @@ function getFileExtension(filename: string) {
 
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, '');
+}
+
+function getIdentityBadgeClass(trustLevel?: 'unknown' | 'probable' | 'verified') {
+  if (trustLevel === 'verified') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  }
+
+  if (trustLevel === 'probable') {
+    return 'border-amber-200 bg-amber-50 text-amber-700';
+  }
+
+  return 'border-slate-200 bg-slate-50 text-slate-700';
+}
+
+function getRiskBadgeClass(risk?: 'none' | 'shared_household' | 'possible_duplicate' | 'high_duplicate') {
+  if (risk === 'shared_household') {
+    return 'border-sky-200 bg-sky-50 text-sky-700';
+  }
+
+  if (risk === 'possible_duplicate') {
+    return 'border-amber-200 bg-amber-50 text-amber-700';
+  }
+
+  if (risk === 'high_duplicate') {
+    return 'border-rose-200 bg-rose-50 text-rose-700';
+  }
+
+  return 'border-slate-200 bg-slate-50 text-slate-700';
+}
+
+function formatRiskLabel(risk?: 'none' | 'shared_household' | 'possible_duplicate' | 'high_duplicate') {
+  if (risk === 'shared_household') {
+    return 'Shared household';
+  }
+
+  if (risk === 'possible_duplicate') {
+    return 'Needs duplicate review';
+  }
+
+  if (risk === 'high_duplicate') {
+    return 'High duplicate risk';
+  }
+
+  return 'No duplicate risk';
 }
 
 function ApprovalsPageContent() {
@@ -74,8 +117,9 @@ function ApprovalsPageContent() {
     });
   }, [focusedFarmerId, farmers.length]);
 
-  const pendingFarmers = farmers.filter(f => f.status === 'pending_approval');
-  const duplicateHints = React.useMemo(() => {
+  const pendingFarmers = farmers.filter((farmer) => farmer.status === 'pending_approval');
+
+  const identityHints = useMemo(() => {
     const activeOrInactive = farmers.filter(
       (farmer) =>
         (farmer.status === 'active' || farmer.status === 'inactive') &&
@@ -83,21 +127,28 @@ function ApprovalsPageContent() {
     );
 
     return new Map(
-      pendingFarmers.map((farmer) => [
-        farmer.id,
-        findPossibleFarmerDuplicates(farmer, activeOrInactive)
-          .map((match) => ({
-            ...match,
-            farmer: activeOrInactive.find((candidate) => candidate.id === match.farmerId),
-          }))
-          .filter((match) => Boolean(match.farmer))
-          .slice(0, 3),
-      ])
+      pendingFarmers.map((farmer) => {
+        const assessment = getFarmerIdentityAssessment(farmer, activeOrInactive);
+
+        return [
+          farmer.id,
+          {
+            ...assessment,
+            matches: assessment.duplicateMatches
+              .map((match) => ({
+                ...match,
+                farmer: activeOrInactive.find((candidate) => candidate.id === match.farmerId),
+              }))
+              .filter((match) => Boolean(match.farmer))
+              .slice(0, 3),
+          },
+        ];
+      })
     );
   }, [farmers, pendingFarmers]);
 
   const handleApproval = (farmerId: string, isApproved: boolean) => {
-    const farmerToUpdate = farmers.find(f => f.id === farmerId);
+    const farmerToUpdate = farmers.find((farmer) => farmer.id === farmerId);
     if (!farmerToUpdate) return;
 
     const newStatus = isApproved ? 'active' : 'rejected';
@@ -119,16 +170,30 @@ function ApprovalsPageContent() {
       });
       return;
     }
-    const count = pendingFarmers.length;
-    
+
+    const reviewSafeFarmers = pendingFarmers.filter((farmer) => {
+      const risk = identityHints.get(farmer.id)?.duplicateRiskLevel;
+      return risk !== 'high_duplicate' && risk !== 'possible_duplicate';
+    });
+    const skippedForReview = pendingFarmers.length - reviewSafeFarmers.length;
+
+    if (reviewSafeFarmers.length === 0) {
+      toast({
+        title: 'Kailangan ng manu-manong review',
+        description: 'May duplicate-risk flags ang lahat ng pending farmers. Paki-review sila isa-isa bago aprubahan.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     updateManyFarmerStatuses(
-      pendingFarmers.map((farmer) => farmer.id),
+      reviewSafeFarmers.map((farmer) => farmer.id),
       'active'
     );
-    
+
     toast({
       title: "Lahat ay Inaprubahan",
-      description: `${count} na magsasaka ang matagumpay na naaprubahan at naidagdag sa database.`,
+      description: `${reviewSafeFarmers.length} na magsasaka ang naaprubahan.${skippedForReview > 0 ? ` ${skippedForReview} ang iniwan muna para sa duplicate review.` : ''}`,
     });
   };
 
@@ -158,8 +223,29 @@ function ApprovalsPageContent() {
 
       for (const importedFarmer of importedFarmers) {
         const normalizedPhone = normalizePhone(importedFarmer.phone);
+        const candidateRecord = {
+          id: `IMPORT-${importedCount + skippedCount}`,
+          name: importedFarmer.name,
+          age: importedFarmer.age || 0,
+          gender: importedFarmer.gender || 'Hindi natukoy',
+          phone: importedFarmer.phone,
+          barangay: importedFarmer.barangay,
+          sitio: importedFarmer.sitio,
+          farmSize: importedFarmer.farmSize || 0,
+          crops: importedFarmer.crops ? importedFarmer.crops.split(',').map((crop) => crop.trim()).filter(Boolean) : [],
+          registrationDate: new Date().toISOString(),
+          lastSmsActivity: new Date().toISOString(),
+          status: 'pending_approval' as const,
+          sharedPhone: importedFarmer.sharedPhone,
+          householdLabel: importedFarmer.householdLabel,
+          sharedPhoneNotes: importedFarmer.sharedPhoneNotes,
+        };
+        const assessment = getFarmerIdentityAssessment(candidateRecord, farmers);
+        const blocksImport =
+          assessment.duplicateRiskLevel === 'high_duplicate' ||
+          (assessment.duplicateRiskLevel === 'possible_duplicate' && existingPhones.has(normalizedPhone));
 
-        if (existingPhones.has(normalizedPhone)) {
+        if (blocksImport) {
           skippedCount += 1;
           continue;
         }
@@ -171,7 +257,7 @@ function ApprovalsPageContent() {
 
       toast({
         title: 'Natapos ang farmer import',
-        description: `${importedCount} bagong pending registrations ang naidagdag.${skippedCount > 0 ? ` ${skippedCount} duplicate records ang nilaktawan.` : ''}`,
+        description: `${importedCount} bagong pending registrations ang naidagdag.${skippedCount > 0 ? ` ${skippedCount} duplicate-risk records ang nilaktawan muna.` : ''}`,
       });
     } catch (error) {
       toast({
@@ -205,10 +291,11 @@ function ApprovalsPageContent() {
     });
   };
 
-  const filteredFarmers = pendingFarmers.filter(farmer =>
+  const filteredFarmers = pendingFarmers.filter((farmer) =>
     farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     farmer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    `${farmer.sitio}, ${farmer.barangay}`.toLowerCase().includes(searchTerm.toLowerCase())
+    `${farmer.sitio}, ${farmer.barangay}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (farmer.householdLabel ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -220,30 +307,30 @@ function ApprovalsPageContent() {
           <p className="text-muted-foreground">Suriin at aprubahan ang mga bagong magsasaka na nagparehistro sa pamamagitan ng SMS o manu-manong pag-input.</p>
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
-            <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Mag-import</Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline"><Download className="mr-2 h-4 w-4" /> I-export</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport('csv')}>Export CSV</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('json')}>Export JSON</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
+          <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Mag-import</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline"><Download className="mr-2 h-4 w-4" /> I-export</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('csv')}>Export CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('json')}>Export JSON</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
         </div>
       </div>
-      
+
       <div className="flex gap-4">
         <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-                type="search"
-                placeholder="Maghanap ng magsasaka ayon sa pangalan, telepono, o lokasyon..."
-                className="w-full rounded-lg bg-background pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Maghanap ng magsasaka ayon sa pangalan, telepono, lokasyon, o household..."
+            className="w-full rounded-lg bg-background pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
@@ -268,48 +355,77 @@ function ApprovalsPageContent() {
               </TableHeader>
               <TableBody>
                 {filteredFarmers.length > 0 ? (
-                  filteredFarmers.map((farmer) => (
-                    <TableRow
-                      key={farmer.id}
-                      id={`farmer-row-${farmer.id}`}
-                      className={cn(
-                        focusedFarmerId === farmer.id && 'bg-primary/5 outline outline-2 outline-primary/40',
-                      )}
-                    >
-                      <TableCell className="font-medium px-2 py-4 md:px-4 break-words">{farmer.name}</TableCell>
-                      <TableCell className="break-all px-2 py-4 md:px-4">{farmer.phone}</TableCell>
-                      <TableCell className="break-words px-2 py-4 md:px-4">
-                        <div className="space-y-2">
-                          <p>{farmer.sitio}, {farmer.barangay}</p>
-                          {duplicateHints.get(farmer.id)?.length ? (
-                            <div className="space-y-1">
-                              <Badge variant="outline">Possible duplicate</Badge>
-                              {duplicateHints.get(farmer.id)?.map((hint) => (
-                                <p key={hint.farmerId} className="text-xs text-muted-foreground">
-                                  Match: {hint.farmer?.name} ({hint.farmer?.phone}) · {hint.reasons.join(', ')}
-                                </p>
-                              ))}
+                  filteredFarmers.map((farmer) => {
+                    const identityAssessment = identityHints.get(farmer.id);
+
+                    return (
+                      <TableRow
+                        key={farmer.id}
+                        id={`farmer-row-${farmer.id}`}
+                        className={cn(
+                          focusedFarmerId === farmer.id && 'bg-primary/5 outline outline-2 outline-primary/40',
+                        )}
+                      >
+                        <TableCell className="font-medium px-2 py-4 md:px-4 break-words">
+                          <div className="space-y-2">
+                            <p>{farmer.name}</p>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge
+                                variant="outline"
+                                className={cn(getIdentityBadgeClass(identityAssessment?.trustLevel))}
+                              >
+                                Identity: {identityAssessment?.trustLevel ?? 'unknown'}
+                              </Badge>
+                              {farmer.sharedPhone || identityAssessment?.duplicateRiskLevel === 'shared_household' ? (
+                                <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">
+                                  Shared phone
+                                </Badge>
+                              ) : null}
                             </div>
-                          ) : null}
-                        </div>
-                      </TableCell>
-                      <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
-                      <TableCell className="text-right px-2 py-4 md:px-4">
-                        <div className="flex justify-end gap-2">
+                          </div>
+                        </TableCell>
+                        <TableCell className="break-all px-2 py-4 md:px-4">{farmer.phone}</TableCell>
+                        <TableCell className="break-words px-2 py-4 md:px-4">
+                          <div className="space-y-2">
+                            <p>{farmer.sitio}, {farmer.barangay}</p>
+                            {farmer.householdLabel ? (
+                              <p className="text-xs text-muted-foreground">Household: {farmer.householdLabel}</p>
+                            ) : null}
+                            {identityAssessment?.matches.length ? (
+                              <div className="space-y-1">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(getRiskBadgeClass(identityAssessment.duplicateRiskLevel))}
+                                >
+                                  {formatRiskLabel(identityAssessment.duplicateRiskLevel)}
+                                </Badge>
+                                {identityAssessment.matches.map((hint) => (
+                                  <p key={hint.farmerId} className="text-xs text-muted-foreground">
+                                    Match: {hint.farmer?.name} ({hint.farmer?.phone}) · score {hint.score} · {hint.reasons.join(', ')}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(farmer.registrationDate).toLocaleString() : ''}</TableCell>
+                        <TableCell className="text-right px-2 py-4 md:px-4">
+                          <div className="flex justify-end gap-2">
                             <HoverTooltip text="Aprubahan">
-                                <Button size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, true)}>
-                                    <Check className="h-4 w-4" />
-                                </Button>
+                              <Button size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, true)}>
+                                <Check className="h-4 w-4" />
+                              </Button>
                             </HoverTooltip>
                             <HoverTooltip text="Tanggihan">
-                                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, false)}>
-                                    <X className="h-4 w-4" />
-                                </Button>
+                              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, false)}>
+                                <X className="h-4 w-4" />
+                              </Button>
                             </HoverTooltip>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">

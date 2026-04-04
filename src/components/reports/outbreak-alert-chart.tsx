@@ -31,12 +31,13 @@ const chartConfig = {
 export function OutbreakAlertChart() {
   const { outbreakAlertData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const safeData = outbreakAlertData.length > 0 ? outbreakAlertData : [{ date: 'Wala pa', ulat: 0 }];
 
-  const peak = outbreakAlertData.reduce((prev, current) => (prev.ulat > current.ulat) ? prev : current);
+  const peak = safeData.reduce((prev, current) => (prev.ulat > current.ulat) ? prev : current);
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={outbreakAlertData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+      <LineChart data={safeData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
           <YAxis tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />

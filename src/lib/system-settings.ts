@@ -197,6 +197,11 @@ export const defaultSystemSettings: SystemSettings = {
   smsLexiconRules: defaultSmsLexiconRules,
   autoReplyEnabled: true,
   autoReplyTimeoutMinutes: 3,
+  retentionPolicy: {
+    autoRedactionEnabled: true,
+    auditLogRedactionDays: 730,
+    archivedFarmerRedactionDays: 365,
+  },
 };
 
 export function mergeSystemSettings(
@@ -230,6 +235,10 @@ export function mergeSystemSettings(
       partial.smsLexiconRules?.length
         ? partial.smsLexiconRules.map((rule) => ({ ...rule }))
         : defaultSmsLexiconRules.map((rule) => ({ ...rule })),
+    retentionPolicy: {
+      ...defaultSystemSettings.retentionPolicy,
+      ...(partial.retentionPolicy ?? {}),
+    },
   };
 }
 

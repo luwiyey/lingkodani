@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -9,6 +10,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 
+import { SensitiveActionReauthDialog } from '@/components/auth/sensitive-action-reauth-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -21,15 +23,27 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
+import { getUserOnboardingSteps, isUserOnboardingComplete } from '@/lib/onboarding-checklist';
 import { readOnboardingProfile, saveDemoPreviewUser, saveOnboardingProfile } from '@/lib/onboarding';
 import { createInitialsAvatarDataUrl } from '@/lib/avatar-placeholder';
 import { uploadUserAvatarFile } from '@/lib/services/profile-avatar-file-service';
 import type { User } from '@/lib/types';
 import { getUserRecordId } from '@/lib/user-record';
+
+type AccountProfilePatch = Omit<
+  Partial<User>,
+  'phoneVerifiedAt' | 'privacyAcknowledgedAt' | 'securityReviewVerifiedAt'
+> & {
+  phoneVerifiedAt?: boolean;
+  privacyAcknowledgedAt?: boolean;
+  securityReviewVerifiedAt?: boolean;
+  completeOnboarding?: boolean;
+};
 
 function formatDateTime(value?: string | null) {
   if (!value) return 'Walang tala';
@@ -40,6 +54,7 @@ function formatDateTime(value?: string | null) {
 }
 
 export default function AccountSettingsPage() {
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const photoUploadRef = React.useRef<HTMLInputElement>(null);
   const { currentUser, currentUserProfile } = useAuth();
@@ -47,6 +62,8 @@ export default function AccountSettingsPage() {
   const [newEmailAddress, setNewEmailAddress] = React.useState('');
   const [workspacePreference, setWorkspacePreference] = React.useState<User['preferredWorkspace']>('simple');
   const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
+  const [savingOnboardingAction, setSavingOnboardingAction] = React.useState<string | null>(null);
+  const [showSecurityVerificationDialog, setShowSecurityVerificationDialog] = React.useState(false);
 
   const liveProfile = React.useMemo(() => {
     if (currentUserProfile) return currentUserProfile;
@@ -80,7 +97,16 @@ export default function AccountSettingsPage() {
     setWorkspacePreference(profile.preferredWorkspace ?? 'simple');
   }, [profile.preferredWorkspace]);
 
-  const saveLiveProfile = React.useCallback(async (changes: Partial<User>) => {
+  const onboardingSteps = React.useMemo(() => getUserOnboardingSteps(profile), [profile]);
+  const completedOnboardingSteps = onboardingSteps.filter((step) => step.completed).length;
+  const onboardingProgress = onboardingSteps.length > 0
+    ? Math.round((completedOnboardingSteps / onboardingSteps.length) * 100)
+    : 0;
+  const onboardingComplete = isUserOnboardingComplete(profile);
+  const needsOnboardingAttention =
+    searchParams.get('onboarding') === '1' || profile.status === 'pending_setup';
+
+  const saveLiveProfile = React.useCallback(async (changes: AccountProfilePatch) => {
     const liveUser = getClientAuth().currentUser;
     const idToken = await liveUser?.getIdToken(true);
 
@@ -110,7 +136,16 @@ export default function AccountSettingsPage() {
     photoUploadRef.current?.click();
   };
 
-  const persistProfile = async (nextProfile: User, successMessage: string) => {
+  const persistProfile = async (
+    nextProfile: User,
+    successMessage: string,
+    extraChanges?: {
+      phoneVerifiedAt?: boolean;
+      privacyAcknowledgedAt?: boolean;
+      securityReviewVerifiedAt?: boolean;
+      completeOnboarding?: boolean;
+    }
+  ) => {
     if (isPreviewSession) {
       saveDemoPreviewUser(nextProfile);
     } else if (!isLiveMode) {
@@ -134,6 +169,10 @@ export default function AccountSettingsPage() {
         phone: nextProfile.phone,
         avatarUrl: nextProfile.avatarUrl,
         preferredWorkspace: nextProfile.preferredWorkspace,
+        phoneVerifiedAt: extraChanges?.phoneVerifiedAt,
+        privacyAcknowledgedAt: extraChanges?.privacyAcknowledgedAt,
+        securityReviewVerifiedAt: extraChanges?.securityReviewVerifiedAt,
+        completeOnboarding: extraChanges?.completeOnboarding,
       });
     }
 
@@ -149,6 +188,31 @@ export default function AccountSettingsPage() {
       title: 'Tagumpay!',
       description: successMessage,
     });
+  };
+
+  const handleOnboardingProfileUpdate = async (
+    nextProfile: User,
+    successMessage: string,
+    extraChanges?: {
+      phoneVerifiedAt?: boolean;
+      privacyAcknowledgedAt?: boolean;
+      securityReviewVerifiedAt?: boolean;
+      completeOnboarding?: boolean;
+    }
+  ) => {
+    setSavingOnboardingAction(successMessage);
+
+    try {
+      await persistProfile(nextProfile, successMessage, extraChanges);
+    } catch (error) {
+      toast({
+        title: 'Hindi na-update ang onboarding',
+        description: error instanceof Error ? error.message : 'Subukan muli pagkatapos ng ilang sandali.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingOnboardingAction(null);
+    }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,6 +251,10 @@ export default function AccountSettingsPage() {
       title: String(formData.get('title') ?? profile.title ?? ''),
       barangay: String(formData.get('barangay') ?? profile.barangay ?? ''),
       phone: String(formData.get('phone') ?? profile.phone ?? ''),
+      phoneVerifiedAt:
+        String(formData.get('phone') ?? profile.phone ?? '') !== (profile.phone ?? '')
+          ? ''
+          : profile.phoneVerifiedAt,
       preferredWorkspace: workspacePreference ?? 'simple',
       updatedAt: new Date().toISOString(),
     };
@@ -320,6 +388,43 @@ export default function AccountSettingsPage() {
     });
   };
 
+  const handleConfirmPhone = () => {
+    const timestamp = new Date().toISOString();
+    void handleOnboardingProfileUpdate(
+      {
+        ...profile,
+        phoneVerifiedAt: timestamp,
+      },
+      'Nakumpirma na ang mobile number para sa onboarding.',
+      { phoneVerifiedAt: true }
+    );
+  };
+
+  const handleAcknowledgePrivacy = () => {
+    const timestamp = new Date().toISOString();
+    void handleOnboardingProfileUpdate(
+      {
+        ...profile,
+        privacyAcknowledgedAt: timestamp,
+      },
+      'Namarkahan na ang privacy at data-handling review.',
+      { privacyAcknowledgedAt: true }
+    );
+  };
+
+  const handleFinalizeOnboarding = () => {
+    const timestamp = new Date().toISOString();
+    void handleOnboardingProfileUpdate(
+      {
+        ...profile,
+        status: 'active',
+        updatedAt: timestamp,
+      },
+      'Kumpleto na ang onboarding at active na ang account mo.',
+      { completeOnboarding: true }
+    );
+  };
+
   const avatarSrc = profile.avatarUrl || currentUser?.photoURL || undefined;
   const avatarFallback = profile.name
     .split(' ')
@@ -348,6 +453,104 @@ export default function AccountSettingsPage() {
         </div>
         <p className="text-muted-foreground">Pamahalaan ang iyong profile, seguridad, at mga setting ng privacy.</p>
       </div>
+
+      {needsOnboardingAttention ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>Checklist ng Unang Setup</CardTitle>
+                <CardDescription>
+                  {profile.status === 'pending_setup'
+                    ? 'Tapusin ang mga hakbang na ito para maging ganap na active ang account mo.'
+                    : 'Narito ang kasalukuyang onboarding at security readiness ng account mo.'}
+                </CardDescription>
+              </div>
+              <Badge variant={onboardingComplete ? 'default' : 'outline'}>
+                {completedOnboardingSteps}/{onboardingSteps.length} kumpleto
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">Progress</span>
+                <span className="text-muted-foreground">{onboardingProgress}%</span>
+              </div>
+              <Progress value={onboardingProgress} />
+            </div>
+
+            <div className="space-y-3">
+              {onboardingSteps.map((step) => (
+                <div key={step.id} className="flex flex-col gap-3 rounded-xl border bg-background/90 p-4 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{step.label}</p>
+                      <Badge variant={step.completed ? 'default' : 'outline'}>
+                        {step.completed ? 'Kumpleto' : 'Kailangan pa'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                    {step.completedAt ? (
+                      <p className="text-xs text-muted-foreground">Huling kumpirmado: {formatDateTime(step.completedAt)}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {!step.completed && step.id === 'contact_number' ? (
+                      profile.phone?.trim() ? (
+                        <Button
+                          variant="outline"
+                          onClick={handleConfirmPhone}
+                          disabled={savingOnboardingAction !== null}
+                        >
+                          Kumpirmahin ang mobile number
+                        </Button>
+                      ) : (
+                        <Badge variant="outline">Maglagay muna ng mobile number sa profile</Badge>
+                      )
+                    ) : null}
+                    {!step.completed && step.id === 'privacy' ? (
+                      <Button
+                        variant="outline"
+                        onClick={handleAcknowledgePrivacy}
+                        disabled={savingOnboardingAction !== null}
+                      >
+                        Nabasa ko na ang privacy notes
+                      </Button>
+                    ) : null}
+                    {!step.completed && step.id === 'security' ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowSecurityVerificationDialog(true)}
+                        disabled={savingOnboardingAction !== null}
+                      >
+                        I-verify ang password
+                      </Button>
+                    ) : null}
+                    {!step.completed && (step.id === 'profile_details' || step.id === 'workspace') ? (
+                      <Badge variant="outline">I-update at i-save sa profile form sa ibaba</Badge>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
+              <p>
+                {onboardingComplete
+                  ? 'Kumpleto na ang onboarding checklist. Maaari nang i-finalize ang activation kung pending setup pa ang account.'
+                  : "Hindi pa active ang buong onboarding flow hangga't may kulang sa checklist na ito."}
+              </p>
+              <Button
+                onClick={handleFinalizeOnboarding}
+                disabled={!onboardingComplete || profile.status === 'active' || savingOnboardingAction !== null}
+              >
+                {profile.status === 'active' ? 'Active na ang account' : 'Tapusin ang onboarding'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
        <Card>
         <CardHeader className="flex-row items-start justify-between">
@@ -591,6 +794,30 @@ export default function AccountSettingsPage() {
           </CardFooter>
         </Card>
       ) : null}
+
+      <SensitiveActionReauthDialog
+        open={showSecurityVerificationDialog}
+        onOpenChange={setShowSecurityVerificationDialog}
+        title="Kumpirmahin ang password para sa onboarding"
+        description="Ito ang huling security step bago ma-finalize ang onboarding ng account."
+        submitLabel="I-verify ang password"
+        onVerified={async () => {
+          const timestamp = new Date().toISOString();
+          setSavingOnboardingAction('security');
+          try {
+            await persistProfile(
+              {
+                ...profile,
+                securityReviewVerifiedAt: timestamp,
+              },
+              'Nakumpirma na ang seguridad ng account para sa onboarding.',
+              { securityReviewVerifiedAt: true }
+            );
+          } finally {
+            setSavingOnboardingAction(null);
+          }
+        }}
+      />
     </div>
   );
 }

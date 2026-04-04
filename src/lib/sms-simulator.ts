@@ -1,10 +1,13 @@
 import { findBestMatchingLexiconRule } from "@/lib/sms-teaching";
 import type {
   SafetyFlag,
+  SmsCropStage,
   SmsDetectedLanguage,
   SmsIntent,
   SmsLexiconRule,
   SmsMessage,
+  SmsNormalizationToken,
+  SmsSentiment,
 } from "@/lib/types";
 import {
   isFilipinoFamilyLanguage,
@@ -22,6 +25,11 @@ export type InboundSmsAnalysis = {
   clarificationNeeded?: boolean;
   clarificationQuestion?: string;
   detectedLanguage?: SmsDetectedLanguage;
+  normalizationTokens?: SmsNormalizationToken[];
+  normalizationUnknownTokens?: string[];
+  sentiment?: SmsSentiment;
+  cropStage?: SmsCropStage;
+  candidateIntents?: SmsIntent[];
 };
 
 const PHONE_NORMALIZER = /\D/g;
@@ -246,6 +254,25 @@ export function analyzeInboundSms(
     EMERGENCY: 0.72,
     UNKNOWN: 0.36,
   };
+  const ambiguityPenalty =
+    /\b(?:uod|peste|kuhol|sakit)\b/i.test(normalization.normalizedMessage) &&
+    /\b(?:ulan|baha|tubig|patubig)\b/i.test(normalization.normalizedMessage)
+      ? 0.08
+      : 0;
+  const unknownTokenPenalty = Math.min(normalization.unknownTokens.length * 0.04, 0.16);
+  const matchedRuleBoost = matchedRule ? 0.12 : 0;
+  const finalConfidence = Number(
+    Math.max(
+      0.25,
+      Math.min(
+        0.96,
+        Math.max(baseConfidence, confidenceByIntent[parsedIntent]) +
+          matchedRuleBoost -
+          ambiguityPenalty -
+          unknownTokenPenalty
+      )
+    ).toFixed(2)
+  );
 
   return {
     parsedIntent,
@@ -253,8 +280,10 @@ export function analyzeInboundSms(
     safetyFlag,
     tone,
     aiAdvice: inferAdvice(parsedIntent, message, farmerName, normalization.detectedLanguage, matchedRule),
-    aiConfidence: Math.max(baseConfidence, confidenceByIntent[parsedIntent]),
+    aiConfidence: finalConfidence,
     analysisSource: "rules",
     detectedLanguage: normalization.detectedLanguage,
+    normalizationTokens: normalization.tokens,
+    normalizationUnknownTokens: normalization.unknownTokens,
   };
 }

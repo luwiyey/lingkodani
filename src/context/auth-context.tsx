@@ -15,7 +15,9 @@ import { getClientAuth } from "@/lib/firebase/auth-client";
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { hasFirebaseConfig } from "@/lib/firebase/shared";
+import { getInviteLifecycleSummary } from "@/lib/invite-lifecycle";
 import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, normalizeDemoProfile, readDemoPreviewUser, readOnboardingProfile } from "@/lib/onboarding";
+import { syncUserOnboardingState } from "@/lib/onboarding-checklist";
 import { clearAllOfflineMutations } from "@/lib/offline-outbox";
 import type { User } from "@/lib/types";
 
@@ -233,6 +235,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      if (serverProfile.status === "pending_setup") {
+        const inviteLifecycle = getInviteLifecycleSummary(serverProfile);
+
+        if (inviteLifecycle.status === "revoked") {
+          await syncServerSession(null);
+          setCurrentUserProfile(null);
+          setAuthError("Naka-hold muna ang setup invite na ito. Makipag-ugnayan sa developer o barangay admin para sa panibagong invite.");
+          await signOut(auth);
+          setAuthLoading(false);
+          return;
+        }
+
+        if (inviteLifecycle.status === "expired") {
+          await syncServerSession(null);
+          setCurrentUserProfile(null);
+          setAuthError("Paso na ang huling setup invite. Humiling ng panibagong secure setup link bago muling mag-login.");
+          await signOut(auth);
+          setAuthLoading(false);
+          return;
+        }
+      }
+
       try {
         await syncServerSession(user);
       } catch {
@@ -252,16 +276,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         await setDoc(
           userRef,
-          {
+          syncUserOnboardingState({
             id: user.uid,
             uid: user.uid,
             email: user.email,
             name: user.displayName || existingProfile.name || user.email.split("@")[0],
             avatarUrl: user.photoURL ?? existingProfile.avatarUrl,
             permissions: existingProfile.permissions ?? serverProfile.permissions,
+            inviteAcceptedAt:
+              existingProfile.inviteAcceptedAt ??
+              (existingProfile.status === "pending_setup" ? new Date().toISOString() : serverProfile.inviteAcceptedAt),
             lastLoginAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-          },
+            role: existingProfile.role ?? serverProfile.role,
+            title: existingProfile.title ?? serverProfile.title,
+            barangay: existingProfile.barangay ?? serverProfile.barangay,
+            phone: existingProfile.phone ?? serverProfile.phone,
+            preferredWorkspace: existingProfile.preferredWorkspace ?? serverProfile.preferredWorkspace,
+            phoneVerifiedAt: existingProfile.phoneVerifiedAt ?? serverProfile.phoneVerifiedAt,
+            privacyAcknowledgedAt: existingProfile.privacyAcknowledgedAt ?? serverProfile.privacyAcknowledgedAt,
+            securityReviewVerifiedAt: existingProfile.securityReviewVerifiedAt ?? serverProfile.securityReviewVerifiedAt,
+            onboarding: existingProfile.onboarding ?? serverProfile.onboarding,
+            status: existingProfile.status ?? serverProfile.status,
+            createdAt: existingProfile.createdAt ?? serverProfile.createdAt,
+          } as User, existingProfile.name || user.displayName || user.email.split("@")[0]),
           { merge: true }
         );
 

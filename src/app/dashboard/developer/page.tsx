@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { SensitiveActionReauthDialog } from '@/components/auth/sensitive-action-reauth-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,8 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { getManagedBarangayUsers, getPlatformDeveloperUsers } from '@/lib/access-control';
 import { getClientAuth } from '@/lib/firebase/auth-client';
+import { getInviteLifecycleSummary } from '@/lib/invite-lifecycle';
+import { getUserOnboardingSteps } from '@/lib/onboarding-checklist';
 import { isLiveMode } from '@/lib/config/app-mode';
 import type { AccessRequest, User } from '@/lib/types';
 import { getUserRecordId } from '@/lib/user-record';
@@ -48,6 +51,8 @@ export default function DeveloperPage() {
     const { users, updateUser, deleteUser, auditLogs } = useData();
     const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
     const [accessRequestsLoading, setAccessRequestsLoading] = useState(false);
+    const [showStepUpDialog, setShowStepUpDialog] = useState(false);
+    const pendingSensitiveAction = React.useRef<(() => Promise<void>) | null>(null);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [editingForm, setEditingForm] = useState({
       name: '',
@@ -67,6 +72,11 @@ export default function DeveloperPage() {
     const simpleWorkspaceUsers = barangayUsers.filter((user) => user.preferredWorkspace === 'simple').length;
     const namedAuditActors = new Set(auditLogs.filter((log) => log.user !== 'system').map((log) => log.user)).size;
     const pendingAccessRequests = accessRequests.filter((request) => request.status === 'pending_review' || request.status === 'reviewed');
+
+    const requestStepUpVerification = (operation: () => Promise<void>) => {
+        pendingSensitiveAction.current = operation;
+        setShowStepUpDialog(true);
+    };
 
     const loadAccessRequests = React.useCallback(async () => {
         if (!isLiveMode) {
@@ -114,13 +124,19 @@ export default function DeveloperPage() {
         void loadAccessRequests();
     }, [loadAccessRequests]);
 
+    const getDeveloperIdToken = async () => {
+        const idToken = await getClientAuth().currentUser?.getIdToken();
+
+        if (!idToken) {
+            throw new Error('Walang authenticated developer session.');
+        }
+
+        return idToken;
+    };
+
     const updateAccessRequestStatus = async (requestId: string, status: AccessRequest['status'], reviewNotes?: string) => {
         try {
-            const idToken = await getClientAuth().currentUser?.getIdToken();
-
-            if (!idToken) {
-                throw new Error('Walang authenticated developer session.');
-            }
+            const idToken = await getDeveloperIdToken();
 
             const response = await fetch('/api/access-request', {
                 method: 'PATCH',
@@ -137,6 +153,12 @@ export default function DeveloperPage() {
             const payload = await response.json().catch(() => ({}));
 
             if (!response.ok) {
+                if (payload.code === 'step_up_required') {
+                    requestStepUpVerification(async () => {
+                        await updateAccessRequestStatus(requestId, status, reviewNotes);
+                    });
+                    return;
+                }
                 throw new Error(payload.error ?? 'Hindi ma-update ang access request.');
             }
 
@@ -158,35 +180,68 @@ export default function DeveloperPage() {
         }
     };
 
-    const handleEditUser = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        if (!editingUser) return;
+    const runInviteAction = async (
+      user: User,
+      action: 'resend_invite' | 'revoke_invite',
+      inviteRevocationReason?: string
+    ) => {
+      try {
+        const idToken = await getDeveloperIdToken();
+        const response = await fetch('/api/developer/users', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            userId: getUserRecordId(user),
+            action,
+            inviteRevocationReason,
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
 
-        const updatedEmail = editingForm.email.trim().toLowerCase();
-
-        if (users.some(u => u.email === updatedEmail && u.email !== editingUser.email)) {
-            toast({ title: "Error", description: "Ang email na iyan ay ginagamit na ng ibang user.", variant: "destructive" });
+        if (!response.ok) {
+          if (payload.code === 'step_up_required') {
+            requestStepUpVerification(async () => {
+              await runInviteAction(user, action, inviteRevocationReason);
+            });
             return;
+          }
+
+          throw new Error(payload.error ?? 'Hindi na-update ang invite lifecycle.');
         }
 
-        const updatedUser: User = {
-            ...editingUser,
-            name: editingForm.name.trim(),
-            email: updatedEmail,
-            title: editingForm.title.trim(),
-            phone: editingForm.phone.trim(),
-            role: editingForm.role,
-            status: editingForm.status,
-            preferredWorkspace: editingForm.preferredWorkspace,
-        };
+        if (payload.profile) {
+          updateUser(getUserRecordId(user), payload.profile);
+        }
 
+        toast({
+          title: action === 'resend_invite' ? 'Naipadala muli ang invite' : 'Na-revoke ang invite',
+          description:
+            action === 'resend_invite'
+              ? payload.setupLink
+                ? 'Na-refresh na ang setup link at nakopya ito bilang manual fallback.'
+                : 'Na-refresh na ang secure setup invite para sa user na ito.'
+              : 'Naka-hold muna ang onboarding ng user na ito hanggang magpadala muli ng bagong invite.',
+        });
+
+        if (payload.setupLink && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(payload.setupLink);
+        }
+      } catch (error) {
+        toast({
+          title: 'Hindi ma-update ang invite',
+          description: error instanceof Error ? error.message : 'Subukan muli pagkatapos ng ilang sandali.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    const submitUserEdit = async (targetUser: User, updatedUser: User) => {
         try {
             if (isLiveMode) {
-                const idToken = await getClientAuth().currentUser?.getIdToken();
-
-                if (!idToken) {
-                    throw new Error("Walang authenticated developer session.");
-                }
+                const idToken = await getDeveloperIdToken();
 
                 const response = await fetch('/api/developer/users', {
                     method: 'PATCH',
@@ -195,20 +250,29 @@ export default function DeveloperPage() {
                         Authorization: `Bearer ${idToken}`,
                     },
                     body: JSON.stringify({
-                      userId: getUserRecordId(editingUser),
+                      userId: getUserRecordId(targetUser),
                       ...updatedUser,
                     }),
                 });
                 const payload = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
+                    if (payload.code === 'step_up_required') {
+                        requestStepUpVerification(async () => {
+                            await submitUserEdit(targetUser, updatedUser);
+                        });
+                        return;
+                    }
                     throw new Error(payload.error ?? 'Hindi na-update ang live user.');
                 }
+                if (payload.profile) {
+                    updateUser(getUserRecordId(targetUser), payload.profile);
+                }
             } else {
-                updateUser(getUserRecordId(editingUser), {
+                updateUser(getUserRecordId(targetUser), {
                     ...updatedUser,
-                    id: editingUser.id ?? editingUser.uid ?? getUserRecordId(editingUser),
-                    uid: editingUser.uid ?? editingUser.id ?? getUserRecordId(editingUser),
+                    id: targetUser.id ?? targetUser.uid ?? getUserRecordId(targetUser),
+                    uid: targetUser.uid ?? targetUser.id ?? getUserRecordId(targetUser),
                 });
             }
 
@@ -232,16 +296,38 @@ export default function DeveloperPage() {
         }
     };
 
+    const handleEditUser = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!editingUser) return;
+
+        const targetUser = editingUser;
+        const updatedEmail = editingForm.email.trim().toLowerCase();
+
+        if (users.some(u => u.email === updatedEmail && u.email !== targetUser.email)) {
+            toast({ title: "Error", description: "Ang email na iyan ay ginagamit na ng ibang user.", variant: "destructive" });
+            return;
+        }
+
+        const updatedUser: User = {
+            ...targetUser,
+            name: editingForm.name.trim(),
+            email: updatedEmail,
+            title: editingForm.title.trim(),
+            phone: editingForm.phone.trim(),
+            role: editingForm.role,
+            status: editingForm.status,
+            preferredWorkspace: editingForm.preferredWorkspace,
+        };
+
+        await submitUserEdit(targetUser, updatedUser);
+    };
+
     const handleDeleteUser = async (userToDelete: User) => {
         if (!userToDelete) return;
 
         try {
             if (isLiveMode) {
-                const idToken = await getClientAuth().currentUser?.getIdToken();
-
-                if (!idToken) {
-                    throw new Error("Walang authenticated developer session.");
-                }
+                const idToken = await getDeveloperIdToken();
 
                 const response = await fetch('/api/developer/users', {
                     method: 'DELETE',
@@ -257,6 +343,12 @@ export default function DeveloperPage() {
                 const payload = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
+                    if (payload.code === 'step_up_required') {
+                        requestStepUpVerification(async () => {
+                            await handleDeleteUser(userToDelete);
+                        });
+                        return;
+                    }
                     throw new Error(payload.error ?? 'Hindi natanggal ang live user.');
                 }
             } else {
@@ -368,9 +460,13 @@ export default function DeveloperPage() {
                       </p>
                       {request.phone ? <p className="text-sm text-muted-foreground">Phone: {request.phone}</p> : null}
                       {request.message ? <p className="text-sm text-muted-foreground">{request.message}</p> : null}
-                      <p className="text-xs text-muted-foreground">
-                        Source: {request.source ?? 'public_page'} - Requested: {new Date(request.requestedAt).toLocaleString()}
-                      </p>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Badge variant="outline">Submissions: {request.submissionCount ?? 1}</Badge>
+                        <Badge variant="outline">Source: {request.source ?? 'public_page'}</Badge>
+                        {request.lastSubmittedAt ? (
+                          <Badge variant="outline">Latest: {new Date(request.lastSubmittedAt).toLocaleString()}</Badge>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button
@@ -466,7 +562,12 @@ export default function DeveloperPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {barangayUsers.map((user) => (
+                {barangayUsers.map((user) => {
+                    const inviteLifecycle = getInviteLifecycleSummary(user);
+                    const onboardingSteps = getUserOnboardingSteps(user);
+                    const completedSteps = onboardingSteps.filter((step) => step.completed).length;
+
+                    return (
                     <TableRow key={getUserRecordId(user)}>
                     <TableCell className="font-medium px-2 py-4 md:px-4">{user.name}</TableCell>
                     <TableCell className="px-2 py-4 md:px-4">{user.email}</TableCell>
@@ -480,6 +581,13 @@ export default function DeveloperPage() {
                           <Badge variant="outline">
                             invite: {user.inviteDeliveryStatus}
                           </Badge>
+                        ) : null}
+                        <Badge variant="outline">{inviteLifecycle.label}</Badge>
+                        <Badge variant="outline">onboarding: {completedSteps}/{onboardingSteps.length}</Badge>
+                        {inviteLifecycle.expiresAt ? (
+                          <p className="text-xs text-muted-foreground">
+                            Expires: {new Date(inviteLifecycle.expiresAt).toLocaleString()}
+                          </p>
                         ) : null}
                       </div>
                     </TableCell>
@@ -503,6 +611,24 @@ export default function DeveloperPage() {
                                }}
                              ><Edit /> I-edit</Button>
                           </HoverTooltip>
+                          {user.status === 'pending_setup' ? (
+                            <HoverTooltip text="Magpadala muli ng secure setup invite o manual fallback link.">
+                              <Button variant="outline" size="sm" onClick={() => void runInviteAction(user, 'resend_invite')}>
+                                <RefreshCcw /> Resend Invite
+                              </Button>
+                            </HoverTooltip>
+                          ) : null}
+                          {user.status === 'pending_setup' && inviteLifecycle.status !== 'revoked' && inviteLifecycle.status !== 'accepted' ? (
+                            <HoverTooltip text="I-hold muna ang onboarding hanggang manual na i-resend muli ang invite.">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void runInviteAction(user, 'revoke_invite', 'Pansamantalang naka-hold habang nire-review muli ang access at onboarding details.')}
+                              >
+                                Revoke Invite
+                              </Button>
+                            </HoverTooltip>
+                          ) : null}
                           <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <HoverTooltip text="Permanenteng alisin ang user na ito sa system.">
@@ -525,7 +651,7 @@ export default function DeveloperPage() {
                        </div>
                     </TableCell>
                     </TableRow>
-                ))}
+                )})}
                 </TableBody>
             </Table>
           </div>
@@ -598,6 +724,22 @@ export default function DeveloperPage() {
           </DialogContent>
       </Dialog>
     )}
+
+    <SensitiveActionReauthDialog
+      open={showStepUpDialog}
+      onOpenChange={setShowStepUpDialog}
+      title="Kumpirmahin ang password para sa developer actions"
+      description="Bago mag-edit, mag-provision, mag-dismiss ng access request, o magpadala ng invite, kailangan muna ng fresh password verification."
+      submitLabel="I-verify at ituloy"
+      onVerified={async () => {
+        const action = pendingSensitiveAction.current;
+        pendingSensitiveAction.current = null;
+
+        if (action) {
+          await action();
+        }
+      }}
+    />
     </>
   );
 }

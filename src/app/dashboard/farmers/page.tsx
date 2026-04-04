@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight, User, ArrowRightLeft, Archive, ArchiveRestore } from 'lucide-react';
+import { PlusCircle, Search, QrCode, Trash2, Edit, Download, Filter, MapPin, Sprout, Activity, ArrowUp, ArrowDown, ArrowUpRight, ArrowRightLeft, Archive, ArchiveRestore } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,9 +49,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { FarmerAvatar } from '@/components/farmers/farmer-avatar';
 import { formatFarmerRegistrationsAsCsv } from '@/lib/data-portability';
-import { findPossibleFarmerDuplicates } from '@/lib/farmer-duplicates';
+import { getFarmerIdentityAssessment } from '@/lib/farmer-identity';
+import { cn } from '@/lib/utils';
 
 type SortableKeys = keyof Farmer | 'location';
 
@@ -162,6 +163,9 @@ export default function FarmersPage() {
       sitio: formData.get('sitio') as string,
       crops: (formData.get('crops') as string).split(',').map(c => c.trim()),
       farmSize: Number(formData.get('farm-size') as string),
+      sharedPhone: formData.get('shared-phone') === 'on',
+      householdLabel: ((formData.get('household-label') as string) || '').trim() || undefined,
+      sharedPhoneNotes: ((formData.get('shared-phone-notes') as string) || '').trim() || undefined,
     };
 
     updateFarmerRecord(editingFarmer.id, updatedData);
@@ -197,18 +201,24 @@ export default function FarmersPage() {
       activeFarmers.filter((farmer) => farmer.id !== mergeSourceFarmer?.id),
     [activeFarmers, mergeSourceFarmer?.id]
   );
-  const duplicateHints = useMemo(
+  const identityHints = useMemo(
     () =>
       new Map(
         activeFarmers.map((farmer) => [
           farmer.id,
-          findPossibleFarmerDuplicates(farmer, activeFarmers)
-            .map((match) => ({
-              ...match,
-              farmer: activeFarmers.find((candidate) => candidate.id === match.farmerId),
-            }))
-            .filter((match) => Boolean(match.farmer))
-            .slice(0, 2),
+          (() => {
+            const assessment = getFarmerIdentityAssessment(farmer, activeFarmers);
+            return {
+              ...assessment,
+              matches: assessment.duplicateMatches
+                .map((match) => ({
+                  ...match,
+                  farmer: activeFarmers.find((candidate) => candidate.id === match.farmerId),
+                }))
+                .filter((match) => Boolean(match.farmer))
+                .slice(0, 2),
+            };
+          })(),
         ])
       ),
     [activeFarmers]
@@ -252,8 +262,10 @@ export default function FarmersPage() {
   const filteredFarmers = useMemo(() => activeFarmers.filter(farmer => {
     const searchMatch = (
       farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
       farmer.sitio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      farmer.crops.join(', ').toLowerCase().includes(searchTerm.toLowerCase())
+      farmer.crops.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (farmer.householdLabel ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const sitioMatch = filters.sitios.length === 0 || filters.sitios.includes(farmer.sitio);
@@ -329,7 +341,7 @@ export default function FarmersPage() {
                 <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="Maghanap ng magsasaka..."
+                    placeholder="Maghanap ng magsasaka, numero, household, o pananim..."
                     className="w-full rounded-lg bg-background pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -405,7 +417,7 @@ export default function FarmersPage() {
         <Card>
           <CardContent className="p-0">
             <div className="relative w-full overflow-auto">
-              <Table>
+              <Table className="min-w-[860px]">
                 <TableHeader>
                   <TableRow>
                       <TableHead className="cursor-pointer hover:bg-muted/50 px-2 md:px-4" onClick={() => requestSort('name')}>
@@ -448,18 +460,59 @@ export default function FarmersPage() {
                     <TableRow key={farmer.id}>
                       <TableCell className="font-medium px-2 py-2 md:px-4">
                           <div className="flex items-center gap-3">
-                            <Avatar className="w-8 h-8 border">
-                                {farmer.avatarUrl ? <AvatarImage src={farmer.avatarUrl} alt={farmer.name} /> : null}
-                                <AvatarFallback>
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                </AvatarFallback>
-                            </Avatar>
+                            <FarmerAvatar
+                              name={farmer.name}
+                              avatarUrl={farmer.avatarUrl}
+                              className="h-8 w-8 border"
+                            />
                               <div className="min-w-0">
-                                <span className="truncate block">{farmer.name}</span>
-                                {duplicateHints.get(farmer.id)?.length ? (
+                                <Link
+                                  href={`/dashboard/farmers/${farmer.id}`}
+                                  className="block truncate font-medium text-foreground transition-colors hover:text-primary hover:underline underline-offset-4"
+                                >
+                                  {farmer.name}
+                                </Link>
+                                <div className="mt-1 flex flex-wrap gap-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(getIdentityBadgeClass(identityHints.get(farmer.id)?.trustLevel))}
+                                  >
+                                    {identityHints.get(farmer.id)?.trustLevel ?? 'unknown'}
+                                  </Badge>
+                                  {farmer.sharedPhone ? (
+                                    <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">
+                                      Shared phone
+                                    </Badge>
+                                  ) : null}
+                                  {identityHints.get(farmer.id)?.duplicateRiskLevel && identityHints.get(farmer.id)?.duplicateRiskLevel !== 'none' ? (
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(getRiskBadgeClass(identityHints.get(farmer.id)?.duplicateRiskLevel))}
+                                    >
+                                      {identityHints.get(farmer.id)?.duplicateRiskLevel === 'shared_household'
+                                        ? 'Shared household'
+                                        : identityHints.get(farmer.id)?.duplicateRiskLevel === 'high_duplicate'
+                                          ? 'High duplicate risk'
+                                          : 'Duplicate review'}
+                                    </Badge>
+                                  ) : null}
+                                </div>
+                                {farmer.householdLabel ? (
+                                  <p className="mt-1 text-xs text-muted-foreground">Household: {farmer.householdLabel}</p>
+                                ) : null}
+                                {identityHints.get(farmer.id)?.matches.length ? (
                                   <div className="mt-1 space-y-1">
-                                    <Badge variant="outline">Possible duplicate</Badge>
-                                    {duplicateHints.get(farmer.id)?.map((hint) => (
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(getRiskBadgeClass(identityHints.get(farmer.id)?.duplicateRiskLevel))}
+                                    >
+                                      {identityHints.get(farmer.id)?.duplicateRiskLevel === 'shared_household'
+                                        ? 'Shared household'
+                                        : identityHints.get(farmer.id)?.duplicateRiskLevel === 'high_duplicate'
+                                          ? 'High duplicate risk'
+                                          : 'Duplicate review'}
+                                    </Badge>
+                                    {identityHints.get(farmer.id)?.matches.map((hint) => (
                                       <p key={hint.farmerId} className="text-xs text-muted-foreground">
                                         {hint.farmer?.name} · {hint.reasons.join(', ')}
                                       </p>
@@ -567,6 +620,7 @@ export default function FarmersPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{farmer.name}</span>
                         <Badge variant="secondary">archived</Badge>
+                        {farmer.retentionRedactedAt ? <Badge variant="outline">PII redacted</Badge> : null}
                         {farmer.phone ? <Badge variant="outline">{farmer.phone}</Badge> : null}
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -577,9 +631,20 @@ export default function FarmersPage() {
                         Archived {farmer.archivedAt ? new Date(farmer.archivedAt).toLocaleString() : 'recently'}
                         {farmer.archivedBy ? ` by ${farmer.archivedBy}` : ''}
                       </p>
+                      {farmer.retentionRedactedAt ? (
+                        <p className="text-xs text-muted-foreground">
+                          PII redacted {new Date(farmer.retentionRedactedAt).toLocaleString()}
+                          {farmer.retentionRedactionReason ? ` · ${farmer.retentionRedactionReason}` : ''}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleRestoreFarmer(farmer)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreFarmer(farmer)}
+                        disabled={Boolean(farmer.retentionRedactedAt)}
+                      >
                         <ArchiveRestore className="mr-2 h-4 w-4" />
                         Restore as inactive
                       </Button>
@@ -631,6 +696,27 @@ export default function FarmersPage() {
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="phone" className="text-right">Telepono</Label>
                     <Input id="phone" name="phone" defaultValue={editingFarmer.phone} required className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="shared-phone" className="text-right">Shared Phone</Label>
+                    <label className="col-span-3 flex items-center gap-3 text-sm text-muted-foreground">
+                      <input
+                        id="shared-phone"
+                        name="shared-phone"
+                        type="checkbox"
+                        defaultChecked={Boolean(editingFarmer.sharedPhone)}
+                        className="h-4 w-4 rounded border-input"
+                      />
+                      I-check ito kung may iba pang farmer sa kaparehong numero.
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="household-label" className="text-right">Household</Label>
+                    <Input id="household-label" name="household-label" defaultValue={editingFarmer.householdLabel ?? ''} className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="shared-phone-notes" className="text-right">Notes</Label>
+                    <Input id="shared-phone-notes" name="shared-phone-notes" defaultValue={editingFarmer.sharedPhoneNotes ?? ''} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="barangay" className="text-right">Barangay</Label>
@@ -723,4 +809,32 @@ export default function FarmersPage() {
       )}
     </>
   );
+}
+
+function getIdentityBadgeClass(trustLevel?: 'unknown' | 'probable' | 'verified') {
+  if (trustLevel === 'verified') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  }
+
+  if (trustLevel === 'probable') {
+    return 'border-amber-200 bg-amber-50 text-amber-700';
+  }
+
+  return 'border-slate-200 bg-slate-50 text-slate-700';
+}
+
+function getRiskBadgeClass(risk?: 'none' | 'shared_household' | 'possible_duplicate' | 'high_duplicate') {
+  if (risk === 'shared_household') {
+    return 'border-sky-200 bg-sky-50 text-sky-700';
+  }
+
+  if (risk === 'possible_duplicate') {
+    return 'border-amber-200 bg-amber-50 text-amber-700';
+  }
+
+  if (risk === 'high_duplicate') {
+    return 'border-rose-200 bg-rose-50 text-rose-700';
+  }
+
+  return 'border-slate-200 bg-slate-50 text-slate-700';
 }

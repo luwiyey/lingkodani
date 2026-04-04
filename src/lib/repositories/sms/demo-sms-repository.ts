@@ -1,5 +1,5 @@
 import type { SmsMessage } from "@/lib/types";
-import type { NewSmsRecordInput, SmsRepository } from "@/lib/repositories/sms/types";
+import type { SmsRepository } from "@/lib/repositories/sms/types";
 
 const demoStore = globalThis as typeof globalThis & {
   __lingkodAniDemoSmsStore?: SmsMessage[];

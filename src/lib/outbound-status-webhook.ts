@@ -1,7 +1,15 @@
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import {
+  recordRuntimeHealthFailure,
+  recordRuntimeHealthSuccess,
+  recordRuntimeHealthWarning,
+} from "@/lib/system-health";
 import type { OutboundMessageStatus } from "@/lib/types";
 import { getStringAtPaths, type WebhookPayloadRecord } from "@/lib/webhook-request";
+
+const OUTBOUND_WEBHOOK_RUNTIME_HEALTH_ID = "sms_outbound_webhook";
+const OUTBOUND_WEBHOOK_RUNTIME_HEALTH_LABEL = "Outbound Status Webhook";
 
 function normalizeStatus(value: string | undefined): OutboundMessageStatus | null {
   const status = (value ?? "").toLowerCase();
@@ -57,6 +65,15 @@ export async function applyOutboundStatusPayload(rawBody: WebhookPayloadRecord) 
   const { providerMessageId, status, errorMessage, sentAt, deliveredAt } = parseOutboundStatusPayload(rawBody);
 
   if (!providerMessageId || !status) {
+    await recordRuntimeHealthFailure(
+      OUTBOUND_WEBHOOK_RUNTIME_HEALTH_ID,
+      OUTBOUND_WEBHOOK_RUNTIME_HEALTH_LABEL,
+      "Hindi mabasa ang outbound status payload.",
+      {
+        providerMessageId: providerMessageId ?? "",
+        status: status ?? "unknown",
+      }
+    );
     return {
       ok: false as const,
       code: 400,
@@ -73,6 +90,15 @@ export async function applyOutboundStatusPayload(rawBody: WebhookPayloadRecord) 
   const target = snapshot.docs[0];
 
   if (!target) {
+    await recordRuntimeHealthWarning(
+      OUTBOUND_WEBHOOK_RUNTIME_HEALTH_ID,
+      OUTBOUND_WEBHOOK_RUNTIME_HEALTH_LABEL,
+      {
+        providerMessageId,
+        status,
+        errorMessage: errorMessage ?? "Walang tumugmang outbound record.",
+      }
+    );
     return {
       ok: false as const,
       code: 404,
@@ -102,6 +128,15 @@ export async function applyOutboundStatusPayload(rawBody: WebhookPayloadRecord) 
   }
 
   await target.ref.update(updates);
+  await recordRuntimeHealthSuccess(
+    OUTBOUND_WEBHOOK_RUNTIME_HEALTH_ID,
+    OUTBOUND_WEBHOOK_RUNTIME_HEALTH_LABEL,
+    {
+      outboundId: target.id,
+      providerMessageId,
+      status,
+    }
+  );
 
   return {
     ok: true as const,

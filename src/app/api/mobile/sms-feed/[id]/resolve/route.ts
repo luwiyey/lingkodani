@@ -7,7 +7,8 @@ import type { SmsProvider } from "@/lib/providers/sms/types";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import { requestFarmerResolutionConfirmation } from "@/lib/services/resolution-confirmation-service";
 import { sendLiveSms } from "@/lib/services/server-live-outbound-sms-service";
-import type { SmsMessage } from "@/lib/types";
+import { getSmsCaseResolutionReadiness } from "@/lib/sms-case-quality";
+import type { FarmerAssistanceRecord, FieldVisitTask, SmsMessage } from "@/lib/types";
 
 const liveServerSmsProvider: SmsProvider = {
   async sendMessage(input) {
@@ -23,6 +24,33 @@ function compactUndefined<T extends Record<string, unknown>>(value: T) {
 
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+async function listRecordsForMessage<T extends Record<string, unknown>>(
+  collectionName: string,
+  message: Pick<SmsMessage, "id" | "farmerId">
+) {
+  const db = getServerFirestore();
+  const [farmerSnapshot, relatedSnapshot] = await Promise.all([
+    db
+      .collection(collectionName)
+      .where("farmerId", "==", message.farmerId)
+      .limit(25)
+      .get(),
+    db
+      .collection(collectionName)
+      .where("relatedSmsId", "==", message.id)
+      .limit(25)
+      .get(),
+  ]);
+
+  const merged = new Map<string, T>();
+
+  for (const documentSnapshot of [...farmerSnapshot.docs, ...relatedSnapshot.docs]) {
+    merged.set(documentSnapshot.id, documentSnapshot.data() as T);
+  }
+
+  return Array.from(merged.values());
 }
 
 export async function POST(
@@ -57,6 +85,35 @@ export async function POST(
     }
 
     const currentMessage = snapshot.data() as SmsMessage;
+    const [assistanceRecords, fieldVisitTasks] = await Promise.all([
+      listRecordsForMessage<FarmerAssistanceRecord>(
+        firebaseCollections.assistanceRecords,
+        currentMessage
+      ),
+      listRecordsForMessage<FieldVisitTask>(
+        firebaseCollections.fieldVisitTasks,
+        currentMessage
+      ),
+    ]);
+    const resolutionReadiness = getSmsCaseResolutionReadiness({
+      message: currentMessage,
+      assistanceRecords,
+      fieldVisitTasks,
+    });
+
+    if (!resolutionReadiness.ready) {
+      return NextResponse.json(
+        {
+          error:
+            resolutionReadiness.blockers[0] ??
+            "Mag-log muna ng action taken o completed field visit bago magpadala ng YES/NO confirmation.",
+          blockers: resolutionReadiness.blockers,
+          readiness: resolutionReadiness,
+        },
+        { status: 409 }
+      );
+    }
+
     const result = await requestFarmerResolutionConfirmation({
       message: currentMessage,
       provider: liveServerSmsProvider,

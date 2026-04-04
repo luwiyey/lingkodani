@@ -5,6 +5,7 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 import { getClientFirestore } from "@/lib/firebase/client";
@@ -26,5 +27,17 @@ export const liveAuditRepository: AuditRepository = {
     const db = getClientFirestore();
     await setDoc(doc(db, firebaseCollections.auditLogs, input.id), input);
     return input;
+  },
+
+  async updateAuditLog(id, updates) {
+    const db = getClientFirestore();
+    const payload = Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => value !== undefined)
+    );
+    await updateDoc(doc(db, firebaseCollections.auditLogs, id), payload);
+    return {
+      id,
+      ...payload,
+    } as AuditLog;
   },
 };

@@ -5,7 +5,10 @@ import { useMemo } from 'react';
 import { useData } from '@/context/data-context';
 import { useReportsTimeframe, type ReportsTimeframe } from '@/context/reports-timeframe-context';
 import type { Resource, SmsMessage } from '@/lib/types';
+import { getSmsCaseExceptionFlags } from '@/lib/sms-case-exceptions';
+import { getSmsCaseReportingCompleteness } from '@/lib/sms-case-quality';
 import { getEffectiveSmsCaseOutcome, isAwaitingFarmerConfirmation, isFarmerConfirmedResolution } from '@/lib/sms-case-outcomes';
+import { buildInterventionEffectiveness, buildOutbreakSeries, getCaseOperationalConfidence, inferOutbreakClusters } from '@/lib/case-intelligence';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
 import { normalizeSmsMessage } from '@/lib/sms-normalization';
 
@@ -278,7 +281,6 @@ export function useAnalytics() {
 
     const filteredSms = filterByTimeframe(smsMessages, (m) => m.timestamp, timeframe, anchorDate);
     const filteredAuditLogs = filterByTimeframe(auditLogs, (l) => l.timestamp, timeframe, anchorDate);
-    const filteredVouchers = filterByTimeframe(vouchers, (v) => v.issueDate, timeframe, anchorDate);
     const filteredOutboundMessages = filterByTimeframe(
       outboundMessages.filter((message) => message.audience !== 'official'),
       (o) => o.createdAt,
@@ -405,7 +407,10 @@ export function useAnalytics() {
       };
     });
 
-    const outbreakAlertData = issueTrendsData.map((d) => ({ date: d.date, ulat: d.MgaPeste }));
+    const outbreakAlertData = buildOutbreakSeries({
+      messages: sortedByTime,
+      farmers,
+    });
 
     const urgencyByCategory = {
       Peste: { mild: 0, moderate: 0, severe: 0 },
@@ -571,6 +576,90 @@ export function useAnalytics() {
     const humanReviewedCases = sortedByTime.filter((message) => message.status !== 'pending_approval').length;
     const farmerConfirmedResolutionCount = sortedByTime.filter((message) => isFarmerConfirmedResolution(message)).length;
     const awaitingFarmerConfirmationCount = sortedByTime.filter((message) => isAwaitingFarmerConfirmation(message)).length;
+    const reportingCompleteness = sortedByTime.map((message) => getSmsCaseReportingCompleteness(message));
+    const operationalConfidenceEntries = sortedByTime.map((message) => ({
+      message,
+      confidence: getCaseOperationalConfidence({
+        message,
+        assistanceRecords: filteredAssistanceRecords,
+        fieldVisitTasks: filteredFieldVisitTasks,
+        now: anchorDate.toISOString(),
+      }),
+    }));
+    const averageOperationalConfidence =
+      operationalConfidenceEntries.length > 0
+        ? Number(
+            (
+              operationalConfidenceEntries.reduce((acc, entry) => acc + entry.confidence.score, 0) /
+              operationalConfidenceEntries.length
+            ).toFixed(2)
+          )
+        : 0;
+    const trustedCaseCount = operationalConfidenceEntries.filter((entry) => entry.confidence.score >= 0.75).length;
+    const lowTrustCaseCount = operationalConfidenceEntries.filter((entry) => entry.confidence.score < 0.5).length;
+    const weightedResolvedCount = Number(
+      operationalConfidenceEntries
+        .filter((entry) => getEffectiveSmsCaseOutcome(entry.message) === 'resolved')
+        .reduce((acc, entry) => {
+          const completeness = getSmsCaseReportingCompleteness(entry.message).score / 100;
+          return acc + entry.confidence.score * completeness;
+        }, 0)
+        .toFixed(1)
+    );
+    const outbreakClusters = inferOutbreakClusters({
+      messages: sortedByTime,
+      farmers,
+    });
+    const interventionEffectivenessData = buildInterventionEffectiveness({
+      messages: sortedByTime,
+      assistanceRecords: filteredAssistanceRecords,
+      fieldVisitTasks: filteredFieldVisitTasks,
+      now: anchorDate.toISOString(),
+    });
+    const topInterventionEffectiveness = interventionEffectivenessData[0] ?? null;
+    const reportingReadyCases = reportingCompleteness.filter((entry) => entry.readyForReports).length;
+    const reportingPartialCases = reportingCompleteness.filter((entry) => entry.tier === 'partial').length;
+    const reportingLowConfidenceCases = reportingCompleteness.filter((entry) => entry.tier === 'low_confidence').length;
+    const messageExceptionEntries = sortedByTime.map((message) => ({
+      message,
+      flags: getSmsCaseExceptionFlags({
+        message,
+        assistanceRecords: filteredAssistanceRecords,
+        fieldVisitTasks: filteredFieldVisitTasks,
+        outboundMessages: filteredOutboundMessages,
+        now: anchorDate.toISOString(),
+      }),
+    }));
+    const exceptionCases = messageExceptionEntries.filter((entry) => entry.flags.length > 0).length;
+    const criticalExceptionCases = messageExceptionEntries.filter((entry) =>
+      entry.flags.some((flag) => flag.severity === 'high')
+    ).length;
+    const supervisorReviewCases = messageExceptionEntries.filter((entry) =>
+      entry.flags.some((flag) => flag.severity === 'high' || flag.id === 'reporting_incomplete')
+    ).length;
+    const caseExceptionCounter = new Map<string, { count: number; severity: 'low' | 'medium' | 'high' }>();
+    for (const entry of messageExceptionEntries) {
+      for (const flag of entry.flags) {
+        const existing = caseExceptionCounter.get(flag.title);
+        caseExceptionCounter.set(flag.title, {
+          count: (existing?.count ?? 0) + 1,
+          severity:
+            existing?.severity === 'high' || flag.severity === 'high'
+              ? 'high'
+              : existing?.severity === 'medium' || flag.severity === 'medium'
+                ? 'medium'
+                : 'low',
+        });
+      }
+    }
+    const caseExceptionData = [...caseExceptionCounter.entries()]
+      .sort((left, right) => right[1].count - left[1].count)
+      .slice(0, 6)
+      .map(([title, details]) => ({
+        title,
+        count: details.count,
+        severity: details.severity,
+      }));
 
     const advisoryDeliveryData = [
       { name: 'Tagumpay', value: sentCount, fill: COLOR_1 },
@@ -623,6 +712,20 @@ export function useAnalytics() {
       humanReviewedCases,
       farmerConfirmedResolutionCount,
       awaitingFarmerConfirmationCount,
+      averageOperationalConfidence,
+      trustedCaseCount,
+      lowTrustCaseCount,
+      weightedResolvedCount,
+      outbreakClusters,
+      interventionEffectivenessData,
+      topInterventionEffectiveness,
+      reportingReadyCases,
+      reportingPartialCases,
+      reportingLowConfidenceCases,
+      exceptionCases,
+      criticalExceptionCases,
+      supervisorReviewCases,
+      caseExceptionData,
       liveContextUpdatedAt,
       riskAlerts,
       completedFieldVisits,

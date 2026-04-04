@@ -4,7 +4,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle, User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, ShieldAlert, CloudCog, Tractor } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
+import { FarmerAvatar } from '@/components/farmers/farmer-avatar';
 import { useData } from '@/context/data-context';
 
 type DialogState = {
@@ -52,10 +52,12 @@ function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessa
             <CardContent className="p-4 space-y-4 flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="w-10 h-10 border-2 border-background/50 flex-shrink-0">
-                             <AvatarImage src={avatarUrl} alt={farmerName} />
-                             <AvatarFallback>{farmerName ? farmerName.charAt(0) : '?'}</AvatarFallback>
-                         </Avatar>
+                        <FarmerAvatar
+                          name={farmerName}
+                          avatarUrl={avatarUrl}
+                          className="h-10 w-10 border-2 border-background/50"
+                          fallbackClassName="bg-background text-primary"
+                        />
                          <div className="min-w-0">
                             <span className="font-semibold truncate block">{farmerName}</span>
                             <p className="text-xs text-sidebar-foreground/70">{message.phone}</p>
@@ -96,7 +98,7 @@ function SmsMessageCard({ message, onActionClick, farmers }: { message: SmsMessa
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2 sm:grid-cols-2 sm:[&>*:last-child:nth-child(odd)]:col-span-2">
                         <HoverTooltip text="Suriin at i-edit ang tugon ng AI bago ipadala.">
                             <Button variant="outline" size="sm" onClick={() => onActionClick('approve', message)} className={`bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 hover:text-primary ${cardActionButtonClassName}`}>
                                 <MessageSquare className="mr-2 h-4 w-4" />

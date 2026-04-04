@@ -3,6 +3,13 @@ import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
 import type { User, UserRole } from "@/lib/types";
 import { withResolvedUserPermissions } from "@/lib/user-permissions";
 
+const DEFAULT_SENSITIVE_ACTION_MAX_AGE_SECONDS = 15 * 60;
+
+type AuthenticateServerRequestOptions = {
+  requireRecentLogin?: boolean;
+  maxAgeSeconds?: number;
+};
+
 function getBearerToken(request: Request) {
   const authorization = request.headers.get("authorization") ?? "";
   return authorization.startsWith("Bearer ")
@@ -10,7 +17,11 @@ function getBearerToken(request: Request) {
     : "";
 }
 
-export async function authenticateServerRequest(request: Request, allowedRoles?: UserRole[]) {
+export async function authenticateServerRequest(
+  request: Request,
+  allowedRoles?: UserRole[],
+  options?: AuthenticateServerRequestOptions
+) {
   const token = getBearerToken(request);
 
   if (!token) {
@@ -46,6 +57,21 @@ export async function authenticateServerRequest(request: Request, allowedRoles?:
 
     if (allowedRoles && !allowedRoles.includes(profile.role)) {
       return { ok: false as const, status: 403, error: "This account does not have enough permissions." };
+    }
+
+    if (options?.requireRecentLogin) {
+      const authTime = typeof decoded.auth_time === "number" ? decoded.auth_time : 0;
+      const maxAgeSeconds = options.maxAgeSeconds ?? DEFAULT_SENSITIVE_ACTION_MAX_AGE_SECONDS;
+      const ageSeconds = Math.floor(Date.now() / 1000) - authTime;
+
+      if (!authTime || ageSeconds > maxAgeSeconds) {
+        return {
+          ok: false as const,
+          status: 428,
+          code: "step_up_required",
+          error: "Kailangan munang i-verify muli ang password bago ituloy ang sensitibong aksyon na ito.",
+        };
+      }
     }
 
     return {

@@ -22,4 +22,21 @@ export const demoAuditRepository: AuditRepository = {
     getStore().unshift(input);
     return input;
   },
+
+  async updateAuditLog(id, updates) {
+    const store = getStore();
+    const index = store.findIndex((entry) => entry.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const next = {
+      ...store[index],
+      ...updates,
+    };
+
+    store[index] = next;
+    return next;
+  },
 };

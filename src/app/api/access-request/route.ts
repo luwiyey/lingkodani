@@ -22,6 +22,10 @@ function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizePhone(value: unknown) {
+  return typeof value === "string" ? value.replace(/\D/g, "") : "";
+}
+
 function normalizeSource(value: unknown): AccessRequest["source"] {
   if (value === "login" || value === "reset_password" || value === "public_page") {
     return value;
@@ -71,18 +75,21 @@ async function findProvisionedUser(email: string) {
   }
 }
 
-async function findLatestAccessRequest(email: string) {
+async function findMatchingAccessRequests(email: string, normalizedPhone: string) {
   const db = getServerFirestore();
-  const snapshot = await db
-    .collection(firebaseCollections.accessRequests)
-    .where("email", "==", email)
-    .get();
+  const snapshot = await db.collection(firebaseCollections.accessRequests).get();
 
-  const requests = snapshot.docs
+  return snapshot.docs
     .map((item) => item.data() as AccessRequest)
-    .sort((left, right) => new Date(right.requestedAt).getTime() - new Date(left.requestedAt).getTime());
-
-  return requests[0] ?? null;
+    .filter((request) => {
+      const requestPhone = normalizePhone(request.phone ?? request.normalizedPhone ?? "");
+      return request.email === email || (normalizedPhone && requestPhone === normalizedPhone);
+    })
+    .sort((left, right) => {
+      const rightTimestamp = new Date(right.lastSubmittedAt ?? right.requestedAt).getTime();
+      const leftTimestamp = new Date(left.lastSubmittedAt ?? left.requestedAt).getTime();
+      return rightTimestamp - leftTimestamp;
+    });
 }
 
 export async function POST(request: Request) {
@@ -91,6 +98,7 @@ export async function POST(request: Request) {
     const email = normalizeEmail(body.email);
     const name = normalizeText(body.name);
     const phone = normalizeText(body.phone);
+    const normalizedPhone = normalizePhone(body.phone);
     const barangay = normalizeText(body.barangay);
     const title = normalizeText(body.title);
     const message = normalizeText(body.message);
@@ -115,13 +123,50 @@ export async function POST(request: Request) {
       );
     }
 
-    const latestRequest = await findLatestAccessRequest(email);
+    const matchingRequests = await findMatchingAccessRequests(email, normalizedPhone);
+    const latestRequest = matchingRequests[0] ?? null;
 
     if (latestRequest && ["pending_review", "reviewed"].includes(latestRequest.status)) {
+      const db = getServerFirestore();
+      const timestamp = new Date().toISOString();
+      const existingSources = Array.isArray(latestRequest.submissionSources)
+        ? latestRequest.submissionSources
+        : latestRequest.source
+          ? [latestRequest.source]
+          : [];
+      const mergedSources = Array.from(
+        new Set([...existingSources, source].filter((item): item is NonNullable<AccessRequest["source"]> => Boolean(item)))
+      );
+      const nextRequest: AccessRequest = {
+        ...latestRequest,
+        name: name || latestRequest.name,
+        phone: phone || latestRequest.phone,
+        normalizedPhone: normalizedPhone || latestRequest.normalizedPhone,
+        barangay: barangay || latestRequest.barangay,
+        title: title || latestRequest.title,
+        message: message || latestRequest.message,
+        lastSubmittedAt: timestamp,
+        submissionCount: (latestRequest.submissionCount ?? 1) + 1,
+        submissionSources: mergedSources,
+      };
+
+      await db.collection(firebaseCollections.accessRequests).doc(nextRequest.id).set(compactUndefined(nextRequest), {
+        merge: true,
+      });
+
+      const auditLog = createAuditEntry({
+        id: `AUD${Date.now()}-${nextRequest.id}`,
+        user: "public-access-request",
+        action: "MERGE_ACCESS_REQUEST",
+        details: `${nextRequest.name} (${nextRequest.email}) muling nagsumite ng access request at in-merge sa existing queue item.`,
+      });
+      await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
+
       return NextResponse.json({
         submitted: true,
         duplicatePending: true,
-        request: latestRequest,
+        merged: true,
+        request: nextRequest,
       });
     }
 
@@ -132,12 +177,16 @@ export async function POST(request: Request) {
       email,
       name,
       phone: phone || undefined,
+      normalizedPhone: normalizedPhone || undefined,
       barangay: barangay || undefined,
       title: title || undefined,
       message: message || undefined,
       source,
       status: "pending_review",
       requestedAt: timestamp,
+      lastSubmittedAt: timestamp,
+      submissionCount: 1,
+      submissionSources: source ? [source] : [],
     };
 
     await db.collection(firebaseCollections.accessRequests).doc(nextRequest.id).set(compactUndefined(nextRequest));
@@ -172,16 +221,28 @@ export async function GET(request: Request) {
   const snapshot = await db.collection(firebaseCollections.accessRequests).get();
   const requests = snapshot.docs
     .map((item) => item.data() as AccessRequest)
-    .sort((left, right) => new Date(right.requestedAt).getTime() - new Date(left.requestedAt).getTime());
+    .sort(
+      (left, right) =>
+        new Date(right.lastSubmittedAt ?? right.requestedAt).getTime() -
+        new Date(left.lastSubmittedAt ?? left.requestedAt).getTime()
+    );
 
   return NextResponse.json({ requests });
 }
 
 export async function PATCH(request: Request) {
-  const auth = await authenticateServerRequest(request, ["developer"]);
+  const auth = await authenticateServerRequest(request, ["developer"], {
+    requireRecentLogin: true,
+  });
 
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return NextResponse.json(
+      {
+        error: auth.error,
+        code: "code" in auth ? auth.code : undefined,
+      },
+      { status: auth.status }
+    );
   }
 
   try {

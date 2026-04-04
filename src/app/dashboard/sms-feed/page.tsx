@@ -4,7 +4,6 @@
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, Sparkles, MessageSquare, Send, Wrench, Sprout, FilePen, ShieldAlert, CloudCog, Tractor } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,10 +23,13 @@ import { useData } from '@/context/data-context';
 import { useAuth } from '@/context/auth-context';
 import { isLiveMode } from '@/lib/config/app-mode';
 import { canUseLiveSmsSimulation } from '@/lib/access-control';
+import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { findBestMatchingLexiconRule, findRelevantTrainingExamples } from '@/lib/sms-teaching';
+import { FarmerAvatar } from '@/components/farmers/farmer-avatar';
 import { cn } from '@/lib/utils';
-import { findPotentialDuplicateCase } from '@/lib/sms-case-linking';
+import { findPotentialDuplicateCase, getPotentialDuplicateCases } from '@/lib/sms-case-linking';
 import { isAwaitingFarmerConfirmation } from '@/lib/sms-case-outcomes';
+import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 
 type DialogState = {
   type: 'approve' | 'manual' | 'find' | null;
@@ -65,6 +67,65 @@ const infoBadgeClassName = 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sk
 const warningBadgeClassName = 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100';
 const successBadgeClassName = 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100';
 const destructiveBadgeClassName = 'border-red-200 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-100';
+
+function getTriageUncertaintyLabel(value: SmsMessage['triageUncertainty']) {
+  switch (value) {
+    case 'clear':
+      return 'Malinaw';
+    case 'probable':
+      return 'May kaunting duda';
+    case 'ambiguous':
+      return 'May halong concern';
+    case 'needs_severity':
+      return 'Kulang ang lawak';
+    case 'needs_location':
+      return 'Kulang ang lokasyon';
+    case 'needs_crop_stage':
+      return 'Kulang ang crop stage';
+    case 'needs_symptom_details':
+      return 'Kulang ang sintomas';
+    case 'needs_identity':
+      return 'Kulang ang identity';
+    case 'insufficient_details':
+      return 'Kulang ang detalye';
+    default:
+      return null;
+  }
+}
+
+function getSentimentLabel(value: SmsMessage['sentiment']) {
+  switch (value) {
+    case 'distressed':
+      return 'Matinding pag-aalala';
+    case 'frustrated':
+      return 'Mukhang frustrated';
+    case 'concerned':
+      return 'Nag-aalala';
+    case 'neutral':
+      return 'Neutral';
+    default:
+      return null;
+  }
+}
+
+function getCropStageLabel(value: SmsMessage['cropStage']) {
+  switch (value) {
+    case 'seedling':
+      return 'Punla';
+    case 'vegetative':
+      return 'Lumalagong halaman';
+    case 'flowering':
+      return 'Namumulaklak';
+    case 'fruiting':
+      return 'Nagbubunga';
+    case 'pre_harvest':
+      return 'Malapit anihin';
+    case 'harvest_ready':
+      return 'Handa nang anihin';
+    default:
+      return null;
+  }
+}
 
 function getRiskBadgeClassName(flag: SmsMessage['safetyFlag']) {
   if (flag === 'High') {
@@ -194,6 +255,7 @@ function SmsMessageCard({
   matchedTeachingPhrase,
   similarReviewedExamplesCount = 0,
   onConfirmResolution,
+  onOpenThreadReview,
 }: {
   message: SmsMessage;
   onActionClick: (type: DialogState['type'], message: SmsMessage) => void;
@@ -207,6 +269,7 @@ function SmsMessageCard({
   matchedTeachingPhrase?: string;
   similarReviewedExamplesCount?: number;
   onConfirmResolution: (message: SmsMessage, confirmed: boolean) => void;
+  onOpenThreadReview: (message: SmsMessage) => void;
 }) {
     const [isClient, setIsClient] = React.useState(false);
     React.useEffect(() => { setIsClient(true); }, []);
@@ -230,10 +293,12 @@ function SmsMessageCard({
             <CardContent className="p-4 space-y-4 flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="w-10 h-10 border-2 border-background/50 flex-shrink-0">
-                             <AvatarImage src={avatarUrl} alt={farmerName} />
-                             <AvatarFallback>{farmerName ? farmerName.charAt(0) : '?'}</AvatarFallback>
-                         </Avatar>
+                        <FarmerAvatar
+                          name={farmerName}
+                          avatarUrl={avatarUrl}
+                          className="h-10 w-10 border-2 border-background/50"
+                          fallbackClassName="bg-background text-primary"
+                        />
                          <div className="min-w-0">
                             <span className="font-semibold truncate block">{farmerName}</span>
                             <p className="text-xs text-sidebar-foreground/70">{message.phone}</p>
@@ -272,6 +337,11 @@ function SmsMessageCard({
                         <Badge variant="outline" className={neutralBadgeClassName}>
                           Source: {getAnalysisSourceLabel(message.analysisSource)}
                         </Badge>
+                        {message.sourceProvider === 'simulation' && (
+                          <Badge variant="outline" className={infoBadgeClassName}>
+                            Test SMS
+                          </Badge>
+                        )}
                         {message.caseStatus && <Badge variant="outline" className={neutralBadgeClassName}>Case: {message.caseStatus}</Badge>}
                         <CaseOutcomeBadge message={message} />
                         {message.assignedTo && <Badge variant="outline" className={neutralBadgeClassName}>Owner: {message.assignedTo}</Badge>}
@@ -280,6 +350,21 @@ function SmsMessageCard({
                             Registration required
                           </Badge>
                         )}
+                        {message.triageUncertainty && getTriageUncertaintyLabel(message.triageUncertainty) ? (
+                          <Badge variant="outline" className={warningBadgeClassName}>
+                            {getTriageUncertaintyLabel(message.triageUncertainty)}
+                          </Badge>
+                        ) : null}
+                        {message.sentiment && getSentimentLabel(message.sentiment) ? (
+                          <Badge variant="outline" className={neutralBadgeClassName}>
+                            {getSentimentLabel(message.sentiment)}
+                          </Badge>
+                        ) : null}
+                        {message.cropStage && getCropStageLabel(message.cropStage) ? (
+                          <Badge variant="outline" className={neutralBadgeClassName}>
+                            Stage: {getCropStageLabel(message.cropStage)}
+                          </Badge>
+                        ) : null}
                         {message.identityDetailsNeeded && !message.registrationRequired && (
                           <Badge variant="outline" className={infoBadgeClassName}>
                             Identity pending
@@ -306,6 +391,42 @@ function SmsMessageCard({
                       <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-slate-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-50">
                         <p className="font-semibold text-amber-900 dark:text-amber-100">Suggested clarification</p>
                         <p className="mt-1 leading-relaxed">{message.clarificationQuestion}</p>
+                      </div>
+                    ) : null}
+                    {message.triageNextQuestion && !message.clarificationNeeded ? (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-sidebar-foreground/85">
+                        <p className="font-semibold text-primary">Best next question</p>
+                        <p className="mt-1 leading-relaxed">{message.triageNextQuestion}</p>
+                      </div>
+                    ) : null}
+                    {message.triageMissingFields && message.triageMissingFields.length > 0 ? (
+                      <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground">Kulang pang detalye</p>
+                        <p className="mt-1">{message.triageMissingFields.join(", ")}</p>
+                      </div>
+                    ) : null}
+                    {message.multiConcernDetected && message.multiConcernReason ? (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-50">
+                        <p className="font-semibold">Mukhang may higit sa isang concern</p>
+                        <p className="mt-1 leading-relaxed">{message.multiConcernReason}</p>
+                      </div>
+                    ) : null}
+                    {message.normalizationUnknownTokens && message.normalizationUnknownTokens.length > 0 ? (
+                      <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground">Mga salitang kailangan pang ituro sa system</p>
+                        <p className="mt-1">{message.normalizationUnknownTokens.join(", ")}</p>
+                      </div>
+                    ) : null}
+                    {message.multiConcernDetected || message.possibleDuplicateOfCaseId || (typeof message.threadConfidence === 'number' && message.threadConfidence < 0.7) ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={cardActionButtonClassName}
+                          onClick={() => onOpenThreadReview(message)}
+                        >
+                          Review thread
+                        </Button>
                       </div>
                     ) : null}
                     {message.analysisSource && message.analysisSource !== 'ai' ? (
@@ -354,7 +475,7 @@ function SmsMessageCard({
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2 sm:grid-cols-2 sm:[&>*:last-child:nth-child(odd)]:col-span-2">
                         {!message.assignedTo && message.caseStatus !== 'closed' ? (
                           <Button variant="outline" size="sm" onClick={() => onAssignToMe(message)} className={`bg-sidebar-accent hover:bg-sidebar-accent/80 ${cardActionButtonClassName}`}>
                             I-assign sa akin
@@ -412,19 +533,22 @@ function SmsMessageCard({
 
 function SmsFeedPageContent() {
     const router = useRouter();
-    const { smsMessages, outboundMessages, farmers, resources, systemSettings, smsTrainingExamples, addInboundSms, updateSmsMessage, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, webhookBridgeStatus } = useData();
-    const { currentUserProfile } = useAuth();
+    const { smsMessages, outboundMessages, farmers, resources, systemSettings, smsTrainingExamples, assistanceRecords, fieldVisitTasks, addInboundSms, addSmsPreview, updateSmsMessage, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, confirmSmsThread, splitSmsThread, mergeSmsThreads, retryOutboundMessage, webhookBridgeStatus } = useData();
+    const { currentUser, currentUserProfile } = useAuth();
+    const { capabilities } = useRuntimeCapabilities();
     const searchParams = useSearchParams();
     const [dialogState, setDialogState] = React.useState<DialogState>({ type: null, message: null });
     const [reviewDraft, setReviewDraft] = React.useState<ReviewDraft | null>(null);
     const [pendingKnowledgeReplyDraft, setPendingKnowledgeReplyDraft] = React.useState<KnowledgeReplyDraft | null>(null);
     const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
+    const [threadReviewMessage, setThreadReviewMessage] = React.useState<SmsMessage | null>(null);
     const [simulatedPhone, setSimulatedPhone] = React.useState('+639171234567');
     const [simulatedMessage, setSimulatedMessage] = React.useState('Marami pong uod sa palay namin at mabilis dumami ngayong umaga.');
     const { toast, dismiss } = useToast();
     const focusedSmsId = searchParams.get('sms');
     const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
-    const showSimulationTool = !isLiveMode || canUseLiveSmsSimulation(currentUserProfile);
+    const showSimulationTool = !isLiveMode || (capabilities.liveSmsTestModeEnabled && canUseLiveSmsSimulation(currentUserProfile));
+    const liveSmsTestModeLocked = isLiveMode && canUseLiveSmsSimulation(currentUserProfile) && !capabilities.liveSmsTestModeEnabled;
 
     const latestOutboundByMessage = React.useMemo(() => {
       const map = new Map<string, OutboundMessage>();
@@ -474,6 +598,24 @@ function SmsFeedPageContent() {
       }
       return map;
     }, [smsMessages]);
+    const threadReviewCandidates = React.useMemo(
+      () =>
+        threadReviewMessage
+          ? getPotentialDuplicateCases(threadReviewMessage, smsMessages)
+          : [],
+      [smsMessages, threadReviewMessage]
+    );
+    const outcomeReadiness = React.useMemo(
+      () =>
+        outcomeMessage
+          ? getSmsCaseResolutionReadiness({
+              message: outcomeMessage,
+              assistanceRecords,
+              fieldVisitTasks,
+            })
+          : null,
+      [assistanceRecords, fieldVisitTasks, outcomeMessage]
+    );
     
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
@@ -498,6 +640,64 @@ function SmsFeedPageContent() {
     const closeDialog = () => {
         setDialogState({ type: null, message: null });
         setReviewDraft(null);
+    };
+
+    const handleOpenThreadReview = (message: SmsMessage) => {
+      setThreadReviewMessage(message);
+    };
+
+    const handleConfirmThreadReview = async () => {
+      if (!threadReviewMessage) {
+        return;
+      }
+
+      const ok = await confirmSmsThread(threadReviewMessage.id);
+      toast({
+        title: ok ? 'Nakumpirma ang thread' : 'Hindi nakumpirma ang thread',
+        description: ok
+          ? `Minarkahang tama ang kasalukuyang thread para kay ${threadReviewMessage.farmerName}.`
+          : 'Subukang muli pagkatapos ng ilang sandali.',
+        variant: ok ? 'default' : 'destructive',
+      });
+      if (ok) {
+        setThreadReviewMessage(null);
+      }
+    };
+
+    const handleSplitThreadReview = async () => {
+      if (!threadReviewMessage) {
+        return;
+      }
+
+      const ok = await splitSmsThread(threadReviewMessage.id);
+      toast({
+        title: ok ? 'Nahiwalay ang thread' : 'Hindi nahiwalay ang thread',
+        description: ok
+          ? `Ginawan ng bagong case thread ang mensahe ni ${threadReviewMessage.farmerName}.`
+          : 'Subukang muli pagkatapos ng ilang sandali.',
+        variant: ok ? 'default' : 'destructive',
+      });
+      if (ok) {
+        setThreadReviewMessage(null);
+      }
+    };
+
+    const handleMergeThreadReview = async (targetMessageId: string) => {
+      if (!threadReviewMessage) {
+        return;
+      }
+
+      const ok = await mergeSmsThreads(threadReviewMessage.id, targetMessageId);
+      toast({
+        title: ok ? 'Na-merge ang thread' : 'Hindi na-merge ang thread',
+        description: ok
+          ? `Na-merge ang kasalukuyang thread sa piniling case para kay ${threadReviewMessage.farmerName}.`
+          : 'Subukang muli pagkatapos ng ilang sandali.',
+        variant: ok ? 'default' : 'destructive',
+      });
+      if (ok) {
+        setThreadReviewMessage(null);
+      }
     };
     
     const handleAction = (
@@ -524,32 +724,94 @@ function SmsFeedPageContent() {
             return;
         }
 
-        const response = await fetch('/api/mock/inbound-sms', {
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        };
+
+        if (isLiveMode) {
+            const idToken = await currentUser?.getIdToken();
+
+            if (!idToken) {
+                toast({
+                    title: "Walang live developer session",
+                    description: "Mag-sign in muna sa live developer account bago gumamit ng safe SMS test mode.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            headers.Authorization = `Bearer ${idToken}`;
+        }
+
+        const response = await fetch(isLiveMode ? '/api/system/test-inbound-sms' : '/api/mock/inbound-sms', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
                 phone: simulatedPhone.trim(),
                 message: simulatedMessage.trim(),
             }),
         });
 
+        const payload = await response.json().catch(() => ({}));
+
         if (!response.ok) {
             toast({
                 title: "Hindi naisagawa ang simulation",
-                description: "Nagkaroon ng problema sa SMS simulation request.",
+                description: typeof payload.error === 'string'
+                  ? payload.error
+                  : "Nagkaroon ng problema sa SMS simulation request.",
                 variant: "destructive",
             });
             return;
         }
 
-        const payload = await response.json();
+        if (isLiveMode) {
+            if (payload.ignored) {
+                toast({
+                    title: "Hindi ipinakita ang Test SMS",
+                    description: typeof payload.reason === 'string'
+                      ? payload.reason
+                      : "Na-detect ito bilang carrier o service message kaya hindi isinama sa preview.",
+                });
+
+                setSimulatedMessage('');
+                return;
+            }
+
+            if (!payload.message) {
+                toast({
+                    title: "Walang nabuong preview",
+                    description: "Subukang muli gamit ang ibang test number o mensahe.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            addSmsPreview(payload.message as SmsMessage);
+            toast({
+                title: "Naidagdag ang Test SMS",
+                description: "Lumitaw ang live SMS preview sa kasalukuyang session lang. Hindi ito sine-save sa live records o nagpapadala ng totoong outbound SMS.",
+            });
+
+            setSimulatedMessage('');
+            return;
+        }
+
         const inbound = addInboundSms({
             phone: payload.phone,
             message: payload.message,
             analysis: payload.analysis,
         });
+
+        if (!inbound) {
+            toast({
+                title: "Hindi ipinakita ang SMS",
+                description: "Na-detect ito bilang carrier o service message kaya hindi isinama sa app.",
+            });
+
+            setSimulatedMessage('');
+            return;
+        }
 
         toast({
             title: "Na-simulate ang SMS",
@@ -577,7 +839,19 @@ function SmsFeedPageContent() {
         return;
       }
 
-      updateSmsCaseOutcome(outcomeMessage.id, outcomeStatus, summary);
+      const updated = updateSmsCaseOutcome(outcomeMessage.id, outcomeStatus, summary);
+
+      if (!updated) {
+        toast({
+          title: "Kulang pa ang closeout evidence",
+          description:
+            outcomeReadiness?.blockers[0] ??
+            "Mag-log muna ng actual action taken o completed field visit bago i-resolve ang high-risk case.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Na-save ang outcome",
         description: `Na-update na ang case outcome ni ${outcomeMessage.farmerName}.`,
@@ -734,6 +1008,16 @@ function SmsFeedPageContent() {
           </CardContent>
         </Card>
       ) : null}
+      {liveSmsTestModeLocked ? (
+        <Card className="mb-6 border-amber-300/40 bg-amber-50/70">
+          <CardHeader>
+            <CardTitle className="text-base">Naka-lock ang live SMS test mode</CardTitle>
+            <CardDescription>
+              Available ito para sa developer accounts, pero kailangan munang i-enable ang live test flag sa server bago lumabas ang safe preview tool.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
       {showSimulationTool ? (
         <Card className="mb-6 border-primary/15">
           <CardHeader className="border-b border-border/70 bg-[linear-gradient(180deg,#f8fbf8_0%,#ffffff_100%)]">
@@ -744,7 +1028,9 @@ function SmsFeedPageContent() {
               <div className="min-w-0 space-y-1">
                 <CardTitle>Simulate Farmer SMS</CardTitle>
                 <CardDescription>
-                  Gamitin ang tool na ito upang subukan ang pagpasok ng SMS report mula sa magsasaka.
+                  {isLiveMode
+                    ? 'Developer-only safe preview ito para sa live SMS flow. Lalabas ito bilang Test SMS sa kasalukuyang session lang.'
+                    : 'Gamitin ang tool na ito upang subukan ang pagpasok ng SMS report mula sa magsasaka.'}
                 </CardDescription>
               </div>
             </div>
@@ -813,6 +1099,7 @@ function SmsFeedPageContent() {
                 matchedTeachingPhrase={matchedTeachingPhraseByMessage.get(message.id)}
                 similarReviewedExamplesCount={reviewedExampleCountByMessage.get(message.id) ?? 0}
                 onConfirmResolution={handleConfirmResolution}
+                onOpenThreadReview={handleOpenThreadReview}
               />
           ))}
       </div>
@@ -911,6 +1198,84 @@ function SmsFeedPageContent() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={Boolean(threadReviewMessage)} onOpenChange={(open) => {
+        if (!open) {
+          setThreadReviewMessage(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Review ng SMS Thread</DialogTitle>
+            <DialogDescription>
+              Suriin kung continuation lang ba ito ng naunang case, dapat bang i-merge, o dapat manatiling hiwalay.
+            </DialogDescription>
+          </DialogHeader>
+          {threadReviewMessage ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/20 p-4">
+                <p className="text-sm font-medium text-foreground">{threadReviewMessage.farmerName}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{threadReviewMessage.phone}</p>
+                <p className="mt-3 text-sm leading-relaxed">{threadReviewMessage.message}</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <Badge variant="outline">Current case: {threadReviewMessage.caseId ?? threadReviewMessage.id}</Badge>
+                  <Badge variant="outline">Intent: {threadReviewMessage.parsedIntent}</Badge>
+                  {typeof threadReviewMessage.threadConfidence === 'number' ? (
+                    <Badge variant="outline">Thread conf: {(threadReviewMessage.threadConfidence * 100).toFixed(0)}%</Badge>
+                  ) : null}
+                  {threadReviewMessage.multiConcernDetected ? (
+                    <Badge variant="outline">May halong concern</Badge>
+                  ) : null}
+                </div>
+                {threadReviewMessage.multiConcernReason ? (
+                  <p className="mt-3 text-xs text-muted-foreground">{threadReviewMessage.multiConcernReason}</p>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={handleConfirmThreadReview}>
+                  Panatilihing hiwalay
+                </Button>
+                <Button variant="outline" onClick={handleSplitThreadReview}>
+                  Gumawa ng bagong case
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-foreground">Suggested merge candidates</p>
+                {threadReviewCandidates.length > 0 ? (
+                  threadReviewCandidates.map((candidate) => (
+                    <div key={candidate.message.id} className="rounded-lg border p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-foreground">{candidate.message.farmerName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Case {candidate.message.caseId ?? candidate.message.id} · score {(candidate.score * 100).toFixed(0)}%
+                          </p>
+                        </div>
+                        <Button size="sm" onClick={() => void handleMergeThreadReview(candidate.message.id)}>
+                          I-merge dito
+                        </Button>
+                      </div>
+                      <p className="mt-3 text-sm leading-relaxed">{candidate.message.message}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">{candidate.reason}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                    Wala pang malinaw na merge candidate. Puwede mong panatilihing hiwalay ang case o hatiin ito sa bagong case ID.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">Isara</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <CaseOutcomeDialog
         open={Boolean(outcomeMessage)}
         onOpenChange={(open) => {
@@ -921,6 +1286,13 @@ function SmsFeedPageContent() {
         farmerName={outcomeMessage?.farmerName}
         initialStatus={outcomeMessage?.caseOutcomeStatus}
         initialSummary={outcomeMessage?.caseOutcomeSummary}
+        resolutionReady={outcomeReadiness?.ready ?? true}
+        resolutionBlockers={outcomeReadiness?.blockers ?? []}
+        resolutionEvidenceSummary={
+          outcomeReadiness
+            ? `Assistance: ${outcomeReadiness.assistanceCount}, completed field visits: ${outcomeReadiness.completedVisitCount}`
+            : undefined
+        }
         onSubmit={handleSaveOutcome}
       />
     </>

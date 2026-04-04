@@ -16,7 +16,13 @@ function hasTokenOverlap(left: string, right: string) {
   return leftTokens.some((token) => rightTokens.has(token));
 }
 
-export function findPotentialDuplicateCase(
+export type PotentialDuplicateCase = {
+  message: SmsMessage;
+  score: number;
+  reason: string;
+};
+
+export function getPotentialDuplicateCases(
   message: SmsMessage,
   allMessages: SmsMessage[]
 ) {
@@ -31,16 +37,79 @@ export function findPotentialDuplicateCase(
       return timeDistanceHours <= 72;
     })
     .filter((candidate) => candidate.caseStatus !== "closed" || candidate.caseOutcomeStatus === "resolved")
-    .filter((candidate) => {
-      if (candidate.parsedIntent === message.parsedIntent) {
-        return true;
+    .map((candidate) => {
+      const sameIntent = candidate.parsedIntent === message.parsedIntent;
+      const overlap = hasTokenOverlap(message.message, candidate.message);
+      const sameAssignedOwner = Boolean(candidate.assignedTo && candidate.assignedTo === message.assignedTo);
+      const sharedCaseId = Boolean(candidate.caseId && message.caseId && candidate.caseId === message.caseId);
+      const timeDistanceHours =
+        Math.abs(messageTime - new Date(candidate.timestamp).getTime()) / (1000 * 60 * 60);
+      let score = 0;
+      const reasons: string[] = [];
+
+      if (candidate.phone === message.phone) {
+        score += 0.28;
+        reasons.push("parehong numero");
       }
 
-      return hasTokenOverlap(message.message, candidate.message);
+      if (candidate.farmerId === message.farmerId) {
+        score += 0.18;
+        reasons.push("parehong farmer");
+      }
+
+      if (sameIntent) {
+        score += 0.2;
+        reasons.push("parehong intent");
+      }
+
+      if (overlap) {
+        score += 0.18;
+        reasons.push("magkahawig ang sintomas o keyword");
+      }
+
+      if (sharedCaseId) {
+        score += 0.22;
+        reasons.push("parehong case ID");
+      }
+
+      if (sameAssignedOwner) {
+        score += 0.05;
+        reasons.push("parehong assignee");
+      }
+
+      if (timeDistanceHours <= 24) {
+        score += 0.12;
+      } else if (timeDistanceHours <= 48) {
+        score += 0.06;
+      }
+
+      if (!sameIntent && !overlap) {
+        score -= 0.12;
+      }
+
+      return {
+        message: candidate,
+        score,
+        reason:
+          reasons.length > 0
+            ? `Review candidate dahil sa ${reasons.join(", ")}.`
+            : "Review candidate mula sa parehong farmer context.",
+      } satisfies PotentialDuplicateCase;
     })
-    .sort(
-      (left, right) =>
-        new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()
-    )[0] ?? null;
+    .filter((candidate) => candidate.score >= 0.25)
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+
+      return new Date(right.message.timestamp).getTime() - new Date(left.message.timestamp).getTime();
+    });
+}
+
+export function findPotentialDuplicateCase(
+  message: SmsMessage,
+  allMessages: SmsMessage[]
+) {
+  return getPotentialDuplicateCases(message, allMessages)[0]?.message ?? null;
 }
 

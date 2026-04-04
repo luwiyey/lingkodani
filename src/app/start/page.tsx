@@ -78,6 +78,7 @@ const workspaceOptions = [
 ] as const;
 
 type PreferredWorkspaceOption = (typeof workspaceOptions)[number]["id"];
+type StartFlowStep = 1 | 2 | 3;
 type ApplicationNotice = {
   title: string;
   text: string;
@@ -164,6 +165,7 @@ export default function StartPage() {
   const [workspaceTouched, setWorkspaceTouched] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [activeStep, setActiveStep] = useState<StartFlowStep>(1);
   const workspaceRecommendation = getWorkspaceRecommendation(age, yearsInService);
   const recommendedWorkspace = workspaceRecommendation?.preferredWorkspace ?? null;
   const recommendedWorkspaceLabel =
@@ -211,6 +213,17 @@ export default function StartPage() {
       setPreferredWorkspace(workspaceRecommendation.preferredWorkspace);
     }
   }, [workspaceRecommendation, workspaceTouched]);
+
+  useEffect(() => {
+    if (!selectedApplication) {
+      setActiveStep(1);
+      return;
+    }
+
+    if (!hasProfileInputs && activeStep === 3) {
+      setActiveStep(2);
+    }
+  }, [activeStep, hasProfileInputs, selectedApplication]);
 
   const handleSurveySubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -297,39 +310,52 @@ export default function StartPage() {
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               {
+                id: 1 as const,
                 step: "Step 1",
                 label: "Application",
-                state: selectedApplication ? "done" : "active",
               },
               {
+                id: 2 as const,
                 step: "Step 2",
                 label: "Role & Experience",
-                state: hasProfileInputs ? "done" : selectedApplication ? "active" : "upcoming",
               },
               {
+                id: 3 as const,
                 step: "Step 3",
                 label: "Workspace",
-                state: hasProfileInputs ? "active" : "upcoming",
               },
             ].map((item) => (
               <div
                 key={item.label}
+                aria-current={activeStep === item.id ? "step" : undefined}
                 className={cn(
                   "rounded-[calc(var(--radius)+4px)] border px-4 py-3 shadow-none transition-colors duration-150 ease-out",
-                  item.state === "done" && "border-primary/15 bg-primary/5",
-                  item.state === "active" && "border-primary/20 bg-[linear-gradient(180deg,#fbfdfb_0%,#f4f9f5_100%)]",
-                  item.state === "upcoming" && "border-slate-200 bg-white"
+                  activeStep === item.id
+                    ? "border-primary/25 bg-[linear-gradient(180deg,#fbfdfb_0%,#f1f8f3_100%)]"
+                    : "border-slate-200 bg-white"
                 )}
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <p
+                  className={cn(
+                    "text-[11px] font-semibold uppercase tracking-[0.14em]",
+                    activeStep === item.id ? "text-primary" : "text-slate-500"
+                  )}
+                >
                   {item.step}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">{item.label}</p>
+                <p className={cn("mt-1 text-sm font-semibold", activeStep === item.id ? "text-primary" : "text-slate-900")}>
+                  {item.label}
+                </p>
               </div>
             ))}
           </div>
 
-          <div className="space-y-4 pt-1">
+          <div
+            className="space-y-4 pt-1"
+            onMouseEnter={() => setActiveStep(1)}
+            onFocusCapture={() => setActiveStep(1)}
+            onClickCapture={() => setActiveStep(1)}
+          >
             <div className="space-y-1">
               <Label className="block text-base font-semibold">1. Piliin ang application</Label>
               <p className="text-sm text-slate-600">
@@ -394,10 +420,16 @@ export default function StartPage() {
           </div>
 
           {selectedApplication ? (
-            <form onSubmit={handleSurveySubmit} className="space-y-5 rounded-[calc(var(--radius)+10px)] border border-slate-200 bg-[linear-gradient(180deg,#fbfcfb_0%,#f6f9f6_100%)] p-6">
+            <form
+              onSubmit={handleSurveySubmit}
+              onMouseEnter={() => setActiveStep(2)}
+              onFocusCapture={() => setActiveStep(2)}
+              onClickCapture={() => setActiveStep(2)}
+              className="space-y-5 rounded-[calc(var(--radius)+10px)] border border-slate-200 bg-[linear-gradient(180deg,#fbfcfb_0%,#f6f9f6_100%)] p-6"
+            >
               <div className="space-y-1 pb-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-                  Step 2 · Role & Experience
+                  Step 2 - Role & Experience
                 </p>
                 <p className="text-sm text-slate-600">
                   Ibahagi ang iyong posisyon, edad, at tagal sa serbisyo para makapagrekomenda ang system ng pinakamagandang workspace.
@@ -493,48 +525,54 @@ export default function StartPage() {
                 </div>
                   ) : null}
 
-                  <div className="space-y-3.5 border-t border-slate-200 pt-5">
-                <div className="space-y-1">
-                  <Label className="block text-base font-semibold">
-                    5. Ano ang mas gusto mong workspace?
-                  </Label>
-                  <p className="text-sm text-slate-600">
-                    Step 3 · Piliin kung simple ang gusto mong galaw o detalyadong operational view ang mas bagay sa iyo.
-                  </p>
-                </div>
-                <RadioGroup
-                  value={preferredWorkspace}
-                  onValueChange={(value) => {
-                    setWorkspaceTouched(true);
-                    setPreferredWorkspace(value as "simple" | "detailed");
-                  }}
-                  className="grid gap-3"
-                >
-                  {workspaceOptions.map((option) => (
-                    <label
-                      key={option.id}
-                      className={cn(
-                        "flex cursor-pointer items-start gap-4 rounded-[calc(var(--radius)+6px)] border bg-white p-4 shadow-sm transition-colors duration-150 ease-out",
-                        preferredWorkspace === option.id
-                          ? "border-primary/35 bg-[linear-gradient(180deg,#f7fbf8_0%,#eef7f1_100%)] ring-1 ring-primary/10"
-                          : "border-slate-200 hover:border-primary/15 hover:bg-[#fbfcfb]"
-                      )}
+                  <div
+                    className="space-y-3.5 border-t border-slate-200 pt-5"
+                    onMouseEnter={() => setActiveStep(3)}
+                    onFocusCapture={() => setActiveStep(3)}
+                    onClickCapture={() => setActiveStep(3)}
+                  >
+                    <div className="space-y-1">
+                      <Label className="block text-base font-semibold">
+                        5. Ano ang mas gusto mong workspace?
+                      </Label>
+                      <p className="text-sm text-slate-600">
+                        Step 3 - Piliin kung simple ang gusto mong galaw o detalyadong operational view ang mas bagay sa iyo.
+                      </p>
+                    </div>
+                    <RadioGroup
+                      value={preferredWorkspace}
+                      onValueChange={(value) => {
+                        setWorkspaceTouched(true);
+                        setPreferredWorkspace(value as "simple" | "detailed");
+                        setActiveStep(3);
+                      }}
+                      className="grid gap-3"
                     >
-                      <RadioGroupItem value={option.id} id={`workspace-${option.id}`} className="mt-1" />
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-slate-900">{option.title}</p>
-                          {recommendedWorkspace === option.id ? (
-                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
-                              Inirerekomenda
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="text-sm leading-6 text-slate-600">{option.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </RadioGroup>
+                      {workspaceOptions.map((option) => (
+                        <label
+                          key={option.id}
+                          className={cn(
+                            "flex cursor-pointer items-start gap-4 rounded-[calc(var(--radius)+6px)] border bg-white p-4 shadow-sm transition-colors duration-150 ease-out",
+                            preferredWorkspace === option.id
+                              ? "border-primary/35 bg-[linear-gradient(180deg,#f7fbf8_0%,#eef7f1_100%)] ring-1 ring-primary/10"
+                              : "border-slate-200 hover:border-primary/15 hover:bg-[#fbfcfb]"
+                          )}
+                        >
+                          <RadioGroupItem value={option.id} id={`workspace-${option.id}`} className="mt-1" />
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-slate-900">{option.title}</p>
+                              {recommendedWorkspace === option.id ? (
+                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+                                  Inirerekomenda
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="text-sm leading-6 text-slate-600">{option.description}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </RadioGroup>
                   </div>
                 </>
               ) : (

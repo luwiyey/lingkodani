@@ -66,6 +66,8 @@ import { applySmsStatusUpdate, processInboundSms } from '@/lib/services/sms-work
 import { filterVisibleInboundSmsMessages, screenInboundSms } from '@/lib/inbound-sms-screening';
 import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 import { getCaseStatusForOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
+import { applyDataRetentionSweep } from '@/lib/data-retention';
+import { buildFarmerProfileRevision, reconcileFarmerIdentity } from '@/lib/farmer-identity';
 import {
   appendOfflineMutation,
   createOfflineMutationId,
@@ -76,6 +78,7 @@ import {
 } from '@/lib/offline-outbox';
 import { defaultSystemSettings, mergeSystemSettings, SYSTEM_SETTINGS_DOCUMENT_ID } from '@/lib/system-settings';
 import { getUserRecordId } from '@/lib/user-record';
+import { buildCaseId, deriveInitialCaseStatus } from '@/lib/services/sms-case-service';
 
 type NewResourceData = {
   name: string;
@@ -194,6 +197,9 @@ interface DataContextType {
     confirmationStatus: SmsResolutionConfirmationStatus,
     note?: string
   ) => void;
+  confirmSmsThread: (messageId: string) => Promise<boolean>;
+  splitSmsThread: (messageId: string) => Promise<boolean>;
+  mergeSmsThreads: (sourceMessageId: string, targetMessageId: string) => Promise<boolean>;
   resources: Resource[];
   addResource: (data: NewResourceData) => void;
   updateResource: (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => void;
@@ -248,6 +254,10 @@ interface DataContextType {
   addVoucher: (voucher: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => void;
   updateVoucherStatus: (voucherId: string, status: VoucherStatus) => void;
   retryOutboundMessage: (outboundId: string) => Promise<OutboundMessage | null>;
+  runDataRetentionSweep: () => Promise<{
+    redactedAuditLogs: number;
+    redactedArchivedFarmers: number;
+  }>;
   offlineMode: boolean;
   offlineSyncing: boolean;
   offlineOutboxCount: number;
@@ -268,6 +278,48 @@ function normalizeFarmerPhone(value?: string) {
 function normalizeTimestamp(value: string) {
   const timestamp = new Date(value).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function buildPersistableFarmerUpdates(farmer: Farmer): Partial<Farmer> {
+  const { id: farmerId, ...updates } = farmer;
+  void farmerId;
+  return updates;
+}
+
+function prepareFarmerRecord(input: {
+  farmer: Farmer;
+  existingFarmers: Farmer[];
+  previousFarmer?: Farmer;
+  actorName: string;
+  source:
+    | 'sms_registration'
+    | 'manual_registration'
+    | 'approval_review'
+    | 'profile_edit'
+    | 'household_update'
+    | 'merge'
+    | 'system_reconciliation';
+  reason?: string;
+  timestamp?: string;
+}) {
+  const timestamp = input.timestamp ?? new Date().toISOString();
+  const nextFarmer = {
+    ...input.farmer,
+    ...reconcileFarmerIdentity(input.farmer, input.existingFarmers, { now: timestamp }),
+  };
+  const revisionState = buildFarmerProfileRevision({
+    previousFarmer: input.previousFarmer,
+    nextFarmer,
+    changedBy: input.actorName,
+    source: input.source,
+    reason: input.reason,
+    changedAt: timestamp,
+  });
+
+  return {
+    ...nextFarmer,
+    ...revisionState,
+  };
 }
 
 function mergeById<T extends { id: string }>(currentItems: T[], importedItems: T[]) {
@@ -353,6 +405,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const { authLoading, currentUser, currentUserProfile } = useAuth();
   const autoReplyInFlight = React.useRef<Set<string>>(new Set());
   const followUpInFlight = React.useRef<Set<string>>(new Set());
+  const retentionSweepStarted = React.useRef(false);
   const [hydrated, setHydrated] = useState(false);
   
   const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers);
@@ -796,7 +849,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (workflow.newFarmer) {
-            setFarmers(prev => [workflow.newFarmer as Farmer, ...prev]);
+            const preparedWorkflowFarmer = prepareFarmerRecord({
+              farmer: workflow.newFarmer as Farmer,
+              existingFarmers: farmers,
+              actorName: 'system',
+              source: 'sms_registration',
+              timestamp,
+              reason: 'Created from inbound SMS registration flow.',
+            });
+            setFarmers(prev => [preparedWorkflowFarmer, ...prev]);
           }
         }
 
@@ -1345,10 +1406,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
     const timestamp = new Date().toISOString();
-    const nextFarmer = {
+    const rawNextFarmer = {
       ...currentFarmer,
       ...updates,
     };
+    const nextFarmer = prepareFarmerRecord({
+      farmer: rawNextFarmer,
+      existingFarmers: farmers,
+      previousFarmer: currentFarmer,
+      actorName,
+      source:
+        updates.sharedPhone !== undefined || updates.householdLabel !== undefined || updates.sharedPhoneNotes !== undefined
+          ? 'household_update'
+          : 'profile_edit',
+      timestamp,
+      reason: 'Farmer profile updated from dashboard.',
+    });
     const auditLog: AuditLog = {
       id: createEntityId('AUD'),
       timestamp,
@@ -1367,14 +1440,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         createdAt: timestamp,
         payload: {
           farmerId,
-          updates,
+          updates: buildPersistableFarmerUpdates(nextFarmer),
           auditLog,
         },
       });
       return;
     }
 
-    void farmerRepository.updateFarmer(farmerId, updates).then(() => {
+    void farmerRepository.updateFarmer(farmerId, buildPersistableFarmerUpdates(nextFarmer)).then(() => {
       return auditRepository.createAuditLog(auditLog).catch((error) => {
         console.error("Failed to persist farmer update audit log", error);
       });
@@ -1386,7 +1459,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           createdAt: timestamp,
           payload: {
             farmerId,
-            updates,
+            updates: buildPersistableFarmerUpdates(nextFarmer),
             auditLog,
           },
         });
@@ -1435,11 +1508,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               archiveReason: undefined,
             }
           : {};
-    const nextFarmer: Farmer = {
+    const rawNextFarmer: Farmer = {
       ...currentFarmer,
       status,
       ...archiveUpdates,
     };
+    const nextFarmer = prepareFarmerRecord({
+      farmer: rawNextFarmer,
+      existingFarmers: farmers,
+      previousFarmer: currentFarmer,
+      actorName,
+      source: status === 'active' && currentFarmer.status === 'pending_approval' ? 'approval_review' : 'system_reconciliation',
+      timestamp,
+      reason:
+        status === 'active' && currentFarmer.status === 'pending_approval'
+          ? 'Farmer registration approved.'
+          : `Farmer status changed to ${status}.`,
+    });
     const auditLog: AuditLog = {
       id: createEntityId('AUD'),
       timestamp,
@@ -1459,8 +1544,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setAuditLogs(prev => [auditLog, ...prev]);
 
     void farmerRepository.updateFarmer(farmerId, {
-      status,
-      ...archiveUpdates,
+      ...buildPersistableFarmerUpdates(nextFarmer),
     }).then(() => {
       return auditRepository.createAuditLog(auditLog).catch((error) => {
         console.error("Failed to persist farmer status audit log", error);
@@ -1486,23 +1570,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
     const timestamp = new Date().toISOString();
+    const preparedFarmers = targetFarmers.map((farmer) =>
+      prepareFarmerRecord({
+        farmer: { ...farmer, status },
+        existingFarmers: farmers,
+        previousFarmer: farmer,
+        actorName,
+        source: status === 'active' && farmer.status === 'pending_approval' ? 'approval_review' : 'system_reconciliation',
+        timestamp,
+        reason: `Bulk farmer status update to ${status}.`,
+      })
+    );
     const auditLog: AuditLog = {
       id: createEntityId('AUD'),
       timestamp,
       user: actorName,
       action: 'BULK_UPDATE_FARMER_STATUS',
-      details: `${targetFarmers.length} magsasaka -> ${status}`,
+      details: `${preparedFarmers.length} magsasaka -> ${status}`,
     };
 
     setFarmers(prev => prev.map((farmer) => (
-      normalizedIds.includes(farmer.id)
-        ? { ...farmer, status }
-        : farmer
+      preparedFarmers.find((candidate) => candidate.id === farmer.id) ?? farmer
     )));
     setAuditLogs(prev => [auditLog, ...prev]);
 
     void Promise.all(
-      targetFarmers.map((farmer) => farmerRepository.updateFarmer(farmer.id, { status }))
+      preparedFarmers.map((farmer) =>
+        farmerRepository.updateFarmer(farmer.id, buildPersistableFarmerUpdates(farmer))
+      )
     ).then(() => {
       return auditRepository.createAuditLog(auditLog).catch((error) => {
         console.error("Failed to persist bulk farmer status audit log", error);
@@ -1516,7 +1611,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to persist bulk farmer status update", error);
     });
 
-    return targetFarmers.length;
+    return preparedFarmers.length;
   };
 
   const deleteFarmerRecord = (farmerId: string) => {
@@ -1613,14 +1708,38 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         ])
       ),
     };
-    const nextTargetFarmer: Farmer = {
+    const rawTargetFarmer: Farmer = {
       ...targetFarmer,
       ...mergedTargetUpdates,
     };
-    const nextSourceFarmer: Farmer = {
+    const rawSourceFarmer: Farmer = {
       ...sourceFarmer,
       ...mergedSourceUpdates,
     };
+    const nextTargetFarmer = prepareFarmerRecord({
+      farmer: rawTargetFarmer,
+      existingFarmers: [
+        ...farmers.filter((farmer) => farmer.id !== targetFarmer.id && farmer.id !== sourceFarmer.id),
+        rawSourceFarmer,
+      ],
+      previousFarmer: targetFarmer,
+      actorName,
+      source: 'merge',
+      timestamp,
+      reason: `Merged farmer record ${sourceFarmer.id} into this profile.`,
+    });
+    const nextSourceFarmer = prepareFarmerRecord({
+      farmer: rawSourceFarmer,
+      existingFarmers: [
+        ...farmers.filter((farmer) => farmer.id !== sourceFarmer.id && farmer.id !== targetFarmer.id),
+        nextTargetFarmer,
+      ],
+      previousFarmer: sourceFarmer,
+      actorName,
+      source: 'merge',
+      timestamp,
+      reason: `Merged into farmer record ${targetFarmer.id}.`,
+    });
     const smsToMove = smsMessages.filter((message) => message.farmerId === sourceFarmer.id);
     const assistanceToMove = assistanceRecords.filter((record) => record.farmerId === sourceFarmer.id);
     const visitsToMove = fieldVisitTasks.filter((task) => task.farmerId === sourceFarmer.id);
@@ -1729,8 +1848,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await Promise.all([
-        farmerRepository.updateFarmer(targetFarmer.id, mergedTargetUpdates),
-        farmerRepository.updateFarmer(sourceFarmer.id, mergedSourceUpdates),
+        farmerRepository.updateFarmer(targetFarmer.id, buildPersistableFarmerUpdates(nextTargetFarmer)),
+        farmerRepository.updateFarmer(sourceFarmer.id, buildPersistableFarmerUpdates(nextSourceFarmer)),
         ...smsToMove.map((message) =>
           smsRepository.updateMessage(message.id, {
             farmerId: targetFarmer.id,
@@ -1782,7 +1901,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addPendingFarmer = (farmerData: FarmerRegistrationValues) => {
-    const newFarmer: Farmer = {
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const timestamp = new Date().toISOString();
+    const newFarmer = prepareFarmerRecord({
+      farmer: {
         id: `FARM${Date.now()}`,
         name: farmerData.name,
         phone: farmerData.phone,
@@ -1792,10 +1914,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         farmSize: farmerData.farmSize || 0,
         age: farmerData.age || 0,
         gender: farmerData.gender || 'Hindi natukoy',
-        registrationDate: new Date().toISOString(),
-        lastSmsActivity: new Date().toISOString(),
-        status: 'pending_approval'
-    };
+        registrationDate: timestamp,
+        lastSmsActivity: timestamp,
+        status: 'pending_approval',
+        sharedPhone: farmerData.sharedPhone,
+        householdLabel: farmerData.householdLabel?.trim() || undefined,
+        sharedPhoneNotes: farmerData.sharedPhoneNotes?.trim() || undefined,
+      },
+      existingFarmers: farmers,
+      actorName,
+      source: 'manual_registration',
+      timestamp,
+      reason: 'Manually submitted pending farmer registration.',
+    });
     setFarmers(prev => [...prev, newFarmer]);
     void farmerRepository.createFarmer(newFarmer).catch((error) => {
       console.error("Failed to persist pending farmer", error);
@@ -2456,8 +2587,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (workflow.newFarmer) {
-      setFarmers(prev => [workflow.newFarmer as Farmer, ...prev]);
-      void farmerRepository.createFarmer(workflow.newFarmer).catch((error) => {
+      const preparedWorkflowFarmer = prepareFarmerRecord({
+        farmer: workflow.newFarmer as Farmer,
+        existingFarmers: farmers,
+        actorName: 'system',
+        source: 'sms_registration',
+        timestamp: workflow.message.timestamp,
+        reason: 'Created from inbound SMS registration flow.',
+      });
+      setFarmers(prev => [preparedWorkflowFarmer, ...prev]);
+      void farmerRepository.createFarmer(preparedWorkflowFarmer).catch((error) => {
         console.error("Failed to persist inbound registration farmer", error);
       });
     }
@@ -2971,6 +3110,228 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const confirmSmsThread = async (messageId: string) => {
+    const currentMessage = smsMessages.find((message) => message.id === messageId);
+
+    if (!currentMessage) {
+      return false;
+    }
+
+    const timestamp = new Date().toISOString();
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const updates = {
+      threadReviewStatus: 'confirmed' as const,
+      threadReviewedAt: timestamp,
+      threadReviewedBy: actorName,
+      threadReviewNote: 'Manu-manong kinumpirma na tama ang thread linkage.',
+      threadConfidence: 1,
+      threadReason: 'Manu-manong kinumpirma ng staff ang kasalukuyang thread.',
+      possibleDuplicateOfCaseId: undefined,
+      possibleDuplicateReason: undefined,
+    };
+    const auditLog: AuditLog = {
+      id: createEntityId('AUD'),
+      timestamp,
+      user: actorName,
+      action: 'CONFIRM_SMS_THREAD',
+      details: `${messageId}: kinumpirma bilang tamang hiwalay na thread.`,
+    };
+
+    setSmsMessages((prev) =>
+      prev.map((message) => (message.id === messageId ? { ...message, ...updates } : message))
+    );
+    setAuditLogs((prev) => [auditLog, ...prev]);
+
+    try {
+      await Promise.all([
+        smsRepository.updateMessage(messageId, updates),
+        auditRepository.createAuditLog(auditLog),
+      ]);
+      return true;
+    } catch (error) {
+      console.error('Failed to confirm SMS thread review', error);
+      return false;
+    }
+  };
+
+  const splitSmsThread = async (messageId: string) => {
+    const currentMessage = smsMessages.find((message) => message.id === messageId);
+
+    if (!currentMessage) {
+      return false;
+    }
+
+    const timestamp = new Date().toISOString();
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const newCaseId = buildCaseId({
+      farmerId: currentMessage.farmerId,
+      normalizedPhone: '',
+      fallbackId: `${currentMessage.id}-split-${Date.now()}`,
+    });
+    const updates = {
+      caseId: newCaseId,
+      caseStatus: deriveInitialCaseStatus({
+        clarificationNeeded: currentMessage.clarificationNeeded,
+        registrationRequired: currentMessage.registrationRequired,
+      }),
+      assignedTo: undefined,
+      assignedAt: undefined,
+      threadReviewStatus: 'split' as const,
+      threadReviewedAt: timestamp,
+      threadReviewedBy: actorName,
+      threadReviewNote: `Inihiwalay sa bagong case ${newCaseId} matapos ang manual review.`,
+      threadConfidence: 1,
+      threadReason: `Manu-manong hinati sa bagong case ${newCaseId}.`,
+      possibleDuplicateOfCaseId: undefined,
+      possibleDuplicateReason: undefined,
+    };
+    const auditLog: AuditLog = {
+      id: createEntityId('AUD'),
+      timestamp,
+      user: actorName,
+      action: 'SPLIT_SMS_THREAD',
+      details: `${messageId}: inihiwalay sa ${newCaseId}.`,
+    };
+
+    setSmsMessages((prev) =>
+      prev.map((message) => (message.id === messageId ? { ...message, ...updates } : message))
+    );
+    setAuditLogs((prev) => [auditLog, ...prev]);
+
+    try {
+      await Promise.all([
+        smsRepository.updateMessage(messageId, updates),
+        auditRepository.createAuditLog(auditLog),
+      ]);
+      return true;
+    } catch (error) {
+      console.error('Failed to split SMS thread', error);
+      return false;
+    }
+  };
+
+  const mergeSmsThreads = async (sourceMessageId: string, targetMessageId: string) => {
+    const sourceMessage = smsMessages.find((message) => message.id === sourceMessageId);
+    const targetMessage = smsMessages.find((message) => message.id === targetMessageId);
+
+    if (!sourceMessage || !targetMessage || sourceMessage.id === targetMessage.id) {
+      return false;
+    }
+
+    const sourceCaseId = sourceMessage.caseId ?? sourceMessage.id;
+    const targetCaseId =
+      targetMessage.caseId ??
+      buildCaseId({
+        farmerId: targetMessage.farmerId,
+        normalizedPhone: '',
+        fallbackId: targetMessage.id,
+      });
+    const timestamp = new Date().toISOString();
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const messagesToMove = smsMessages.filter(
+      (message) =>
+        message.id === sourceMessage.id ||
+        (message.caseId === sourceCaseId &&
+          (message.phone === sourceMessage.phone || message.farmerId === sourceMessage.farmerId))
+    );
+
+    if (messagesToMove.length === 0) {
+      return false;
+    }
+
+    const movedIds = new Set(messagesToMove.map((message) => message.id));
+    const updates = {
+      caseId: targetCaseId,
+      caseStatus: targetMessage.caseStatus ?? 'open',
+      assignedTo: targetMessage.assignedTo ?? sourceMessage.assignedTo,
+      assignedAt: targetMessage.assignedAt ?? sourceMessage.assignedAt,
+      threadReviewStatus: 'merged' as const,
+      threadReviewedAt: timestamp,
+      threadReviewedBy: actorName,
+      threadReviewNote: `Manu-manong in-merge sa ${targetCaseId} sa ilalim ng review.`,
+      threadConfidence: 1,
+      threadReason: `Manu-manong in-merge sa ${targetCaseId}.`,
+      possibleDuplicateOfCaseId: undefined,
+      possibleDuplicateReason: undefined,
+    };
+    const auditLog: AuditLog = {
+      id: createEntityId('AUD'),
+      timestamp,
+      user: actorName,
+      action: 'MERGE_SMS_THREADS',
+      details: `${sourceCaseId} -> ${targetCaseId} (${messagesToMove.length} message${messagesToMove.length > 1 ? 's' : ''})`,
+    };
+
+    setSmsMessages((prev) =>
+      prev.map((message) => (movedIds.has(message.id) ? { ...message, ...updates } : message))
+    );
+    setAuditLogs((prev) => [auditLog, ...prev]);
+
+    try {
+      await Promise.all([
+        ...messagesToMove.map((message) => smsRepository.updateMessage(message.id, updates)),
+        auditRepository.createAuditLog(auditLog),
+      ]);
+      return true;
+    } catch (error) {
+      console.error('Failed to merge SMS threads', error);
+      return false;
+    }
+  };
+
+  const runDataRetentionSweep = useCallback(async () => {
+    const nextPolicy = systemSettings.retentionPolicy;
+    const result = applyDataRetentionSweep({
+      auditLogs,
+      farmers,
+      policy: nextPolicy,
+    });
+
+    if (
+      result.redactedAuditLogIds.length === 0 &&
+      result.redactedFarmerIds.length === 0
+    ) {
+      return {
+        redactedAuditLogs: 0,
+        redactedArchivedFarmers: 0,
+      };
+    }
+
+    const timestamp = new Date().toISOString();
+    const actorName = currentUserProfile?.name ?? 'system';
+    const auditLog: AuditLog = {
+      id: createEntityId('AUD'),
+      timestamp,
+      user: actorName,
+      action: 'RUN_DATA_RETENTION_SWEEP',
+      details: `Audit logs redacted: ${result.redactedAuditLogIds.length}; archived farmers redacted: ${result.redactedFarmerIds.length}.`,
+    };
+
+    setAuditLogs([auditLog, ...result.auditLogs]);
+    setFarmers(result.farmers);
+
+    try {
+      await Promise.all([
+        ...result.redactedAuditLogIds.map((id) => {
+          const updated = result.auditLogs.find((entry) => entry.id === id);
+          return updated ? auditRepository.updateAuditLog(id, updated) : Promise.resolve(null);
+        }),
+        ...result.redactedFarmerIds.map((id) => {
+          const updated = result.farmers.find((entry) => entry.id === id);
+          return updated ? farmerRepository.updateFarmer(id, updated) : Promise.resolve(null);
+        }),
+        auditRepository.createAuditLog(auditLog),
+      ]);
+    } catch (error) {
+      console.error('Failed to persist data retention sweep', error);
+    }
+
+    return {
+      redactedAuditLogs: result.redactedAuditLogIds.length,
+      redactedArchivedFarmers: result.redactedFarmerIds.length,
+    };
+  }, [auditLogs, currentUserProfile?.name, farmers, systemSettings.retentionPolicy]);
+
   const retryOutboundMessage = async (outboundId: string) => {
     const currentRecord = outboundMessages.find((record) => record.id === outboundId);
 
@@ -3093,6 +3454,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  React.useEffect(() => {
+    if (
+      !hydrated ||
+      retentionSweepStarted.current ||
+      !systemSettings.retentionPolicy.autoRedactionEnabled
+    ) {
+      return;
+    }
+
+    retentionSweepStarted.current = true;
+    void runDataRetentionSweep();
+  }, [hydrated, runDataRetentionSweep, systemSettings.retentionPolicy.autoRedactionEnabled]);
+
 
   const value = {
     farmers,
@@ -3112,6 +3486,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     updateSmsCaseOutcome,
     closeSmsCase,
     confirmSmsCaseResolution,
+    confirmSmsThread,
+    splitSmsThread,
+    mergeSmsThreads,
     resources,
     addResource,
     updateResource,
@@ -3154,6 +3531,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     addVoucher,
     updateVoucherStatus,
     retryOutboundMessage,
+    runDataRetentionSweep,
     offlineMode,
     offlineSyncing,
     offlineOutboxCount,

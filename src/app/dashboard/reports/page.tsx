@@ -1,6 +1,6 @@
 
 'use client';
-import { Bot, Calendar as CalendarIcon, ArrowDownToLine } from 'lucide-react';
+import { Bot, Calendar as CalendarIcon, ArrowDownToLine, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -63,6 +63,20 @@ function ReportsPageContent() {
       humanReviewedCases,
       farmerConfirmedResolutionCount,
       awaitingFarmerConfirmationCount,
+      averageOperationalConfidence,
+      trustedCaseCount,
+      lowTrustCaseCount,
+      weightedResolvedCount,
+      outbreakClusters,
+      interventionEffectivenessData,
+      topInterventionEffectiveness,
+      reportingReadyCases,
+      reportingPartialCases,
+      reportingLowConfidenceCases,
+      exceptionCases,
+      criticalExceptionCases,
+      supervisorReviewCases,
+      caseExceptionData,
       completedFieldVisits,
       scheduledFieldVisits,
       completedAssistance,
@@ -75,6 +89,7 @@ function ReportsPageContent() {
     } = useAnalytics();
     const topKeyword = topKeywordsData[0];
     const topHotspot = geographicHotspotData[0];
+    const topOutbreakCluster = outbreakClusters[0];
     const hasTopKeyword = Boolean(topKeyword && topKeyword.count > 0);
     const hasTopHotspot = Boolean(topHotspot && topHotspot.issues > 0);
     const liveSyncLabel = `${liveContextUpdatedAt.slice(0, 19).replace('T', ' ')} UTC`;
@@ -87,8 +102,18 @@ function ReportsPageContent() {
           `High-priority SMS: ${highRiskCount}`,
           `AI-drafted cases: ${aiDraftedCases}`,
           `Human-reviewed cases: ${humanReviewedCases}`,
+          `Reporting-ready cases: ${reportingReadyCases}`,
+          `Partial reporting cases: ${reportingPartialCases}`,
+          `Low-confidence reporting cases: ${reportingLowConfidenceCases}`,
+          `Cases with operational exceptions: ${exceptionCases}`,
+          `Critical exception cases: ${criticalExceptionCases}`,
+          `Supervisor review candidates: ${supervisorReviewCases}`,
           `Farmer-confirmed resolutions: ${farmerConfirmedResolutionCount}`,
           `Awaiting farmer confirmation: ${awaitingFarmerConfirmationCount}`,
+          `Average operational confidence: ${(averageOperationalConfidence * 100).toFixed(0)}%`,
+          `Trusted cases: ${trustedCaseCount}`,
+          `Low-trust cases: ${lowTrustCaseCount}`,
+          `Weighted resolved count: ${weightedResolvedCount}`,
           `Risk alerts: ${riskAlerts.length}`,
           `Alert broadcasts sent: ${totalAlertBroadcasts}`,
           `Broadcast recipients reached: ${broadcastRecipients}`,
@@ -101,6 +126,8 @@ function ReportsPageContent() {
           `Stale market prices: ${stalePriceCount}`,
           `Top keyword: ${hasTopKeyword ? `${topKeyword?.word} (${topKeyword?.count})` : 'Kulangan pa ng live SMS text data'}`,
           `Top hotspot: ${hasTopHotspot ? `${topHotspot?.zone} (${topHotspot?.issues} ulat)` : 'Kulangan pa ng live location-linked reports'}`,
+          `Top outbreak cluster: ${topOutbreakCluster ? `${topOutbreakCluster.zone} / ${topOutbreakCluster.crop} / ${topOutbreakCluster.signal} (${topOutbreakCluster.reportCount} ulat)` : 'Wala pang malinaw na clustered signal'}`,
+          `Best intervention pattern: ${topInterventionEffectiveness ? `${topInterventionEffectiveness.type} (${topInterventionEffectiveness.confirmedRate}% confirmed)` : 'Kulangan pa ng resolved intervention data'}`,
           ``,
           `Recommendations:`,
           hasTopHotspot
@@ -259,6 +286,19 @@ function ReportsPageContent() {
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <p>Batay sa live na data, may <strong>{highRiskCount}</strong> na high-priority SMS sa kasalukuyang dataset at <strong>{riskAlerts.length}</strong> aktibong alerto sa risk center.</p>
                     <p>Sa kasalukuyang timeframe, <strong>{aiDraftedCases}</strong> ang AI-assisted case drafts, <strong>{humanReviewedCases}</strong> ang umabot na sa human review, at <strong>{awaitingFarmerConfirmationCount}</strong> pa ang naghihintay ng kumpirmasyon mula sa magsasaka bago tuluyang ituring na sarado.</p>
+                    <p>Sa reporting quality, <strong>{reportingReadyCases}</strong> pa lamang ang kumpleto ang structured closeout para masama sa mas mapagkakatiwalaang analytics, habang <strong>{reportingPartialCases}</strong> ang partial at <strong>{reportingLowConfidenceCases}</strong> ang low-confidence pa ang pagkaka-encode.</p>
+                    <p>Sa trust layer, nasa <strong>{(averageOperationalConfidence * 100).toFixed(0)}%</strong> ang average operational confidence. May <strong>{trustedCaseCount}</strong> trusted cases pero may <strong>{lowTrustCaseCount}</strong> pa ring low-trust records na dapat i-review bago gamitin sa high-confidence reporting.</p>
+                    <p>May <strong>{exceptionCases}</strong> cases na may operational exceptions ngayon, at <strong>{criticalExceptionCases}</strong> dito ang may high-severity risk tulad ng urgent na walang aksyon, failed follow-through, o kulang na closeout evidence. <strong>{supervisorReviewCases}</strong> ang dapat makita sa supervisor review queue.</p>
+                    <p>
+                      {topOutbreakCluster
+                        ? <>Ang pinakamalakas na outbreak signal ngayon ay nasa <strong>{topOutbreakCluster.zone}</strong> para sa <strong>{topOutbreakCluster.crop}</strong> na may pattern na <strong>{topOutbreakCluster.signal}</strong>, na may {topOutbreakCluster.reportCount} magkakaugnay na ulat.</>
+                        : <>Wala pang sapat na magkakaugnay na reports para sa malinaw na outbreak cluster sa timeframe na ito.</>}
+                    </p>
+                    <p>
+                      {topInterventionEffectiveness
+                        ? <>Pinakamalakas sa kasalukuyang data ang <strong>{topInterventionEffectiveness.type}</strong> na may {topInterventionEffectiveness.confirmedRate}% farmer-confirmed rate.</>
+                        : <>Kulangan pa ang resolved intervention data para makabuo ng maaasahang effectiveness comparison.</>}
+                    </p>
                     <p>
                       {hasTopKeyword
                         ? <>Ang pinakakaraniwang keyword ay <strong className="text-foreground">{topKeyword?.word}</strong> ({topKeyword?.count} banggit).</>
@@ -274,7 +314,7 @@ function ReportsPageContent() {
                       {hasTopHotspot
                         ? 'I-prioritize ang field action at advisory broadcast sa hotspot zone, '
                         : 'Palakasin muna ang live reporting at farmer location tagging, '}
-                      i-monitor ang open assistance queue, at i-refresh ang stale market prices bago magbigay ng economic advice sa magsasaka.
+                      i-monitor ang open assistance queue, i-block ang mahihinang closeout bago mapasama sa reports, at i-refresh ang stale market prices bago magbigay ng economic advice sa magsasaka.
                     </p>
                 </div>
             </CardContent>
@@ -289,6 +329,40 @@ function ReportsPageContent() {
                 <CardContent>
                     <p className="text-3xl font-bold">{humanReviewedCases}</p>
                     <p className="mt-2 text-xs text-muted-foreground">{aiDraftedCases} AI-assisted, {Math.max(aiDraftedCases - humanReviewedCases, 0)} naghihintay pa ng tao</p>
+                </CardContent>
+            </Card>
+            <Card className={reportingLowConfidenceCases > 0 ? 'border-amber-300/60' : ''}>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Reporting Readiness</CardTitle>
+                    <CardDescription>Hindi lahat ng closed case ay kumpleto para sa analytics.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{reportingReadyCases}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{reportingPartialCases} partial, {reportingLowConfidenceCases} low-confidence na case records</p>
+                </CardContent>
+            </Card>
+            <Card className={lowTrustCaseCount > 0 ? 'border-amber-300/60' : ''}>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Operational Trust</CardTitle>
+                    <CardDescription>Confidence decay at structured evidence combined.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{(averageOperationalConfidence * 100).toFixed(0)}%</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{trustedCaseCount} trusted cases, {lowTrustCaseCount} low-trust cases</p>
+                </CardContent>
+            </Card>
+            <Card className={outbreakClusters.length > 0 ? 'border-red-300/60' : ''}>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Outbreak Signal</CardTitle>
+                    <CardDescription>Clustered zone + crop + symptom signals.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{outbreakClusters.length}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {topOutbreakCluster
+                        ? `${topOutbreakCluster.zone} · ${topOutbreakCluster.crop} · ${topOutbreakCluster.signal}`
+                        : 'Wala pang strong cluster ngayon'}
+                    </p>
                 </CardContent>
             </Card>
             <Card>
@@ -341,7 +415,77 @@ function ReportsPageContent() {
                     <p className="mt-2 text-xs text-muted-foreground">{stalePriceCount} stale entries na kailangang i-refresh</p>
                 </CardContent>
             </Card>
+            <Card className={criticalExceptionCases > 0 ? 'border-destructive/40' : exceptionCases > 0 ? 'border-amber-300/60' : ''}>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Supervisor Exceptions</CardTitle>
+                    <CardDescription>Mga kasong may hidden operational risk o kulang na process evidence.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{exceptionCases}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{criticalExceptionCases} critical, {supervisorReviewCases} dapat i-review ng supervisor</p>
+                </CardContent>
+            </Card>
         </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Trust-Weighted Outcomes</CardTitle>
+                    <CardDescription>Mas truthful na resolved count kaysa raw closure volume.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <p><strong className="text-foreground">{weightedResolvedCount}</strong> ang trust-weighted resolved count sa kasalukuyang timeframe.</p>
+                    <p>Pinaghahalo nito ang operational confidence at reporting completeness para hindi magmukhang pantay ang weak at well-documented closures.</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Intervention Effectiveness</CardTitle>
+                    <CardDescription>Aling intervention pattern ang may mas malinaw na follow-through.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-muted-foreground">
+                    {interventionEffectivenessData.slice(0, 3).map((entry) => (
+                        <div key={entry.type} className="rounded-lg border bg-muted/20 p-3">
+                            <p className="font-medium text-foreground">{entry.type}</p>
+                            <p className="mt-1">Cases: {entry.totalCases} · Resolved rate: {entry.resolvedRate}% · Confirmed rate: {entry.confirmedRate}%</p>
+                            <p className="mt-1">Reopened: {entry.reopenedCases} · Avg confidence: {(entry.avgConfidence * 100).toFixed(0)}%</p>
+                        </div>
+                    ))}
+                    {interventionEffectivenessData.length === 0 ? (
+                        <p>Wala pang sapat na intervention history para sa effectiveness comparison.</p>
+                    ) : null}
+                </CardContent>
+            </Card>
+        </div>
+
+        <Card className={criticalExceptionCases > 0 ? 'border-destructive/40 bg-destructive/5' : 'border-amber-300/50 bg-amber-50/30'}>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <CardTitle className="text-base">Operational Exceptions Watch</CardTitle>
+                </div>
+                <CardDescription>Hindi dapat tahimik na nalulusot sa reports ang mga kasong may kulang na process quality.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {caseExceptionData.length > 0 ? (
+                    <div className="space-y-2 text-sm">
+                        {caseExceptionData.map((entry) => (
+                            <div key={entry.title} className="flex items-start justify-between gap-4 rounded-md border border-border/60 bg-background/70 px-3 py-2">
+                                <div>
+                                    <p className="font-medium text-foreground">{entry.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {entry.severity === 'high' ? 'High-severity operational risk' : entry.severity === 'medium' ? 'Medium-severity process gap' : 'Low-severity data hygiene issue'}
+                                    </p>
+                                </div>
+                                <span className="text-sm font-semibold">{entry.count}</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground">Wala pang natukoy na supervisor exceptions sa napiling timeframe.</p>
+                )}
+            </CardContent>
+        </Card>
 
         <Tabs defaultValue="sms" className="w-full">
             <TabsList className="grid w-full grid-cols-3 rounded-none border-b bg-transparent p-0">

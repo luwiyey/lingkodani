@@ -1,4 +1,5 @@
 import type { SendSmsResult, SmsProvider } from "@/lib/providers/sms/types";
+import { getOutboundPriorityMeta } from "@/lib/outbound-priority";
 import type { OutboundMessage, SmsMessage } from "@/lib/types";
 
 function compactUndefined<T extends Record<string, unknown>>(value: T) {
@@ -23,6 +24,11 @@ export function createOutboundMessageRecord(input: {
 }): OutboundMessage {
   const createdAt = input.timestamp ?? new Date().toISOString();
   const recipientPhone = input.recipientPhone ?? input.sourceMessage.phone;
+  const priority = getOutboundPriorityMeta({
+    sourceMessage: input.sourceMessage,
+    purpose: input.purpose,
+    audience: input.audience,
+  });
 
   return compactUndefined({
     id: createRecordId(),
@@ -30,6 +36,8 @@ export function createOutboundMessageRecord(input: {
     recipientPhone,
     audience: input.audience,
     purpose: input.purpose,
+    queuePriority: priority.score,
+    queuePriorityLabel: priority.priority,
     body: input.body,
     status: input.sendResult.status,
     provider: input.providerName,
