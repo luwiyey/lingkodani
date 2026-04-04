@@ -19,6 +19,7 @@ import { getSmsCaseExceptionFlags } from '@/lib/sms-case-exceptions';
 import { findPotentialDuplicateCase } from '@/lib/sms-case-linking';
 import { isAwaitingFarmerConfirmation } from '@/lib/sms-case-outcomes';
 import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
+import { buildAssignmentSuggestions, getNextBestAction, getSlaAgingMeta, type AssignmentSuggestion } from '@/lib/assignment-routing';
 
 const actionButtonClassName = 'h-auto min-h-12 w-full whitespace-normal break-words px-4 py-3 text-center leading-snug';
 
@@ -84,6 +85,7 @@ function MessageTaskRow({
   onRecordOutcome,
   onConfirmResolution,
   exceptionFlags = [],
+  assignmentSuggestion,
 }: {
   message: SmsMessage;
   latestOutbound?: OutboundMessage;
@@ -92,9 +94,12 @@ function MessageTaskRow({
   onRecordOutcome: (message: SmsMessage) => void;
   onConfirmResolution: (message: SmsMessage, confirmed: boolean) => void;
   exceptionFlags?: ReturnType<typeof getSmsCaseExceptionFlags>;
+  assignmentSuggestion?: AssignmentSuggestion | null;
 }) {
   const router = useRouter();
   const awaitingConfirmation = isAwaitingFarmerConfirmation(message);
+  const slaMeta = getSlaAgingMeta(message);
+  const nextBestAction = getNextBestAction(message);
 
   return (
     <div
@@ -127,6 +132,26 @@ function MessageTaskRow({
             <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
               <p className="font-medium text-foreground">Latest outcome</p>
               <p className="mt-1 leading-relaxed">{message.caseOutcomeSummary}</p>
+            </div>
+          ) : null}
+          <div className="rounded-xl border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">Next best action</p>
+            <p className="mt-1 leading-relaxed">{nextBestAction}</p>
+            <p className="mt-2 text-xs">
+              SLA age: {slaMeta.ageHours.toFixed(1)}h
+              {slaMeta.overdue ? ' • overdue' : ' • on track'}
+            </p>
+          </div>
+          {assignmentSuggestion ? (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100">
+              <p className="font-medium">Suggested owner</p>
+              <p className="mt-1 leading-relaxed">
+                {assignmentSuggestion.name}
+                {assignmentSuggestion.title ? ` • ${assignmentSuggestion.title}` : ''}
+              </p>
+              <p className="mt-1 text-xs">
+                Score {assignmentSuggestion.score} • {assignmentSuggestion.reasons.slice(0, 2).join(' • ')}
+              </p>
             </div>
           ) : null}
           {message.possibleDuplicateOfCaseId ? (
@@ -233,7 +258,7 @@ function MessageTaskRow({
 export default function OperationsPage() {
   const router = useRouter();
   const { currentUserProfile } = useAuth();
-  const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, farmers, assistanceRecords, fieldVisitTasks } = useData();
+  const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, farmers, assistanceRecords, fieldVisitTasks, users } = useData();
   const { toast, dismiss } = useToast();
   const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
   const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
@@ -290,6 +315,44 @@ export default function OperationsPage() {
 
     return map;
   }, [assistanceRecords, fieldVisitTasks, outboundMessages, smsMessages]);
+  const assignmentSuggestions = React.useMemo(() => {
+    const map = new Map<string, AssignmentSuggestion | null>();
+
+    for (const message of smsMessages) {
+      map.set(
+        message.id,
+        buildAssignmentSuggestions({
+          message,
+          users,
+          farmers,
+          smsMessages,
+        })[0] ?? null
+      );
+    }
+
+    return map;
+  }, [farmers, smsMessages, users]);
+  const workloadSummary = React.useMemo(() => {
+    return users
+      .filter((user) => user.role === 'barangay' && user.status !== 'disabled')
+      .map((user) => ({
+        user,
+        openCases: smsMessages.filter(
+          (message) =>
+            !message.closedAt &&
+            message.assignedTo?.trim().toLowerCase() === user.name.trim().toLowerCase()
+        ).length,
+      }))
+      .sort((left, right) => left.openCases - right.openCases);
+  }, [smsMessages, users]);
+  const overdueSlaCount = React.useMemo(
+    () =>
+      smsMessages.filter((message) => {
+        const slaMeta = getSlaAgingMeta(message);
+        return slaMeta.overdue;
+      }).length,
+    [smsMessages]
+  );
 
   const urgentQueue = React.useMemo(
     () => smsMessages.filter((message) => message.status === 'pending_approval' && message.urgency === 'high' && !message.closedAt && !message.assignedTo),
@@ -304,7 +367,7 @@ export default function OperationsPage() {
     [smsMessages]
   );
   const followUpQueue = React.useMemo(
-    () => smsMessages.filter((message) => !message.closedAt && !message.assignedTo && !!message.followUpDueAt && !message.followUpSentAt),
+    () => smsMessages.filter((message) => !message.closedAt && !message.assignedTo && !!message.followUpDueAt && !message.followUpStopReason),
     [smsMessages]
   );
   const failedSendQueue = React.useMemo(
@@ -458,6 +521,62 @@ export default function OperationsPage() {
         <TaskCard href="/dashboard/reports" title="Supervisor Review" description="Mga case na may hidden risk o kulang na closeout." count={supervisorReviewQueue.length} icon={ClipboardList} />
       </div>
 
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">SLA at Aging Watch</CardTitle>
+            <CardDescription>Mga case na matagal nang walang aksyon o lampas na sa inaasahang response window.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={overdueSlaCount > 0 ? 'destructive' : 'outline'}>
+                {overdueSlaCount} overdue SLA
+              </Badge>
+              <Badge variant="outline">{supervisorReviewQueue.length} supervisor review</Badge>
+            </div>
+            {smsMessages
+              .filter((message) => getSlaAgingMeta(message).overdue)
+              .slice(0, 4)
+              .map((message) => (
+                <div key={message.id} className="rounded-xl border p-3 text-sm">
+                  <p className="font-medium">{message.farmerName}</p>
+                  <p className="mt-1 text-muted-foreground">{getNextBestAction(message)}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Age: {getSlaAgingMeta(message).ageHours.toFixed(1)}h
+                  </p>
+                </div>
+              ))}
+            {overdueSlaCount === 0 ? (
+              <p className="text-sm text-muted-foreground">Walang lampas sa SLA sa kasalukuyang queue.</p>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Workload Balance</CardTitle>
+            <CardDescription>Makikita rito kung sino ang mas may kapasidad humawak ng susunod na urgent cases.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {workloadSummary.slice(0, 5).map(({ user, openCases }) => (
+              <div key={user.id ?? user.email} className="rounded-xl border p-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{user.name}</p>
+                    <p className="text-muted-foreground">{user.title ?? 'Barangay staff'}</p>
+                  </div>
+                  <Badge variant="outline">{openCases} open</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Status: {user.availabilityStatus ?? 'available'}
+                  {user.expertiseTags?.length ? ` • expertise: ${user.expertiseTags.join(', ')}` : ''}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">1. Mga urgent at pending ngayon</CardTitle>
@@ -480,6 +599,7 @@ export default function OperationsPage() {
               onRecordOutcome={setOutcomeMessage}
               onConfirmResolution={handleConfirmResolution}
               exceptionFlags={exceptionFlagsByMessage.get(message.id)}
+              assignmentSuggestion={assignmentSuggestions.get(message.id)}
             />
           )) : <p className="text-sm text-muted-foreground">Walang urgent na pending SMS sa ngayon.</p>}
         </CardContent>
@@ -508,6 +628,7 @@ export default function OperationsPage() {
                 onRecordOutcome={setOutcomeMessage}
                 onConfirmResolution={handleConfirmResolution}
                 exceptionFlags={exceptionFlagsByMessage.get(message.id)}
+                assignmentSuggestion={assignmentSuggestions.get(message.id)}
               />
             ))}
             {registrationQueue.length + clarificationQueue.length === 0 ? (
@@ -546,6 +667,7 @@ export default function OperationsPage() {
                 onRecordOutcome={setOutcomeMessage}
                 onConfirmResolution={handleConfirmResolution}
                 exceptionFlags={exceptionFlagsByMessage.get(message.id)}
+                assignmentSuggestion={assignmentSuggestions.get(message.id)}
               />
             ))}
             {failedSendQueue.length + followUpQueue.length === 0 ? (
@@ -577,6 +699,7 @@ export default function OperationsPage() {
               onRecordOutcome={setOutcomeMessage}
               onConfirmResolution={handleConfirmResolution}
               exceptionFlags={exceptionFlagsByMessage.get(message.id)}
+              assignmentSuggestion={assignmentSuggestions.get(message.id)}
             />
           )) : (
             <p className="text-sm text-muted-foreground">Wala pang task na naka-assign sa iyo. Puwede kang mag-assign mula sa mga urgent at pending na ulat sa itaas.</p>

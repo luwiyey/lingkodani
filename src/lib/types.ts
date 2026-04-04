@@ -21,6 +21,8 @@ export type UserPermissions = {
   manageSystemTeaching?: boolean;
   accessDataCenter?: boolean;
 };
+export type UserAvailabilityStatus = 'available' | 'busy' | 'off_shift';
+export type UserAssignmentRole = 'recipient' | 'owner' | 'resolver' | 'supervisor';
 export type InviteDeliveryStatus = 'emailed' | 'manual_link' | 'email_failed';
 export type UserOnboardingStepId =
   | 'profile_details'
@@ -88,6 +90,13 @@ export type User = {
   phone?: string;
   barangay?: string;
   avatarUrl?: string;
+  expertiseTags?: string[];
+  assignedZones?: string[];
+  assignmentRole?: UserAssignmentRole;
+  availabilityStatus?: UserAvailabilityStatus;
+  availabilityNote?: string;
+  shiftStartTime?: string;
+  shiftEndTime?: string;
   permissions?: UserPermissions;
   status?: UserStatus;
   preferredWorkspace?: PreferredWorkspace;
@@ -300,6 +309,23 @@ export type Farmer = {
   householdLabel?: string;
   sharedPhone?: boolean;
   sharedPhoneNotes?: string;
+  profileSource?: 'sms_self_report' | 'staff_encoded' | 'field_verified' | 'imported';
+  lastProfileReviewedAt?: string;
+  vulnerabilityFlags?: string[];
+  hardToReachArea?: boolean;
+  seasonalCropHistory?: Array<{
+    seasonLabel: string;
+    crops: string[];
+    updatedAt: string;
+  }>;
+  plots?: Array<{
+    id: string;
+    label: string;
+    crop: string;
+    sizeHectares?: number;
+    sitio?: string;
+    source?: 'sms_self_report' | 'staff_encoded' | 'field_verified';
+  }>;
   identityTrustLevel?: FarmerIdentityTrustLevel;
   identityConfidenceScore?: number;
   identityConfidenceReasons?: string[];
@@ -402,6 +428,11 @@ export type SmsMessage = {
   identityPrompt?: string;
   followUpDueAt?: string;
   followUpSentAt?: string;
+  followUpAttemptCount?: number;
+  followUpLastReminderAt?: string;
+  followUpStopReason?: string;
+  followUpOutcome?: 'resolved' | 'partly_improved' | 'worsened' | 'no_response' | 'new_issue';
+  outcomeQualityScore?: number;
   closedAt?: string;
   resolutionNote?: string;
   resolutionConfirmationStatus?: SmsResolutionConfirmationStatus;
@@ -534,6 +565,13 @@ export type AuditLog = {
     user: string;
     action: string;
     details: string;
+    category?: 'security' | 'operations' | 'data' | 'settings' | 'automation';
+    severity?: 'info' | 'warning' | 'critical';
+    reasonRequired?: boolean;
+    reasonProvided?: string;
+    beforeSnapshot?: Record<string, unknown> | null;
+    afterSnapshot?: Record<string, unknown> | null;
+    securitySensitive?: boolean;
     retentionRedactedAt?: string;
     retentionRedactionReason?: string;
 }
@@ -573,6 +611,9 @@ export type AlertHistoryEntry = {
     timestamp: string;
     type: AlertHistoryType;
     severity: AlertHistorySeverity;
+    validationState?: 'suspected' | 'confirmed' | 'dismissed';
+    clusterKey?: string;
+    triggerScore?: number;
     message: string;
     recommendation: string;
     source: AlertHistorySource;
@@ -608,6 +649,9 @@ export type FarmerAssistanceRecord = {
     fulfilledAt?: string;
     nextAction?: string;
     resourceId?: string;
+    outcomeSummary?: string;
+    attachmentCount?: number;
+    sourceOfTruth?: 'sms_self_report' | 'staff_encoded' | 'field_verified';
 };
 
 export type FieldVisitPriority = 'high' | 'medium' | 'low';
@@ -640,6 +684,12 @@ export type FieldVisitTask = {
     verificationLng?: number;
     verificationAccuracyMeters?: number;
     verificationNote?: string;
+    observedIssue?: string;
+    adviceGiven?: string;
+    inputDistributed?: string;
+    revisitNeeded?: boolean;
+    outcomeSummary?: string;
+    attachmentCount?: number;
 };
 
 export type OutboundMessageStatus = 'queued' | 'sent' | 'failed' | 'delivered' | 'retried';

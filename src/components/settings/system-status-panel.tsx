@@ -423,6 +423,47 @@ export function SystemStatusPanel() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Manual Recovery Watch</CardTitle>
+          <CardDescription>
+            Ito ang pinakamalapit sa dead-letter o stuck-item console sa kasalukuyang build. Gamitin ito para makita kung alin ang kailangang i-retry o manu-manong siyasatin.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={outboundAttentionItems.length > 0 ? "destructive" : "outline"}>
+              {outboundAttentionItems.length} nangangailangan ng manual attention
+            </Badge>
+            <Badge variant="outline">
+              {outboundSummary.awaitingReceiptCount} awaiting receipt
+            </Badge>
+            <Badge variant="outline">
+              {outboundSummary.failedCount} failed outbound
+            </Badge>
+          </div>
+          {outboundAttentionItems.length > 0 ? outboundAttentionItems.map((item) => (
+            <div key={item.id} className="rounded-xl border p-3 text-sm">
+              <p className="font-medium">{item.purpose} • {item.recipientPhone}</p>
+              <p className="mt-1 text-muted-foreground">{item.attentionReason ?? "Kailangan ng manual review."}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Last status: {formatRuntimeTimestamp(item.lastStatusAt ?? item.createdAt)}
+              </p>
+            </div>
+          )) : (
+            <p className="text-sm text-muted-foreground">Wala pang stuck outbound items sa kasalukuyang status view.</p>
+          )}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/sms-feed">Buksan ang SMS Feed para sa retry</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/operations">Buksan ang Operations Center</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Mga Mano-manong Aksyon</CardTitle>
           <CardDescription>
             Gamitin ito kung kailangan mong pilitin ang isang batch check agad, lalo na kapag testing, follow-up debugging, o may kailangang emergency rerun.

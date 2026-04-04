@@ -161,6 +161,33 @@ class LingkodAniApi {
     return SmsFeedItem.fromJson(response['message'] as Map<String, dynamic>? ?? const {});
   }
 
+  Future<SmsFeedItem> assignSmsMessage(
+    String idToken, {
+    required String messageId,
+  }) async {
+    final response = await _post(
+      '/api/mobile/sms-feed/${Uri.encodeComponent(messageId)}/assign',
+      idToken: idToken,
+      body: const {},
+    );
+
+    return SmsFeedItem.fromJson(response['message'] as Map<String, dynamic>? ?? const {});
+  }
+
+  Future<void> addFarmerNote(
+    String idToken, {
+    required String farmerId,
+    required String note,
+  }) async {
+    await _post(
+      '/api/mobile/farmers/${Uri.encodeComponent(farmerId)}/notes',
+      idToken: idToken,
+      body: {
+        'note': note,
+      },
+    );
+  }
+
   Future<FieldVisitSummary> updateFieldVisitStatus(
     String idToken, {
     required String visitId,

@@ -52,7 +52,18 @@ export const farmers: Farmer[] = [
     registrationDate: '2023-10-01T08:00:00Z',
     lastSmsActivity: '2026-03-08T09:00:00Z',
     avatarUrl: createInitialsAvatarDataUrl('Juan dela Cruz'),
-    status: 'active'
+    status: 'active',
+    profileSource: 'field_verified',
+    lastProfileReviewedAt: '2026-02-20T08:00:00Z',
+    vulnerabilityFlags: ['senior household caretaker'],
+    seasonalCropHistory: [
+      { seasonLabel: 'Wet Season 2025', crops: ['Palay'], updatedAt: '2025-08-01T08:00:00Z' },
+      { seasonLabel: 'Dry Season 2026', crops: ['Palay', 'Mais'], updatedAt: '2026-01-15T08:00:00Z' },
+    ],
+    plots: [
+      { id: 'PLOT-FARM001-A', label: 'Main palayan', crop: 'Palay', sizeHectares: 1.8, sitio: 'Zone 1', source: 'field_verified' },
+      { id: 'PLOT-FARM001-B', label: 'Upper lot', crop: 'Mais', sizeHectares: 0.7, sitio: 'Zone 1', source: 'sms_self_report' },
+    ],
   },
   {
     id: 'FARM002',
@@ -67,7 +78,11 @@ export const farmers: Farmer[] = [
     registrationDate: '2023-10-02T09:00:00Z',
     lastSmsActivity: '2026-03-08T11:00:00Z',
     avatarUrl: createInitialsAvatarDataUrl('Maria Clara'),
-    status: 'active'
+    status: 'active',
+    profileSource: 'staff_encoded',
+    lastProfileReviewedAt: '2025-07-12T09:00:00Z',
+    hardToReachArea: true,
+    vulnerabilityFlags: ['hard-to-reach area'],
   },
   {
     id: 'FARM003',
@@ -314,6 +329,8 @@ export const alertHistory: AlertHistoryEntry[] = [
     recipientFarmerIds: ['FARM001', 'FARM002', 'FARM008', 'FARM009'],
     sentCount: 4,
     failedCount: 0,
+    validationState: 'confirmed',
+    triggerScore: 88,
   },
   {
     id: 'ALH002',
@@ -327,6 +344,8 @@ export const alertHistory: AlertHistoryEntry[] = [
     recipientFarmerIds: ['FARM001', 'FARM008', 'FARM009'],
     sentCount: 3,
     failedCount: 0,
+    validationState: 'suspected',
+    triggerScore: 64,
   },
   {
     id: 'ALH003',
@@ -340,6 +359,8 @@ export const alertHistory: AlertHistoryEntry[] = [
     recipientFarmerIds: ['FARM001', 'FARM002', 'FARM005', 'FARM006', 'FARM008'],
     sentCount: 5,
     failedCount: 0,
+    validationState: 'confirmed',
+    triggerScore: 52,
   },
 ];
 
@@ -357,6 +378,8 @@ export const assistanceRecords: FarmerAssistanceRecord[] = [
     updatedAt: '2026-03-15T08:10:00Z',
     nextAction: 'Bisitahin sa March 16 para i-check ang lawak ng infestation.',
     resourceId: 'RES008',
+    outcomeSummary: 'Nakareserba ang support habang hinihintay ang field validation.',
+    sourceOfTruth: 'staff_encoded',
   },
   {
     id: 'AST002',
@@ -372,6 +395,8 @@ export const assistanceRecords: FarmerAssistanceRecord[] = [
     fulfilledAt: '2026-03-14T09:10:00Z',
     nextAction: 'I-follow up ang germination status sa loob ng 7 araw.',
     resourceId: 'RES002',
+    outcomeSummary: 'Na-issue at na-claim na ng magsasaka ang voucher.',
+    sourceOfTruth: 'field_verified',
   },
   {
     id: 'AST003',
@@ -384,6 +409,7 @@ export const assistanceRecords: FarmerAssistanceRecord[] = [
     createdAt: '2026-03-15T05:45:00Z',
     updatedAt: '2026-03-15T05:45:00Z',
     nextAction: 'Maghanda ng field visit at magdala ng sample collection kit.',
+    sourceOfTruth: 'staff_encoded',
   },
   {
     id: 'AST004',
@@ -398,6 +424,7 @@ export const assistanceRecords: FarmerAssistanceRecord[] = [
     updatedAt: '2026-03-15T03:00:00Z',
     nextAction: 'I-confirm ang pickup time kapag naibalik ang kasalukuyang hiniram na sprayer.',
     resourceId: 'RES006',
+    sourceOfTruth: 'staff_encoded',
   },
 ];
 
@@ -414,6 +441,9 @@ export const fieldVisitTasks: FieldVisitTask[] = [
     createdAt: '2026-03-15T08:20:00Z',
     updatedAt: '2026-03-15T08:20:00Z',
     relatedSmsId: 'SMS008',
+    observedIssue: 'Rice bugs na kumakalat sa gilid ng palayan',
+    adviceGiven: 'Maghanda ng localized spray plan pagkatapos ng onsite validation.',
+    revisitNeeded: true,
   },
   {
     id: 'VISIT002',
@@ -427,6 +457,9 @@ export const fieldVisitTasks: FieldVisitTask[] = [
     createdAt: '2026-03-15T05:50:00Z',
     updatedAt: '2026-03-15T06:05:00Z',
     relatedSmsId: 'SMS001',
+    observedIssue: 'Tomato leafminer damage sa multiple rows',
+    adviceGiven: 'Leaf sanitation at follow-up sample review.',
+    revisitNeeded: true,
   },
   {
     id: 'VISIT003',
@@ -439,6 +472,7 @@ export const fieldVisitTasks: FieldVisitTask[] = [
     status: 'scheduled',
     createdAt: '2026-03-15T03:10:00Z',
     updatedAt: '2026-03-15T03:10:00Z',
+    outcomeSummary: 'Pending pa ang exact handoff date ng sprayer.',
   },
 ];
 
@@ -627,6 +661,9 @@ export const registeredUsers = [
         manageSystemTeaching: true,
         accessDataCenter: false,
       },
+      expertiseTags: ['coordination', 'routing', 'oversight'],
+      availabilityStatus: 'available' as const,
+      assignedZones: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'],
       status: 'active' as const,
       preferredWorkspace: 'detailed' as const,
       createdAt: '2026-03-01T08:00:00Z',
@@ -647,6 +684,10 @@ export const registeredUsers = [
         manageSystemTeaching: true,
         accessDataCenter: false,
       },
+      expertiseTags: ['emergency', 'escalation', 'oversight'],
+      availabilityStatus: 'busy' as const,
+      availabilityNote: 'Nasa meeting hanggang 3 PM',
+      assignedZones: ['Zone 1', 'Zone 3'],
       status: 'active' as const,
       preferredWorkspace: 'detailed' as const,
       createdAt: '2026-03-01T08:15:00Z',
@@ -667,6 +708,9 @@ export const registeredUsers = [
         manageSystemTeaching: true,
         accessDataCenter: false,
       },
+      expertiseTags: ['coordination', 'records', 'inventory'],
+      availabilityStatus: 'available' as const,
+      assignedZones: ['Zone 4', 'Zone 5', 'Zone 6'],
       status: 'active' as const,
       preferredWorkspace: 'simple' as const,
       createdAt: '2026-03-01T08:30:00Z',
@@ -687,6 +731,9 @@ export const registeredUsers = [
         manageSystemTeaching: false,
         accessDataCenter: false,
       },
+      expertiseTags: ['pest', 'weather', 'field', 'crop'],
+      availabilityStatus: 'available' as const,
+      assignedZones: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5', 'Zone 6', 'Zone 7'],
       status: 'active' as const,
       preferredWorkspace: 'detailed' as const,
       createdAt: '2026-03-01T08:45:00Z',

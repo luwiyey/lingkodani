@@ -7,6 +7,7 @@ import type {
   Farmer,
   FarmerAssistanceRecord,
   FieldVisitTask,
+  LogbookEntry,
   SmsMessage,
 } from "@/lib/types";
 
@@ -37,7 +38,13 @@ export async function GET(
 
   const db = getServerFirestore();
   const farmerRef = db.collection(firebaseCollections.farmers).doc(farmerId);
-  const [farmerSnapshot, smsSnapshot, assistanceSnapshot, visitSnapshot] =
+  const [
+    farmerSnapshot,
+    smsSnapshot,
+    assistanceSnapshot,
+    visitSnapshot,
+    logbookSnapshot,
+  ] =
     await Promise.all([
       farmerRef.get(),
       db
@@ -54,6 +61,11 @@ export async function GET(
         .collection(firebaseCollections.fieldVisitTasks)
         .where("farmerId", "==", farmerId)
         .limit(25)
+        .get(),
+      db
+        .collection(firebaseCollections.logbookEntries)
+        .where("farmerId", "==", farmerId)
+        .limit(30)
         .get(),
     ]);
 
@@ -95,6 +107,17 @@ export async function GET(
     (visit) => visit.updatedAt ?? visit.scheduledFor
   ).slice(0, 12);
 
+  const logbookEntries = byNewestDate(
+    logbookSnapshot.docs.map((documentSnapshot) => {
+      const entry = documentSnapshot.data() as LogbookEntry;
+      return {
+        ...entry,
+        id: entry.id ?? documentSnapshot.id,
+      };
+    }),
+    (entry) => entry.timestamp
+  ).slice(0, 12);
+
   return NextResponse.json({
     farmer: {
       ...farmer,
@@ -103,5 +126,6 @@ export async function GET(
     recentMessages: messages,
     assistanceRecords,
     fieldVisitTasks,
+    logbookEntries,
   });
 }

@@ -372,18 +372,46 @@ class FieldVisitSummary {
   }
 }
 
+class LogbookEntrySummary {
+  const LogbookEntrySummary({
+    required this.id,
+    required this.timestamp,
+    required this.type,
+    required this.title,
+    required this.description,
+  });
+
+  final String id;
+  final String timestamp;
+  final String type;
+  final String title;
+  final String description;
+
+  factory LogbookEntrySummary.fromJson(Map<String, dynamic> json) {
+    return LogbookEntrySummary(
+      id: '${json['id'] ?? ''}',
+      timestamp: '${json['timestamp'] ?? ''}',
+      type: '${json['type'] ?? 'Tala'}',
+      title: '${json['title'] ?? ''}',
+      description: '${json['description'] ?? ''}',
+    );
+  }
+}
+
 class FarmerDetail {
   const FarmerDetail({
     required this.farmer,
     required this.recentMessages,
     required this.assistanceRecords,
     required this.fieldVisitTasks,
+    required this.logbookEntries,
   });
 
   final FarmerSummary farmer;
   final List<SmsFeedItem> recentMessages;
   final List<AssistanceRecordSummary> assistanceRecords;
   final List<FieldVisitSummary> fieldVisitTasks;
+  final List<LogbookEntrySummary> logbookEntries;
 
   factory FarmerDetail.fromJson(Map<String, dynamic> json) {
     return FarmerDetail(
@@ -401,6 +429,9 @@ class FarmerDetail {
               .toList(),
       fieldVisitTasks: (json['fieldVisitTasks'] as List<dynamic>? ?? const [])
           .map((item) => FieldVisitSummary.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      logbookEntries: (json['logbookEntries'] as List<dynamic>? ?? const [])
+          .map((item) => LogbookEntrySummary.fromJson(item as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -550,6 +581,8 @@ enum MobileQueuedActionType {
   smsReply,
   resolutionConfirmation,
   fieldVisitStatus,
+  assignMessage,
+  farmerNote,
 }
 
 extension MobileQueuedActionTypeValue on MobileQueuedActionType {
@@ -561,12 +594,20 @@ extension MobileQueuedActionTypeValue on MobileQueuedActionType {
         return 'resolution_confirmation';
       case MobileQueuedActionType.fieldVisitStatus:
         return 'field_visit_status';
+      case MobileQueuedActionType.assignMessage:
+        return 'assign_message';
+      case MobileQueuedActionType.farmerNote:
+        return 'farmer_note';
     }
   }
 }
 
 MobileQueuedActionType mobileQueuedActionTypeFromValue(String value) {
   switch (value) {
+    case 'farmer_note':
+      return MobileQueuedActionType.farmerNote;
+    case 'assign_message':
+      return MobileQueuedActionType.assignMessage;
     case 'field_visit_status':
       return MobileQueuedActionType.fieldVisitStatus;
     case 'resolution_confirmation':

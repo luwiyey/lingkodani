@@ -10,6 +10,22 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { useData } from '@/context/data-context';
 
+function inferAuditCategory(action: string) {
+    const normalized = action.toLowerCase();
+    if (normalized.includes('security') || normalized.includes('invite') || normalized.includes('delete_user')) return 'security';
+    if (normalized.includes('automation') || normalized.includes('retention') || normalized.includes('follow_up')) return 'automation';
+    if (normalized.includes('settings')) return 'settings';
+    if (normalized.includes('update') || normalized.includes('create') || normalized.includes('merge')) return 'data';
+    return 'operations';
+}
+
+function inferAuditSeverity(action: string) {
+    const normalized = action.toLowerCase();
+    if (normalized.includes('delete') || normalized.includes('revoke') || normalized.includes('failure') || normalized.includes('reopen')) return 'critical';
+    if (normalized.includes('retry') || normalized.includes('warning') || normalized.includes('retention')) return 'warning';
+    return 'info';
+}
+
 export default function AuditLogPage() {
     const { auditLogs } = useData();
     const [searchTerm, setSearchTerm] = useState('');
@@ -70,20 +86,55 @@ export default function AuditLogPage() {
                     <TableHead className="px-2 md:px-4">Timestamp</TableHead>
                     <TableHead className="px-2 md:px-4">Gumagamit</TableHead>
                     <TableHead className="px-2 md:px-4">Aksyon</TableHead>
+                    <TableHead className="px-2 md:px-4">Uri</TableHead>
                     <TableHead className="px-2 md:px-4">Mga Detalye</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {filteredLogs.map((log) => (
-                    <TableRow key={log.id}>
-                    <TableCell className="break-words px-2 py-4 md:px-4">{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
-                    <TableCell className="font-medium break-words px-2 py-4 md:px-4">{log.user}</TableCell>
-                    <TableCell className="px-2 py-4 md:px-4">
-                        <Badge variant="secondary">{log.action}</Badge>
-                    </TableCell>
-                    <TableCell className="break-words px-2 py-4 md:px-4">{log.details}</TableCell>
-                    </TableRow>
-                ))}
+                {filteredLogs.map((log) => {
+                    const category = log.category ?? inferAuditCategory(log.action);
+                    const severity = log.severity ?? inferAuditSeverity(log.action);
+
+                    return (
+                        <TableRow key={log.id}>
+                        <TableCell className="break-words px-2 py-4 align-top md:px-4">{isClient ? new Date(log.timestamp).toLocaleString() : ''}</TableCell>
+                        <TableCell className="font-medium break-words px-2 py-4 align-top md:px-4">{log.user}</TableCell>
+                        <TableCell className="px-2 py-4 align-top md:px-4">
+                            <div className="flex flex-col gap-2">
+                                <Badge variant="secondary">{log.action}</Badge>
+                                {log.reasonProvided ? (
+                                    <p className="text-xs text-muted-foreground">Reason: {log.reasonProvided}</p>
+                                ) : null}
+                            </div>
+                        </TableCell>
+                        <TableCell className="px-2 py-4 align-top md:px-4">
+                            <div className="flex flex-wrap gap-2">
+                                <Badge variant="outline">{category}</Badge>
+                                <Badge variant={severity === 'critical' ? 'destructive' : severity === 'warning' ? 'secondary' : 'outline'}>
+                                    {severity}
+                                </Badge>
+                                {log.securitySensitive ? <Badge variant="destructive">Sensitive</Badge> : null}
+                            </div>
+                        </TableCell>
+                        <TableCell className="break-words px-2 py-4 align-top md:px-4">
+                            <div className="space-y-2">
+                                <p>{log.details}</p>
+                                {(log.beforeSnapshot || log.afterSnapshot) ? (
+                                    <details className="rounded-lg border bg-muted/20 p-2 text-xs">
+                                        <summary className="cursor-pointer font-medium">Before / after</summary>
+                                        {log.beforeSnapshot ? (
+                                            <pre className="mt-2 overflow-auto whitespace-pre-wrap">{JSON.stringify(log.beforeSnapshot, null, 2)}</pre>
+                                        ) : null}
+                                        {log.afterSnapshot ? (
+                                            <pre className="mt-2 overflow-auto whitespace-pre-wrap">{JSON.stringify(log.afterSnapshot, null, 2)}</pre>
+                                        ) : null}
+                                    </details>
+                                ) : null}
+                            </div>
+                        </TableCell>
+                        </TableRow>
+                    );
+                })}
                 </TableBody>
             </Table>
           </div>

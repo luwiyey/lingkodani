@@ -148,6 +148,16 @@ class AppState extends ChangeNotifier {
     return _pendingActions.any((action) => action.messageId == messageId);
   }
 
+  List<MobileQueuedAction> pendingActionsForFarmer(String farmerId) {
+    return _pendingActions
+        .where(
+          (action) =>
+              action.type == MobileQueuedActionType.farmerNote &&
+              action.messageId == farmerId,
+        )
+        .toList(growable: false);
+  }
+
   Future<MobileActionSubmissionResult> sendSmsReply({
     required String messageId,
     required String reply,
@@ -245,6 +255,84 @@ class AppState extends ChangeNotifier {
         status: MobileActionSubmissionStatus.queued,
         detail:
             'Na-save offline ang YES/NO confirmation request at isi-sync ito kapag may signal.',
+      );
+    }
+  }
+
+  Future<MobileActionSubmissionResult> assignSmsMessage({
+    required String messageId,
+  }) async {
+    final session = _requireSession();
+
+    try {
+      await _api.assignSmsMessage(
+        session.idToken,
+        messageId: messageId,
+      );
+      await _removeQueuedAction(
+        userId: session.localId,
+        type: MobileQueuedActionType.assignMessage,
+        messageId: messageId,
+      );
+
+      return const MobileActionSubmissionResult(
+        status: MobileActionSubmissionStatus.sent,
+      );
+    } on LingkodAniApiException {
+      rethrow;
+    } catch (error) {
+      await _queueAction(
+        userId: session.localId,
+        type: MobileQueuedActionType.assignMessage,
+        messageId: messageId,
+        payload: const {},
+        error: error,
+      );
+
+      return const MobileActionSubmissionResult(
+        status: MobileActionSubmissionStatus.queued,
+        detail: 'Na-save offline ang case assignment at isi-sync ito kapag may signal.',
+      );
+    }
+  }
+
+  Future<MobileActionSubmissionResult> addFarmerNote({
+    required String farmerId,
+    required String note,
+  }) async {
+    final session = _requireSession();
+    final trimmedNote = note.trim();
+    final payload = <String, dynamic>{'note': trimmedNote};
+
+    try {
+      await _api.addFarmerNote(
+        session.idToken,
+        farmerId: farmerId,
+        note: trimmedNote,
+      );
+      await _removeQueuedAction(
+        userId: session.localId,
+        type: MobileQueuedActionType.farmerNote,
+        messageId: farmerId,
+      );
+
+      return const MobileActionSubmissionResult(
+        status: MobileActionSubmissionStatus.sent,
+      );
+    } on LingkodAniApiException {
+      rethrow;
+    } catch (error) {
+      await _queueAction(
+        userId: session.localId,
+        type: MobileQueuedActionType.farmerNote,
+        messageId: farmerId,
+        payload: payload,
+        error: error,
+      );
+
+      return const MobileActionSubmissionResult(
+        status: MobileActionSubmissionStatus.queued,
+        detail: 'Na-save offline ang farmer note at isi-sync ito kapag may signal.',
       );
     }
   }
@@ -386,6 +474,19 @@ class AppState extends ChangeNotifier {
           status: '${action.payload['status'] ?? 'in_progress'}',
           note: '${action.payload['note'] ?? ''}',
           verification: action.payload['verification'] as Map<String, dynamic>?,
+        );
+        return;
+      case MobileQueuedActionType.assignMessage:
+        await _api.assignSmsMessage(
+          session.idToken,
+          messageId: action.messageId,
+        );
+        return;
+      case MobileQueuedActionType.farmerNote:
+        await _api.addFarmerNote(
+          session.idToken,
+          farmerId: action.messageId,
+          note: '${action.payload['note'] ?? ''}',
         );
         return;
     }

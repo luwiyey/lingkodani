@@ -95,6 +95,54 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
     }
   }
 
+  Future<void> _addFarmerNote() async {
+    final appState = context.read<AppState>();
+    final messenger = ScaffoldMessenger.of(context);
+    final note = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _FarmerNoteActionSheet(),
+    );
+
+    if (note == null || note.trim().isEmpty) {
+      return;
+    }
+
+    try {
+      final result = await appState.addFarmerNote(
+        farmerId: widget.farmerId,
+        note: note.trim(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            result.queued
+                ? result.detail
+                : 'Na-save ang tala para kay ${widget.title}.',
+          ),
+        ),
+      );
+
+      if (!result.queued) {
+        setState(() => _future = _load());
+        await _future;
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(content: Text('$error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -105,6 +153,13 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1F2937),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Magdagdag ng tala',
+            onPressed: _addFarmerNote,
+            icon: const Icon(Icons.note_add_outlined),
+          ),
+        ],
       ),
       body: SafeArea(
         child: FutureBuilder<FarmerDetail>(
@@ -123,6 +178,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
 
             final detail = snapshot.data!;
             final farmer = detail.farmer;
+            final pendingFarmerNotes =
+                appState.pendingActionsForFarmer(widget.farmerId);
 
             return RefreshIndicator(
               onRefresh: () async {
@@ -290,6 +347,79 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                     ),
                   const SizedBox(height: 20),
                   const _SectionTitle(
+                    title: 'Mga tala at obserbasyon',
+                    subtitle:
+                        'Mga field note at mahahalagang obserbasyon para sa farmer na ito.',
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _addFarmerNote,
+                      icon: const Icon(Icons.note_add_outlined),
+                      label: const Text('Magdagdag ng Tala'),
+                    ),
+                  ),
+                  if (pendingFarmerNotes.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'May ${pendingFarmerNotes.length} pending note na isi-sync kapag bumalik ang signal.',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            ...pendingFarmerNotes.map(
+                              (action) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Text(
+                                  action.lastError == null ||
+                                          action.lastError!.isEmpty
+                                      ? 'Queued note - attempts: ${action.attempts}'
+                                      : 'Note retry needed - attempts: ${action.attempts} - ${action.lastError}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: action.lastError == null ||
+                                            action.lastError!.isEmpty
+                                        ? Colors.grey.shade700
+                                        : Colors.red.shade700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  if (detail.logbookEntries.isEmpty)
+                    const _EmptyCard(
+                      message: 'Wala pang note o logbook entry para sa farmer na ito.',
+                    )
+                  else
+                    ...detail.logbookEntries.map(
+                      (entry) => Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          title: Text(entry.title),
+                          subtitle: Text(
+                            [
+                              if (entry.type.isNotEmpty) entry.type,
+                              if (entry.timestamp.isNotEmpty) entry.timestamp,
+                              if (entry.description.isNotEmpty) entry.description,
+                            ].join(' - '),
+                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  const _SectionTitle(
                     title: 'Field visits',
                     subtitle:
                         'Mga naka-assign o natapos na pagbisita kaugnay ng concern.',
@@ -434,6 +564,81 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _FarmerNoteActionSheet extends StatefulWidget {
+  const _FarmerNoteActionSheet();
+
+  @override
+  State<_FarmerNoteActionSheet> createState() => _FarmerNoteActionSheetState();
+}
+
+class _FarmerNoteActionSheetState extends State<_FarmerNoteActionSheet> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Magdagdag ng Tala',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'I-save ang maikling obserbasyon, paalala, o field note para sa farmer na ito.',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _controller,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Ilagay ang tala o obserbasyon dito',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Kanselahin'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () =>
+                          Navigator.of(context).pop(_controller.text.trim()),
+                      child: const Text('I-save ang Tala'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

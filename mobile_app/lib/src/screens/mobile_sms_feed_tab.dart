@@ -164,6 +164,53 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
     }
   }
 
+  Future<void> _assignMessage(SmsFeedItem message) async {
+    final appState = context.read<AppState>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    setState(() {
+      _actionMessageId = message.id;
+    });
+
+    try {
+      final result = await appState.assignSmsMessage(messageId: message.id);
+
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            result.queued
+                ? result.detail
+                : 'Naitalaga ang case kay ${widget.session.email}.',
+          ),
+        ),
+      );
+      if (!result.queued) {
+        setState(() {
+          _future = _load();
+        });
+        await _future;
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(content: Text('$error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _actionMessageId = null;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -252,7 +299,10 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                               text: pendingAction.type ==
                                       MobileQueuedActionType.smsReply
                                   ? 'Pending reply sync'
-                                  : 'Pending resolve sync',
+                                  : pendingAction.type ==
+                                          MobileQueuedActionType.assignMessage
+                                      ? 'Pending assign sync'
+                                      : 'Pending resolve sync',
                             ),
                           if (message.assignedTo.isNotEmpty)
                             MobileInfoChip(text: 'Owner: ${message.assignedTo}'),
@@ -272,23 +322,34 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...pendingActions.map(
-                          (pendingAction) => Padding(
+                        ...pendingActions.map((pendingAction) {
+                          final actionLabel =
+                              pendingAction.type ==
+                                      MobileQueuedActionType.smsReply
+                                  ? 'Reply'
+                                  : pendingAction.type ==
+                                          MobileQueuedActionType.assignMessage
+                                      ? 'Assign'
+                                      : 'Resolve';
+                          final hasError =
+                              pendingAction.lastError != null &&
+                              pendingAction.lastError!.isNotEmpty;
+
+                          return Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Text(
-                              pendingAction.lastError == null ||
-                                      pendingAction.lastError!.isEmpty
-                                  ? '${pendingAction.type == MobileQueuedActionType.smsReply ? 'Reply' : 'Resolve'} queued · attempts: ${pendingAction.attempts}'
-                                  : '${pendingAction.type == MobileQueuedActionType.smsReply ? 'Reply' : 'Resolve'} retry needed · attempts: ${pendingAction.attempts} · ${pendingAction.lastError}',
+                              hasError
+                                  ? '$actionLabel retry needed - attempts: ${pendingAction.attempts} - ${pendingAction.lastError}'
+                                  : '$actionLabel queued - attempts: ${pendingAction.attempts}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: pendingAction.lastError == null
-                                    ? Colors.grey.shade700
-                                    : Colors.red.shade700,
+                                color: hasError
+                                    ? Colors.red.shade700
+                                    : Colors.grey.shade700,
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        }),
                       ],
                       if (message.aiAdvice.isNotEmpty) ...[
                         const SizedBox(height: 12),
@@ -333,7 +394,8 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                               label: const Text('Farmer'),
                             ),
                           FilledButton.icon(
-                            onPressed: actionBusy ? null : () => _sendReply(message),
+                            onPressed:
+                                actionBusy ? null : () => _sendReply(message),
                             icon: actionBusy
                                 ? const SizedBox(
                                     width: 14,
@@ -347,9 +409,19 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                             label: const Text('Reply'),
                           ),
                           FilledButton.tonalIcon(
-                            onPressed: actionBusy || message.caseStatus == 'closed'
+                            onPressed: actionBusy ||
+                                    message.caseStatus == 'closed' ||
+                                    message.assignedTo.isNotEmpty
                                 ? null
-                                : () => _requestResolution(message),
+                                : () => _assignMessage(message),
+                            icon: const Icon(Icons.assignment_ind_outlined),
+                            label: const Text('Assign'),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed:
+                                actionBusy || message.caseStatus == 'closed'
+                                    ? null
+                                    : () => _requestResolution(message),
                             icon: const Icon(Icons.verified_outlined),
                             label: const Text('Resolve'),
                           ),

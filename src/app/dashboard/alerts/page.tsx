@@ -353,6 +353,18 @@ export default function AlertsPage() {
                       <div className="space-y-1">
                         <p className="text-sm">{entry.message}</p>
                         <p className="text-xs text-muted-foreground">{entry.recommendation}</p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <Badge variant="outline">
+                            {entry.validationState === 'confirmed'
+                              ? 'Confirmed'
+                              : entry.validationState === 'dismissed'
+                                ? 'Dismissed'
+                                : 'Suspected'}
+                          </Badge>
+                          {typeof entry.triggerScore === 'number' ? (
+                            <Badge variant="outline">Signal score: {entry.triggerScore}</Badge>
+                          ) : null}
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>

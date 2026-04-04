@@ -11,6 +11,7 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/context/data-context';
 import type { FarmerAssistanceRecord, FieldVisitTask, SmsMessage } from '@/lib/types';
+import { getFollowUpLadderState } from '@/lib/services/follow-up-service';
 
 const actionButtonClassName = 'h-auto min-h-12 w-full whitespace-normal break-words px-4 py-3 text-center leading-snug';
 
@@ -119,6 +120,8 @@ function VisitCard({
 }
 
 function SmsFollowUpCard({ message }: { message: SmsMessage }) {
+  const ladder = getFollowUpLadderState(message);
+
   return (
     <div className="rounded-2xl border bg-background p-4 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -131,6 +134,14 @@ function SmsFollowUpCard({ message }: { message: SmsMessage }) {
           <p className="text-sm text-muted-foreground">{message.phone}</p>
           <p className="break-words text-sm">{message.message}</p>
           <p className="text-sm text-muted-foreground">Due: {formatDateTime(message.followUpDueAt as string)}</p>
+          <p className="text-sm text-muted-foreground">
+            Ladder: {ladder.label}
+            {message.followUpAttemptCount ? ` • attempts: ${message.followUpAttemptCount}` : ''}
+          </p>
+          <p className="text-xs text-muted-foreground">{ladder.helper}</p>
+          {message.followUpStopReason ? (
+            <p className="text-xs text-amber-700">{message.followUpStopReason}</p>
+          ) : null}
         </div>
         <div className="flex w-full flex-col gap-2 lg:max-w-[220px] lg:shrink-0">
           <Button variant="outline" asChild className={actionButtonClassName}>
@@ -191,7 +202,7 @@ function FollowUpPageContent() {
 
   const smsFollowUpQueue = useMemo(() => (
     [...smsMessages]
-      .filter((message) => !message.closedAt && !!message.followUpDueAt && !message.followUpSentAt)
+      .filter((message) => !message.closedAt && !!message.followUpDueAt && !message.followUpStopReason)
       .sort((left, right) => new Date(left.followUpDueAt as string).getTime() - new Date(right.followUpDueAt as string).getTime())
   ), [smsMessages]);
 

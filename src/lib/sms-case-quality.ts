@@ -144,3 +144,45 @@ export function getSmsCaseReportingCompleteness(message: SmsMessage) {
       Boolean(message.caseOutcomeSummary?.trim()),
   };
 }
+
+export function getSmsCaseOutcomeQuality(input: {
+  message: SmsMessage;
+  assistanceRecords?: FarmerAssistanceRecord[];
+  fieldVisitTasks?: FieldVisitTask[];
+}) {
+  const resolutionReadiness = getSmsCaseResolutionReadiness({
+    message: input.message,
+    assistanceRecords: input.assistanceRecords ?? [],
+    fieldVisitTasks: input.fieldVisitTasks ?? [],
+  });
+
+  let score = 0;
+
+  if (input.message.caseOutcomeStatus) score += 20;
+  if (input.message.caseOutcomeSummary?.trim()) score += 20;
+  if (input.message.assignedTo) score += 10;
+  if (input.message.respondedAt) score += 10;
+  if ((input.message.followUpAttemptCount ?? 0) > 0) score += 10;
+  if (resolutionReadiness.assistanceCount > 0) score += 10;
+  if (resolutionReadiness.completedVisitCount > 0) score += 10;
+  if (input.message.resolutionConfirmationStatus === "confirmed_by_farmer") score += 10;
+
+  const normalizedScore = Math.min(100, score);
+  const band =
+    normalizedScore >= 80
+      ? "high"
+      : normalizedScore >= 50
+        ? "medium"
+        : "low";
+
+  return {
+    score: normalizedScore,
+    band,
+    helper:
+      band === "high"
+        ? "Malinaw ang outcome at may sapat na supporting evidence."
+        : band === "medium"
+          ? "May naitalang outcome pero kailangan pa ng mas kumpletong evidence o confirmation."
+          : "Mahina pa ang outcome quality at hindi pa dapat ituring na mataas ang confidence.",
+  };
+}

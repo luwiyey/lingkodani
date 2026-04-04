@@ -351,6 +351,22 @@ export default function FarmerLogbookPage() {
         latestTouch,
       };
     }, [farmerAssistanceRecords, farmerAttachments, farmerConversation, farmerFieldVisits]);
+    const profileFreshness = useMemo(() => {
+      if (!farmer) {
+        return { stale: false, helper: '' };
+      }
+
+      const baseline = farmer.lastProfileReviewedAt ?? farmer.registrationDate;
+      const ageDays = (Date.now() - new Date(baseline).getTime()) / (1000 * 60 * 60 * 24);
+      const stale = Number.isFinite(ageDays) && ageDays >= 180;
+
+      return {
+        stale,
+        helper: stale
+          ? 'Matagal nang hindi nare-review ang profile. Mas mabuting i-validate muli ang lokasyon, seasonal crops, at contact details.'
+          : 'Nare-review pa ang profile sa makatwirang panahon.',
+      };
+    }, [farmer]);
     const supportJourneyItems = useMemo(() => {
       const items: Array<{
         id: string;
@@ -790,6 +806,9 @@ export default function FarmerLogbookPage() {
                           <Badge variant="outline">
                             Identity: {farmer.identityTrustLevel ?? 'unknown'}
                           </Badge>
+                          {farmer.profileSource ? (
+                            <Badge variant="outline">Source: {farmer.profileSource}</Badge>
+                          ) : null}
                           {farmer.duplicateRiskLevel && farmer.duplicateRiskLevel !== 'none' ? (
                             <Badge variant="outline">
                               {farmer.duplicateRiskLevel === 'shared_household'
@@ -800,6 +819,8 @@ export default function FarmerLogbookPage() {
                             </Badge>
                           ) : null}
                           {farmer.sharedPhone ? <Badge variant="outline">Shared phone</Badge> : null}
+                          {profileFreshness.stale ? <Badge variant="destructive">Needs profile review</Badge> : null}
+                          {farmer.hardToReachArea ? <Badge variant="outline">Hard-to-reach area</Badge> : null}
                           <Badge variant="secondary">Profile v{farmer.profileVersion ?? 1}</Badge>
                         </div>
                         <p><strong>Telepono:</strong> {farmer.phone}</p>
@@ -818,6 +839,38 @@ export default function FarmerLogbookPage() {
                         <p><strong>Sukat ng Bukid:</strong> {farmer.farmSize} ha</p>
                         <p><strong>Mga Pananim:</strong> {farmer.crops.join(', ')}</p>
                         <p><strong>Petsa ng Pagpaparehistro:</strong> {isClient ? new Date(farmer.registrationDate).toLocaleDateString() : ''}</p>
+                        {farmer.lastProfileReviewedAt ? (
+                          <p><strong>Huling profile review:</strong> {isClient ? new Date(farmer.lastProfileReviewedAt).toLocaleDateString() : ''}</p>
+                        ) : null}
+                        <p className="text-xs text-muted-foreground">{profileFreshness.helper}</p>
+                        {farmer.vulnerabilityFlags && farmer.vulnerabilityFlags.length > 0 ? (
+                          <div>
+                            <p><strong>Operational flags:</strong></p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {farmer.vulnerabilityFlags.map((flag) => (
+                                <Badge key={flag} variant="outline">{flag}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                        {farmer.plots && farmer.plots.length > 0 ? (
+                          <div>
+                            <p><strong>Mga lote / plot:</strong></p>
+                            <div className="mt-2 space-y-2">
+                              {farmer.plots.map((plot) => (
+                                <div key={plot.id} className="rounded-lg border bg-muted/10 p-3 text-xs">
+                                  <p className="font-medium text-foreground">{plot.label}</p>
+                                  <p className="mt-1 text-muted-foreground">
+                                    {plot.crop}
+                                    {typeof plot.sizeHectares === 'number' ? ` • ${plot.sizeHectares} ha` : ''}
+                                    {plot.sitio ? ` • ${plot.sitio}` : ''}
+                                    {plot.source ? ` • ${plot.source}` : ''}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                     </CardContent>
                 </Card>
                 <Card>

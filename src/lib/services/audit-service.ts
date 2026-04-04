@@ -6,6 +6,13 @@ export function createAuditEntry(input: {
   user?: string;
   timestamp?: string;
   id?: string;
+  category?: AuditLog["category"];
+  severity?: AuditLog["severity"];
+  reasonRequired?: boolean;
+  reasonProvided?: string;
+  beforeSnapshot?: AuditLog["beforeSnapshot"];
+  afterSnapshot?: AuditLog["afterSnapshot"];
+  securitySensitive?: boolean;
 }): AuditLog {
   const timestamp = input.timestamp ?? new Date().toISOString();
 
@@ -15,5 +22,12 @@ export function createAuditEntry(input: {
     user: input.user ?? "system",
     action: input.action,
     details: input.details,
+    category: input.category,
+    severity: input.severity,
+    reasonRequired: input.reasonRequired,
+    reasonProvided: input.reasonProvided,
+    beforeSnapshot: input.beforeSnapshot,
+    afterSnapshot: input.afterSnapshot,
+    securitySensitive: input.securitySensitive,
   };
 }
