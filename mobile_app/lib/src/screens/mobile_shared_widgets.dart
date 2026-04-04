@@ -153,3 +153,131 @@ class MobileErrorState extends StatelessWidget {
     );
   }
 }
+
+class MobileSyncWatchCard extends StatelessWidget {
+  const MobileSyncWatchCard({
+    super.key,
+    required this.pendingCount,
+    required this.retryNeededCount,
+    required this.manualReviewCount,
+    required this.longPendingCount,
+    required this.syncing,
+    required this.dataMayBeStale,
+    required this.lastSyncLabel,
+    this.errorMessage,
+  });
+
+  final int pendingCount;
+  final int retryNeededCount;
+  final int manualReviewCount;
+  final int longPendingCount;
+  final bool syncing;
+  final bool dataMayBeStale;
+  final String lastSyncLabel;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAttention =
+        retryNeededCount > 0 || manualReviewCount > 0 || longPendingCount > 0;
+    final backgroundColor = hasAttention
+        ? const Color(0xFFFEF2F2)
+        : dataMayBeStale
+            ? const Color(0xFFFFFBEB)
+            : const Color(0xFFF0FDF4);
+    final borderColor = hasAttention
+        ? const Color(0xFFFCA5A5)
+        : dataMayBeStale
+            ? const Color(0xFFFDE68A)
+            : const Color(0xFF86EFAC);
+    final iconColor = hasAttention
+        ? const Color(0xFFB91C1C)
+        : dataMayBeStale
+            ? const Color(0xFFB45309)
+            : const Color(0xFF166534);
+    final title = syncing
+        ? 'Nagsi-sync ang mobile queue'
+        : hasAttention
+            ? 'May mobile actions na kailangang bantayan'
+            : dataMayBeStale
+                ? 'Maaaring luma na ang ilang datos'
+                : 'Maayos ang huling mobile sync';
+
+    return Card(
+      color: backgroundColor,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  syncing
+                      ? Icons.sync_rounded
+                      : hasAttention
+                          ? Icons.warning_amber_rounded
+                          : dataMayBeStale
+                              ? Icons.history_toggle_off_rounded
+                              : Icons.cloud_done_rounded,
+                  color: iconColor,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: iconColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        lastSyncLabel,
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                MobileInfoChip(text: '$pendingCount pending'),
+                if (retryNeededCount > 0)
+                  MobileInfoChip(text: '$retryNeededCount retry needed'),
+                if (manualReviewCount > 0)
+                  MobileInfoChip(text: '$manualReviewCount manual review'),
+                if (longPendingCount > 0)
+                  MobileInfoChip(text: '$longPendingCount matagal nang pending'),
+              ],
+            ),
+            if (errorMessage != null && errorMessage!.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Huling sync issue: $errorMessage',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

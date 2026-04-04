@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/models/mobile_models.dart';
 import '../core/services/field_visit_location_service.dart';
+import 'mobile_shared_widgets.dart';
 import '../state/app_state.dart';
 
 class FarmerDetailScreen extends StatefulWidget {
@@ -143,6 +144,24 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
     }
   }
 
+  String _buildLastSyncLabel(AppState appState) {
+    final syncAge = appState.timeSinceLastPendingSync;
+
+    if (appState.syncingPendingActions) {
+      return 'Sinusubukang i-sync ngayon ang pending field updates at notes.';
+    }
+
+    if (syncAge == null) {
+      return 'Wala pang completed sync na naitala sa device na ito.';
+    }
+
+    if (syncAge.inMinutes < 1) {
+      return 'Kakasagawa lang ng huling sync.';
+    }
+
+    return 'Huling sync: ${syncAge.inMinutes} minuto na ang nakalipas.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -189,6 +208,17 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  MobileSyncWatchCard(
+                    pendingCount: appState.pendingActionCount,
+                    retryNeededCount: appState.retryNeededCount,
+                    manualReviewCount: appState.manualReviewCount,
+                    longPendingCount: appState.longPendingCount,
+                    syncing: appState.syncingPendingActions,
+                    dataMayBeStale: appState.dataMayBeStale,
+                    lastSyncLabel: _buildLastSyncLabel(appState),
+                    errorMessage: appState.pendingSyncError,
+                  ),
+                  const SizedBox(height: 12),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),

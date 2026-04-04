@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import 'farmer_detail_screen.dart';
 import 'mobile_alerts_tab.dart';
 import 'mobile_farmers_tab.dart';
+import 'mobile_shared_widgets.dart';
 import 'mobile_sms_feed_tab.dart';
 
 class HomeShell extends StatefulWidget {
@@ -73,6 +74,14 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final profile = appState.profile!;
+    final syncAge = appState.timeSinceLastPendingSync;
+    final lastSyncLabel = appState.syncingPendingActions
+        ? 'Sinusubukang i-sync ngayon ang pending mobile actions.'
+        : syncAge == null
+            ? 'Wala pang naitatalang completed sync sa device na ito.'
+            : syncAge.inMinutes < 1
+                ? 'Kakasagawa lang ng huling sync.'
+                : 'Huling sync: ${syncAge.inMinutes} minuto na ang nakalipas.';
 
     final tabs = [
       _OverviewTab(session: appState.session!, profile: profile),
@@ -292,6 +301,17 @@ class _OverviewTabState extends State<_OverviewTab> {
               Text(
                 '${widget.profile.title} • ${widget.profile.role}',
                 style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 16),
+              MobileSyncWatchCard(
+                pendingCount: appState.pendingActionCount,
+                retryNeededCount: appState.retryNeededCount,
+                manualReviewCount: appState.manualReviewCount,
+                longPendingCount: appState.longPendingCount,
+                syncing: appState.syncingPendingActions,
+                dataMayBeStale: appState.dataMayBeStale,
+                lastSyncLabel: lastSyncLabel,
+                errorMessage: appState.pendingSyncError,
               ),
               const SizedBox(height: 16),
               Wrap(

@@ -641,6 +641,26 @@ class MobileQueuedAction {
   final DateTime? lastAttemptAt;
   final String? lastError;
 
+  bool get hasError => lastError != null && lastError!.trim().isNotEmpty;
+  bool get needsManualReview => attempts >= 3;
+  bool get isLongPending =>
+      DateTime.now().difference(createdAt) >= const Duration(minutes: 30);
+
+  String get typeLabel {
+    switch (type) {
+      case MobileQueuedActionType.smsReply:
+        return 'SMS reply';
+      case MobileQueuedActionType.resolutionConfirmation:
+        return 'Resolution request';
+      case MobileQueuedActionType.fieldVisitStatus:
+        return 'Field visit update';
+      case MobileQueuedActionType.assignMessage:
+        return 'Case assignment';
+      case MobileQueuedActionType.farmerNote:
+        return 'Farmer note';
+    }
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

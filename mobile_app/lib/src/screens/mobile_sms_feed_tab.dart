@@ -211,6 +211,24 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
     }
   }
 
+  String _buildLastSyncLabel(AppState appState) {
+    final syncAge = appState.timeSinceLastPendingSync;
+
+    if (appState.syncingPendingActions) {
+      return 'Sinusubukang i-sync ngayon ang pending actions bago ma-refresh ang SMS feed.';
+    }
+
+    if (syncAge == null) {
+      return 'Wala pang completed sync na naitala sa device na ito.';
+    }
+
+    if (syncAge.inMinutes < 1) {
+      return 'Kakasagawa lang ng huling sync ng mobile actions.';
+    }
+
+    return 'Huling sync: ${syncAge.inMinutes} minuto na ang nakalipas.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -239,9 +257,25 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: messages.length,
+            itemCount: messages.length + 1,
             itemBuilder: (context, index) {
-              final message = messages[index];
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: MobileSyncWatchCard(
+                    pendingCount: appState.pendingActionCount,
+                    retryNeededCount: appState.retryNeededCount,
+                    manualReviewCount: appState.manualReviewCount,
+                    longPendingCount: appState.longPendingCount,
+                    syncing: appState.syncingPendingActions,
+                    dataMayBeStale: appState.dataMayBeStale,
+                    lastSyncLabel: _buildLastSyncLabel(appState),
+                    errorMessage: appState.pendingSyncError,
+                  ),
+                );
+              }
+
+              final message = messages[index - 1];
               final actionBusy = _actionMessageId == message.id;
               final pendingActions =
                   appState.pendingActionsForMessage(message.id);

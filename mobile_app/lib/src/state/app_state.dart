@@ -47,6 +47,33 @@ class AppState extends ChangeNotifier {
   List<MobileQueuedAction> get pendingActions =>
       List<MobileQueuedAction>.unmodifiable(_pendingActions);
   int get pendingActionCount => _pendingActions.length;
+  int get retryNeededCount =>
+      _pendingActions.where((action) => action.hasError).length;
+  int get manualReviewCount =>
+      _pendingActions.where((action) => action.needsManualReview).length;
+  int get longPendingCount =>
+      _pendingActions.where((action) => action.isLongPending).length;
+
+  Duration? get timeSinceLastPendingSync => _lastPendingSyncAt == null
+      ? null
+      : DateTime.now().difference(_lastPendingSyncAt!);
+
+  bool get dataMayBeStale {
+    final age = timeSinceLastPendingSync;
+
+    if (age == null) {
+      return pendingActionCount > 0;
+    }
+
+    if (pendingActionCount > 0) {
+      return age >= const Duration(minutes: 10);
+    }
+
+    return age >= const Duration(minutes: 30);
+  }
+
+  bool get queueNeedsAttention =>
+      retryNeededCount > 0 || manualReviewCount > 0 || longPendingCount > 0;
 
   Future<void> bootstrap() async {
     _bootstrapping = true;
