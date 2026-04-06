@@ -195,14 +195,18 @@ class LingkodAniApi {
     String note = '',
     Map<String, dynamic>? verification,
   }) async {
+    final body = <String, dynamic>{
+      'status': status,
+      if (note.trim().isNotEmpty) 'note': note.trim(),
+    };
+    if (verification != null) {
+      body['verification'] = verification;
+    }
+
     final response = await _patch(
       '/api/mobile/field-visits/${Uri.encodeComponent(visitId)}',
       idToken: idToken,
-      body: {
-        'status': status,
-        if (note.trim().isNotEmpty) 'note': note.trim(),
-        if (verification != null) 'verification': verification,
-      },
+      body: body,
     );
 
     return FieldVisitSummary.fromJson(

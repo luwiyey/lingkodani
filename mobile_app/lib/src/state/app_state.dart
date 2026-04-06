@@ -374,8 +374,10 @@ class AppState extends ChangeNotifier {
     final payload = <String, dynamic>{
       'status': status,
       if (note.trim().isNotEmpty) 'note': note.trim(),
-      if (verification != null) 'verification': verification,
     };
+    if (verification != null) {
+      payload['verification'] = verification;
+    }
 
     try {
       await _api.updateFieldVisitStatus(

@@ -74,14 +74,6 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final profile = appState.profile!;
-    final syncAge = appState.timeSinceLastPendingSync;
-    final lastSyncLabel = appState.syncingPendingActions
-        ? 'Sinusubukang i-sync ngayon ang pending mobile actions.'
-        : syncAge == null
-            ? 'Wala pang naitatalang completed sync sa device na ito.'
-            : syncAge.inMinutes < 1
-                ? 'Kakasagawa lang ng huling sync.'
-                : 'Huling sync: ${syncAge.inMinutes} minuto na ang nakalipas.';
 
     final tabs = [
       _OverviewTab(session: appState.session!, profile: profile),
@@ -254,6 +246,24 @@ class _OverviewTab extends StatefulWidget {
 class _OverviewTabState extends State<_OverviewTab> {
   late Future<MobileOverview> _future;
 
+  String _buildLastSyncLabel(AppState appState) {
+    final syncAge = appState.timeSinceLastPendingSync;
+
+    if (appState.syncingPendingActions) {
+      return 'Sinusubukang i-sync ngayon ang pending mobile actions.';
+    }
+
+    if (syncAge == null) {
+      return 'Wala pang naitatalang completed sync sa device na ito.';
+    }
+
+    if (syncAge.inMinutes < 1) {
+      return 'Kakasagawa lang ng huling sync.';
+    }
+
+    return 'Huling sync: ${syncAge.inMinutes} minuto na ang nakalipas.';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -266,6 +276,8 @@ class _OverviewTabState extends State<_OverviewTab> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+
     return FutureBuilder<MobileOverview>(
       future: _future,
       builder: (context, snapshot) {
@@ -310,7 +322,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                 longPendingCount: appState.longPendingCount,
                 syncing: appState.syncingPendingActions,
                 dataMayBeStale: appState.dataMayBeStale,
-                lastSyncLabel: lastSyncLabel,
+                lastSyncLabel: _buildLastSyncLabel(appState),
                 errorMessage: appState.pendingSyncError,
               ),
               const SizedBox(height: 16),
