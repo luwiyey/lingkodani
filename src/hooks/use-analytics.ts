@@ -8,7 +8,7 @@ import type { Resource, SmsMessage } from '@/lib/types';
 import { getSmsCaseExceptionFlags } from '@/lib/sms-case-exceptions';
 import { getSmsCaseReportingCompleteness } from '@/lib/sms-case-quality';
 import { getEffectiveSmsCaseOutcome, isAwaitingFarmerConfirmation, isFarmerConfirmedResolution } from '@/lib/sms-case-outcomes';
-import { buildInterventionEffectiveness, buildOutbreakSeries, getCaseOperationalConfidence, inferOutbreakClusters } from '@/lib/case-intelligence';
+import { buildInterventionEffectiveness, buildOutbreakSeries, getCaseOperationalConfidence, inferOutbreakClusters, summarizeOutbreakClusters } from '@/lib/case-intelligence';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
 import { normalizeSmsMessage } from '@/lib/sms-normalization';
 
@@ -609,7 +609,10 @@ export function useAnalytics() {
     const outbreakClusters = inferOutbreakClusters({
       messages: sortedByTime,
       farmers,
+      alertHistory: filteredAlertHistory,
+      now: anchorDate.toISOString(),
     });
+    const outbreakWatchSummary = summarizeOutbreakClusters(outbreakClusters);
     const interventionEffectivenessData = buildInterventionEffectiveness({
       messages: sortedByTime,
       assistanceRecords: filteredAssistanceRecords,
@@ -717,6 +720,7 @@ export function useAnalytics() {
       lowTrustCaseCount,
       weightedResolvedCount,
       outbreakClusters,
+      outbreakWatchSummary,
       interventionEffectivenessData,
       topInterventionEffectiveness,
       reportingReadyCases,

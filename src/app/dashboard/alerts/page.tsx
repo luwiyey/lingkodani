@@ -4,7 +4,16 @@ import React, { useMemo, useState } from 'react';
 import { Bot, Droplets, Send, ShieldAlert, Siren, Sparkles, Sun, Wind } from 'lucide-react';
 
 import { generateAlert, type GenerateAlertOutput } from '@/ai/flows/generate-alert';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +22,11 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { useData } from '@/context/data-context';
 import { AiStatusBanner } from '@/components/shared/ai-status-banner';
+import { useData } from '@/context/data-context';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
+import { useToast } from '@/hooks/use-toast';
 
 const alertIcons: Record<string, React.ElementType> = {
   flood: Droplets,
@@ -41,6 +50,25 @@ const sourceLabelMap = {
   manual: 'Manual',
 } as const;
 
+const clusterStageLabelMap = {
+  strong: 'Malakas na signal',
+  suspected: 'Posibleng cluster',
+  weak: 'Mahinang signal',
+} as const;
+
+const clusterValidationLabelMap = {
+  confirmed: 'Kumpirmado',
+  suspected: 'Pinaghihinalaan',
+  dismissed: 'Na-dismiss na',
+  unreviewed: 'Hindi pa nare-review',
+} as const;
+
+const clusterTrendLabelMap = {
+  rising: 'Tumitindi',
+  steady: 'Nananatili',
+  cooling: 'Humuhupa',
+} as const;
+
 const severityVariant: Record<'Critical' | 'Warning', 'destructive' | 'secondary'> = {
   Critical: 'destructive',
   Warning: 'secondary',
@@ -53,7 +81,7 @@ export default function AlertsPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
   const { alertHistory, broadcastAlert } = useData();
-  const { outbreakClusters } = useAnalytics();
+  const { outbreakClusters, outbreakWatchSummary } = useAnalytics();
   const { capabilities, capabilitiesLoading } = useRuntimeCapabilities();
   const aiAlertLocked = !capabilities.aiConfigured;
   const liveBroadcastLocked =
@@ -183,34 +211,64 @@ export default function AlertsPage() {
       </div>
 
       <AiStatusBanner
-        title={aiAlertLocked ? "AI alert generation locked" : "AI alert generation ready"}
-        description={
-          aiAlertLocked
-            ? aiLockMessage
-            : "Available ang AI alert generation sa build na ito."
-        }
+        title={aiAlertLocked ? 'AI alert generation locked' : 'AI alert generation ready'}
+        description={aiAlertLocked ? aiLockMessage : 'Available ang AI alert generation sa build na ito.'}
       />
       {liveBroadcastLocked ? (
-        <AiStatusBanner
-          title="Live SMS broadcast locked"
-          description={broadcastLockMessage}
-        />
+        <AiStatusBanner title="Live SMS broadcast locked" description={broadcastLockMessage} />
       ) : null}
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ShieldAlert /> Auto-detected Outbreak Signals</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert /> Auto-detected Outbreak Signals
+          </CardTitle>
           <CardDescription>
-            Mga clustered na ulat batay sa zone, crop, at symptom pattern. Ito ay decision support lamang at kailangan pa ring i-validate bago i-broadcast.
+            Mga clustered na ulat batay sa zone, crop, at symptom pattern. May kasama na ngayong validation state, trend-vs-baseline, at susunod na hakbang bago magdesisyon sa advisory broadcast.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Kabuuang Cluster</p>
+              <p className="mt-2 text-3xl font-semibold">{outbreakWatchSummary.totalClusters}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {outbreakWatchSummary.strongClusters} malakas, {outbreakWatchSummary.suspectedClusters} posibleng hotspot
+              </p>
+            </div>
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Trend Watch</p>
+              <p className="mt-2 text-3xl font-semibold">{outbreakWatchSummary.risingClusters}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                tumitinding signal, {outbreakWatchSummary.coolingClusters} humuhupa
+              </p>
+            </div>
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Validation</p>
+              <p className="mt-2 text-3xl font-semibold">{outbreakWatchSummary.confirmedClusters}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                kumpirmado, {outbreakWatchSummary.unreviewedClusters} hindi pa nare-review
+              </p>
+            </div>
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Pinakamataas na Score</p>
+              <p className="mt-2 text-3xl font-semibold">{outbreakWatchSummary.highestScore}</p>
+              <p className="mt-1 text-xs text-muted-foreground">pinakamalakas na kasalukuyang combined signal</p>
+            </div>
+          </div>
+
           {outbreakClusters.slice(0, 4).map((cluster) => (
             <div key={cluster.key} className="rounded-xl border p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-medium">{cluster.zone}</p>
                 <Badge variant={cluster.stage === 'strong' ? 'destructive' : 'secondary'}>
-                  {cluster.stage === 'strong' ? 'Strong cluster' : cluster.stage === 'suspected' ? 'Suspected cluster' : 'Weak cluster'}
+                  {clusterStageLabelMap[cluster.stage]}
+                </Badge>
+                <Badge variant={cluster.validationState === 'confirmed' ? 'default' : cluster.validationState === 'dismissed' ? 'secondary' : 'outline'}>
+                  {clusterValidationLabelMap[cluster.validationState]}
+                </Badge>
+                <Badge variant={cluster.trendDirection === 'rising' ? 'destructive' : 'outline'}>
+                  {clusterTrendLabelMap[cluster.trendDirection]}
                 </Badge>
                 <Badge variant="outline">{cluster.crop}</Badge>
                 <Badge variant="outline">{cluster.signal}</Badge>
@@ -219,10 +277,36 @@ export default function AlertsPage() {
                 {cluster.reportCount} magkakaugnay na ulat, {cluster.affectedFarmers} apektadong farmer, {cluster.unresolvedCount} hindi pa resolved.
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Latest seen: {new Date(cluster.latestObservedAt).toLocaleString()} · Cluster score: {cluster.score}
+                Huling nakita: {new Date(cluster.latestObservedAt).toLocaleString()} · Signal score: {cluster.score}
               </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Recent Window</p>
+                  <p className="mt-1 text-lg font-semibold">{cluster.recentReportCount}</p>
+                  <p className="text-xs text-muted-foreground">ulat sa pinakahuling watch window</p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Baseline</p>
+                  <p className="mt-1 text-lg font-semibold">{cluster.baselineReportCount}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {cluster.trendDelta === 0 ? 'walang pagbabago' : `${cluster.trendDelta > 0 ? '+' : ''}${cluster.trendDelta} delta`} kumpara sa nakaraang window
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Validation Source</p>
+                  <p className="mt-1 text-lg font-semibold">{cluster.validationSource === 'history' ? 'May history' : 'Inferred'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {cluster.matchedAlertId ? `Batay sa alert history ${cluster.matchedAlertId}` : 'Wala pang matching alert history'}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Susunod na Hakbang</p>
+                <p className="mt-1 text-sm">{cluster.recommendedAction}</p>
+              </div>
             </div>
           ))}
+
           {outbreakClusters.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Wala pang sapat na magkakatugmang ulat para sa outbreak cluster detection sa kasalukuyang dataset.
@@ -234,7 +318,9 @@ export default function AlertsPage() {
       <Dialog>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Bot /> Bumuo ng Alerto gamit ang AI</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Bot /> Bumuo ng Alerto gamit ang AI
+            </CardTitle>
             <CardDescription>Maglagay ng SMS summary at weather data para awtomatikong gumawa ng rekomendadong alerto.</CardDescription>
           </CardHeader>
           <CardFooter>
@@ -286,10 +372,18 @@ export default function AlertsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
-                    <p><strong>Uri:</strong> {alertTitleMap[generatedAlert.alert.type]}</p>
-                    <p><strong>Lala:</strong> {generatedAlert.alert.severity}</p>
-                    <p><strong>Mensahe:</strong> {generatedAlert.alert.message}</p>
-                    <p><strong>Rekomendasyon:</strong> {generatedAlert.alert.recommendation}</p>
+                    <p>
+                      <strong>Uri:</strong> {alertTitleMap[generatedAlert.alert.type]}
+                    </p>
+                    <p>
+                      <strong>Lala:</strong> {generatedAlert.alert.severity}
+                    </p>
+                    <p>
+                      <strong>Mensahe:</strong> {generatedAlert.alert.message}
+                    </p>
+                    <p>
+                      <strong>Rekomendasyon:</strong> {generatedAlert.alert.recommendation}
+                    </p>
                   </CardContent>
                   <CardFooter>
                     <Button onClick={() => setShowConfirmDialog(true)} className="w-full" disabled={liveBroadcastLocked || capabilitiesLoading}>

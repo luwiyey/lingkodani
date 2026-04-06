@@ -2,8 +2,9 @@ import {
   buildInterventionEffectiveness,
   getCaseOperationalConfidence,
   inferOutbreakClusters,
+  summarizeOutbreakClusters,
 } from "@/lib/case-intelligence";
-import type { Farmer, FarmerAssistanceRecord, FieldVisitTask, SmsMessage } from "@/lib/types";
+import type { AlertHistoryEntry, Farmer, FarmerAssistanceRecord, FieldVisitTask, SmsMessage } from "@/lib/types";
 
 const farmers: Farmer[] = [
   {
@@ -69,16 +70,40 @@ const messages: SmsMessage[] = [
   },
 ];
 
+const alertHistory: AlertHistoryEntry[] = [
+  {
+    id: "ALH-1",
+    title: "Pagdami ng Peste sa Palayan",
+    timestamp: "2025-01-06T06:00:00.000Z",
+    type: "pest",
+    severity: "Warning",
+    validationState: "confirmed",
+    triggerScore: 66,
+    message: "Babala: sunod-sunod na ulat ng peste sa palay ng Zone 1.",
+    recommendation: "Mag-inspeksyon agad sa Zone 1 palayan.",
+    source: "ai",
+    recipientFarmerIds: ["FARM-1", "FARM-2"],
+    sentCount: 2,
+    failedCount: 0,
+  },
+];
+
 describe("case-intelligence", () => {
   it("infers outbreak clusters from repeated zone/crop/symptom signals", () => {
     const clusters = inferOutbreakClusters({
       messages,
       farmers,
+      alertHistory,
+      now: "2025-01-07T00:00:00.000Z",
     });
 
     expect(clusters[0]?.zone).toBe("Zone 1");
     expect(clusters[0]?.reportCount).toBe(2);
     expect(clusters[0]?.score).toBeGreaterThanOrEqual(40);
+    expect(clusters[0]?.validationState).toBe("confirmed");
+    expect(clusters[0]?.trendDirection).toBe("rising");
+    expect(clusters[0]?.recentReportCount).toBe(2);
+    expect(clusters[0]?.matchedAlertId).toBe("ALH-1");
   });
 
   it("boosts operational confidence when visits or assistance exist", () => {
@@ -129,5 +154,20 @@ describe("case-intelligence", () => {
 
     expect(summary[0]?.type).toBe("Awaiting action");
     expect(summary[0]?.totalCases).toBeGreaterThanOrEqual(1);
+  });
+
+  it("builds outbreak watch summaries for supervisor dashboards", () => {
+    const clusters = inferOutbreakClusters({
+      messages,
+      farmers,
+      alertHistory,
+      now: "2025-01-07T00:00:00.000Z",
+    });
+    const summary = summarizeOutbreakClusters(clusters);
+
+    expect(summary.totalClusters).toBe(1);
+    expect(summary.confirmedClusters).toBe(1);
+    expect(summary.risingClusters).toBe(1);
+    expect(summary.highestScore).toBeGreaterThan(0);
   });
 });

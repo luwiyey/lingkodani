@@ -68,6 +68,7 @@ function ReportsPageContent() {
       lowTrustCaseCount,
       weightedResolvedCount,
       outbreakClusters,
+      outbreakWatchSummary,
       interventionEffectivenessData,
       topInterventionEffectiveness,
       reportingReadyCases,
@@ -114,6 +115,10 @@ function ReportsPageContent() {
           `Trusted cases: ${trustedCaseCount}`,
           `Low-trust cases: ${lowTrustCaseCount}`,
           `Weighted resolved count: ${weightedResolvedCount}`,
+          `Outbreak clusters: ${outbreakWatchSummary.totalClusters}`,
+          `Confirmed outbreak signals: ${outbreakWatchSummary.confirmedClusters}`,
+          `Unreviewed outbreak signals: ${outbreakWatchSummary.unreviewedClusters}`,
+          `Rising outbreak signals: ${outbreakWatchSummary.risingClusters}`,
           `Risk alerts: ${riskAlerts.length}`,
           `Alert broadcasts sent: ${totalAlertBroadcasts}`,
           `Broadcast recipients reached: ${broadcastRecipients}`,
@@ -126,7 +131,7 @@ function ReportsPageContent() {
           `Stale market prices: ${stalePriceCount}`,
           `Top keyword: ${hasTopKeyword ? `${topKeyword?.word} (${topKeyword?.count})` : 'Kulangan pa ng live SMS text data'}`,
           `Top hotspot: ${hasTopHotspot ? `${topHotspot?.zone} (${topHotspot?.issues} ulat)` : 'Kulangan pa ng live location-linked reports'}`,
-          `Top outbreak cluster: ${topOutbreakCluster ? `${topOutbreakCluster.zone} / ${topOutbreakCluster.crop} / ${topOutbreakCluster.signal} (${topOutbreakCluster.reportCount} ulat)` : 'Wala pang malinaw na clustered signal'}`,
+          `Top outbreak cluster: ${topOutbreakCluster ? `${topOutbreakCluster.zone} / ${topOutbreakCluster.crop} / ${topOutbreakCluster.signal} (${topOutbreakCluster.reportCount} ulat, ${topOutbreakCluster.validationState}, ${topOutbreakCluster.trendDirection})` : 'Wala pang malinaw na clustered signal'}`,
           `Best intervention pattern: ${topInterventionEffectiveness ? `${topInterventionEffectiveness.type} (${topInterventionEffectiveness.confirmedRate}% confirmed)` : 'Kulangan pa ng resolved intervention data'}`,
           ``,
           `Recommendations:`,
@@ -291,8 +296,11 @@ function ReportsPageContent() {
                     <p>May <strong>{exceptionCases}</strong> cases na may operational exceptions ngayon, at <strong>{criticalExceptionCases}</strong> dito ang may high-severity risk tulad ng urgent na walang aksyon, failed follow-through, o kulang na closeout evidence. <strong>{supervisorReviewCases}</strong> ang dapat makita sa supervisor review queue.</p>
                     <p>
                       {topOutbreakCluster
-                        ? <>Ang pinakamalakas na outbreak signal ngayon ay nasa <strong>{topOutbreakCluster.zone}</strong> para sa <strong>{topOutbreakCluster.crop}</strong> na may pattern na <strong>{topOutbreakCluster.signal}</strong>, na may {topOutbreakCluster.reportCount} magkakaugnay na ulat.</>
+                        ? <>Ang pinakamalakas na outbreak signal ngayon ay nasa <strong>{topOutbreakCluster.zone}</strong> para sa <strong>{topOutbreakCluster.crop}</strong> na may pattern na <strong>{topOutbreakCluster.signal}</strong>, na may {topOutbreakCluster.reportCount} magkakaugnay na ulat, status na <strong>{topOutbreakCluster.validationState}</strong>, at trend na <strong>{topOutbreakCluster.trendDirection}</strong>.</>
                         : <>Wala pang sapat na magkakaugnay na reports para sa malinaw na outbreak cluster sa timeframe na ito.</>}
+                    </p>
+                    <p>
+                      Sa outbreak watch summary, may <strong>{outbreakWatchSummary.confirmedClusters}</strong> kumpirmadong cluster, <strong>{outbreakWatchSummary.unreviewedClusters}</strong> hindi pa nare-review, at <strong>{outbreakWatchSummary.risingClusters}</strong> tumitinding signal na dapat unahin sa hotspot review.
                     </p>
                     <p>
                       {topInterventionEffectiveness
@@ -362,6 +370,18 @@ function ReportsPageContent() {
                       {topOutbreakCluster
                         ? `${topOutbreakCluster.zone} · ${topOutbreakCluster.crop} · ${topOutbreakCluster.signal}`
                         : 'Wala pang strong cluster ngayon'}
+                    </p>
+                </CardContent>
+            </Card>
+            <Card className={outbreakWatchSummary.risingClusters > 0 ? 'border-amber-300/60' : ''}>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Outbreak Validation</CardTitle>
+                    <CardDescription>Alin ang kumpirmado, tumitindi, o kailangan pang i-review.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{outbreakWatchSummary.confirmedClusters}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {outbreakWatchSummary.risingClusters} rising, {outbreakWatchSummary.unreviewedClusters} unreviewed, {outbreakWatchSummary.dismissedClusters} dismissed
                     </p>
                 </CardContent>
             </Card>
