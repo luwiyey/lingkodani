@@ -118,6 +118,7 @@ export function SystemStatusPanel() {
   const outboundSummary = runtimeHealth.outboundDeliverySummary;
   const outboundReconciliation = runtimeHealth.outboundReconciliationSummary;
   const outboundAttentionItems = runtimeHealth.outboundAttentionItems;
+  const recoveryConsoleItems = runtimeHealth.recoveryConsoleItems;
 
   const smsCapability = buildCapabilityState(capabilities.liveSmsConfigured);
   const aiCapability = buildCapabilityState(capabilities.aiConfigured);
@@ -466,6 +467,9 @@ export function SystemStatusPanel() {
             <Badge variant={outboundAttentionItems.length > 0 ? "destructive" : "outline"}>
               {outboundAttentionItems.length} nangangailangan ng manual attention
             </Badge>
+            <Badge variant={recoveryConsoleItems.length > outboundAttentionItems.length ? "secondary" : "outline"}>
+              {recoveryConsoleItems.length} total recovery items
+            </Badge>
             <Badge variant="outline">
               {outboundSummary.awaitingReceiptCount} awaiting receipt
             </Badge>
@@ -518,6 +522,61 @@ export function SystemStatusPanel() {
               <Link href="/dashboard/operations">Buksan ang Operations Center</Link>
             </Button>
           </div>
+          {recoveryConsoleItems.length > 0 ? (
+            <div className="rounded-xl border border-dashed p-4">
+              <p className="text-sm font-medium text-foreground">Mas kumpletong recovery queue</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Kasama rito ang outbound retry candidates at subsystem/automation failures na may suggested next action.
+              </p>
+              <div className="mt-3 space-y-3">
+                {recoveryConsoleItems.map((item) => (
+                  <div key={`${item.kind}-${item.id}`} className="rounded-lg border bg-background/80 p-3 text-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{item.label}</p>
+                        <p className="mt-1 text-muted-foreground">{item.detail}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{item.kind === "outbound" ? "outbound" : "subsystem"}</Badge>
+                        <Badge variant={item.status === "error" ? "destructive" : "secondary"}>
+                          {item.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Last seen: {formatRuntimeTimestamp(item.lastSeenAt)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Next action: {item.suggestedAction}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {item.retryableOutboundId ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (!item.retryableOutboundId) {
+                              return;
+                            }
+
+                            void handleRetryOutbound(item.retryableOutboundId);
+                          }}
+                          disabled={retryingOutboundId === item.retryableOutboundId}
+                        >
+                          {retryingOutboundId === item.retryableOutboundId ? "Ni-reretry..." : "I-retry ang send"}
+                        </Button>
+                      ) : null}
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={item.kind === "outbound" ? "/dashboard/sms-feed" : "/dashboard/operations"}>
+                          Buksan ang kaugnay na page
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

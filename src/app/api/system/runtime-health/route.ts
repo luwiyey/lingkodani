@@ -159,6 +159,26 @@ function serializeOutboundWatch(message: OutboundMessage) {
   };
 }
 
+function buildSubsystemRecoveryAction(record: RuntimeHealthRecord) {
+  if (record.id === "automation_overdue" || record.id === "automation_followups") {
+    return "Patakbuhin muli ang batch check at tingnan kung may stuck SMS case o missing follow-up state.";
+  }
+
+  if (record.id === "sms_outbound_webhook") {
+    return "I-compare ang provider delivery receipts at outbound records para sa missing o delayed webhook events.";
+  }
+
+  if (record.id === "mobile_push") {
+    return "Suriin ang Firebase Admin credentials, device registration, at push topic delivery logs.";
+  }
+
+  if (record.id === "invite_email") {
+    return "Suriin ang email provider config at retry the invite handoff kung may bagong staff onboarding.";
+  }
+
+  return "Suriin ang technical details ng subsystem na ito at mag-manual rerun kung ligtas gawin.";
+}
+
 export async function GET(request: Request) {
   const auth = await authenticateServerRequest(request, ["barangay", "developer"]);
 
@@ -209,6 +229,31 @@ export async function GET(request: Request) {
     timestampMissingCount: recentOutboundWatch.filter((item) => item.reconciliationState === "timestamp_missing").length,
     retryableCount: recentOutboundWatch.filter((item) => item.attentionCategory === "failed_send").length,
   };
+  const subsystemRecoveryItems = records
+    .filter((record) => record.status !== "ok")
+    .slice(0, 6)
+    .map((record) => ({
+      id: record.id,
+      kind: "subsystem" as const,
+      label: record.label,
+      status: record.status,
+      lastSeenAt: record.lastFailureAt ?? record.updatedAt,
+      detail: record.lastError ?? "May warning status pero walang karagdagang error detail.",
+      suggestedAction: buildSubsystemRecoveryAction(record),
+    }));
+  const recoveryConsoleItems = [
+    ...outboundAttentionItems.map((item) => ({
+      id: item.id,
+      kind: "outbound" as const,
+      label: `${item.purpose} -> ${item.recipientPhone}`,
+      status: "warn" as const,
+      lastSeenAt: item.lastStatusAt ?? item.createdAt,
+      detail: item.attentionReason ?? "Kailangan ng manual review.",
+      suggestedAction: item.recoveryAction ?? "Buksan ang SMS feed at suriin ang latest outbound state.",
+      retryableOutboundId: item.attentionCategory === "failed_send" ? item.id : null,
+    })),
+    ...subsystemRecoveryItems,
+  ].slice(0, 10);
 
   return NextResponse.json({
     records,
@@ -241,6 +286,7 @@ export async function GET(request: Request) {
     outboundReconciliationSummary,
     outboundAttentionItems,
     recentOutboundWatch,
+    recoveryConsoleItems,
     latestFailure: serializeRuntimeRecord(latestFailure),
     latestAutomationFailure: serializeRuntimeRecord(latestAutomationFailure),
     latestWebhook: serializeRuntimeRecord(latestWebhook),

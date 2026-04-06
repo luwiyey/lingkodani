@@ -82,6 +82,16 @@ type RuntimeHealthPayload = {
     deliveryState: string;
     reconciliationState: string;
   }>;
+  recoveryConsoleItems: Array<{
+    id: string;
+    kind: "outbound" | "subsystem";
+    label: string;
+    status: string;
+    lastSeenAt: string;
+    detail: string;
+    suggestedAction: string;
+    retryableOutboundId?: string | null;
+  }>;
   recentOutboundWatch: Array<{
     id: string;
     createdAt: string;
@@ -168,6 +178,7 @@ export function useRuntimeHealth() {
       retryableCount: 0,
     },
     outboundAttentionItems: [],
+    recoveryConsoleItems: [],
     recentOutboundWatch: [],
     latestFailure: null,
     latestAutomationFailure: null,
