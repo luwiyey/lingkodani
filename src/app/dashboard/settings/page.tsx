@@ -165,6 +165,12 @@ export default function BarangaySettingsPage() {
     const [retentionEnabled, setRetentionEnabled] = useState(defaultSystemSettings.retentionPolicy.autoRedactionEnabled);
     const [auditLogRedactionDays, setAuditLogRedactionDays] = useState(defaultSystemSettings.retentionPolicy.auditLogRedactionDays);
     const [archivedFarmerRedactionDays, setArchivedFarmerRedactionDays] = useState(defaultSystemSettings.retentionPolicy.archivedFarmerRedactionDays);
+    const [pushQuietHoursEnabled, setPushQuietHoursEnabled] = useState(defaultSystemSettings.notificationPolicy.quietHoursEnabled);
+    const [pushQuietHoursStart, setPushQuietHoursStart] = useState(defaultSystemSettings.notificationPolicy.quietHoursStart);
+    const [pushQuietHoursEnd, setPushQuietHoursEnd] = useState(defaultSystemSettings.notificationPolicy.quietHoursEnd);
+    const [urgentPushCooldownMinutes, setUrgentPushCooldownMinutes] = useState(defaultSystemSettings.notificationPolicy.urgentPushCooldownMinutes);
+    const [maxConsecutivePushFailures, setMaxConsecutivePushFailures] = useState(defaultSystemSettings.notificationPolicy.maxConsecutivePushFailures);
+    const [fallbackToStaffSms, setFallbackToStaffSms] = useState(defaultSystemSettings.notificationPolicy.fallbackToStaffSms);
     const [runningAutomation, setRunningAutomation] = useState<null | 'overdue' | 'followup' | 'retention'>(null);
     const [isImportingLexicon, setIsImportingLexicon] = useState(false);
     const [isImportingTraining, setIsImportingTraining] = useState(false);
@@ -222,6 +228,12 @@ export default function BarangaySettingsPage() {
         setRetentionEnabled(systemSettings.retentionPolicy.autoRedactionEnabled);
         setAuditLogRedactionDays(systemSettings.retentionPolicy.auditLogRedactionDays);
         setArchivedFarmerRedactionDays(systemSettings.retentionPolicy.archivedFarmerRedactionDays);
+        setPushQuietHoursEnabled(systemSettings.notificationPolicy.quietHoursEnabled);
+        setPushQuietHoursStart(systemSettings.notificationPolicy.quietHoursStart);
+        setPushQuietHoursEnd(systemSettings.notificationPolicy.quietHoursEnd);
+        setUrgentPushCooldownMinutes(systemSettings.notificationPolicy.urgentPushCooldownMinutes);
+        setMaxConsecutivePushFailures(systemSettings.notificationPolicy.maxConsecutivePushFailures);
+        setFallbackToStaffSms(systemSettings.notificationPolicy.fallbackToStaffSms);
     }, [systemSettings]);
 
     const handleOpenEditDialog = (categoryId: string, template: SystemTemplate) => {
@@ -580,6 +592,14 @@ export default function BarangaySettingsPage() {
             smsLexiconRules,
             autoReplyEnabled,
             autoReplyTimeoutMinutes: Math.max(1, autoReplyTimeout),
+            notificationPolicy: {
+              quietHoursEnabled: pushQuietHoursEnabled,
+              quietHoursStart: pushQuietHoursStart,
+              quietHoursEnd: pushQuietHoursEnd,
+              urgentPushCooldownMinutes: Math.max(5, urgentPushCooldownMinutes),
+              maxConsecutivePushFailures: Math.max(1, maxConsecutivePushFailures),
+              fallbackToStaffSms,
+            },
             retentionPolicy: {
               autoRedactionEnabled: retentionEnabled,
               auditLogRedactionDays: Math.max(30, auditLogRedactionDays),
@@ -1043,16 +1063,94 @@ export default function BarangaySettingsPage() {
                         Ito ang live service hours na ginagamit sa advisory notice at after-hours automation copy.
                     </p>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="admin-phone">Numero ng Admin (para sa After-Hours)</Label>
-                    <Input 
-                        id="admin-phone" 
-                        value={adminPhone}
+                <div className="space-y-2">
+                   <Label htmlFor="admin-phone">Numero ng Admin (para sa After-Hours)</Label>
+                   <Input 
+                       id="admin-phone" 
+                       value={adminPhone}
                         onChange={(e) => setAdminPhone(e.target.value)}
                     />
                      <p className="text-sm text-muted-foreground">
                         Ang numerong ito ay ilalagay sa after-hours advisory notice.
                      </p>
+                </div>
+                <div className="rounded-lg border p-4 space-y-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <Label className="text-base">Mobile Alerts at Push Policy</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Kontrolin dito kung kailan tatahimik ang non-critical mobile alerts, gaano kabilis magde-dedupe ang urgent push, at kailan gagawa ng SMS fallback para sa staff.
+                          </p>
+                        </div>
+                        <Switch checked={pushQuietHoursEnabled} onCheckedChange={setPushQuietHoursEnabled} />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Quiet hours para sa hindi pinaka-critical na push</Label>
+                        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+                          <Input
+                            id="push-quiet-hours-start"
+                            type="time"
+                            value={pushQuietHoursStart}
+                            onChange={(e) => setPushQuietHoursStart(e.target.value)}
+                            disabled={!pushQuietHoursEnabled}
+                          />
+                          <span className="text-sm text-muted-foreground">hanggang</span>
+                          <Input
+                            id="push-quiet-hours-end"
+                            type="time"
+                            value={pushQuietHoursEnd}
+                            onChange={(e) => setPushQuietHoursEnd(e.target.value)}
+                            disabled={!pushQuietHoursEnabled}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Ang emergency o talagang high-risk na case ay puwedeng lumampas dito, pero ang mas mababang urgency ay masusuppress muna para iwas alert fatigue.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="urgent-push-cooldown">Urgent push cooldown (minutes)</Label>
+                        <Input
+                          id="urgent-push-cooldown"
+                          type="number"
+                          min={5}
+                          value={urgentPushCooldownMinutes}
+                          onChange={(e) => setUrgentPushCooldownMinutes(Number(e.target.value))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Kapag parehong case ang nag-trigger ulit sa loob ng cooldown, hindi na ito magpapadala ng duplicate urgent push.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="push-failure-threshold">Push failure threshold bago mag-fallback</Label>
+                        <Input
+                          id="push-failure-threshold"
+                          type="number"
+                          min={1}
+                          value={maxConsecutivePushFailures}
+                          onChange={(e) => setMaxConsecutivePushFailures(Number(e.target.value))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Kapag lumampas dito ang sunod-sunod na push failure para sa isang urgent case, lilipat ang system sa SMS fallback kung available.
+                        </p>
+                      </div>
+                      <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <Label className="text-sm">SMS fallback para sa staff</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Kapag bagsak ang push o walang device, puwedeng gumamit ng staff SMS reminder bilang backup.
+                            </p>
+                          </div>
+                          <Switch checked={fallbackToStaffSms} onCheckedChange={setFallbackToStaffSms} />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Gagamitin nito ang assigned officer, fallback official contact, o barangay hotline kung wala pang registered mobile device.
+                        </p>
+                      </div>
+                    </div>
                 </div>
                 <div className="rounded-lg border p-4 space-y-4">
                     <div className="space-y-1">

@@ -1,5 +1,9 @@
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore, getServerMessaging } from "@/lib/firebase/server";
+import { getUrgentPushPolicyDecision } from "@/lib/mobile-push-policy";
+import { getServerSystemSettings } from "@/lib/server/system-settings";
+import { buildOfficialReminderBody } from "@/lib/services/staff-sms-service";
+import { sendLiveSms } from "@/lib/services/server-live-outbound-sms-service";
 import {
   recordRuntimeHealthFailure,
   recordRuntimeHealthSuccess,
@@ -9,6 +13,8 @@ import type {
   MobileDeviceToken,
   MobileDeviceTokenPlatform,
   SmsMessage,
+  SystemSettings,
+  User,
   UserRole,
 } from "@/lib/types";
 
@@ -37,6 +43,10 @@ function summarizeCaseMessage(value: string, maxLength = 110) {
   return `${compact.slice(0, Math.max(0, maxLength - 1)).trimEnd()}...`;
 }
 
+function normalizeName(value?: string) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
 function buildUrgentPushTitle(message: SmsMessage) {
   const farmerName = message.farmerName?.trim() || "Farmer concern";
   return `Urgent case: ${farmerName}`;
@@ -45,7 +55,7 @@ function buildUrgentPushTitle(message: SmsMessage) {
 function buildUrgentPushBody(message: SmsMessage) {
   const caseLabel = message.caseId?.trim() || message.id;
   const summary = summarizeCaseMessage(message.message);
-  return `${caseLabel} • ${summary}`;
+  return `${caseLabel} - ${summary}`;
 }
 
 async function listRegisteredDeviceDocsForToken(token: string) {
@@ -56,6 +66,103 @@ async function listRegisteredDeviceDocsForToken(token: string) {
     .get();
 
   return snapshot.docs;
+}
+
+async function persistPushState(message: SmsMessage, updates: Partial<SmsMessage>) {
+  if (!message.id) {
+    return;
+  }
+
+  await getServerFirestore()
+    .collection(firebaseCollections.smsMessages)
+    .doc(message.id)
+    .set(withoutUndefined(updates), { merge: true });
+}
+
+async function listFallbackUsers() {
+  const db = getServerFirestore();
+  const snapshot = await db.collection(firebaseCollections.users).get();
+
+  return snapshot.docs
+    .map((documentSnapshot) => ({
+      id: documentSnapshot.id,
+      ...(documentSnapshot.data() as User),
+    }))
+    .filter((user) => user.phone && user.status !== "disabled");
+}
+
+async function findFallbackRecipient(input: {
+  message: SmsMessage;
+  settings: SystemSettings;
+}) {
+  const users = await listFallbackUsers();
+  const assigned = users.find(
+    (user) => normalizeName(user.name) === normalizeName(input.message.assignedTo)
+  );
+
+  if (assigned?.phone) {
+    return {
+      name: assigned.name,
+      phone: assigned.phone,
+      source: "assigned_staff" as const,
+    };
+  }
+
+  const prioritized = users.find((user) =>
+    ["owner", "resolver", "supervisor"].includes(user.assignmentRole ?? "")
+  );
+
+  if (prioritized?.phone) {
+    return {
+      name: prioritized.name,
+      phone: prioritized.phone,
+      source: "staff_roster" as const,
+    };
+  }
+
+  if (input.settings.adminPhone?.trim()) {
+    return {
+      name: "Barangay agriculture hotline",
+      phone: input.settings.adminPhone.trim(),
+      source: "admin_hotline" as const,
+    };
+  }
+
+  return null;
+}
+
+async function sendStaffSmsFallback(input: {
+  message: SmsMessage;
+  settings: SystemSettings;
+}) {
+  const recipient = await findFallbackRecipient(input);
+
+  if (!recipient?.phone) {
+    return {
+      sent: false,
+      reason: "no_staff_sms_recipient",
+    } as const;
+  }
+
+  const body = `PUSH fallback: ${buildOfficialReminderBody(input.message)}`;
+  const result = await sendLiveSms({
+    to: recipient.phone,
+    body,
+  });
+
+  if (result.status === "failed") {
+    return {
+      sent: false,
+      reason: result.errorMessage ?? "staff_sms_fallback_failed",
+      recipient,
+    } as const;
+  }
+
+  return {
+    sent: true,
+    recipient,
+    providerMessageId: result.providerMessageId,
+  } as const;
 }
 
 export async function registerMobilePushToken(input: {
@@ -153,7 +260,8 @@ export async function unregisterMobilePushToken(input: {
       ...matchingDocs
         .filter(
           (documentSnapshot) =>
-            (documentSnapshot.data() as Partial<MobileDeviceToken>).userId === input.userId
+            (documentSnapshot.data() as Partial<MobileDeviceToken>).userId ===
+            input.userId
         )
         .map((documentSnapshot) => documentSnapshot.ref.delete()),
     ]);
@@ -182,22 +290,43 @@ export async function unregisterMobilePushToken(input: {
   }
 }
 
-function shouldSendUrgentCasePush(message: SmsMessage) {
-  return (
-    message.urgency === "high" ||
-    message.parsedIntent === "EMERGENCY" ||
-    message.safetyFlag === "High"
-  );
-}
-
 export async function sendUrgentCasePush(input: { message: SmsMessage }) {
   const { message } = input;
+  const settings = await getServerSystemSettings();
+  const now = new Date().toISOString();
+  const policyDecision = getUrgentPushPolicyDecision({
+    message,
+    settings,
+    now,
+  });
 
-  if (!shouldSendUrgentCasePush(message)) {
+  if (!policyDecision.shouldSend) {
+    await persistPushState(message, {
+      urgentPushLastStatus:
+        policyDecision.reason === "duplicate_cooldown"
+          ? "skipped_duplicate"
+          : policyDecision.reason === "quiet_hours"
+            ? "skipped_quiet_hours"
+            : "skipped_not_urgent",
+      urgentPushSuppressedUntil: policyDecision.suppressedUntil,
+      urgentPushLastError: undefined,
+    });
+
+    await recordRuntimeHealthWarning(
+      MOBILE_PUSH_RUNTIME_HEALTH_ID,
+      MOBILE_PUSH_RUNTIME_HEALTH_LABEL,
+      {
+        action: "urgent_case_broadcast",
+        caseId: message.caseId ?? message.id,
+        reason: policyDecision.reason,
+        suppressedUntil: policyDecision.suppressedUntil,
+      }
+    );
+
     return {
       sent: false,
       skipped: true,
-      reason: "not_urgent",
+      reason: policyDecision.reason,
     };
   }
 
@@ -209,6 +338,24 @@ export async function sendUrgentCasePush(input: { message: SmsMessage }) {
       .get();
 
     if (deviceSnapshot.empty) {
+      const fallbackResult = settings.notificationPolicy.fallbackToStaffSms
+        ? await sendStaffSmsFallback({ message, settings })
+        : { sent: false, reason: "fallback_disabled" as const };
+      const nextFailureCount = (message.urgentPushFailureCount ?? 0) + 1;
+
+      await persistPushState(message, {
+        urgentPushLastStatus: fallbackResult.sent
+          ? "fallback_sms_sent"
+          : "skipped_no_devices",
+        urgentPushLastError: fallbackResult.sent
+          ? undefined
+          : "Walang registered mobile devices para sa urgent push.",
+        urgentPushFailureCount: nextFailureCount,
+        urgentPushFallbackSentAt: fallbackResult.sent
+          ? now
+          : message.urgentPushFallbackSentAt,
+      });
+
       await recordRuntimeHealthWarning(
         MOBILE_PUSH_RUNTIME_HEALTH_ID,
         MOBILE_PUSH_RUNTIME_HEALTH_LABEL,
@@ -216,13 +363,23 @@ export async function sendUrgentCasePush(input: { message: SmsMessage }) {
           action: "urgent_case_broadcast",
           caseId: message.caseId ?? message.id,
           reason: "no_registered_devices",
+          fallbackAction: fallbackResult.sent
+            ? "staff_sms_sent"
+            : "fallback_needed",
+          fallbackRecipient:
+            "recipient" in fallbackResult && fallbackResult.recipient
+              ? fallbackResult.recipient.phone
+              : undefined,
+          failureCount: nextFailureCount,
         }
       );
 
       return {
-        sent: false,
-        skipped: true,
-        reason: "no_registered_devices",
+        sent: fallbackResult.sent,
+        skipped: !fallbackResult.sent,
+        reason: fallbackResult.sent
+          ? "fallback_sms_sent"
+          : "no_registered_devices",
       };
     }
 
@@ -252,6 +409,15 @@ export async function sendUrgentCasePush(input: { message: SmsMessage }) {
       },
     });
 
+    await persistPushState(message, {
+      urgentPushLastSentAt: now,
+      urgentPushLastStatus: "sent",
+      urgentPushLastError: undefined,
+      urgentPushFailureCount: 0,
+      urgentPushSuppressedUntil: undefined,
+      urgentPushLastProviderMessageId: messageId,
+    });
+
     await recordRuntimeHealthSuccess(
       MOBILE_PUSH_RUNTIME_HEALTH_ID,
       MOBILE_PUSH_RUNTIME_HEALTH_LABEL,
@@ -259,6 +425,7 @@ export async function sendUrgentCasePush(input: { message: SmsMessage }) {
         action: "urgent_case_broadcast",
         caseId: message.caseId ?? message.id,
         messageId,
+        cooldownMinutes: settings.notificationPolicy.urgentPushCooldownMinutes,
       }
     );
 
@@ -267,6 +434,29 @@ export async function sendUrgentCasePush(input: { message: SmsMessage }) {
       messageId,
     };
   } catch (error) {
+    const nextFailureCount = (message.urgentPushFailureCount ?? 0) + 1;
+    const shouldFallback =
+      settings.notificationPolicy.fallbackToStaffSms &&
+      nextFailureCount >=
+        Math.max(1, settings.notificationPolicy.maxConsecutivePushFailures);
+    const fallbackResult = shouldFallback
+      ? await sendStaffSmsFallback({ message, settings })
+      : { sent: false, reason: "threshold_not_reached" as const };
+
+    await persistPushState(message, {
+      urgentPushLastStatus: fallbackResult.sent
+        ? "fallback_sms_sent"
+        : shouldFallback
+          ? "fallback_needed"
+          : "failed",
+      urgentPushLastError:
+        error instanceof Error ? error.message : String(error),
+      urgentPushFailureCount: nextFailureCount,
+      urgentPushFallbackSentAt: fallbackResult.sent
+        ? now
+        : message.urgentPushFallbackSentAt,
+    });
+
     await recordRuntimeHealthFailure(
       MOBILE_PUSH_RUNTIME_HEALTH_ID,
       MOBILE_PUSH_RUNTIME_HEALTH_LABEL,
@@ -274,13 +464,46 @@ export async function sendUrgentCasePush(input: { message: SmsMessage }) {
       {
         action: "urgent_case_broadcast",
         caseId: message.caseId ?? message.id,
+        failureCount: nextFailureCount,
+        fallbackAction: fallbackResult.sent
+          ? "staff_sms_sent"
+          : shouldFallback
+            ? "fallback_needed"
+            : "none",
+        fallbackRecipient:
+          "recipient" in fallbackResult && fallbackResult.recipient
+            ? fallbackResult.recipient.phone
+            : undefined,
       }
     );
 
+    if (shouldFallback) {
+      await recordRuntimeHealthWarning(
+        MOBILE_PUSH_RUNTIME_HEALTH_ID,
+        MOBILE_PUSH_RUNTIME_HEALTH_LABEL,
+        {
+          action: "urgent_case_push_fallback",
+          caseId: message.caseId ?? message.id,
+          fallbackAction: fallbackResult.sent
+            ? "staff_sms_sent"
+            : "fallback_needed",
+          fallbackRecipient:
+            "recipient" in fallbackResult && fallbackResult.recipient
+              ? fallbackResult.recipient.phone
+              : undefined,
+          failureCount: nextFailureCount,
+        }
+      );
+    }
+
     return {
-      sent: false,
+      sent: fallbackResult.sent,
       skipped: false,
-      reason: error instanceof Error ? error.message : String(error),
+      reason: fallbackResult.sent
+        ? "fallback_sms_sent"
+        : error instanceof Error
+          ? error.message
+          : String(error),
     };
   }
 }

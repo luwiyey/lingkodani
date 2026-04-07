@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
+import { getServerSystemSettings } from "@/lib/server/system-settings";
+import { isWithinQuietHours } from "@/lib/system-settings";
 import { listRuntimeHealthRecords } from "@/lib/system-health";
 import type { OutboundMessage, RuntimeHealthRecord, SmsMessage } from "@/lib/types";
 
@@ -187,12 +189,14 @@ export async function GET(request: Request) {
   }
 
   const db = getServerFirestore();
-  const [records, latestInboundSnapshot, latestOutboundSnapshot, recentOutboundSnapshot] = await Promise.all([
-    listRuntimeHealthRecords(),
-    db.collection(firebaseCollections.smsMessages).orderBy("timestamp", "desc").limit(1).get(),
-    db.collection(firebaseCollections.outboundMessages).orderBy("createdAt", "desc").limit(1).get(),
-    db.collection(firebaseCollections.outboundMessages).orderBy("createdAt", "desc").limit(20).get(),
-  ]);
+  const [records, latestInboundSnapshot, latestOutboundSnapshot, recentOutboundSnapshot, settings] =
+    await Promise.all([
+      listRuntimeHealthRecords(),
+      db.collection(firebaseCollections.smsMessages).orderBy("timestamp", "desc").limit(1).get(),
+      db.collection(firebaseCollections.outboundMessages).orderBy("createdAt", "desc").limit(1).get(),
+      db.collection(firebaseCollections.outboundMessages).orderBy("createdAt", "desc").limit(20).get(),
+      getServerSystemSettings(),
+    ]);
 
   const latestInbound = latestInboundSnapshot.docs[0]?.data() as SmsMessage | undefined;
   const latestOutbound = latestOutboundSnapshot.docs[0]?.data() as OutboundMessage | undefined;
@@ -291,5 +295,16 @@ export async function GET(request: Request) {
     latestAutomationFailure: serializeRuntimeRecord(latestAutomationFailure),
     latestWebhook: serializeRuntimeRecord(latestWebhook),
     latestPush: serializeRuntimeRecord(latestPush),
+    pushPolicy: {
+      quietHoursEnabled: settings.notificationPolicy.quietHoursEnabled,
+      quietHoursStart: settings.notificationPolicy.quietHoursStart,
+      quietHoursEnd: settings.notificationPolicy.quietHoursEnd,
+      quietHoursActiveNow: isWithinQuietHours(new Date().toISOString(), settings),
+      urgentPushCooldownMinutes:
+        settings.notificationPolicy.urgentPushCooldownMinutes,
+      maxConsecutivePushFailures:
+        settings.notificationPolicy.maxConsecutivePushFailures,
+      fallbackToStaffSms: settings.notificationPolicy.fallbackToStaffSms,
+    },
   });
 }

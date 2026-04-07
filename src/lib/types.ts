@@ -223,6 +223,14 @@ export type SystemSettings = {
   replyStartTime: string;
   replyEndTime: string;
   adminPhone: string;
+  notificationPolicy: {
+    quietHoursEnabled: boolean;
+    quietHoursStart: string;
+    quietHoursEnd: string;
+    urgentPushCooldownMinutes: number;
+    maxConsecutivePushFailures: number;
+    fallbackToStaffSms: boolean;
+  };
   templateCategories: SystemTemplateCategory[];
   smsLexiconRules: SmsLexiconRule[];
   autoReplyEnabled: boolean;
@@ -459,6 +467,21 @@ export type SmsMessage = {
   officialReminderDueAt?: string;
   officialReminderLastSentAt?: string;
   officialReminderCount?: number;
+  urgentPushLastSentAt?: string;
+  urgentPushLastStatus?:
+    | 'sent'
+    | 'skipped_duplicate'
+    | 'skipped_quiet_hours'
+    | 'skipped_not_urgent'
+    | 'skipped_no_devices'
+    | 'failed'
+    | 'fallback_needed'
+    | 'fallback_sms_sent';
+  urgentPushLastError?: string;
+  urgentPushFailureCount?: number;
+  urgentPushFallbackSentAt?: string;
+  urgentPushSuppressedUntil?: string;
+  urgentPushLastProviderMessageId?: string;
   analysisSource?: SmsAnalysisSource;
   detectedLanguage?: SmsDetectedLanguage;
   normalizationMatches?: SmsNormalizationMatch[];

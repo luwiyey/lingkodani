@@ -193,6 +193,14 @@ export const defaultSystemSettings: SystemSettings = {
   replyStartTime: "08:00",
   replyEndTime: "19:00",
   adminPhone: "+639123456789",
+  notificationPolicy: {
+    quietHoursEnabled: true,
+    quietHoursStart: "21:00",
+    quietHoursEnd: "06:00",
+    urgentPushCooldownMinutes: 30,
+    maxConsecutivePushFailures: 2,
+    fallbackToStaffSms: true,
+  },
   templateCategories: defaultTemplateCategories,
   smsLexiconRules: defaultSmsLexiconRules,
   autoReplyEnabled: true,
@@ -224,6 +232,10 @@ export function mergeSystemSettings(
     ...partial,
     id: partial.id ?? SYSTEM_SETTINGS_DOCUMENT_ID,
     zoneDescriptions: partial.zoneDescriptions ?? [...defaultSystemSettings.zoneDescriptions],
+    notificationPolicy: {
+      ...defaultSystemSettings.notificationPolicy,
+      ...(partial.notificationPolicy ?? {}),
+    },
     templateCategories:
       partial.templateCategories?.length
         ? partial.templateCategories
@@ -274,4 +286,42 @@ export function isWithinReplyWindow(timestamp: string, settings: SystemSettings)
 
 export function replaceSystemTemplateTokens(text: string, settings: SystemSettings) {
   return text.replaceAll("[Numero ng Hotline]", settings.adminPhone);
+}
+
+function normalizeWindow(startMinutes: number, endMinutes: number, currentMinutes: number) {
+  if (startMinutes === endMinutes) {
+    return true;
+  }
+
+  if (startMinutes < endMinutes) {
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  }
+
+  return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+}
+
+function getCurrentBarangayMinutes(timestamp: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: BARANGAY_TIME_ZONE,
+  }).formatToParts(new Date(timestamp));
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
+
+  return toMinutes(`${hour}:${minute}`);
+}
+
+export function isWithinQuietHours(timestamp: string, settings: SystemSettings) {
+  if (!settings.notificationPolicy.quietHoursEnabled) {
+    return false;
+  }
+
+  const currentMinutes = getCurrentBarangayMinutes(timestamp);
+  return normalizeWindow(
+    toMinutes(settings.notificationPolicy.quietHoursStart),
+    toMinutes(settings.notificationPolicy.quietHoursEnd),
+    currentMinutes
+  );
 }

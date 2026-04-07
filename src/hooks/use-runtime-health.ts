@@ -153,6 +153,15 @@ type RuntimeHealthPayload = {
     lastError: string | null;
     meta: Record<string, unknown>;
   } | null;
+  pushPolicy: {
+    quietHoursEnabled: boolean;
+    quietHoursStart: string;
+    quietHoursEnd: string;
+    quietHoursActiveNow: boolean;
+    urgentPushCooldownMinutes: number;
+    maxConsecutivePushFailures: number;
+    fallbackToStaffSms: boolean;
+  };
 };
 
 export function useRuntimeHealth() {
@@ -184,6 +193,15 @@ export function useRuntimeHealth() {
     latestAutomationFailure: null,
     latestWebhook: null,
     latestPush: null,
+    pushPolicy: {
+      quietHoursEnabled: false,
+      quietHoursStart: "21:00",
+      quietHoursEnd: "06:00",
+      quietHoursActiveNow: false,
+      urgentPushCooldownMinutes: 30,
+      maxConsecutivePushFailures: 2,
+      fallbackToStaffSms: true,
+    },
   });
   const [runtimeHealthLoading, setRuntimeHealthLoading] = useState(true);
 

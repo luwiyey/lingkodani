@@ -115,6 +115,7 @@ export function SystemStatusPanel() {
   const inviteEmailHealth = runtimeHealth.records.find((record) => record.id === "invite_email");
   const mobilePushHealth = runtimeHealth.records.find((record) => record.id === "mobile_push");
   const retentionHealth = runtimeHealth.records.find((record) => record.id === "data_retention");
+  const pushPolicy = runtimeHealth.pushPolicy;
   const outboundSummary = runtimeHealth.outboundDeliverySummary;
   const outboundReconciliation = runtimeHealth.outboundReconciliationSummary;
   const outboundAttentionItems = runtimeHealth.outboundAttentionItems;
@@ -808,6 +809,19 @@ export function SystemStatusPanel() {
                       <p>Huling success: {formatRuntimeTimestamp(mobilePushHealth?.lastSuccessAt)}</p>
                       <p>Huling failure: {formatRuntimeTimestamp(mobilePushHealth?.lastFailureAt)}</p>
                       <p>Huling case: {String(runtimeHealth.latestPush?.meta?.caseId ?? "Wala pa")}</p>
+                      <p>
+                        Quiet hours:{" "}
+                        {pushPolicy.quietHoursEnabled
+                          ? `${pushPolicy.quietHoursStart} - ${pushPolicy.quietHoursEnd}${
+                              pushPolicy.quietHoursActiveNow ? " (aktibo ngayon)" : ""
+                            }`
+                          : "Naka-off"}
+                      </p>
+                      <p>Cooldown: {pushPolicy.urgentPushCooldownMinutes} minuto</p>
+                      <p>SMS fallback: {pushPolicy.fallbackToStaffSms ? "Naka-on" : "Naka-off"}</p>
+                      <p>
+                        Fallback threshold: {pushPolicy.maxConsecutivePushFailures} magkasunod na failure
+                      </p>
                     </div>
                   ),
                 },
