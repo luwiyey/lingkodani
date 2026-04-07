@@ -326,6 +326,15 @@ class _OverviewTabState extends State<_OverviewTab> {
                 errorMessage: appState.pendingSyncError,
               ),
               const SizedBox(height: 16),
+              MobilePendingActionsCard(
+                actions: appState.pendingActions,
+                onSyncNow: appState.syncingPendingActions
+                    ? null
+                    : () {
+                        appState.syncPendingActions();
+                      },
+              ),
+              const SizedBox(height: 16),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,

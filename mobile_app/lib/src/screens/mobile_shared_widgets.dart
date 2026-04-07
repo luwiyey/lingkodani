@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/models/mobile_models.dart';
+
 class MobileMetricCard extends StatelessWidget {
   const MobileMetricCard({
     super.key,
@@ -275,6 +277,158 @@ class MobileSyncWatchCard extends StatelessWidget {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MobilePendingActionsCard extends StatelessWidget {
+  const MobilePendingActionsCard({
+    super.key,
+    required this.actions,
+    this.onSyncNow,
+  });
+
+  final List<MobileQueuedAction> actions;
+  final VoidCallback? onSyncNow;
+
+  String _formatAge(DateTime timestamp) {
+    final age = DateTime.now().difference(timestamp);
+
+    if (age.inMinutes < 1) {
+      return 'ngayon lang';
+    }
+
+    if (age.inMinutes < 60) {
+      return '${age.inMinutes} min ang nakalipas';
+    }
+
+    if (age.inHours < 24) {
+      return '${age.inHours} oras ang nakalipas';
+    }
+
+    return '${age.inDays} araw ang nakalipas';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.pending_actions_rounded,
+                  color: Color(0xFF92400E),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pending Mobile Actions',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Ito ang mga aksyong naka-save sa device at kailangang ma-sync o mano-manong i-review.',
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                    ],
+                  ),
+                ),
+                if (onSyncNow != null)
+                  OutlinedButton.icon(
+                    onPressed: onSyncNow,
+                    icon: const Icon(Icons.sync_rounded),
+                    label: const Text('Sync now'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            ...actions.take(5).map(
+              (action) => Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            action.typeLabel,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _formatAge(action.createdAt),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        MobileInfoChip(text: 'attempts: ${action.attempts}'),
+                        if (action.hasError) const MobileInfoChip(text: 'retry needed'),
+                        if (action.needsManualReview)
+                          const MobileInfoChip(text: 'manual review'),
+                        if (action.isLongPending)
+                          const MobileInfoChip(text: 'matagal nang pending'),
+                      ],
+                    ),
+                    if (action.lastError != null &&
+                        action.lastError!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        action.lastError!,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if (actions.length > 5)
+              Text(
+                '+${actions.length - 5} pang pending action ang nasa queue.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
           ],
         ),
       ),
