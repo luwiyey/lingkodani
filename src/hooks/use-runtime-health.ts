@@ -82,6 +82,33 @@ type RuntimeHealthPayload = {
     deliveryState: string;
     reconciliationState: string;
   }>;
+  recoveryChains: Array<{
+    rootOutboundId: string;
+    latestOutboundId: string;
+    smsMessageId: string;
+    recipientPhone: string;
+    purpose: string;
+    audience: string;
+    latestStatus: string;
+    latestDeliveryState: string;
+    latestAttentionReason: string | null;
+    latestErrorMessage: string | null;
+    totalAttempts: number;
+    hopCount: number;
+    retryable: boolean;
+    lastEventAt: string;
+    chain: Array<{
+      id: string;
+      status: string;
+      createdAt: string;
+      lastStatusAt: string | null;
+      deliveryReceivedAt: string | null;
+      providerMessageId: string | null;
+      errorMessage: string | null;
+      attempts: number;
+      retryOfOutboundId: string | null;
+    }>;
+  }>;
   recoveryConsoleItems: Array<{
     id: string;
     kind: "outbound" | "subsystem";
@@ -187,6 +214,7 @@ export function useRuntimeHealth() {
       retryableCount: 0,
     },
     outboundAttentionItems: [],
+    recoveryChains: [],
     recoveryConsoleItems: [],
     recentOutboundWatch: [],
     latestFailure: null,

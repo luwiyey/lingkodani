@@ -3364,11 +3364,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       retryOfOutboundId: currentRecord.id,
       attempts: (currentRecord.attempts ?? 1) + 1,
     };
+    const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
+    const retryAuditLog: AuditLog = {
+      id: createEntityId('AUD'),
+      timestamp: nextTimestamp,
+      user: actorName,
+      action: 'RETRY_OUTBOUND_MESSAGE',
+      details: `Ni-retry ang outbound SMS para kay ${sourceMessage.farmerName} (${currentRecord.recipientPhone}).`,
+      category: 'operations',
+      severity: 'warning',
+      beforeSnapshot: {
+        outboundId: currentRecord.id,
+        status: currentRecord.status,
+        providerMessageId: currentRecord.providerMessageId ?? null,
+        attempts: currentRecord.attempts ?? 1,
+      },
+      afterSnapshot: {
+        outboundId: retryRecord.id,
+        retryOfOutboundId: currentRecord.id,
+        status: retryRecord.status,
+        providerMessageId: retryRecord.providerMessageId ?? null,
+        attempts: retryRecord.attempts ?? 1,
+      },
+    };
 
     setOutboundMessages(prev => [
       retryRecord,
       ...prev.map((record) => (record.id === outboundId ? retriedRecord : record)),
     ]);
+    setAuditLogs(prev => [retryAuditLog, ...prev]);
 
     await Promise.all([
       outboundMessageRepository.updateOutboundMessage(outboundId, {
@@ -3376,6 +3400,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         lastStatusAt: retriedRecord.lastStatusAt,
       }),
       outboundMessageRepository.createOutboundMessage(retryRecord),
+      auditRepository.createAuditLog(retryAuditLog),
     ]);
 
     return retryRecord;

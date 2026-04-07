@@ -161,6 +161,75 @@ function serializeOutboundWatch(message: OutboundMessage) {
   };
 }
 
+function sortByNewestOutbound(left: OutboundMessage, right: OutboundMessage) {
+  return (
+    asTimestamp(right.lastStatusAt ?? right.deliveryReceivedAt ?? right.createdAt) -
+    asTimestamp(left.lastStatusAt ?? left.deliveryReceivedAt ?? left.createdAt)
+  );
+}
+
+function buildRecoveryChains(messages: OutboundMessage[]) {
+  const byId = new Map(messages.map((message) => [message.id, message] as const));
+  const grouped = new Map<string, OutboundMessage[]>();
+
+  for (const message of messages) {
+    let root = message;
+    const visited = new Set<string>();
+
+    while (root.retryOfOutboundId && byId.has(root.retryOfOutboundId) && !visited.has(root.retryOfOutboundId)) {
+      visited.add(root.id);
+      root = byId.get(root.retryOfOutboundId)!;
+    }
+
+    const bucket = grouped.get(root.id) ?? [];
+    bucket.push(message);
+    grouped.set(root.id, bucket);
+  }
+
+  return [...grouped.entries()]
+    .map(([rootId, chain]) => {
+      const ordered = [...chain].sort(sortByNewestOutbound);
+      const latest = ordered[0];
+      const attention = normalizeOutboundAttention(latest);
+      return {
+        rootOutboundId: rootId,
+        latestOutboundId: latest.id,
+        smsMessageId: latest.smsMessageId,
+        recipientPhone: latest.recipientPhone,
+        purpose: latest.purpose ?? "other",
+        audience: latest.audience ?? "farmer",
+        latestStatus: latest.status,
+        latestDeliveryState: attention.deliveryState,
+        latestAttentionReason: attention.attentionReason,
+        latestErrorMessage: latest.errorMessage ?? null,
+        totalAttempts: Math.max(...ordered.map((item) => item.attempts ?? 1)),
+        hopCount: ordered.length,
+        retryable: latest.status === "failed",
+        lastEventAt:
+          latest.lastStatusAt ?? latest.deliveryReceivedAt ?? latest.createdAt,
+        chain: [...ordered]
+          .sort(
+            (left, right) =>
+              asTimestamp(left.createdAt) - asTimestamp(right.createdAt)
+          )
+          .map((item) => ({
+            id: item.id,
+            status: item.status,
+            createdAt: item.createdAt,
+            lastStatusAt: item.lastStatusAt ?? null,
+            deliveryReceivedAt: item.deliveryReceivedAt ?? null,
+            providerMessageId: item.providerMessageId ?? null,
+            errorMessage: item.errorMessage ?? null,
+            attempts: item.attempts ?? 1,
+            retryOfOutboundId: item.retryOfOutboundId ?? null,
+          })),
+      };
+    })
+    .filter((chain) => chain.hopCount > 1 || chain.latestStatus === "failed")
+    .sort((left, right) => asTimestamp(right.lastEventAt) - asTimestamp(left.lastEventAt))
+    .slice(0, 8);
+}
+
 function buildSubsystemRecoveryAction(record: RuntimeHealthRecord) {
   if (record.id === "automation_overdue" || record.id === "automation_followups") {
     return "Patakbuhin muli ang batch check at tingnan kung may stuck SMS case o missing follow-up state.";
@@ -217,6 +286,7 @@ export async function GET(request: Request) {
     (message) => message.status === "delivered" || Boolean(message.deliveryReceivedAt)
   );
   const recentOutboundWatch = recentOutbound.map(serializeOutboundWatch);
+  const recoveryChains = buildRecoveryChains(recentOutbound);
   const outboundAttentionItems = recentOutboundWatch.filter((item) => item.needsAttention).slice(0, 5);
   const outboundDeliverySummary = {
     recentCount: recentOutboundWatch.length,
@@ -289,6 +359,7 @@ export async function GET(request: Request) {
     outboundDeliverySummary,
     outboundReconciliationSummary,
     outboundAttentionItems,
+    recoveryChains,
     recentOutboundWatch,
     recoveryConsoleItems,
     latestFailure: serializeRuntimeRecord(latestFailure),

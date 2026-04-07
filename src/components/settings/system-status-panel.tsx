@@ -119,6 +119,7 @@ export function SystemStatusPanel() {
   const outboundSummary = runtimeHealth.outboundDeliverySummary;
   const outboundReconciliation = runtimeHealth.outboundReconciliationSummary;
   const outboundAttentionItems = runtimeHealth.outboundAttentionItems;
+  const recoveryChains = runtimeHealth.recoveryChains;
   const recoveryConsoleItems = runtimeHealth.recoveryConsoleItems;
 
   const smsCapability = buildCapabilityState(capabilities.liveSmsConfigured);
@@ -571,6 +572,70 @@ export function SystemStatusPanel() {
                         <Link href={item.kind === "outbound" ? "/dashboard/sms-feed" : "/dashboard/operations"}>
                           Buksan ang kaugnay na page
                         </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {recoveryChains.length > 0 ? (
+            <div className="rounded-xl border border-dashed p-4">
+              <p className="text-sm font-medium text-foreground">Replay at retry trail</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Ipinapakita rito kung ilang beses nang ni-retry ang parehong mensahe at kung saan sa chain nagsimulang pumalya.
+              </p>
+              <div className="mt-3 space-y-3">
+                {recoveryChains.map((chain) => (
+                  <div key={chain.rootOutboundId} className="rounded-lg border bg-background/80 p-3 text-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium">
+                          {chain.purpose} - {chain.recipientPhone}
+                        </p>
+                        <p className="mt-1 text-muted-foreground">
+                          Latest: {formatDeliveryState(chain.latestDeliveryState)} | Attempts: {chain.totalAttempts} | Chain length: {chain.hopCount}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant={chain.retryable ? "destructive" : "outline"}>
+                          {chain.latestStatus}
+                        </Badge>
+                        <Badge variant="outline">
+                          {formatRuntimeTimestamp(chain.lastEventAt)}
+                        </Badge>
+                      </div>
+                    </div>
+                    {chain.latestAttentionReason ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {chain.latestAttentionReason}
+                      </p>
+                    ) : null}
+                    {chain.latestErrorMessage ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Error: {chain.latestErrorMessage}
+                      </p>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {chain.chain.map((step) => (
+                        <Badge key={step.id} variant="outline">
+                          {step.status} #{step.attempts}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {chain.retryable ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void handleRetryOutbound(chain.latestOutboundId)}
+                          disabled={retryingOutboundId === chain.latestOutboundId}
+                        >
+                          {retryingOutboundId === chain.latestOutboundId ? "Ni-reretry..." : "I-replay ang latest failed send"}
+                        </Button>
+                      ) : null}
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href="/dashboard/sms-feed">Buksan sa SMS Feed</Link>
                       </Button>
                     </div>
                   </div>
