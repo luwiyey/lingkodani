@@ -245,6 +245,7 @@ class _OverviewTab extends StatefulWidget {
 
 class _OverviewTabState extends State<_OverviewTab> {
   late Future<MobileOverview> _future;
+  String? _queueActionId;
 
   String _buildLastSyncLabel(AppState appState) {
     final syncAge = appState.timeSinceLastPendingSync;
@@ -272,6 +273,80 @@ class _OverviewTabState extends State<_OverviewTab> {
 
   Future<MobileOverview> _load() {
     return context.read<AppState>().api.fetchOverview(widget.session.idToken);
+  }
+
+  Future<void> _retryPendingAction(MobileQueuedAction action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final appState = context.read<AppState>();
+
+    setState(() {
+      _queueActionId = action.id;
+    });
+
+    try {
+      await appState.retryPendingAction(action.id);
+
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Na-retry ang ${action.typeLabel.toLowerCase()} at natanggal na ito sa pending queue.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(content: Text('$error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _queueActionId = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _dismissPendingAction(MobileQueuedAction action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final appState = context.read<AppState>();
+
+    setState(() {
+      _queueActionId = action.id;
+    });
+
+    try {
+      await appState.dismissPendingAction(action.id);
+
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Tinanggal sa pending queue ang ${action.typeLabel.toLowerCase()}.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(content: Text('$error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _queueActionId = null;
+        });
+      }
+    }
   }
 
   @override
@@ -333,6 +408,9 @@ class _OverviewTabState extends State<_OverviewTab> {
                     : () {
                         appState.syncPendingActions();
                       },
+                onRetryAction: _retryPendingAction,
+                onDismissAction: _dismissPendingAction,
+                busyActionId: _queueActionId,
               ),
               const SizedBox(height: 16),
               Wrap(

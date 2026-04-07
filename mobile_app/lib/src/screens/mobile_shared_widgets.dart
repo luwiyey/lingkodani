@@ -289,10 +289,16 @@ class MobilePendingActionsCard extends StatelessWidget {
     super.key,
     required this.actions,
     this.onSyncNow,
+    this.onRetryAction,
+    this.onDismissAction,
+    this.busyActionId,
   });
 
   final List<MobileQueuedAction> actions;
   final VoidCallback? onSyncNow;
+  final void Function(MobileQueuedAction action)? onRetryAction;
+  final void Function(MobileQueuedAction action)? onDismissAction;
+  final String? busyActionId;
 
   String _formatAge(DateTime timestamp) {
     final age = DateTime.now().difference(timestamp);
@@ -360,66 +366,97 @@ class MobilePendingActionsCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             ...actions.take(5).map(
-              (action) => Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            action.typeLabel,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
+              (action) {
+                final busy = busyActionId == action.id;
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              action.typeLabel,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                        ),
+                          Text(
+                            _formatAge(action.createdAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          MobileInfoChip(text: 'attempts: ${action.attempts}'),
+                          if (action.hasError)
+                            const MobileInfoChip(text: 'retry needed'),
+                          if (action.needsManualReview)
+                            const MobileInfoChip(text: 'manual review'),
+                          if (action.isLongPending)
+                            const MobileInfoChip(text: 'matagal nang pending'),
+                        ],
+                      ),
+                      if (action.lastError != null &&
+                          action.lastError!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
                         Text(
-                          _formatAge(action.createdAt),
+                          action.lastError!,
                           style: TextStyle(
+                            color: Colors.red.shade700,
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            height: 1.35,
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        MobileInfoChip(text: 'attempts: ${action.attempts}'),
-                        if (action.hasError) const MobileInfoChip(text: 'retry needed'),
-                        if (action.needsManualReview)
-                          const MobileInfoChip(text: 'manual review'),
-                        if (action.isLongPending)
-                          const MobileInfoChip(text: 'matagal nang pending'),
-                      ],
-                    ),
-                    if (action.lastError != null &&
-                        action.lastError!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        action.lastError!,
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 12,
-                          height: 1.35,
-                        ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (onRetryAction != null)
+                            OutlinedButton.icon(
+                              onPressed: busy ? null : () => onRetryAction!(action),
+                              icon: busy
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.refresh_rounded),
+                              label: Text(busy ? 'Nireretry...' : 'Retry now'),
+                            ),
+                          if (onDismissAction != null)
+                            OutlinedButton.icon(
+                              onPressed: busy ? null : () => onDismissAction!(action),
+                              icon: const Icon(Icons.close_rounded),
+                              label: const Text('Dismiss'),
+                            ),
+                        ],
                       ),
                     ],
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
             if (actions.length > 5)
               Text(

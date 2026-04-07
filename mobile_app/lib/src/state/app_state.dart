@@ -185,6 +185,64 @@ class AppState extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  Future<void> retryPendingAction(String actionId) async {
+    final session = _requireSession();
+    MobileQueuedAction? action;
+    for (final entry in _pendingActions) {
+      if (entry.id == actionId) {
+        action = entry;
+        break;
+      }
+    }
+
+    if (action == null) {
+      throw Exception('Hindi na mahanap ang pending action na ito.');
+    }
+
+    try {
+      await _performQueuedAction(session, action);
+      await dismissPendingAction(actionId);
+      _lastPendingSyncAt = DateTime.now();
+      _pendingSyncError = null;
+      notifyListeners();
+    } on LingkodAniApiException catch (error) {
+      await _replacePendingAction(
+        action.copyWith(
+          attempts: action.attempts + 1,
+          lastAttemptAt: DateTime.now(),
+          lastError: error.message,
+        ),
+      );
+      _pendingSyncError = error.message;
+      notifyListeners();
+      rethrow;
+    } catch (error) {
+      await _replacePendingAction(
+        action.copyWith(
+          attempts: action.attempts + 1,
+          lastAttemptAt: DateTime.now(),
+          lastError: error.toString(),
+        ),
+      );
+      _pendingSyncError = error.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> dismissPendingAction(String actionId) async {
+    final session = _requireSession();
+    final remaining = _pendingActions
+        .where((action) => action.id != actionId)
+        .toList(growable: false);
+    _pendingActions =
+        await _actionQueueService.replaceForUser(session.localId, remaining);
+    if (_pendingActions.isEmpty) {
+      _pendingSyncError = null;
+    }
+    notifyListeners();
+  }
+
   Future<MobileActionSubmissionResult> sendSmsReply({
     required String messageId,
     required String reply,
@@ -542,6 +600,16 @@ class AppState extends ChangeNotifier {
     _pendingActions = await _actionQueueService.queueAction(nextAction);
     _pendingSyncError = error.toString();
     notifyListeners();
+  }
+
+  Future<void> _replacePendingAction(MobileQueuedAction nextAction) async {
+    final nextActions = _pendingActions
+        .map((action) => action.id == nextAction.id ? nextAction : action)
+        .toList(growable: false);
+    _pendingActions = await _actionQueueService.replaceForUser(
+      nextAction.userId,
+      nextActions,
+    );
   }
 
   Future<void> _removeQueuedAction({
