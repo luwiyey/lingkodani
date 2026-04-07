@@ -32,12 +32,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { getManagedBarangayUsers, getPlatformDeveloperUsers } from '@/lib/access-control';
+import { getStaffingCoverageSummary } from '@/lib/assignment-routing';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { getInviteLifecycleSummary } from '@/lib/invite-lifecycle';
 import { getUserOnboardingSteps } from '@/lib/onboarding-checklist';
@@ -45,10 +47,21 @@ import { isLiveMode } from '@/lib/config/app-mode';
 import type { AccessRequest, User } from '@/lib/types';
 import { getUserRecordId } from '@/lib/user-record';
 
+function formatListInput(values?: string[]) {
+    return values?.join(', ') ?? '';
+}
+
+function parseListInput(value: string) {
+    return value
+        .split(/[\n,]/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
 
 export default function DeveloperPage() {
     const { currentUser } = useAuth();
-    const { users, updateUser, deleteUser, auditLogs } = useData();
+    const { users, updateUser, deleteUser, auditLogs, systemSettings, smsMessages } = useData();
     const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
     const [accessRequestsLoading, setAccessRequestsLoading] = useState(false);
     const [showStepUpDialog, setShowStepUpDialog] = useState(false);
@@ -62,6 +75,13 @@ export default function DeveloperPage() {
       role: 'barangay' as User['role'],
       status: 'active' as NonNullable<User['status']>,
       preferredWorkspace: 'simple' as NonNullable<User['preferredWorkspace']>,
+      assignmentRole: 'owner' as NonNullable<User['assignmentRole']>,
+      availabilityStatus: 'available' as NonNullable<User['availabilityStatus']>,
+      shiftStartTime: '',
+      shiftEndTime: '',
+      assignedZones: '',
+      expertiseTags: '',
+      availabilityNote: '',
     });
     const { toast } = useToast();
 
@@ -72,6 +92,11 @@ export default function DeveloperPage() {
     const simpleWorkspaceUsers = barangayUsers.filter((user) => user.preferredWorkspace === 'simple').length;
     const namedAuditActors = new Set(auditLogs.filter((log) => log.user !== 'system').map((log) => log.user)).size;
     const pendingAccessRequests = accessRequests.filter((request) => request.status === 'pending_review' || request.status === 'reviewed');
+    const staffingCoverage = getStaffingCoverageSummary({
+        users,
+        zoneNames: systemSettings.zoneDescriptions.map((zone) => zone.zone),
+        smsMessages,
+    });
 
     const requestStepUpVerification = (operation: () => Promise<void>) => {
         pendingSensitiveAction.current = operation;
@@ -285,6 +310,13 @@ export default function DeveloperPage() {
               role: 'barangay',
               status: 'active',
               preferredWorkspace: 'simple',
+              assignmentRole: 'owner',
+              availabilityStatus: 'available',
+              shiftStartTime: '',
+              shiftEndTime: '',
+              assignedZones: '',
+              expertiseTags: '',
+              availabilityNote: '',
             });
             toast({ title: "Tagumpay!", description: `Nai-update na ang mga detalye ni ${updatedUser.name}.` });
         } catch (error) {
@@ -317,6 +349,13 @@ export default function DeveloperPage() {
             role: editingForm.role,
             status: editingForm.status,
             preferredWorkspace: editingForm.preferredWorkspace,
+            assignmentRole: editingForm.assignmentRole,
+            availabilityStatus: editingForm.availabilityStatus,
+            shiftStartTime: editingForm.shiftStartTime || undefined,
+            shiftEndTime: editingForm.shiftEndTime || undefined,
+            assignedZones: parseListInput(editingForm.assignedZones),
+            expertiseTags: parseListInput(editingForm.expertiseTags),
+            availabilityNote: editingForm.availabilityNote.trim() || undefined,
         };
 
         await submitUserEdit(targetUser, updatedUser);
@@ -424,6 +463,57 @@ export default function DeveloperPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-amber-200 bg-amber-50/40">
+        <CardHeader>
+          <CardTitle className="text-base">Staffing Coverage Watch</CardTitle>
+          <CardDescription>
+            Tinutukoy nito kung may zone na kulang ang may hawak, may off-shift gaps, o may staff na overloaded bago pa maapektuhan ang case response.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={staffingCoverage.uncoveredZones.length > 0 ? 'destructive' : 'outline'}>
+              Walang direct coverage: {staffingCoverage.uncoveredZones.length}
+            </Badge>
+            <Badge variant={staffingCoverage.shiftLimitedZones.length > 0 ? 'secondary' : 'outline'}>
+              Shift-limited zones: {staffingCoverage.shiftLimitedZones.length}
+            </Badge>
+            <Badge variant={staffingCoverage.overloadedUsers.length > 0 ? 'secondary' : 'outline'}>
+              Overloaded staff: {staffingCoverage.overloadedUsers.length}
+            </Badge>
+            <Badge variant="outline">Available responders: {staffingCoverage.availableResponders}</Badge>
+          </div>
+          {staffingCoverage.uncoveredZones.length > 0 ? (
+            <p className="text-muted-foreground">
+              Walang naka-assign na direct handler sa: <span className="font-medium text-foreground">{staffingCoverage.uncoveredZones.join(', ')}</span>
+            </p>
+          ) : (
+            <p className="text-muted-foreground">Lahat ng declared zones ay may kahit isang naka-assign na recipient/owner/resolver.</p>
+          )}
+          {staffingCoverage.shiftLimitedZones.length > 0 ? (
+            <p className="text-muted-foreground">
+              May zone na may naka-assign pero walang available na responder sa kasalukuyang shift:
+              <span className="font-medium text-foreground"> {staffingCoverage.shiftLimitedZones.join(', ')}</span>
+            </p>
+          ) : null}
+          {staffingCoverage.overloadedUsers.length > 0 ? (
+            <p className="text-muted-foreground">
+              Mataas ang open load nina:
+              <span className="font-medium text-foreground">
+                {' '}
+                {staffingCoverage.overloadedUsers.map((user) => `${user.name} (${user.openAssignments})`).join(', ')}
+              </span>
+            </p>
+          ) : null}
+          {staffingCoverage.offShiftUsers.length > 0 ? (
+            <p className="text-muted-foreground">
+              Off-shift o labas sa shift ngayon:
+              <span className="font-medium text-foreground"> {staffingCoverage.offShiftUsers.join(', ')}</span>
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -558,6 +648,7 @@ export default function DeveloperPage() {
                     <TableHead className="px-2 md:px-4">Role</TableHead>
                     <TableHead className="px-2 md:px-4">Workspace</TableHead>
                     <TableHead className="px-2 md:px-4">Status</TableHead>
+                    <TableHead className="px-2 md:px-4">Routing</TableHead>
                     <TableHead className="text-right px-2 md:px-4">Mga Aksyon</TableHead>
                 </TableRow>
                 </TableHeader>
@@ -591,6 +682,37 @@ export default function DeveloperPage() {
                         ) : null}
                       </div>
                     </TableCell>
+                    <TableCell className="px-2 py-4 md:px-4">
+                      <div className="flex flex-col items-start gap-2">
+                        <Badge variant="outline">{user.assignmentRole ?? 'owner'}</Badge>
+                        <Badge
+                          variant={
+                            user.availabilityStatus === 'busy'
+                              ? 'secondary'
+                              : user.availabilityStatus === 'off_shift'
+                                ? 'destructive'
+                                : 'default'
+                          }
+                        >
+                          {user.availabilityStatus ?? 'available'}
+                        </Badge>
+                        {user.shiftStartTime || user.shiftEndTime ? (
+                          <p className="text-xs text-muted-foreground">
+                            shift: {user.shiftStartTime || '--:--'} to {user.shiftEndTime || '--:--'}
+                          </p>
+                        ) : null}
+                        {user.assignedZones?.length ? (
+                          <p className="text-xs text-muted-foreground">
+                            zones: {user.assignedZones.join(', ')}
+                          </p>
+                        ) : null}
+                        {user.expertiseTags?.length ? (
+                          <p className="text-xs text-muted-foreground">
+                            expertise: {user.expertiseTags.join(', ')}
+                          </p>
+                        ) : null}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right px-2 py-4 md:px-4">
                        <div className="flex flex-wrap gap-2 justify-end">
                           <HoverTooltip text="I-edit ang mga detalye ng user na ito.">
@@ -607,6 +729,13 @@ export default function DeveloperPage() {
                                    role: user.role,
                                    status: user.status ?? 'active',
                                    preferredWorkspace: user.preferredWorkspace ?? (user.role === 'developer' ? 'detailed' : 'simple'),
+                                   assignmentRole: user.assignmentRole ?? 'owner',
+                                   availabilityStatus: user.availabilityStatus ?? (user.status === 'disabled' ? 'off_shift' : 'available'),
+                                   shiftStartTime: user.shiftStartTime ?? '',
+                                   shiftEndTime: user.shiftEndTime ?? '',
+                                   assignedZones: formatListInput(user.assignedZones),
+                                   expertiseTags: formatListInput(user.expertiseTags),
+                                   availabilityNote: user.availabilityNote ?? '',
                                  });
                                }}
                              ><Edit /> I-edit</Button>
@@ -661,7 +790,7 @@ export default function DeveloperPage() {
 
     {editingUser && (
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-3xl">
               <DialogHeader>
                   <DialogTitle>I-edit ang User</DialogTitle>
                   <DialogDescription>I-update ang mga detalye para kay {editingUser.name}.</DialogDescription>
@@ -714,6 +843,63 @@ export default function DeveloperPage() {
                               </SelectContent>
                           </Select>
                       </div>
+                      </div>
+                      <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                          <div className="space-y-1">
+                              <p className="text-sm font-medium text-foreground">Routing at field coverage</p>
+                              <p className="text-sm text-muted-foreground">
+                                  Ito ang batayan ng system kapag pumipili ng tatanggap, may hawak, o resolver ng incoming cases.
+                              </p>
+                          </div>
+                          <div className="mt-4 grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                  <Label htmlFor="edit-assignment-role">Assignment Role</Label>
+                                  <Select value={editingForm.assignmentRole} onValueChange={(value) => setEditingForm(current => ({ ...current, assignmentRole: value as NonNullable<User['assignmentRole']> }))}>
+                                      <SelectTrigger id="edit-assignment-role">
+                                          <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          <SelectItem value="recipient">Recipient / First Touch</SelectItem>
+                                          <SelectItem value="owner">Case Owner</SelectItem>
+                                          <SelectItem value="resolver">Resolving Officer</SelectItem>
+                                          <SelectItem value="supervisor">Supervisor / Escalation</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                              <div className="space-y-2">
+                                  <Label htmlFor="edit-availability-status">Availability</Label>
+                                  <Select value={editingForm.availabilityStatus} onValueChange={(value) => setEditingForm(current => ({ ...current, availabilityStatus: value as NonNullable<User['availabilityStatus']> }))}>
+                                      <SelectTrigger id="edit-availability-status">
+                                          <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          <SelectItem value="available">Available</SelectItem>
+                                          <SelectItem value="busy">Busy / Limited</SelectItem>
+                                          <SelectItem value="off_shift">Off Shift</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                              <div className="space-y-2">
+                                  <Label htmlFor="edit-shift-start">Shift Start</Label>
+                                  <Input id="edit-shift-start" type="time" value={editingForm.shiftStartTime} onChange={(event) => setEditingForm(current => ({ ...current, shiftStartTime: event.target.value }))} />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label htmlFor="edit-shift-end">Shift End</Label>
+                                  <Input id="edit-shift-end" type="time" value={editingForm.shiftEndTime} onChange={(event) => setEditingForm(current => ({ ...current, shiftEndTime: event.target.value }))} />
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                  <Label htmlFor="edit-assigned-zones">Assigned Zones</Label>
+                                  <Input id="edit-assigned-zones" value={editingForm.assignedZones} onChange={(event) => setEditingForm(current => ({ ...current, assignedZones: event.target.value }))} placeholder="Zone 1, Zone 2" />
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                  <Label htmlFor="edit-expertise-tags">Expertise Tags</Label>
+                                  <Input id="edit-expertise-tags" value={editingForm.expertiseTags} onChange={(event) => setEditingForm(current => ({ ...current, expertiseTags: event.target.value }))} placeholder="pest, weather, field, coordination" />
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                  <Label htmlFor="edit-availability-note">Availability Note</Label>
+                                  <Textarea id="edit-availability-note" value={editingForm.availabilityNote} onChange={(event) => setEditingForm(current => ({ ...current, availabilityNote: event.target.value }))} placeholder="Hal. Nasa field tuwing umaga; tawagan muna bago i-assign sa gabi." />
+                              </div>
+                          </div>
                       </div>
                   </div>
                   <DialogFooter>

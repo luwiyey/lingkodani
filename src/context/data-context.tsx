@@ -1020,6 +1020,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         phone: userData.phone,
         status: userData.status,
         preferredWorkspace: userData.preferredWorkspace,
+        assignmentRole: userData.assignmentRole,
+        availabilityStatus: userData.availabilityStatus,
+        availabilityNote: userData.availabilityNote || undefined,
+        shiftStartTime: userData.shiftStartTime || undefined,
+        shiftEndTime: userData.shiftEndTime || undefined,
+        assignedZones: userData.assignedZones.length > 0 ? userData.assignedZones : undefined,
+        expertiseTags: userData.expertiseTags.length > 0 ? userData.expertiseTags : undefined,
         createdAt: timestamp,
         updatedAt: timestamp,
     };

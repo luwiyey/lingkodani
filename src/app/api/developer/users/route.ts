@@ -30,6 +30,60 @@ function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeStringList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => (typeof item === "string" ? item.split(/[\n,]/) : []))
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(/[\n,]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function normalizeAssignmentRole(
+  value: unknown,
+  fallback: NonNullable<User["assignmentRole"]> = "owner"
+) {
+  if (
+    value === "recipient" ||
+    value === "owner" ||
+    value === "resolver" ||
+    value === "supervisor"
+  ) {
+    return value;
+  }
+
+  return fallback;
+}
+
+function normalizeAvailabilityStatus(
+  value: unknown,
+  fallback: NonNullable<User["availabilityStatus"]> = "available"
+) {
+  if (value === "available" || value === "busy" || value === "off_shift") {
+    return value;
+  }
+
+  return fallback;
+}
+
+function normalizeTimeField(value: unknown) {
+  const normalized = normalizeText(value);
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(normalized) ? normalized : "";
+}
+
+function hasOwn(body: Record<string, unknown>, key: string) {
+  return Object.prototype.hasOwnProperty.call(body, key);
+}
+
 function normalizeRole(value: unknown, fallback: UserRole = "barangay"): UserRole {
   if (value === "developer") {
     return "developer";
@@ -67,6 +121,13 @@ function buildUserProfile(input: {
   phone?: string;
   status?: User["status"];
   preferredWorkspace?: User["preferredWorkspace"];
+  assignmentRole?: User["assignmentRole"];
+  availabilityStatus?: User["availabilityStatus"];
+  availabilityNote?: string;
+  shiftStartTime?: string;
+  shiftEndTime?: string;
+  assignedZones?: string[];
+  expertiseTags?: string[];
   existing?: Partial<User>;
   inviteDeliveryStatus?: User["inviteDeliveryStatus"];
   inviteSentAt?: string;
@@ -101,6 +162,13 @@ function buildUserProfile(input: {
     phone: input.phone ?? input.existing?.phone,
     status: input.status ?? input.existing?.status ?? "pending_setup",
     preferredWorkspace: input.preferredWorkspace ?? input.existing?.preferredWorkspace ?? (input.role === "developer" ? "detailed" : "simple"),
+    assignmentRole: input.assignmentRole ?? input.existing?.assignmentRole ?? "owner",
+    availabilityStatus: input.availabilityStatus ?? input.existing?.availabilityStatus ?? "available",
+    availabilityNote: input.availabilityNote ?? input.existing?.availabilityNote,
+    shiftStartTime: input.shiftStartTime ?? input.existing?.shiftStartTime,
+    shiftEndTime: input.shiftEndTime ?? input.existing?.shiftEndTime,
+    assignedZones: input.assignedZones ?? input.existing?.assignedZones,
+    expertiseTags: input.expertiseTags ?? input.existing?.expertiseTags,
     inviteDeliveryStatus: input.inviteDeliveryStatus ?? input.existing?.inviteDeliveryStatus,
     inviteSentAt: input.inviteSentAt ?? input.existing?.inviteSentAt,
     inviteDeliveryError: input.inviteDeliveryError ?? input.existing?.inviteDeliveryError,
@@ -308,6 +376,16 @@ export async function POST(request: Request) {
     const requestedStatus = normalizeStatus(body.status, "pending_setup");
     const status: NonNullable<User["status"]> = requestedStatus === "active" ? "pending_setup" : requestedStatus;
     const preferredWorkspace = normalizeWorkspace(body.preferredWorkspace, role);
+    const assignmentRole = normalizeAssignmentRole(body.assignmentRole);
+    const availabilityStatus =
+      status === "disabled"
+        ? "off_shift"
+        : normalizeAvailabilityStatus(body.availabilityStatus, "available");
+    const availabilityNote = normalizeText(body.availabilityNote);
+    const shiftStartTime = normalizeTimeField(body.shiftStartTime);
+    const shiftEndTime = normalizeTimeField(body.shiftEndTime);
+    const assignedZones = normalizeStringList(body.assignedZones);
+    const expertiseTags = normalizeStringList(body.expertiseTags);
 
     if (!email || !name || !title || !phone) {
       return NextResponse.json(
@@ -370,6 +448,13 @@ export async function POST(request: Request) {
         phone,
         status,
         preferredWorkspace,
+        assignmentRole,
+        availabilityStatus,
+        availabilityNote,
+        shiftStartTime,
+        shiftEndTime,
+        assignedZones,
+        expertiseTags,
         inviteDeliveryStatus: delivery.inviteSummary.inviteDeliveryStatus,
         inviteSentAt: delivery.inviteTimestamp,
         inviteDeliveryError: delivery.inviteSummary.inviteDeliveryError,
@@ -573,6 +658,29 @@ export async function PATCH(request: Request) {
       nextRole,
       existingProfile.preferredWorkspace ?? (nextRole === "developer" ? "detailed" : "simple")
     );
+    const nextAssignmentRole = normalizeAssignmentRole(body.assignmentRole, existingProfile.assignmentRole ?? "owner");
+    const nextAvailabilityStatus =
+      nextStatus === "disabled"
+        ? "off_shift"
+        : normalizeAvailabilityStatus(
+            body.availabilityStatus,
+            existingProfile.availabilityStatus ?? "available"
+          );
+    const nextAvailabilityNote = hasOwn(body, "availabilityNote")
+      ? normalizeText(body.availabilityNote)
+      : existingProfile.availabilityNote || "";
+    const nextShiftStartTime = hasOwn(body, "shiftStartTime")
+      ? normalizeTimeField(body.shiftStartTime)
+      : existingProfile.shiftStartTime || "";
+    const nextShiftEndTime = hasOwn(body, "shiftEndTime")
+      ? normalizeTimeField(body.shiftEndTime)
+      : existingProfile.shiftEndTime || "";
+    const nextAssignedZones = hasOwn(body, "assignedZones")
+      ? normalizeStringList(body.assignedZones)
+      : existingProfile.assignedZones;
+    const nextExpertiseTags = hasOwn(body, "expertiseTags")
+      ? normalizeStringList(body.expertiseTags)
+      : existingProfile.expertiseTags;
 
     if (!nextEmail || !nextName || !nextTitle || !nextPhone) {
       return NextResponse.json(
@@ -619,6 +727,13 @@ export async function PATCH(request: Request) {
       phone: nextPhone,
       status: nextStatus,
       preferredWorkspace: nextWorkspace,
+      assignmentRole: nextAssignmentRole,
+      availabilityStatus: nextAvailabilityStatus,
+      availabilityNote: nextAvailabilityNote,
+      shiftStartTime: nextShiftStartTime,
+      shiftEndTime: nextShiftEndTime,
+      assignedZones: nextAssignedZones,
+      expertiseTags: nextExpertiseTags,
       existing: existingProfile,
       phoneVerifiedAt: phoneChanged ? "" : existingProfile.phoneVerifiedAt,
     });

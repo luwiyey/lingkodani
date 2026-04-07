@@ -326,12 +326,34 @@ export function userToManagementValues(user: User): UserManagementValues {
     role: user.role,
     status: user.status ?? "active",
     preferredWorkspace: user.preferredWorkspace ?? (user.role === "developer" ? "detailed" : "simple"),
+    assignmentRole: user.assignmentRole ?? "owner",
+    availabilityStatus: user.availabilityStatus ?? (user.status === "disabled" ? "off_shift" : "available"),
+    shiftStartTime: user.shiftStartTime ?? "",
+    shiftEndTime: user.shiftEndTime ?? "",
+    assignedZones: user.assignedZones ?? [],
+    expertiseTags: user.expertiseTags ?? [],
+    availabilityNote: user.availabilityNote ?? "",
   };
 }
 
 export function formatUsersAsCsv(users: User[]) {
   const rows = [
-    ["name", "email", "title", "phone", "role", "status", "preferredWorkspace"],
+    [
+      "name",
+      "email",
+      "title",
+      "phone",
+      "role",
+      "status",
+      "preferredWorkspace",
+      "assignmentRole",
+      "availabilityStatus",
+      "shiftStartTime",
+      "shiftEndTime",
+      "assignedZones",
+      "expertiseTags",
+      "availabilityNote",
+    ],
     ...users.map((user) => {
       const mapped = userToManagementValues(user);
       return [
@@ -342,6 +364,13 @@ export function formatUsersAsCsv(users: User[]) {
         mapped.role,
         mapped.status,
         mapped.preferredWorkspace,
+        mapped.assignmentRole,
+        mapped.availabilityStatus,
+        mapped.shiftStartTime,
+        mapped.shiftEndTime,
+        mapped.assignedZones.join(", "),
+        mapped.expertiseTags.join(", "),
+        mapped.availabilityNote,
       ];
     }),
   ];
@@ -360,6 +389,13 @@ function coerceUserManagementValue(record: Record<string, unknown>) {
     role: asString(record.role).trim() || "barangay",
     status: asString(record.status).trim() || "pending_setup",
     preferredWorkspace: asString(record.preferredWorkspace).trim() || "simple",
+    assignmentRole: asString(record.assignmentRole ?? record.assignment_role).trim() || "owner",
+    availabilityStatus: asString(record.availabilityStatus ?? record.availability_status).trim() || "available",
+    shiftStartTime: asString(record.shiftStartTime ?? record.shift_start_time).trim() || "",
+    shiftEndTime: asString(record.shiftEndTime ?? record.shift_end_time).trim() || "",
+    assignedZones: record.assignedZones ?? record.assigned_zones ?? [],
+    expertiseTags: record.expertiseTags ?? record.expertise_tags ?? [],
+    availabilityNote: asString(record.availabilityNote ?? record.availability_note).trim() || "",
   });
 
   return parsed.success ? parsed.data : null;

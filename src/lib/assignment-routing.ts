@@ -10,6 +10,18 @@ export type AssignmentSuggestion = {
   reasons: string[];
 };
 
+export type StaffingCoverageSummary = {
+  uncoveredZones: string[];
+  shiftLimitedZones: string[];
+  overloadedUsers: Array<{
+    userId: string;
+    name: string;
+    openAssignments: number;
+  }>;
+  offShiftUsers: string[];
+  availableResponders: number;
+};
+
 function normalize(value?: string) {
   return value?.trim().toLowerCase() ?? "";
 }
@@ -55,6 +67,33 @@ function inferAvailability(user: User) {
   return user.status === "disabled" ? "off_shift" : "available";
 }
 
+function parseMinutes(value?: string) {
+  if (!value || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+    return null;
+  }
+
+  const [hours, minutes] = value.split(":").map((part) => Number(part));
+  return hours * 60 + minutes;
+}
+
+function isWithinShiftWindow(user: User, now = Date.now()) {
+  const startMinutes = parseMinutes(user.shiftStartTime);
+  const endMinutes = parseMinutes(user.shiftEndTime);
+
+  if (startMinutes === null || endMinutes === null || startMinutes === endMinutes) {
+    return null;
+  }
+
+  const currentDate = new Date(now);
+  const currentMinutes = currentDate.getHours() * 60 + currentDate.getMinutes();
+
+  if (startMinutes < endMinutes) {
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  }
+
+  return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+}
+
 function countOpenAssignments(messages: SmsMessage[], userName: string) {
   const normalizedUserName = normalize(userName);
   return messages.filter(
@@ -62,6 +101,12 @@ function countOpenAssignments(messages: SmsMessage[], userName: string) {
       !message.closedAt &&
       normalize(message.assignedTo) === normalizedUserName
   ).length;
+}
+
+function getDirectHandlingRole(user: User) {
+  return user.assignmentRole === "resolver" ||
+    user.assignmentRole === "owner" ||
+    user.assignmentRole === "recipient";
 }
 
 function getFarmerZone(message: SmsMessage, farmers: Farmer[]) {
@@ -102,8 +147,9 @@ export function buildAssignmentSuggestions(input: {
   users: User[];
   farmers: Farmer[];
   smsMessages: SmsMessage[];
+  now?: number;
 }) {
-  const { message, users, farmers, smsMessages } = input;
+  const { message, users, farmers, smsMessages, now = Date.now() } = input;
   const zone = getFarmerZone(message, farmers);
   const intentTags = getIntentTags(message);
 
@@ -113,6 +159,7 @@ export function buildAssignmentSuggestions(input: {
       const availabilityStatus = inferAvailability(user);
       const expertiseTags = inferExpertiseTags(user);
       const openAssignments = countOpenAssignments(smsMessages, user.name);
+      const inShift = isWithinShiftWindow(user, now);
       const reasons: string[] = [];
       let score = 40;
 
@@ -125,6 +172,40 @@ export function buildAssignmentSuggestions(input: {
       } else {
         score -= 28;
         reasons.push("off-shift o hindi available");
+      }
+
+      if (inShift === true) {
+        score += 8;
+        reasons.push("pasok sa declared shift");
+      } else if (inShift === false) {
+        score -= 22;
+        reasons.push("labas sa declared shift");
+      }
+
+      switch (user.assignmentRole) {
+        case "resolver":
+          score += 10;
+          reasons.push("resolver ang role");
+          break;
+        case "owner":
+          score += 8;
+          reasons.push("primary case owner ang role");
+          break;
+        case "recipient":
+          score += 4;
+          reasons.push("handa sa first-touch intake");
+          break;
+        case "supervisor":
+          if (message.urgency === "high") {
+            score += 6;
+            reasons.push("supervisor para sa urgent escalation");
+          } else {
+            score -= 6;
+            reasons.push("mas bagay sa escalation kaysa routine handling");
+          }
+          break;
+        default:
+          break;
       }
 
       if (
@@ -222,5 +303,79 @@ export function getSlaAgingMeta(message: SmsMessage, now = Date.now()) {
   return {
     ageHours: Number(ageHours.toFixed(1)),
     overdue,
+  };
+}
+
+export function getStaffingCoverageSummary(input: {
+  users: User[];
+  zoneNames: string[];
+  smsMessages: SmsMessage[];
+  now?: number;
+}): StaffingCoverageSummary {
+  const { users, zoneNames, smsMessages, now = Date.now() } = input;
+  const barangayUsers = users.filter((user) => user.role === "barangay" && user.status !== "disabled");
+  const uncoveredZones: string[] = [];
+  const shiftLimitedZones: string[] = [];
+
+  const overloadedUsers = barangayUsers
+    .map((user) => ({
+      userId: user.id ?? user.uid ?? user.email,
+      name: user.name,
+      openAssignments: countOpenAssignments(smsMessages, user.name),
+    }))
+    .filter((user) => user.openAssignments >= 4)
+    .sort((left, right) => right.openAssignments - left.openAssignments);
+
+  const offShiftUsers = barangayUsers
+    .filter((user) => inferAvailability(user) === "off_shift" || isWithinShiftWindow(user, now) === false)
+    .map((user) => user.name);
+
+  const availableResponders = barangayUsers.filter((user) => {
+    const availabilityStatus = inferAvailability(user);
+    if (availabilityStatus !== "available") {
+      return false;
+    }
+
+    const inShift = isWithinShiftWindow(user, now);
+    return inShift !== false && getDirectHandlingRole(user);
+  }).length;
+
+  zoneNames
+    .map((zone) => zone.trim())
+    .filter(Boolean)
+    .forEach((zone) => {
+      const matchingUsers = barangayUsers.filter((user) =>
+        user.assignedZones?.some((assignedZone) => normalize(assignedZone) === normalize(zone))
+      );
+
+      if (matchingUsers.length === 0) {
+        uncoveredZones.push(zone);
+        return;
+      }
+
+      const availableCoverage = matchingUsers.some((user) => {
+        if (!getDirectHandlingRole(user)) {
+          return false;
+        }
+
+        if (inferAvailability(user) !== "available") {
+          return false;
+        }
+
+        const inShift = isWithinShiftWindow(user, now);
+        return inShift !== false;
+      });
+
+      if (!availableCoverage) {
+        shiftLimitedZones.push(zone);
+      }
+    });
+
+  return {
+    uncoveredZones,
+    shiftLimitedZones,
+    overloadedUsers,
+    offShiftUsers,
+    availableResponders,
   };
 }

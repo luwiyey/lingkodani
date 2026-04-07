@@ -9,6 +9,7 @@ import { SensitiveActionReauthDialog } from '@/components/auth/sensitive-action-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +21,17 @@ import { useData } from '@/context/data-context';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { isLiveMode } from '@/lib/config/app-mode';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
+
+function formatListInput(value: string[]) {
+  return value.join(', ');
+}
+
+function parseListInput(value: string) {
+  return value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
 export default function AddUserPage() {
   const router = useRouter();
@@ -40,6 +52,13 @@ export default function AddUserPage() {
       role: 'barangay',
       status: 'pending_setup',
       preferredWorkspace: 'simple',
+      assignmentRole: 'owner',
+      availabilityStatus: 'available',
+      shiftStartTime: '',
+      shiftEndTime: '',
+      assignedZones: [],
+      expertiseTags: [],
+      availabilityNote: '',
     },
   });
 
@@ -240,6 +259,51 @@ export default function AddUserPage() {
                 />
                 <FormField
                   control={form.control}
+                  name="assignmentRole"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assignment Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="recipient">Recipient / First Touch</SelectItem>
+                          <SelectItem value="owner">Case Owner</SelectItem>
+                          <SelectItem value="resolver">Resolving Officer</SelectItem>
+                          <SelectItem value="supervisor">Supervisor / Escalation</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="availabilityStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Availability Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="available">Available</SelectItem>
+                          <SelectItem value="busy">Busy / Limited</SelectItem>
+                          <SelectItem value="off_shift">Off Shift</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="preferredWorkspace"
                   render={({ field }) => (
                     <FormItem>
@@ -259,6 +323,95 @@ export default function AddUserPage() {
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">Routing and field coverage</p>
+                  <p className="text-sm text-muted-foreground">
+                    Ang impormasyong ito ang gagamitin ng assignment engine para malaman kung sino ang pinakaangkop sa urgent cases, field visits, at zone coverage.
+                  </p>
+                </div>
+                <div className="mt-4 grid gap-6 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="shiftStartTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Shift Start</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="shiftEndTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Shift End</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="assignedZones"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Assigned Zones</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={formatListInput(field.value)}
+                            onChange={(event) => field.onChange(parseListInput(event.target.value))}
+                            placeholder="Zone 1, Zone 2, Zone 3"
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">Comma-separated. Gamitin ito kapag may primary coverage area ang staff.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="expertiseTags"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Expertise Tags</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={formatListInput(field.value)}
+                            onChange={(event) => field.onChange(parseListInput(event.target.value))}
+                            placeholder="pest, weather, field, crop, coordination"
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">Halimbawa: pest, weather, field, crop, records, escalation.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="availabilityNote"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Availability Note</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            value={field.value ?? ''}
+                            placeholder="Hal. Nasa field tuwing umaga; tawagan muna bago i-assign sa after-hours visit."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
               <div className="flex justify-end pt-4">
                 <Button type="submit" disabled={isSubmitting}>
