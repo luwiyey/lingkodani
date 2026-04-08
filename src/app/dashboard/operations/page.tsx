@@ -382,7 +382,13 @@ export default function OperationsPage() {
     () =>
       smsMessages.filter((message) => {
         const flags = exceptionFlagsByMessage.get(message.id) ?? [];
-        return flags.some((flag) => flag.severity === 'high' || flag.id === 'reporting_incomplete');
+        return flags.some(
+          (flag) =>
+            flag.severity === 'high' ||
+            flag.id === 'reporting_incomplete' ||
+            flag.id === 'lexicon_review_needed' ||
+            flag.id === 'thread_review_blocked'
+        );
       }),
     [exceptionFlagsByMessage, smsMessages]
   );

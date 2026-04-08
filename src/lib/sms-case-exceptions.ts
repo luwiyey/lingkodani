@@ -7,6 +7,10 @@ export type SmsCaseExceptionSeverity = "low" | "medium" | "high";
 export type SmsCaseExceptionFlag = {
   id:
     | "missing_resolution_evidence"
+    | "distressed_unassigned"
+    | "frustrated_no_response"
+    | "lexicon_review_needed"
+    | "thread_review_blocked"
     | "urgent_unassigned"
     | "urgent_no_action"
     | "follow_up_overdue"
@@ -65,6 +69,60 @@ export function getSmsCaseExceptionFlags(input: {
   const messageAgeHours = hoursBetween(message.timestamp, now);
   const timeSinceAssignmentHours = message.assignedAt ? hoursBetween(message.assignedAt, now) : undefined;
   const latestFarmerOutbound = relatedOutbound[0];
+
+  if (message.sentiment === "distressed" && !message.assignedTo && !message.closedAt && messageAgeHours >= 1) {
+    flags.push({
+      id: "distressed_unassigned",
+      severity: "high",
+      title: "Matinding farmer distress pero wala pang naka-assign",
+      reason: "Mukhang distressed ang farmer at lampas na sa 1 oras ang mensahe nang walang malinaw na naka-assign na responder.",
+    });
+  }
+
+  if (
+    message.sentiment === "frustrated" &&
+    !message.respondedAt &&
+    !message.closedAt &&
+    (timeSinceAssignmentHours ?? messageAgeHours) >= 4
+  ) {
+    flags.push({
+      id: "frustrated_no_response",
+      severity: message.urgency === "high" ? "high" : "medium",
+      title: "Frustrated na ang farmer pero wala pang malinaw na response",
+      reason: "Paulit-ulit o frustrated ang tono ng mensahe at wala pang sapat na documented response o follow-through.",
+    });
+  }
+
+  if (
+    !message.closedAt &&
+    message.normalizationUnknownTokens &&
+    message.normalizationUnknownTokens.length >= 2 &&
+    (message.triageConfidence ?? message.aiConfidence) < 0.72
+  ) {
+    flags.push({
+      id: "lexicon_review_needed",
+      severity: "medium",
+      title: "Kailangan ng dialect o lexicon review",
+      reason: `May hindi pa kilalang lokal na termino (${message.normalizationUnknownTokens.slice(0, 3).join(", ")}) at mababa ang triage confidence para dito.`,
+    });
+  }
+
+  if (
+    !message.closedAt &&
+    !message.respondedAt &&
+    (
+      message.threadReviewStatus === "pending" ||
+      message.multiConcernDetected ||
+      Boolean(message.possibleDuplicateOfCaseId)
+    )
+  ) {
+    flags.push({
+      id: "thread_review_blocked",
+      severity: "medium",
+      title: "Kailangan munang i-review ang threading bago final reply",
+      reason: "May senyales na maaaring continuation, duplicate, o halong concern ang case na ito kaya kailangan muna ng thread review bago magsara o magpadala ng final advice.",
+    });
+  }
 
   if (
     (message.caseOutcomeStatus === "resolved" || message.caseStatus === "closed") &&
@@ -157,5 +215,17 @@ export function getSmsCaseExceptionFlags(input: {
     });
   }
 
-  return flags;
+  const severityRank: Record<SmsCaseExceptionSeverity, number> = {
+    high: 3,
+    medium: 2,
+    low: 1,
+  };
+
+  return [...flags].sort((left, right) => {
+    if (severityRank[right.severity] !== severityRank[left.severity]) {
+      return severityRank[right.severity] - severityRank[left.severity];
+    }
+
+    return left.title.localeCompare(right.title);
+  });
 }

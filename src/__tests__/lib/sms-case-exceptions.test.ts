@@ -93,4 +93,46 @@ describe("sms-case-exceptions", () => {
 
     expect(flags.some((flag) => flag.id === "last_farmer_outbound_failed")).toBe(true);
   });
+
+  it("flags distressed cases with no assignee quickly", () => {
+    const flags = getSmsCaseExceptionFlags({
+      message: {
+        ...baseMessage,
+        sentiment: "distressed",
+        urgency: "medium",
+      },
+      now: "2026-03-22T09:05:00.000Z",
+    });
+
+    expect(flags.some((flag) => flag.id === "distressed_unassigned")).toBe(true);
+  });
+
+  it("flags low-confidence dialect cases for lexicon review", () => {
+    const flags = getSmsCaseExceptionFlags({
+      message: {
+        ...baseMessage,
+        urgency: "medium",
+        aiConfidence: 0.61,
+        triageConfidence: 0.58,
+        normalizationUnknownTokens: ["lamisaan", "nagrigat"],
+      },
+      now: "2026-03-22T08:30:00.000Z",
+    });
+
+    expect(flags.some((flag) => flag.id === "lexicon_review_needed")).toBe(true);
+  });
+
+  it("flags pending thread review before final reply", () => {
+    const flags = getSmsCaseExceptionFlags({
+      message: {
+        ...baseMessage,
+        urgency: "medium",
+        threadReviewStatus: "pending",
+        possibleDuplicateOfCaseId: "CASE-2",
+      },
+      now: "2026-03-22T08:30:00.000Z",
+    });
+
+    expect(flags.some((flag) => flag.id === "thread_review_blocked")).toBe(true);
+  });
 });
