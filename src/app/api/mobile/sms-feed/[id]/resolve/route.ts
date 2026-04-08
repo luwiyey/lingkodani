@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import {
+  buildMobileSyncConflict,
+  getSmsMessageSyncVersion,
+  hasExpectedSyncConflict,
+} from "@/lib/mobile-sync-integrity";
 import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import type { SmsProvider } from "@/lib/providers/sms/types";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
@@ -68,6 +73,7 @@ export async function POST(
     const messageId = id.trim();
     const body = await request.json();
     const note = normalizeText(body.note);
+    const expectedSyncVersion = normalizeText(body.expectedSyncVersion);
 
     if (!messageId) {
       return NextResponse.json({ error: "Missing message ID." }, { status: 400 });
@@ -85,6 +91,34 @@ export async function POST(
     }
 
     const currentMessage = snapshot.data() as SmsMessage;
+    const currentSyncVersion = getSmsMessageSyncVersion(currentMessage);
+
+    if (hasExpectedSyncConflict(expectedSyncVersion, currentSyncVersion)) {
+      return NextResponse.json(
+        {
+          error:
+            "May bagong update sa kasong ito habang offline ang device. I-refresh muna bago magpadala ng YES/NO confirmation.",
+          ...buildMobileSyncConflict({
+            expectedSyncVersion,
+            currentSyncVersion,
+            target: "sms_message",
+            summary:
+              "Nagbago na ang case outcome, assignment, o confirmation status bago naipadala ang mobile resolve action.",
+            recommendedAction:
+              "I-refresh ang case, tiyaking kumpleto pa rin ang action records, at magpadala muli ng confirmation kung kailangan.",
+            currentState: {
+              caseStatus: currentMessage.caseStatus,
+              caseOutcomeStatus: currentMessage.caseOutcomeStatus,
+              resolutionConfirmationStatus:
+                currentMessage.resolutionConfirmationStatus,
+              assignedTo: currentMessage.assignedTo,
+            },
+          }),
+        },
+        { status: 409 }
+      );
+    }
+
     const [assistanceRecords, fieldVisitTasks] = await Promise.all([
       listRecordsForMessage<FarmerAssistanceRecord>(
         firebaseCollections.assistanceRecords,
@@ -175,6 +209,7 @@ export async function POST(
       updated: true,
       message: result.updatedMessage,
       outboundRecord: result.outboundRecord,
+      syncVersion: getSmsMessageSyncVersion(result.updatedMessage),
     });
   } catch {
     return NextResponse.json(

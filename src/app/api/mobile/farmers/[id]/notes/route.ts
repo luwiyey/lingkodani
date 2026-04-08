@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import {
+  buildMobileSyncConflict,
+  getFarmerSyncVersion,
+  hasExpectedSyncConflict,
+} from "@/lib/mobile-sync-integrity";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import type { Farmer, LogbookEntry } from "@/lib/types";
@@ -25,6 +30,7 @@ export async function POST(
     const farmerId = id.trim();
     const body = await request.json();
     const note = normalizeText(body.note);
+    const expectedSyncVersion = normalizeText(body.expectedSyncVersion);
 
     if (!farmerId) {
       return NextResponse.json({ error: "Missing farmer ID." }, { status: 400 });
@@ -49,6 +55,34 @@ export async function POST(
     }
 
     const farmer = farmerSnapshot.data() as Farmer;
+    const currentSyncVersion = getFarmerSyncVersion(farmer);
+
+    if (hasExpectedSyncConflict(expectedSyncVersion, currentSyncVersion)) {
+      return NextResponse.json(
+        {
+          error:
+            "May bagong update sa farmer record habang offline ang device. I-refresh muna bago mag-save ng note.",
+          ...buildMobileSyncConflict({
+            expectedSyncVersion,
+            currentSyncVersion,
+            target: "farmer",
+            summary:
+              "Nagbago na ang farmer profile o na-archive na ang record bago na-sync ang mobile note.",
+            recommendedAction:
+              "I-refresh ang farmer profile at tiyaking ito pa rin ang tamang record bago i-save muli ang note.",
+            currentState: {
+              status: farmer.status,
+              profileVersion: farmer.profileVersion,
+              identityTrustLevel: farmer.identityTrustLevel,
+              archivedAt: farmer.archivedAt,
+              mergedIntoFarmerId: farmer.mergedIntoFarmerId,
+            },
+          }),
+        },
+        { status: 409 }
+      );
+    }
+
     const timestamp = new Date().toISOString();
     const actorName = auth.profile.name ?? auth.email;
     const logbookEntry: LogbookEntry = {
@@ -87,6 +121,7 @@ export async function POST(
     return NextResponse.json({
       saved: true,
       entry: logbookEntry,
+      syncVersion: currentSyncVersion,
     });
   } catch {
     return NextResponse.json(

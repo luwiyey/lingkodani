@@ -9,26 +9,44 @@ class MobileActionQueueService {
 
   static const _storageKey = 'mobile-action-queue';
 
+  bool _shouldReplaceExisting(MobileQueuedAction action) {
+    switch (action.type) {
+      case MobileQueuedActionType.farmerNote:
+        return false;
+      case MobileQueuedActionType.smsReply:
+      case MobileQueuedActionType.resolutionConfirmation:
+      case MobileQueuedActionType.fieldVisitStatus:
+      case MobileQueuedActionType.assignMessage:
+        return true;
+    }
+  }
+
   Future<List<MobileQueuedAction>> readActions(String userId) async {
     final queue = await _readAll();
     return queue.where((action) => action.userId == userId).toList()
       ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
   }
 
-  Future<List<MobileQueuedAction>> queueAction(MobileQueuedAction nextAction) async {
+  Future<List<MobileQueuedAction>> queueAction(
+    MobileQueuedAction nextAction,
+  ) async {
     final queue = await _readAll();
     final nextQueue = [
-      ...queue.where(
-        (action) =>
-            !(action.userId == nextAction.userId &&
-                action.type == nextAction.type &&
-                action.messageId == nextAction.messageId),
-      ),
+      ...(_shouldReplaceExisting(nextAction)
+          ? queue.where(
+              (action) =>
+                  !(action.userId == nextAction.userId &&
+                      action.type == nextAction.type &&
+                      action.messageId == nextAction.messageId),
+            )
+          : queue),
       nextAction,
     ]..sort((left, right) => left.createdAt.compareTo(right.createdAt));
 
     await _writeAll(nextQueue);
-    return nextQueue.where((action) => action.userId == nextAction.userId).toList();
+    return nextQueue
+        .where((action) => action.userId == nextAction.userId)
+        .toList();
   }
 
   Future<List<MobileQueuedAction>> replaceForUser(
@@ -61,7 +79,10 @@ class MobileActionQueueService {
       final decoded = jsonDecode(rawValue) as List<dynamic>;
       return decoded
           .whereType<Map>()
-          .map((item) => MobileQueuedAction.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) =>
+                MobileQueuedAction.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
     } catch (_) {
       await preferences.remove(_storageKey);

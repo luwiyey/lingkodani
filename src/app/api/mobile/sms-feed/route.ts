@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { getSmsMessageSyncVersion } from "@/lib/mobile-sync-integrity";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import type { SmsMessage } from "@/lib/types";
 
@@ -51,6 +52,7 @@ export async function GET(request: Request) {
       caseOutcomeStatus: message.caseOutcomeStatus,
       caseOutcomeSummary: message.caseOutcomeSummary,
       resolutionConfirmationStatus: message.resolutionConfirmationStatus,
+      syncVersion: getSmsMessageSyncVersion(message),
     }));
 
   return NextResponse.json({ messages });

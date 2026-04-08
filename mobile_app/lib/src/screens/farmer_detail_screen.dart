@@ -27,6 +27,7 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
   final FieldVisitLocationService _locationService =
       const FieldVisitLocationService();
   String? _visitActionId;
+  String? _latestFarmerSyncVersion;
 
   @override
   void initState() {
@@ -35,15 +36,17 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
   }
 
   Future<FarmerDetail> _load() {
-    return context
-        .read<AppState>()
-        .api
-        .fetchFarmerDetail(widget.session.idToken, widget.farmerId);
+    return context.read<AppState>().api.fetchFarmerDetail(
+      widget.session.idToken,
+      widget.farmerId,
+    );
   }
 
   Future<void> _handleVisitStatus(FieldVisitSummary visit) async {
     final appState = context.read<AppState>();
-    final nextStatus = visit.status == 'scheduled' ? 'in_progress' : 'completed';
+    final nextStatus = visit.status == 'scheduled'
+        ? 'in_progress'
+        : 'completed';
 
     setState(() {
       _visitActionId = visit.id;
@@ -54,6 +57,7 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
       final result = await appState.updateFieldVisitStatus(
         visitId: visit.id,
         status: nextStatus,
+        expectedSyncVersion: visit.syncVersion,
         verification: verification,
       );
 
@@ -69,8 +73,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
             result.queued
                 ? result.detail
                 : usedManualFallback
-                    ? 'Na-update ang visit, pero manual verification lang ang na-save dahil walang GPS lock.'
-                    : 'Na-update ang field visit at naka-save ang GPS verification.',
+                ? 'Na-update ang visit, pero manual verification lang ang na-save dahil walang GPS lock.'
+                : 'Na-update ang field visit at naka-save ang GPS verification.',
           ),
         ),
       );
@@ -84,9 +88,9 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -113,6 +117,7 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
       final result = await appState.addFarmerNote(
         farmerId: widget.farmerId,
         note: note.trim(),
+        expectedSyncVersion: _latestFarmerSyncVersion,
       );
 
       if (!mounted) {
@@ -138,9 +143,7 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -197,8 +200,10 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
 
             final detail = snapshot.data!;
             final farmer = detail.farmer;
-            final pendingFarmerNotes =
-                appState.pendingActionsForFarmer(widget.farmerId);
+            _latestFarmerSyncVersion = farmer.syncVersion;
+            final pendingFarmerNotes = appState.pendingActionsForFarmer(
+              widget.farmerId,
+            );
 
             return RefreshIndicator(
               onRefresh: () async {
@@ -256,7 +261,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       [
-                                        if (farmer.sitio.isNotEmpty) farmer.sitio,
+                                        if (farmer.sitio.isNotEmpty)
+                                          farmer.sitio,
                                         if (farmer.barangay.isNotEmpty)
                                           farmer.barangay,
                                       ].join(' • '),
@@ -275,7 +281,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                             runSpacing: 8,
                             children: [
                               _Pill(text: farmer.status),
-                              if (farmer.phone.isNotEmpty) _Pill(text: farmer.phone),
+                              if (farmer.phone.isNotEmpty)
+                                _Pill(text: farmer.phone),
                               ...farmer.crops.map((crop) => _Pill(text: crop)),
                             ],
                           ),
@@ -400,21 +407,27 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                           children: [
                             Text(
                               'May ${pendingFarmerNotes.length} pending note na isi-sync kapag bumalik ang signal.',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             ...pendingFarmerNotes.map(
                               (action) => Padding(
                                 padding: const EdgeInsets.only(bottom: 6),
                                 child: Text(
-                                  action.lastError == null ||
-                                          action.lastError!.isEmpty
+                                  action.hasConflict
+                                      ? 'Note needs refresh - ${action.conflictSummary}'
+                                      : action.lastError == null ||
+                                            action.lastError!.isEmpty
                                       ? 'Queued note - attempts: ${action.attempts}'
                                       : 'Note retry needed - attempts: ${action.attempts} - ${action.lastError}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: action.lastError == null ||
-                                            action.lastError!.isEmpty
+                                    color: action.hasConflict
+                                        ? Colors.amber.shade900
+                                        : action.lastError == null ||
+                                              action.lastError!.isEmpty
                                         ? Colors.grey.shade700
                                         : Colors.red.shade700,
                                   ),
@@ -429,7 +442,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                   const SizedBox(height: 8),
                   if (detail.logbookEntries.isEmpty)
                     const _EmptyCard(
-                      message: 'Wala pang note o logbook entry para sa farmer na ito.',
+                      message:
+                          'Wala pang note o logbook entry para sa farmer na ito.',
                     )
                   else
                     ...detail.logbookEntries.map(
@@ -441,7 +455,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                             [
                               if (entry.type.isNotEmpty) entry.type,
                               if (entry.timestamp.isNotEmpty) entry.timestamp,
-                              if (entry.description.isNotEmpty) entry.description,
+                              if (entry.description.isNotEmpty)
+                                entry.description,
                             ].join(' - '),
                           ),
                           trailing: const Icon(Icons.chevron_right_rounded),
@@ -462,16 +477,18 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                     )
                   else
                     ...detail.fieldVisitTasks.map((visit) {
-                      final pendingVisitActions =
-                          appState.pendingActionsForFieldVisit(visit.id);
+                      final pendingVisitActions = appState
+                          .pendingActionsForFieldVisit(visit.id);
                       final pendingVisitAction = pendingVisitActions.isEmpty
                           ? null
                           : pendingVisitActions.last;
                       final pendingPayloadStatus =
-                          pendingVisitAction?.payload['status']?.toString() ?? '';
+                          pendingVisitAction?.payload['status']?.toString() ??
+                          '';
                       final pendingVerification =
                           pendingVisitAction?.payload['verification'];
-                      final pendingVerificationStatus = pendingVerification is Map
+                      final pendingVerificationStatus =
+                          pendingVerification is Map
                           ? '${pendingVerification['status'] ?? ''}'
                           : '';
                       final effectiveStatus = pendingPayloadStatus.isNotEmpty
@@ -479,8 +496,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                           : visit.status;
                       final effectiveVerificationStatus =
                           pendingVerificationStatus.isNotEmpty
-                              ? pendingVerificationStatus
-                              : visit.verificationStatus;
+                          ? pendingVerificationStatus
+                          : visit.verificationStatus;
                       final busy = _visitActionId == visit.id;
                       final actionBlocked = busy || pendingVisitAction != null;
 
@@ -504,13 +521,14 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                                   ),
                                   _Pill(text: effectiveStatus),
                                   _Pill(
-                                    text: effectiveVerificationStatus ==
+                                    text:
+                                        effectiveVerificationStatus ==
                                             'gps_captured'
                                         ? 'GPS verified'
                                         : effectiveVerificationStatus ==
-                                                'manual_only'
-                                            ? 'Manual verification'
-                                            : 'Unverified',
+                                              'manual_only'
+                                        ? 'Manual verification'
+                                        : 'Unverified',
                                   ),
                                 ],
                               ),
@@ -533,7 +551,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                                   [
                                     if (visit.verificationCapturedAt.isNotEmpty)
                                       'Captured ${visit.verificationCapturedAt}',
-                                    if (visit.verificationAccuracyMeters != null)
+                                    if (visit.verificationAccuracyMeters !=
+                                        null)
                                       'accuracy ${visit.verificationAccuracyMeters!.round()}m',
                                     if (visit.verificationLat != null &&
                                         visit.verificationLng != null)
@@ -559,12 +578,16 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                               if (pendingVisitAction != null) ...[
                                 const SizedBox(height: 8),
                                 Text(
-                                  pendingVisitAction.lastError == null
+                                  pendingVisitAction.hasConflict
+                                      ? 'Visit needs refresh • ${pendingVisitAction.conflictSummary}'
+                                      : pendingVisitAction.lastError == null
                                       ? 'Pending visit sync • attempts: ${pendingVisitAction.attempts}'
                                       : 'Visit retry needed • attempts: ${pendingVisitAction.attempts} • ${pendingVisitAction.lastError}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: pendingVisitAction.lastError == null
+                                    color: pendingVisitAction.hasConflict
+                                        ? Colors.amber.shade900
+                                        : pendingVisitAction.lastError == null
                                         ? Colors.grey.shade700
                                         : Colors.red.shade700,
                                   ),
@@ -581,8 +604,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
                                     busy
                                         ? 'Ina-update...'
                                         : effectiveStatus == 'scheduled'
-                                            ? 'Simulan ang visit'
-                                            : 'Markahang tapos',
+                                        ? 'Simulan ang visit'
+                                        : 'Markahang tapos',
                                   ),
                                 ),
                             ],
@@ -676,10 +699,7 @@ class _FarmerNoteActionSheetState extends State<_FarmerNoteActionSheet> {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionTitle({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -694,20 +714,14 @@ class _SectionTitle extends StatelessWidget {
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: TextStyle(color: Colors.grey.shade600),
-        ),
+        Text(subtitle, style: TextStyle(color: Colors.grey.shade600)),
       ],
     );
   }
 }
 
 class _MetaLine extends StatelessWidget {
-  const _MetaLine({
-    required this.label,
-    required this.value,
-  });
+  const _MetaLine({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -759,20 +773,14 @@ class _EmptyCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(
-          message,
-          style: TextStyle(color: Colors.grey.shade700),
-        ),
+        child: Text(message, style: TextStyle(color: Colors.grey.shade700)),
       ),
     );
   }
 }
 
 class _DetailErrorState extends StatelessWidget {
-  const _DetailErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _DetailErrorState({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;

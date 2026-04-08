@@ -28,7 +28,10 @@ class MobileMetricCard extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 value,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 4),
               Text(label, style: TextStyle(color: Colors.grey.shade600)),
@@ -41,11 +44,7 @@ class MobileMetricCard extends StatelessWidget {
 }
 
 class MobileStatusChip extends StatelessWidget {
-  const MobileStatusChip({
-    super.key,
-    required this.text,
-    required this.color,
-  });
+  const MobileStatusChip({super.key, required this.text, required this.color});
 
   final String text;
   final MaterialColor color;
@@ -72,10 +71,7 @@ class MobileStatusChip extends StatelessWidget {
 }
 
 class MobileInfoChip extends StatelessWidget {
-  const MobileInfoChip({
-    super.key,
-    required this.text,
-  });
+  const MobileInfoChip({super.key, required this.text});
 
   final String text;
 
@@ -89,20 +85,14 @@ class MobileInfoChip extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }
 }
 
 class MobileEmptyCard extends StatelessWidget {
-  const MobileEmptyCard({
-    super.key,
-    required this.message,
-  });
+  const MobileEmptyCard({super.key, required this.message});
 
   final String message;
 
@@ -111,10 +101,7 @@ class MobileEmptyCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(
-          message,
-          style: TextStyle(color: Colors.grey.shade700),
-        ),
+        child: Text(message, style: TextStyle(color: Colors.grey.shade700)),
       ),
     );
   }
@@ -140,10 +127,7 @@ class MobileErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline_rounded, size: 40),
             const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-            ),
+            Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: onRetry,
@@ -185,25 +169,25 @@ class MobileSyncWatchCard extends StatelessWidget {
     final backgroundColor = hasAttention
         ? const Color(0xFFFEF2F2)
         : dataMayBeStale
-            ? const Color(0xFFFFFBEB)
-            : const Color(0xFFF0FDF4);
+        ? const Color(0xFFFFFBEB)
+        : const Color(0xFFF0FDF4);
     final borderColor = hasAttention
         ? const Color(0xFFFCA5A5)
         : dataMayBeStale
-            ? const Color(0xFFFDE68A)
-            : const Color(0xFF86EFAC);
+        ? const Color(0xFFFDE68A)
+        : const Color(0xFF86EFAC);
     final iconColor = hasAttention
         ? const Color(0xFFB91C1C)
         : dataMayBeStale
-            ? const Color(0xFFB45309)
-            : const Color(0xFF166534);
+        ? const Color(0xFFB45309)
+        : const Color(0xFF166534);
     final title = syncing
         ? 'Nagsi-sync ang mobile queue'
         : hasAttention
-            ? 'May mobile actions na kailangang bantayan'
-            : dataMayBeStale
-                ? 'Maaaring luma na ang ilang datos'
-                : 'Maayos ang huling mobile sync';
+        ? 'May mobile actions na kailangang bantayan'
+        : dataMayBeStale
+        ? 'Maaaring luma na ang ilang datos'
+        : 'Maayos ang huling mobile sync';
 
     return Card(
       color: backgroundColor,
@@ -224,10 +208,10 @@ class MobileSyncWatchCard extends StatelessWidget {
                   syncing
                       ? Icons.sync_rounded
                       : hasAttention
-                          ? Icons.warning_amber_rounded
-                          : dataMayBeStale
-                              ? Icons.history_toggle_off_rounded
-                              : Icons.cloud_done_rounded,
+                      ? Icons.warning_amber_rounded
+                      : dataMayBeStale
+                      ? Icons.history_toggle_off_rounded
+                      : Icons.cloud_done_rounded,
                   color: iconColor,
                 ),
                 const SizedBox(width: 10),
@@ -263,7 +247,9 @@ class MobileSyncWatchCard extends StatelessWidget {
                 if (manualReviewCount > 0)
                   MobileInfoChip(text: '$manualReviewCount manual review'),
                 if (longPendingCount > 0)
-                  MobileInfoChip(text: '$longPendingCount matagal nang pending'),
+                  MobileInfoChip(
+                    text: '$longPendingCount matagal nang pending',
+                  ),
               ],
             ),
             if (errorMessage != null && errorMessage!.trim().isNotEmpty) ...[
@@ -344,9 +330,7 @@ class MobilePendingActionsCard extends StatelessWidget {
                     children: [
                       const Text(
                         'Pending Mobile Actions',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -365,106 +349,131 @@ class MobilePendingActionsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            ...actions.take(5).map(
-              (action) {
-                final busy = busyActionId == action.id;
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              action.typeLabel,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+            ...actions.take(5).map((action) {
+              final busy = busyActionId == action.id;
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            action.typeLabel,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
-                          Text(
-                            _formatAge(action.createdAt),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          MobileInfoChip(text: 'attempts: ${action.attempts}'),
-                          if (action.hasError)
-                            const MobileInfoChip(text: 'retry needed'),
-                          if (action.needsManualReview)
-                            const MobileInfoChip(text: 'manual review'),
-                          if (action.isLongPending)
-                            const MobileInfoChip(text: 'matagal nang pending'),
-                        ],
-                      ),
-                      if (action.lastError != null &&
-                          action.lastError!.trim().isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        ),
                         Text(
-                          action.lastError!,
+                          _formatAge(action.createdAt),
                           style: TextStyle(
-                            color: Colors.red.shade700,
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        MobileInfoChip(text: 'attempts: ${action.attempts}'),
+                        if (action.hasError)
+                          MobileInfoChip(
+                            text: action.hasConflict
+                                ? 'stale data'
+                                : 'retry needed',
+                          ),
+                        if (action.needsManualReview)
+                          const MobileInfoChip(text: 'manual review'),
+                        if (action.isLongPending)
+                          const MobileInfoChip(text: 'matagal nang pending'),
+                      ],
+                    ),
+                    if (action.hasConflict &&
+                        action.conflictSummary != null &&
+                        action.conflictSummary!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        action.conflictSummary!,
+                        style: TextStyle(
+                          color: Colors.amber.shade900,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                      if (action.recommendedAction != null &&
+                          action.recommendedAction!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Gawin: ${action.recommendedAction!}',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
                             fontSize: 12,
                             height: 1.35,
                           ),
                         ),
                       ],
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (onRetryAction != null)
-                            OutlinedButton.icon(
-                              onPressed: busy ? null : () => onRetryAction!(action),
-                              icon: busy
-                                  ? const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.refresh_rounded),
-                              label: Text(busy ? 'Nireretry...' : 'Retry now'),
-                            ),
-                          if (onDismissAction != null)
-                            OutlinedButton.icon(
-                              onPressed: busy ? null : () => onDismissAction!(action),
-                              icon: const Icon(Icons.close_rounded),
-                              label: const Text('Dismiss'),
-                            ),
-                        ],
+                    ] else if (action.lastError != null &&
+                        action.lastError!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        action.lastError!,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
                       ),
                     ],
-                  ),
-                );
-              },
-            ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (onRetryAction != null && !action.hasConflict)
+                          OutlinedButton.icon(
+                            onPressed: busy
+                                ? null
+                                : () => onRetryAction!(action),
+                            icon: busy
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.refresh_rounded),
+                            label: Text(busy ? 'Nireretry...' : 'Retry now'),
+                          ),
+                        if (onDismissAction != null)
+                          OutlinedButton.icon(
+                            onPressed: busy
+                                ? null
+                                : () => onDismissAction!(action),
+                            icon: const Icon(Icons.close_rounded),
+                            label: const Text('Dismiss'),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
             if (actions.length > 5)
               Text(
                 '+${actions.length - 5} pang pending action ang nasa queue.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
           ],
         ),

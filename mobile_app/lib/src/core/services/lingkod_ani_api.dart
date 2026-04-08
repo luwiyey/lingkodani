@@ -7,18 +7,63 @@ import '../models/mobile_models.dart';
 import 'mobile_cache_service.dart';
 
 class LingkodAniApiException implements Exception {
-  const LingkodAniApiException(this.message);
+  const LingkodAniApiException(
+    this.message, {
+    this.statusCode,
+    this.code,
+    this.details = const <String, dynamic>{},
+  });
 
   final String message;
+  final int? statusCode;
+  final String? code;
+  final Map<String, dynamic> details;
+
+  bool get isConflict =>
+      statusCode == 409 || (code != null && code == 'mobile_sync_conflict');
+
+  String? get conflictSummary {
+    final conflict = details['conflict'];
+    if (conflict is Map && conflict['summary'] != null) {
+      return '${conflict['summary']}';
+    }
+
+    return null;
+  }
+
+  String? get recommendedAction {
+    final conflict = details['conflict'];
+    if (conflict is Map && conflict['recommendedAction'] != null) {
+      return '${conflict['recommendedAction']}';
+    }
+
+    return null;
+  }
+
+  String? get currentSyncVersion {
+    final conflict = details['conflict'];
+    if (conflict is Map && conflict['currentSyncVersion'] != null) {
+      return '${conflict['currentSyncVersion']}';
+    }
+
+    return null;
+  }
+
+  String? get conflictTarget {
+    final conflict = details['conflict'];
+    if (conflict is Map && conflict['target'] != null) {
+      return '${conflict['target']}';
+    }
+
+    return null;
+  }
 
   @override
   String toString() => message;
 }
 
 class LingkodAniApi {
-  const LingkodAniApi({
-    this.cache = const MobileCacheService(),
-  });
+  const LingkodAniApi({this.cache = const MobileCacheService()});
 
   final MobileCacheService cache;
 
@@ -64,7 +109,10 @@ class LingkodAniApi {
         .toList();
   }
 
-  Future<FarmerDetail> fetchFarmerDetail(String idToken, String farmerId) async {
+  Future<FarmerDetail> fetchFarmerDetail(
+    String idToken,
+    String farmerId,
+  ) async {
     final response = await _getWithCache(
       '/api/mobile/farmers/${Uri.encodeComponent(farmerId)}',
       idToken: idToken,
@@ -91,10 +139,7 @@ class LingkodAniApi {
   }) async {
     final cacheKey =
         'mobile-knowledge:${query.trim().toLowerCase()}:${includeWebGrounding ? 'web' : 'local'}';
-    final body = {
-      'query': query,
-      'includeWebGrounding': includeWebGrounding,
-    };
+    final body = {'query': query, 'includeWebGrounding': includeWebGrounding};
     Map<String, dynamic> response;
 
     try {
@@ -122,6 +167,7 @@ class LingkodAniApi {
     required String messageId,
     required String reply,
     required String status,
+    String? expectedSyncVersion,
     String? parsedIntent,
     String? urgency,
     String? safetyFlag,
@@ -133,6 +179,8 @@ class LingkodAniApi {
       body: {
         'reply': reply,
         'status': status,
+        if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+          'expectedSyncVersion': expectedSyncVersion,
         if (parsedIntent != null && parsedIntent.isNotEmpty)
           'parsedIntent': parsedIntent,
         if (urgency != null && urgency.isNotEmpty) 'urgency': urgency,
@@ -142,48 +190,64 @@ class LingkodAniApi {
       },
     );
 
-    return SmsFeedItem.fromJson(response['message'] as Map<String, dynamic>? ?? const {});
+    return SmsFeedItem.fromJson(
+      response['message'] as Map<String, dynamic>? ?? const {},
+    );
   }
 
   Future<SmsFeedItem> requestResolutionConfirmation(
     String idToken, {
     required String messageId,
     String note = '',
+    String? expectedSyncVersion,
   }) async {
     final response = await _post(
       '/api/mobile/sms-feed/${Uri.encodeComponent(messageId)}/resolve',
       idToken: idToken,
       body: {
         'note': note,
+        if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+          'expectedSyncVersion': expectedSyncVersion,
       },
     );
 
-    return SmsFeedItem.fromJson(response['message'] as Map<String, dynamic>? ?? const {});
+    return SmsFeedItem.fromJson(
+      response['message'] as Map<String, dynamic>? ?? const {},
+    );
   }
 
   Future<SmsFeedItem> assignSmsMessage(
     String idToken, {
     required String messageId,
+    String? expectedSyncVersion,
   }) async {
     final response = await _post(
       '/api/mobile/sms-feed/${Uri.encodeComponent(messageId)}/assign',
       idToken: idToken,
-      body: const {},
+      body: {
+        if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+          'expectedSyncVersion': expectedSyncVersion,
+      },
     );
 
-    return SmsFeedItem.fromJson(response['message'] as Map<String, dynamic>? ?? const {});
+    return SmsFeedItem.fromJson(
+      response['message'] as Map<String, dynamic>? ?? const {},
+    );
   }
 
   Future<void> addFarmerNote(
     String idToken, {
     required String farmerId,
     required String note,
+    String? expectedSyncVersion,
   }) async {
     await _post(
       '/api/mobile/farmers/${Uri.encodeComponent(farmerId)}/notes',
       idToken: idToken,
       body: {
         'note': note,
+        if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+          'expectedSyncVersion': expectedSyncVersion,
       },
     );
   }
@@ -193,11 +257,14 @@ class LingkodAniApi {
     required String visitId,
     required String status,
     String note = '',
+    String? expectedSyncVersion,
     Map<String, dynamic>? verification,
   }) async {
     final body = <String, dynamic>{
       'status': status,
       if (note.trim().isNotEmpty) 'note': note.trim(),
+      if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+        'expectedSyncVersion': expectedSyncVersion,
     };
     if (verification != null) {
       body['verification'] = verification;
@@ -236,13 +303,7 @@ class LingkodAniApi {
     String idToken, {
     required String token,
   }) async {
-    await _delete(
-      '/api/mobile/push',
-      idToken: idToken,
-      body: {
-        'token': token,
-      },
-    );
+    await _delete('/api/mobile/push', idToken: idToken, body: {'token': token});
   }
 
   Future<Map<String, dynamic>> _getWithCache(
@@ -344,8 +405,14 @@ class LingkodAniApi {
         : jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode >= 400) {
-      final error = '${payload['error'] ?? 'Hindi maiproseso ang request sa ngayon.'}';
-      throw LingkodAniApiException(error);
+      final error =
+          '${payload['error'] ?? 'Hindi maiproseso ang request sa ngayon.'}';
+      throw LingkodAniApiException(
+        error,
+        statusCode: response.statusCode,
+        code: payload['code']?.toString(),
+        details: payload,
+      );
     }
 
     return payload;

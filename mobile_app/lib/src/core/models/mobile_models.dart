@@ -32,7 +32,9 @@ class MobileSession {
       refreshToken: values['refreshToken'] ?? '',
       localId: values['localId'] ?? '',
       email: values['email'] ?? '',
-      expiresAt: DateTime.tryParse(values['expiresAt'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      expiresAt:
+          DateTime.tryParse(values['expiresAt'] ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 }
@@ -146,8 +148,12 @@ class MobileOverview {
 
   factory MobileOverview.fromJson(Map<String, dynamic> json) {
     return MobileOverview(
-      profile: MobileProfile.fromJson(json['profile'] as Map<String, dynamic>? ?? const {}),
-      summary: OverviewSummary.fromJson(json['summary'] as Map<String, dynamic>? ?? const {}),
+      profile: MobileProfile.fromJson(
+        json['profile'] as Map<String, dynamic>? ?? const {},
+      ),
+      summary: OverviewSummary.fromJson(
+        json['summary'] as Map<String, dynamic>? ?? const {},
+      ),
       recentMessages: (json['recentMessages'] as List<dynamic>? ?? const [])
           .map((item) => RecentMessage.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -166,6 +172,7 @@ class FarmerSummary {
     required this.crops,
     required this.registrationDate,
     required this.lastSmsActivity,
+    required this.syncVersion,
   });
 
   final String id;
@@ -177,6 +184,7 @@ class FarmerSummary {
   final List<String> crops;
   final String registrationDate;
   final String lastSmsActivity;
+  final String syncVersion;
 
   factory FarmerSummary.fromJson(Map<String, dynamic> json) {
     final crops = (json['crops'] as List<dynamic>? ?? const [])
@@ -193,7 +201,9 @@ class FarmerSummary {
       status: '${json['status'] ?? 'inactive'}',
       crops: crops,
       registrationDate: '${json['registrationDate'] ?? ''}',
-      lastSmsActivity: '${json['lastSmsActivity'] ?? json['registrationDate'] ?? ''}',
+      lastSmsActivity:
+          '${json['lastSmsActivity'] ?? json['registrationDate'] ?? ''}',
+      syncVersion: '${json['syncVersion'] ?? ''}',
     );
   }
 }
@@ -219,6 +229,7 @@ class SmsFeedItem {
     required this.caseOutcomeStatus,
     required this.caseOutcomeSummary,
     required this.resolutionConfirmationStatus,
+    required this.syncVersion,
   });
 
   final String id;
@@ -240,6 +251,7 @@ class SmsFeedItem {
   final String caseOutcomeStatus;
   final String caseOutcomeSummary;
   final String resolutionConfirmationStatus;
+  final String syncVersion;
 
   bool get canOpenFarmerDetail => farmerId.isNotEmpty;
   bool get isAwaitingFarmerConfirmation =>
@@ -262,11 +274,13 @@ class SmsFeedItem {
       safetyFlag: '${json['safetyFlag'] ?? 'safe'}',
       tone: '${json['tone'] ?? 'Neutral'}',
       assignedTo: '${json['assignedTo'] ?? ''}',
-      officialReminderCount: (json['officialReminderCount'] as num?)?.toInt() ?? 0,
+      officialReminderCount:
+          (json['officialReminderCount'] as num?)?.toInt() ?? 0,
       caseOutcomeStatus: '${json['caseOutcomeStatus'] ?? ''}',
       caseOutcomeSummary: '${json['caseOutcomeSummary'] ?? ''}',
       resolutionConfirmationStatus:
           '${json['resolutionConfirmationStatus'] ?? ''}',
+      syncVersion: '${json['syncVersion'] ?? ''}',
     );
   }
 }
@@ -325,6 +339,7 @@ class FieldVisitSummary {
     required this.verificationLng,
     required this.verificationAccuracyMeters,
     required this.verificationNote,
+    required this.syncVersion,
   });
 
   final String id;
@@ -344,6 +359,7 @@ class FieldVisitSummary {
   final double? verificationLng;
   final double? verificationAccuracyMeters;
   final String verificationNote;
+  final String syncVersion;
 
   bool get gpsVerified => verificationStatus == 'gps_captured';
   bool get manualVerification => verificationStatus == 'manual_only';
@@ -365,9 +381,10 @@ class FieldVisitSummary {
       verificationCapturedAt: '${json['verificationCapturedAt'] ?? ''}',
       verificationLat: (json['verificationLat'] as num?)?.toDouble(),
       verificationLng: (json['verificationLng'] as num?)?.toDouble(),
-      verificationAccuracyMeters:
-          (json['verificationAccuracyMeters'] as num?)?.toDouble(),
+      verificationAccuracyMeters: (json['verificationAccuracyMeters'] as num?)
+          ?.toDouble(),
       verificationNote: '${json['verificationNote'] ?? ''}',
+      syncVersion: '${json['syncVersion'] ?? ''}',
     );
   }
 }
@@ -415,7 +432,9 @@ class FarmerDetail {
 
   factory FarmerDetail.fromJson(Map<String, dynamic> json) {
     return FarmerDetail(
-      farmer: FarmerSummary.fromJson(json['farmer'] as Map<String, dynamic>? ?? const {}),
+      farmer: FarmerSummary.fromJson(
+        json['farmer'] as Map<String, dynamic>? ?? const {},
+      ),
       recentMessages: (json['recentMessages'] as List<dynamic>? ?? const [])
           .map((item) => SmsFeedItem.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -428,10 +447,15 @@ class FarmerDetail {
               )
               .toList(),
       fieldVisitTasks: (json['fieldVisitTasks'] as List<dynamic>? ?? const [])
-          .map((item) => FieldVisitSummary.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => FieldVisitSummary.fromJson(item as Map<String, dynamic>),
+          )
           .toList(),
       logbookEntries: (json['logbookEntries'] as List<dynamic>? ?? const [])
-          .map((item) => LogbookEntrySummary.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) =>
+                LogbookEntrySummary.fromJson(item as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
@@ -530,7 +554,10 @@ class KnowledgeSource {
   final String url;
   final String kind;
 
-  factory KnowledgeSource.fromJson(Map<String, dynamic> json, {required String kind}) {
+  factory KnowledgeSource.fromJson(
+    Map<String, dynamic> json, {
+    required String kind,
+  }) {
     return KnowledgeSource(
       title: '${json['title'] ?? json['label'] ?? 'Source'}',
       url: '${json['url'] ?? ''}',
@@ -555,10 +582,11 @@ class KnowledgeSearchResult {
   final List<KnowledgeSource> sources;
 
   factory KnowledgeSearchResult.fromJson(Map<String, dynamic> json) {
-    final localSources = (json['relevantArticles'] as List<dynamic>? ?? const [])
-        .map((item) => item as Map<String, dynamic>)
-        .map((item) => KnowledgeSource.fromJson(item, kind: 'local'))
-        .toList();
+    final localSources =
+        (json['relevantArticles'] as List<dynamic>? ?? const [])
+            .map((item) => item as Map<String, dynamic>)
+            .map((item) => KnowledgeSource.fromJson(item, kind: 'local'))
+            .toList();
     final webSources = (json['webSources'] as List<dynamic>? ?? const [])
         .map((item) => item as Map<String, dynamic>)
         .map((item) => KnowledgeSource.fromJson(item, kind: 'web'))
@@ -568,10 +596,11 @@ class KnowledgeSearchResult {
       directAnswer: '${json['directAnswer'] ?? ''}',
       answerMode: '${json['answerMode'] ?? 'local_only'}',
       usedWebGrounding: json['usedWebGrounding'] == true,
-      relevantArticleTitles: (json['relevantArticles'] as List<dynamic>? ?? const [])
-          .map((item) => item as Map<String, dynamic>)
-          .map((item) => '${item['title'] ?? 'Knowledge article'}')
-          .toList(),
+      relevantArticleTitles:
+          (json['relevantArticles'] as List<dynamic>? ?? const [])
+              .map((item) => item as Map<String, dynamic>)
+              .map((item) => '${item['title'] ?? 'Knowledge article'}')
+              .toList(),
       sources: [...localSources, ...webSources],
     );
   }
@@ -626,9 +655,14 @@ class MobileQueuedAction {
     required this.messageId,
     required this.createdAt,
     required this.payload,
+    this.expectedSyncVersion,
     this.attempts = 0,
     this.lastAttemptAt,
     this.lastError,
+    this.conflictSummary,
+    this.recommendedAction,
+    this.currentSyncVersion,
+    this.conflictTarget,
   });
 
   final String id;
@@ -637,12 +671,20 @@ class MobileQueuedAction {
   final String messageId;
   final DateTime createdAt;
   final Map<String, dynamic> payload;
+  final String? expectedSyncVersion;
   final int attempts;
   final DateTime? lastAttemptAt;
   final String? lastError;
+  final String? conflictSummary;
+  final String? recommendedAction;
+  final String? currentSyncVersion;
+  final String? conflictTarget;
 
   bool get hasError => lastError != null && lastError!.trim().isNotEmpty;
-  bool get needsManualReview => attempts >= 3;
+  bool get hasConflict =>
+      conflictSummary != null && conflictSummary!.trim().isNotEmpty;
+  bool get autoRetryBlocked => hasConflict;
+  bool get needsManualReview => hasConflict || attempts >= 3;
   bool get isLongPending =>
       DateTime.now().difference(createdAt) >= const Duration(minutes: 30);
 
@@ -669,9 +711,16 @@ class MobileQueuedAction {
       'messageId': messageId,
       'createdAt': createdAt.toIso8601String(),
       'payload': payload,
+      if (expectedSyncVersion != null)
+        'expectedSyncVersion': expectedSyncVersion,
       'attempts': attempts,
-      if (lastAttemptAt != null) 'lastAttemptAt': lastAttemptAt!.toIso8601String(),
+      if (lastAttemptAt != null)
+        'lastAttemptAt': lastAttemptAt!.toIso8601String(),
       if (lastError != null) 'lastError': lastError,
+      if (conflictSummary != null) 'conflictSummary': conflictSummary,
+      if (recommendedAction != null) 'recommendedAction': recommendedAction,
+      if (currentSyncVersion != null) 'currentSyncVersion': currentSyncVersion,
+      if (conflictTarget != null) 'conflictTarget': conflictTarget,
     };
   }
 
@@ -681,18 +730,41 @@ class MobileQueuedAction {
       userId: '${json['userId'] ?? ''}',
       type: mobileQueuedActionTypeFromValue('${json['type'] ?? 'sms_reply'}'),
       messageId: '${json['messageId'] ?? ''}',
-      createdAt: DateTime.tryParse('${json['createdAt'] ?? ''}') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          DateTime.tryParse('${json['createdAt'] ?? ''}') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
       payload: Map<String, dynamic>.from(json['payload'] as Map? ?? const {}),
+      expectedSyncVersion: json['expectedSyncVersion'] == null
+          ? null
+          : '${json['expectedSyncVersion']}',
       attempts: (json['attempts'] as num?)?.toInt() ?? 0,
       lastAttemptAt: DateTime.tryParse('${json['lastAttemptAt'] ?? ''}'),
       lastError: json['lastError'] == null ? null : '${json['lastError']}',
+      conflictSummary: json['conflictSummary'] == null
+          ? null
+          : '${json['conflictSummary']}',
+      recommendedAction: json['recommendedAction'] == null
+          ? null
+          : '${json['recommendedAction']}',
+      currentSyncVersion: json['currentSyncVersion'] == null
+          ? null
+          : '${json['currentSyncVersion']}',
+      conflictTarget: json['conflictTarget'] == null
+          ? null
+          : '${json['conflictTarget']}',
     );
   }
 
   MobileQueuedAction copyWith({
+    String? expectedSyncVersion,
     int? attempts,
     DateTime? lastAttemptAt,
     String? lastError,
+    String? conflictSummary,
+    String? recommendedAction,
+    String? currentSyncVersion,
+    String? conflictTarget,
+    bool clearConflict = false,
   }) {
     return MobileQueuedAction(
       id: id,
@@ -701,23 +773,30 @@ class MobileQueuedAction {
       messageId: messageId,
       createdAt: createdAt,
       payload: payload,
+      expectedSyncVersion: expectedSyncVersion ?? this.expectedSyncVersion,
       attempts: attempts ?? this.attempts,
       lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
       lastError: lastError ?? this.lastError,
+      conflictSummary: clearConflict
+          ? null
+          : conflictSummary ?? this.conflictSummary,
+      recommendedAction: clearConflict
+          ? null
+          : recommendedAction ?? this.recommendedAction,
+      currentSyncVersion: clearConflict
+          ? null
+          : currentSyncVersion ?? this.currentSyncVersion,
+      conflictTarget: clearConflict
+          ? null
+          : conflictTarget ?? this.conflictTarget,
     );
   }
 }
 
-enum MobileActionSubmissionStatus {
-  sent,
-  queued,
-}
+enum MobileActionSubmissionStatus { sent, queued }
 
 class MobileActionSubmissionResult {
-  const MobileActionSubmissionResult({
-    required this.status,
-    this.detail = '',
-  });
+  const MobileActionSubmissionResult({required this.status, this.detail = ''});
 
   final MobileActionSubmissionStatus status;
   final String detail;

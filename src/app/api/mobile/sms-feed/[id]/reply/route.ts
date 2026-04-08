@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import {
+  buildMobileSyncConflict,
+  getSmsMessageSyncVersion,
+  hasExpectedSyncConflict,
+} from "@/lib/mobile-sync-integrity";
 import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import type { SmsProvider } from "@/lib/providers/sms/types";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
@@ -97,6 +102,7 @@ export async function POST(
     const body = await request.json();
     const replyBody = normalizeText(body.reply);
     const status = readStatus(body.status);
+    const expectedSyncVersion = normalizeText(body.expectedSyncVersion);
     const actorName = auth.profile.name ?? auth.email;
 
     if (!messageId) {
@@ -122,6 +128,33 @@ export async function POST(
     }
 
     const currentMessage = snapshot.data() as SmsMessage;
+    const currentSyncVersion = getSmsMessageSyncVersion(currentMessage);
+
+    if (hasExpectedSyncConflict(expectedSyncVersion, currentSyncVersion)) {
+      return NextResponse.json(
+        {
+          error:
+            "May bagong update sa kasong ito habang offline ang device. I-refresh muna bago magpadala ng reply.",
+          ...buildMobileSyncConflict({
+            expectedSyncVersion,
+            currentSyncVersion,
+            target: "sms_message",
+            summary:
+              "Nagbago na ang case status o naitalagang handler habang wala pang signal ang mobile device.",
+            recommendedAction:
+              "I-refresh ang SMS feed, suriin ang pinakabagong case status, at i-edit muli ang tugon kung kailangan.",
+            currentState: {
+              status: currentMessage.status,
+              caseStatus: currentMessage.caseStatus,
+              assignedTo: currentMessage.assignedTo,
+              resolutionConfirmationStatus:
+                currentMessage.resolutionConfirmationStatus,
+            },
+          }),
+        },
+        { status: 409 }
+      );
+    }
 
     if (currentMessage.closedAt || currentMessage.caseStatus === "closed") {
       return NextResponse.json(
@@ -254,6 +287,7 @@ export async function POST(
       updated: true,
       message: nextMessage,
       outboundRecord,
+      syncVersion: getSmsMessageSyncVersion(nextMessage),
     });
   } catch {
     return NextResponse.json(

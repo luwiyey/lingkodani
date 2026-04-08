@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import {
+  buildMobileSyncConflict,
+  getFieldVisitTaskSyncVersion,
+  hasExpectedSyncConflict,
+} from "@/lib/mobile-sync-integrity";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import type { AuditLog, FieldVisitStatus, FieldVisitTask, LogbookEntry } from "@/lib/types";
 
@@ -85,6 +90,7 @@ export async function PATCH(
     const body = await request.json();
     const status = normalizeStatus(body.status);
     const note = normalizeText(body.note);
+    const expectedSyncVersion = normalizeText(body.expectedSyncVersion);
     const verificationInput = (body.verification ?? {}) as VerificationPayload;
 
     if (!taskId) {
@@ -107,6 +113,34 @@ export async function PATCH(
     }
 
     const currentTask = snapshot.data() as FieldVisitTask;
+    const currentSyncVersion = getFieldVisitTaskSyncVersion(currentTask);
+
+    if (hasExpectedSyncConflict(expectedSyncVersion, currentSyncVersion)) {
+      return NextResponse.json(
+        {
+          error:
+            "May bagong update sa field visit habang offline ang device. I-refresh muna bago ito i-update.",
+          ...buildMobileSyncConflict({
+            expectedSyncVersion,
+            currentSyncVersion,
+            target: "field_visit",
+            summary:
+              "Nagbago na ang visit status, assignee, o verification data bago na-sync ang mobile update.",
+            recommendedAction:
+              "I-refresh ang farmer detail, tingnan ang pinakabagong visit status, at kumpirmahing tama pa rin ang susunod na step.",
+            currentState: {
+              status: currentTask.status,
+              assignedTo: currentTask.assignedTo,
+              verificationStatus: currentTask.verificationStatus,
+              completedAt: currentTask.completedAt,
+              updatedAt: currentTask.updatedAt,
+            },
+          }),
+        },
+        { status: 409 }
+      );
+    }
+
     const timestamp = new Date().toISOString();
     const verificationStatus =
       verificationInput.status ??
@@ -199,6 +233,7 @@ export async function PATCH(
       task: nextTask,
       auditLog,
       logbookEntry,
+      syncVersion: getFieldVisitTaskSyncVersion(nextTask),
     });
   } catch {
     return NextResponse.json(

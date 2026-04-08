@@ -12,12 +12,11 @@ class AppState extends ChangeNotifier {
     LingkodAniApi? api,
     MobileActionQueueService? actionQueueService,
     PushNotificationsService? pushNotifications,
-  })  : _authService = authService ?? MobileAuthService(),
-        _api = api ?? const LingkodAniApi(),
-        _actionQueueService =
-            actionQueueService ?? const MobileActionQueueService(),
-        _pushNotifications =
-            pushNotifications ?? PushNotificationsService();
+  }) : _authService = authService ?? MobileAuthService(),
+       _api = api ?? const LingkodAniApi(),
+       _actionQueueService =
+           actionQueueService ?? const MobileActionQueueService(),
+       _pushNotifications = pushNotifications ?? PushNotificationsService();
 
   final MobileAuthService _authService;
   final LingkodAniApi _api;
@@ -47,8 +46,9 @@ class AppState extends ChangeNotifier {
   List<MobileQueuedAction> get pendingActions =>
       List<MobileQueuedAction>.unmodifiable(_pendingActions);
   int get pendingActionCount => _pendingActions.length;
-  int get retryNeededCount =>
-      _pendingActions.where((action) => action.hasError).length;
+  int get retryNeededCount => _pendingActions
+      .where((action) => action.hasError && !action.autoRetryBlocked)
+      .length;
   int get manualReviewCount =>
       _pendingActions.where((action) => action.needsManualReview).length;
   int get longPendingCount =>
@@ -91,8 +91,9 @@ class AppState extends ChangeNotifier {
       } else {
         _session = restoredSession;
         _profile = await _api.fetchProfile(restoredSession.idToken);
-        _pendingActions =
-            await _actionQueueService.readActions(restoredSession.localId);
+        _pendingActions = await _actionQueueService.readActions(
+          restoredSession.localId,
+        );
         await _pushNotifications.initializeForSession(
           session: restoredSession,
           profile: _profile!,
@@ -112,10 +113,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     _submitting = true;
     _errorMessage = null;
     notifyListeners();
@@ -128,7 +126,9 @@ class AppState extends ChangeNotifier {
       final nextProfile = await _api.fetchProfile(nextSession.idToken);
       _session = nextSession;
       _profile = nextProfile;
-      _pendingActions = await _actionQueueService.readActions(nextSession.localId);
+      _pendingActions = await _actionQueueService.readActions(
+        nextSession.localId,
+      );
       await _pushNotifications.initializeForSession(
         session: nextSession,
         profile: nextProfile,
@@ -207,11 +207,7 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     } on LingkodAniApiException catch (error) {
       await _replacePendingAction(
-        action.copyWith(
-          attempts: action.attempts + 1,
-          lastAttemptAt: DateTime.now(),
-          lastError: error.message,
-        ),
+        _nextQueuedActionAfterApiError(action, error),
       );
       _pendingSyncError = error.message;
       notifyListeners();
@@ -222,6 +218,7 @@ class AppState extends ChangeNotifier {
           attempts: action.attempts + 1,
           lastAttemptAt: DateTime.now(),
           lastError: error.toString(),
+          clearConflict: true,
         ),
       );
       _pendingSyncError = error.toString();
@@ -235,8 +232,10 @@ class AppState extends ChangeNotifier {
     final remaining = _pendingActions
         .where((action) => action.id != actionId)
         .toList(growable: false);
-    _pendingActions =
-        await _actionQueueService.replaceForUser(session.localId, remaining);
+    _pendingActions = await _actionQueueService.replaceForUser(
+      session.localId,
+      remaining,
+    );
     if (_pendingActions.isEmpty) {
       _pendingSyncError = null;
     }
@@ -247,6 +246,7 @@ class AppState extends ChangeNotifier {
     required String messageId,
     required String reply,
     required String status,
+    String? expectedSyncVersion,
     String? parsedIntent,
     String? urgency,
     String? safetyFlag,
@@ -256,6 +256,8 @@ class AppState extends ChangeNotifier {
     final payload = <String, dynamic>{
       'reply': reply,
       'status': status,
+      if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+        'expectedSyncVersion': expectedSyncVersion,
       if (parsedIntent != null && parsedIntent.isNotEmpty)
         'parsedIntent': parsedIntent,
       if (urgency != null && urgency.isNotEmpty) 'urgency': urgency,
@@ -269,6 +271,7 @@ class AppState extends ChangeNotifier {
         messageId: messageId,
         reply: reply,
         status: status,
+        expectedSyncVersion: expectedSyncVersion,
         parsedIntent: parsedIntent,
         urgency: urgency,
         safetyFlag: safetyFlag,
@@ -291,12 +294,14 @@ class AppState extends ChangeNotifier {
         type: MobileQueuedActionType.smsReply,
         messageId: messageId,
         payload: payload,
+        expectedSyncVersion: expectedSyncVersion,
         error: error,
       );
 
       return const MobileActionSubmissionResult(
         status: MobileActionSubmissionStatus.queued,
-        detail: 'Na-save offline ang SMS reply at isi-sync ito kapag may signal.',
+        detail:
+            'Na-save offline ang SMS reply at isi-sync ito kapag may signal.',
       );
     }
   }
@@ -304,10 +309,13 @@ class AppState extends ChangeNotifier {
   Future<MobileActionSubmissionResult> requestResolutionConfirmation({
     required String messageId,
     String note = '',
+    String? expectedSyncVersion,
   }) async {
     final session = _requireSession();
     final payload = <String, dynamic>{
       'note': note,
+      if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+        'expectedSyncVersion': expectedSyncVersion,
     };
 
     try {
@@ -315,6 +323,7 @@ class AppState extends ChangeNotifier {
         session.idToken,
         messageId: messageId,
         note: note,
+        expectedSyncVersion: expectedSyncVersion,
       );
       await _removeQueuedAction(
         userId: session.localId,
@@ -333,6 +342,7 @@ class AppState extends ChangeNotifier {
         type: MobileQueuedActionType.resolutionConfirmation,
         messageId: messageId,
         payload: payload,
+        expectedSyncVersion: expectedSyncVersion,
         error: error,
       );
 
@@ -346,6 +356,7 @@ class AppState extends ChangeNotifier {
 
   Future<MobileActionSubmissionResult> assignSmsMessage({
     required String messageId,
+    String? expectedSyncVersion,
   }) async {
     final session = _requireSession();
 
@@ -353,6 +364,7 @@ class AppState extends ChangeNotifier {
       await _api.assignSmsMessage(
         session.idToken,
         messageId: messageId,
+        expectedSyncVersion: expectedSyncVersion,
       );
       await _removeQueuedAction(
         userId: session.localId,
@@ -370,13 +382,18 @@ class AppState extends ChangeNotifier {
         userId: session.localId,
         type: MobileQueuedActionType.assignMessage,
         messageId: messageId,
-        payload: const {},
+        payload: {
+          if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+            'expectedSyncVersion': expectedSyncVersion,
+        },
+        expectedSyncVersion: expectedSyncVersion,
         error: error,
       );
 
       return const MobileActionSubmissionResult(
         status: MobileActionSubmissionStatus.queued,
-        detail: 'Na-save offline ang case assignment at isi-sync ito kapag may signal.',
+        detail:
+            'Na-save offline ang case assignment at isi-sync ito kapag may signal.',
       );
     }
   }
@@ -384,21 +401,27 @@ class AppState extends ChangeNotifier {
   Future<MobileActionSubmissionResult> addFarmerNote({
     required String farmerId,
     required String note,
+    String? expectedSyncVersion,
   }) async {
     final session = _requireSession();
     final trimmedNote = note.trim();
-    final payload = <String, dynamic>{'note': trimmedNote};
+    final payload = <String, dynamic>{
+      'note': trimmedNote,
+      if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+        'expectedSyncVersion': expectedSyncVersion,
+    };
 
     try {
       await _api.addFarmerNote(
         session.idToken,
         farmerId: farmerId,
         note: trimmedNote,
+        expectedSyncVersion: expectedSyncVersion,
       );
-      await _removeQueuedAction(
+      await _removeMatchingQueuedFarmerNote(
         userId: session.localId,
-        type: MobileQueuedActionType.farmerNote,
-        messageId: farmerId,
+        farmerId: farmerId,
+        note: trimmedNote,
       );
 
       return const MobileActionSubmissionResult(
@@ -412,12 +435,14 @@ class AppState extends ChangeNotifier {
         type: MobileQueuedActionType.farmerNote,
         messageId: farmerId,
         payload: payload,
+        expectedSyncVersion: expectedSyncVersion,
         error: error,
       );
 
       return const MobileActionSubmissionResult(
         status: MobileActionSubmissionStatus.queued,
-        detail: 'Na-save offline ang farmer note at isi-sync ito kapag may signal.',
+        detail:
+            'Na-save offline ang farmer note at isi-sync ito kapag may signal.',
       );
     }
   }
@@ -426,12 +451,15 @@ class AppState extends ChangeNotifier {
     required String visitId,
     required String status,
     String note = '',
+    String? expectedSyncVersion,
     Map<String, dynamic>? verification,
   }) async {
     final session = _requireSession();
     final payload = <String, dynamic>{
       'status': status,
       if (note.trim().isNotEmpty) 'note': note.trim(),
+      if (expectedSyncVersion != null && expectedSyncVersion.isNotEmpty)
+        'expectedSyncVersion': expectedSyncVersion,
     };
     if (verification != null) {
       payload['verification'] = verification;
@@ -443,6 +471,7 @@ class AppState extends ChangeNotifier {
         visitId: visitId,
         status: status,
         note: note,
+        expectedSyncVersion: expectedSyncVersion,
         verification: verification,
       );
       await _removeQueuedAction(
@@ -462,6 +491,7 @@ class AppState extends ChangeNotifier {
         type: MobileQueuedActionType.fieldVisitStatus,
         messageId: visitId,
         payload: payload,
+        expectedSyncVersion: expectedSyncVersion,
         error: error,
       );
 
@@ -490,16 +520,15 @@ class AppState extends ChangeNotifier {
     final remaining = <MobileQueuedAction>[];
 
     for (final action in queued) {
+      if (action.autoRetryBlocked) {
+        remaining.add(action);
+        continue;
+      }
+
       try {
         await _performQueuedAction(session, action);
       } on LingkodAniApiException catch (error) {
-        remaining.add(
-          action.copyWith(
-            attempts: action.attempts + 1,
-            lastAttemptAt: DateTime.now(),
-            lastError: error.message,
-          ),
-        );
+        remaining.add(_nextQueuedActionAfterApiError(action, error));
         _pendingSyncError = error.message;
       } catch (error) {
         remaining.add(
@@ -507,6 +536,7 @@ class AppState extends ChangeNotifier {
             attempts: action.attempts + 1,
             lastAttemptAt: DateTime.now(),
             lastError: error.toString(),
+            clearConflict: true,
           ),
         );
         _pendingSyncError = error.toString();
@@ -514,8 +544,10 @@ class AppState extends ChangeNotifier {
     }
 
     _lastPendingSyncAt = DateTime.now();
-    _pendingActions =
-        await _actionQueueService.replaceForUser(session.localId, remaining);
+    _pendingActions = await _actionQueueService.replaceForUser(
+      session.localId,
+      remaining,
+    );
     _syncingPendingActions = false;
     notifyListeners();
   }
@@ -541,6 +573,9 @@ class AppState extends ChangeNotifier {
           messageId: action.messageId,
           reply: '${action.payload['reply'] ?? ''}',
           status: '${action.payload['status'] ?? 'replied'}',
+          expectedSyncVersion:
+              action.expectedSyncVersion ??
+              action.payload['expectedSyncVersion']?.toString(),
           parsedIntent: action.payload['parsedIntent']?.toString(),
           urgency: action.payload['urgency']?.toString(),
           safetyFlag: action.payload['safetyFlag']?.toString(),
@@ -552,6 +587,9 @@ class AppState extends ChangeNotifier {
           session.idToken,
           messageId: action.messageId,
           note: '${action.payload['note'] ?? ''}',
+          expectedSyncVersion:
+              action.expectedSyncVersion ??
+              action.payload['expectedSyncVersion']?.toString(),
         );
         return;
       case MobileQueuedActionType.fieldVisitStatus:
@@ -560,6 +598,9 @@ class AppState extends ChangeNotifier {
           visitId: action.messageId,
           status: '${action.payload['status'] ?? 'in_progress'}',
           note: '${action.payload['note'] ?? ''}',
+          expectedSyncVersion:
+              action.expectedSyncVersion ??
+              action.payload['expectedSyncVersion']?.toString(),
           verification: action.payload['verification'] as Map<String, dynamic>?,
         );
         return;
@@ -567,6 +608,9 @@ class AppState extends ChangeNotifier {
         await _api.assignSmsMessage(
           session.idToken,
           messageId: action.messageId,
+          expectedSyncVersion:
+              action.expectedSyncVersion ??
+              action.payload['expectedSyncVersion']?.toString(),
         );
         return;
       case MobileQueuedActionType.farmerNote:
@@ -574,6 +618,9 @@ class AppState extends ChangeNotifier {
           session.idToken,
           farmerId: action.messageId,
           note: '${action.payload['note'] ?? ''}',
+          expectedSyncVersion:
+              action.expectedSyncVersion ??
+              action.payload['expectedSyncVersion']?.toString(),
         );
         return;
     }
@@ -584,6 +631,7 @@ class AppState extends ChangeNotifier {
     required MobileQueuedActionType type,
     required String messageId,
     required Map<String, dynamic> payload,
+    String? expectedSyncVersion,
     required Object error,
   }) async {
     final nextAction = MobileQueuedAction(
@@ -593,6 +641,9 @@ class AppState extends ChangeNotifier {
       messageId: messageId,
       createdAt: DateTime.now(),
       payload: payload,
+      expectedSyncVersion: expectedSyncVersion?.trim().isEmpty ?? true
+          ? null
+          : expectedSyncVersion,
       attempts: 0,
       lastError: error.toString(),
     );
@@ -612,6 +663,22 @@ class AppState extends ChangeNotifier {
     );
   }
 
+  MobileQueuedAction _nextQueuedActionAfterApiError(
+    MobileQueuedAction action,
+    LingkodAniApiException error,
+  ) {
+    return action.copyWith(
+      attempts: action.attempts + 1,
+      lastAttemptAt: DateTime.now(),
+      lastError: error.message,
+      conflictSummary: error.conflictSummary,
+      recommendedAction: error.recommendedAction,
+      currentSyncVersion: error.currentSyncVersion,
+      conflictTarget: error.conflictTarget,
+      clearConflict: !error.isConflict,
+    );
+  }
+
   Future<void> _removeQueuedAction({
     required String userId,
     required MobileQueuedActionType type,
@@ -625,8 +692,31 @@ class AppState extends ChangeNotifier {
                   action.messageId == messageId),
         )
         .toList(growable: false);
-    _pendingActions =
-        await _actionQueueService.replaceForUser(userId, remaining);
+    _pendingActions = await _actionQueueService.replaceForUser(
+      userId,
+      remaining,
+    );
+    notifyListeners();
+  }
+
+  Future<void> _removeMatchingQueuedFarmerNote({
+    required String userId,
+    required String farmerId,
+    required String note,
+  }) async {
+    final remaining = _pendingActions
+        .where(
+          (action) =>
+              !(action.userId == userId &&
+                  action.type == MobileQueuedActionType.farmerNote &&
+                  action.messageId == farmerId &&
+                  '${action.payload['note'] ?? ''}'.trim() == note.trim()),
+        )
+        .toList(growable: false);
+    _pendingActions = await _actionQueueService.replaceForUser(
+      userId,
+      remaining,
+    );
     notifyListeners();
   }
 

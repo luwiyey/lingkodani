@@ -61,6 +61,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
         messageId: message.id,
         reply: normalizedReply,
         status: shouldMarkApproved ? 'approved' : 'replied',
+        expectedSyncVersion: message.syncVersion,
         parsedIntent: message.parsedIntent,
         urgency: message.urgency,
         safetyFlag: message.safetyFlag,
@@ -77,8 +78,8 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
             result.queued
                 ? result.detail
                 : shouldMarkApproved
-                    ? 'Naaprubahan at naipadala ang payo kay ${message.farmerName}.'
-                    : 'Naipadala ang tugon kay ${message.farmerName}.',
+                ? 'Naaprubahan at naipadala ang payo kay ${message.farmerName}.'
+                : 'Naipadala ang tugon kay ${message.farmerName}.',
           ),
         ),
       );
@@ -93,9 +94,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -126,6 +125,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
       final result = await appState.requestResolutionConfirmation(
         messageId: message.id,
         note: note.trim(),
+        expectedSyncVersion: message.syncVersion,
       );
 
       if (!mounted) {
@@ -152,9 +152,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -173,7 +171,10 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
     });
 
     try {
-      final result = await appState.assignSmsMessage(messageId: message.id);
+      final result = await appState.assignSmsMessage(
+        messageId: message.id,
+        expectedSyncVersion: message.syncVersion,
+      );
 
       if (!mounted) {
         return;
@@ -199,9 +200,7 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -277,8 +276,9 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
 
               final message = messages[index - 1];
               final actionBusy = _actionMessageId == message.id;
-              final pendingActions =
-                  appState.pendingActionsForMessage(message.id);
+              final pendingActions = appState.pendingActionsForMessage(
+                message.id,
+              );
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -330,16 +330,19 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                           MobileInfoChip(text: message.status),
                           for (final pendingAction in pendingActions)
                             MobileInfoChip(
-                              text: pendingAction.type ==
+                              text:
+                                  pendingAction.type ==
                                       MobileQueuedActionType.smsReply
                                   ? 'Pending reply sync'
                                   : pendingAction.type ==
-                                          MobileQueuedActionType.assignMessage
-                                      ? 'Pending assign sync'
-                                      : 'Pending resolve sync',
+                                        MobileQueuedActionType.assignMessage
+                                  ? 'Pending assign sync'
+                                  : 'Pending resolve sync',
                             ),
                           if (message.assignedTo.isNotEmpty)
-                            MobileInfoChip(text: 'Owner: ${message.assignedTo}'),
+                            MobileInfoChip(
+                              text: 'Owner: ${message.assignedTo}',
+                            ),
                         ],
                       ),
                       if (pendingActions.isNotEmpty) ...[
@@ -359,25 +362,30 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                         ...pendingActions.map((pendingAction) {
                           final actionLabel =
                               pendingAction.type ==
-                                      MobileQueuedActionType.smsReply
-                                  ? 'Reply'
-                                  : pendingAction.type ==
-                                          MobileQueuedActionType.assignMessage
-                                      ? 'Assign'
-                                      : 'Resolve';
+                                  MobileQueuedActionType.smsReply
+                              ? 'Reply'
+                              : pendingAction.type ==
+                                    MobileQueuedActionType.assignMessage
+                              ? 'Assign'
+                              : 'Resolve';
                           final hasError =
                               pendingAction.lastError != null &&
                               pendingAction.lastError!.isNotEmpty;
+                          final hasConflict = pendingAction.hasConflict;
 
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Text(
-                              hasError
+                              hasConflict
+                                  ? '$actionLabel needs refresh - ${pendingAction.conflictSummary}'
+                                  : hasError
                                   ? '$actionLabel retry needed - attempts: ${pendingAction.attempts} - ${pendingAction.lastError}'
                                   : '$actionLabel queued - attempts: ${pendingAction.attempts}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: hasError
+                                color: hasConflict
+                                    ? Colors.amber.shade900
+                                    : hasError
                                     ? Colors.red.shade700
                                     : Colors.grey.shade700,
                               ),
@@ -428,8 +436,9 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                               label: const Text('Farmer'),
                             ),
                           FilledButton.icon(
-                            onPressed:
-                                actionBusy ? null : () => _sendReply(message),
+                            onPressed: actionBusy
+                                ? null
+                                : () => _sendReply(message),
                             icon: actionBusy
                                 ? const SizedBox(
                                     width: 14,
@@ -443,7 +452,8 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                             label: const Text('Reply'),
                           ),
                           FilledButton.tonalIcon(
-                            onPressed: actionBusy ||
+                            onPressed:
+                                actionBusy ||
                                     message.caseStatus == 'closed' ||
                                     message.assignedTo.isNotEmpty
                                 ? null
@@ -454,8 +464,8 @@ class _MobileSmsFeedTabState extends State<MobileSmsFeedTab> {
                           FilledButton.tonalIcon(
                             onPressed:
                                 actionBusy || message.caseStatus == 'closed'
-                                    ? null
-                                    : () => _requestResolution(message),
+                                ? null
+                                : () => _requestResolution(message),
                             icon: const Icon(Icons.verified_outlined),
                             label: const Text('Resolve'),
                           ),

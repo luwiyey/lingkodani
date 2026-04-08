@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import {
+  getFarmerSyncVersion,
+  getFieldVisitTaskSyncVersion,
+  getSmsMessageSyncVersion,
+} from "@/lib/mobile-sync-integrity";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import type {
   Farmer,
@@ -122,10 +127,20 @@ export async function GET(
     farmer: {
       ...farmer,
       id: farmer.id ?? farmerSnapshot.id,
+      syncVersion: getFarmerSyncVersion({
+        ...farmer,
+        id: farmer.id ?? farmerSnapshot.id,
+      }),
     },
-    recentMessages: messages,
+    recentMessages: messages.map((message) => ({
+      ...message,
+      syncVersion: getSmsMessageSyncVersion(message),
+    })),
     assistanceRecords,
-    fieldVisitTasks,
+    fieldVisitTasks: fieldVisitTasks.map((visit) => ({
+      ...visit,
+      syncVersion: getFieldVisitTaskSyncVersion(visit),
+    })),
     logbookEntries,
   });
 }

@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import {
+  buildMobileSyncConflict,
+  getSmsMessageSyncVersion,
+  hasExpectedSyncConflict,
+} from "@/lib/mobile-sync-integrity";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import type { SmsMessage } from "@/lib/types";
@@ -25,6 +30,11 @@ export async function POST(
   try {
     const { id } = await context.params;
     const messageId = id.trim();
+    const body = await request.json();
+    const expectedSyncVersion =
+      typeof body.expectedSyncVersion === "string"
+        ? body.expectedSyncVersion.trim()
+        : "";
 
     if (!messageId) {
       return NextResponse.json({ error: "Missing message ID." }, { status: 400 });
@@ -42,6 +52,32 @@ export async function POST(
     }
 
     const currentMessage = snapshot.data() as SmsMessage;
+    const currentSyncVersion = getSmsMessageSyncVersion(currentMessage);
+
+    if (hasExpectedSyncConflict(expectedSyncVersion, currentSyncVersion)) {
+      return NextResponse.json(
+        {
+          error:
+            "May bagong update sa kasong ito habang offline ang device. I-refresh muna bago ito italaga muli.",
+          ...buildMobileSyncConflict({
+            expectedSyncVersion,
+            currentSyncVersion,
+            target: "sms_message",
+            summary:
+              "Nagbago na ang assignment o case status bago na-sync ang mobile assign action.",
+            recommendedAction:
+              "I-refresh ang SMS feed at tingnan kung may naka-assign na o kung sarado na ang case bago mag-assign muli.",
+            currentState: {
+              caseStatus: currentMessage.caseStatus,
+              assignedTo: currentMessage.assignedTo,
+              assignedAt: currentMessage.assignedAt,
+            },
+          }),
+        },
+        { status: 409 }
+      );
+    }
+
     const timestamp = new Date().toISOString();
     const actorName = auth.profile.name ?? auth.email;
 
@@ -87,6 +123,7 @@ export async function POST(
     return NextResponse.json({
       updated: true,
       message: nextMessage,
+      syncVersion: getSmsMessageSyncVersion(nextMessage),
     });
   } catch {
     return NextResponse.json(
