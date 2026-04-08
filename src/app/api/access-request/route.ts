@@ -6,6 +6,11 @@ import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
+import {
+  applyRateLimitHeaders,
+  checkRequestRateLimit,
+  createRateLimitResponse,
+} from "@/lib/server/request-security";
 import type { AccessRequest, AccessRequestStatus, User } from "@/lib/types";
 
 function compactUndefined<T extends Record<string, unknown>>(value: T) {
@@ -93,6 +98,19 @@ async function findMatchingAccessRequests(email: string, normalizedPhone: string
 }
 
 export async function POST(request: Request) {
+  const rateLimit = checkRequestRateLimit(request, {
+    key: "access-request-post",
+    maxRequests: 5,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(
+      rateLimit,
+      "Masyadong maraming access request mula sa network na ito. Subukan muli pagkalipas ng ilang minuto."
+    );
+  }
+
   try {
     const body = await request.json();
     const email = normalizeEmail(body.email);
@@ -114,12 +132,15 @@ export async function POST(request: Request) {
     const existingUser = await findProvisionedUser(email);
 
     if (existingUser) {
-      return NextResponse.json(
+      return applyRateLimitHeaders(
+        NextResponse.json(
         {
           error: "May naka-set up nang account para sa email na ito. Subukan ang login o reset password kung nakalimutan mo ang password.",
           code: "already_provisioned",
         },
         { status: 409 }
+        ),
+        rateLimit
       );
     }
 
@@ -162,12 +183,15 @@ export async function POST(request: Request) {
       });
       await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
 
-      return NextResponse.json({
-        submitted: true,
-        duplicatePending: true,
-        merged: true,
-        request: nextRequest,
-      });
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          submitted: true,
+          duplicatePending: true,
+          merged: true,
+          request: nextRequest,
+        }),
+        rateLimit
+      );
     }
 
     const db = getServerFirestore();
@@ -198,14 +222,20 @@ export async function POST(request: Request) {
     });
     await db.collection(firebaseCollections.auditLogs).doc(auditLog.id).set(auditLog);
 
-    return NextResponse.json({
-      submitted: true,
-      request: nextRequest,
-    });
+    return applyRateLimitHeaders(
+      NextResponse.json({
+        submitted: true,
+        request: nextRequest,
+      }),
+      rateLimit
+    );
   } catch {
-    return NextResponse.json(
-      { error: "Hindi naisumite ang access request." },
-      { status: 500 }
+    return applyRateLimitHeaders(
+      NextResponse.json(
+        { error: "Hindi naisumite ang access request." },
+        { status: 500 }
+      ),
+      rateLimit
     );
   }
 }

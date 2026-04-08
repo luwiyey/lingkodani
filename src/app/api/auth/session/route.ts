@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
+import {
+  applyRateLimitHeaders,
+  checkRequestRateLimit,
+  createRateLimitResponse,
+} from "@/lib/server/request-security";
 import { getSessionDurationMs, SESSION_COOKIE_NAME } from "@/lib/server/session-auth";
 import type { User } from "@/lib/types";
 
@@ -25,10 +30,26 @@ function buildSessionCookieHeaders(response: NextResponse, value: string, maxAge
 }
 
 export async function POST(request: Request) {
+  const rateLimit = checkRequestRateLimit(request, {
+    key: "auth-session-post",
+    maxRequests: 12,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(
+      rateLimit,
+      "Masyadong maraming login/session attempts mula sa network na ito. Maghintay muna bago sumubok muli."
+    );
+  }
+
   const idToken = getBearerToken(request);
 
   if (!idToken) {
-    return NextResponse.json({ error: "Missing authentication token." }, { status: 401 });
+    return applyRateLimitHeaders(
+      NextResponse.json({ error: "Missing authentication token." }, { status: 401 }),
+      rateLimit
+    );
   }
 
   try {
@@ -38,9 +59,12 @@ export async function POST(request: Request) {
     const userId = decoded.uid;
 
     if (!userId || !email) {
-      return NextResponse.json(
-        { error: "Authenticated user identity is incomplete." },
-        { status: 401 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: "Authenticated user identity is incomplete." },
+          { status: 401 }
+        ),
+        rateLimit
       );
     }
 
@@ -50,18 +74,24 @@ export async function POST(request: Request) {
       .get();
 
     if (!profileSnapshot.exists) {
-      return NextResponse.json(
-        { error: "No authorized user profile exists for this account." },
-        { status: 403 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: "No authorized user profile exists for this account." },
+          { status: 403 }
+        ),
+        rateLimit
       );
     }
 
     const profile = profileSnapshot.data() as User;
 
     if (profile.status === "disabled") {
-      return NextResponse.json(
-        { error: "This account is disabled." },
-        { status: 403 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: "This account is disabled." },
+          { status: 403 }
+        ),
+        rateLimit
       );
     }
 
@@ -69,9 +99,12 @@ export async function POST(request: Request) {
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
     const response = NextResponse.json({ ok: true });
     buildSessionCookieHeaders(response, sessionCookie, Math.floor(expiresIn / 1000));
-    return response;
+    return applyRateLimitHeaders(response, rateLimit);
   } catch {
-    return NextResponse.json({ error: "Invalid authentication token." }, { status: 401 });
+    return applyRateLimitHeaders(
+      NextResponse.json({ error: "Invalid authentication token." }, { status: 401 }),
+      rateLimit
+    );
   }
 }
 

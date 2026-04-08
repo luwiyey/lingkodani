@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { transcribeAudioFile } from "@/ai/flows/transcribe-audio-file";
 import { isLiveMode } from "@/lib/config/app-mode";
+import {
+  applyRateLimitHeaders,
+  checkRequestRateLimit,
+  createRateLimitResponse,
+} from "@/lib/server/request-security";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
 import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
 import {
@@ -12,6 +17,19 @@ import {
 } from "@/lib/server/audio-import";
 
 export async function POST(request: Request) {
+  const rateLimit = checkRequestRateLimit(request, {
+    key: "audio-transcribe-post",
+    maxRequests: 12,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(
+      rateLimit,
+      "Masyadong maraming audio transcription requests mula sa network na ito. Maghintay muna bago muling mag-upload."
+    );
+  }
+
   if (isLiveMode) {
     const session = await readServerSessionProfile();
     const hasDemoAccess = await hasServerDemoPreviewAccess();
@@ -19,7 +37,10 @@ export async function POST(request: Request) {
     if (!session && !hasDemoAccess) {
       const auth = await authenticateServerRequest(request);
       if (!auth.ok) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
+        return applyRateLimitHeaders(
+          NextResponse.json({ error: auth.error }, { status: auth.status }),
+          rateLimit
+        );
       }
     }
   }
@@ -29,9 +50,12 @@ export async function POST(request: Request) {
     typeof process.env.GEMINI_API_KEY === "string";
 
   if (!aiConfigured) {
-    return NextResponse.json(
-      { error: "Hindi available ang audio transcription sa build na ito." },
-      { status: 503 }
+    return applyRateLimitHeaders(
+      NextResponse.json(
+        { error: "Hindi available ang audio transcription sa build na ito." },
+        { status: 503 }
+      ),
+      rateLimit
     );
   }
 
@@ -41,23 +65,32 @@ export async function POST(request: Request) {
     const context = formData.get("context");
 
     if (!(file instanceof File)) {
-      return NextResponse.json(
-        { error: "Walang valid na audio file na natanggap." },
-        { status: 400 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: "Walang valid na audio file na natanggap." },
+          { status: 400 }
+        ),
+        rateLimit
       );
     }
 
     if (!isSupportedAudioType(file)) {
-      return NextResponse.json(
-        { error: "Audio file lang ang puwedeng i-transcribe." },
-        { status: 400 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: "Audio file lang ang puwedeng i-transcribe." },
+          { status: 400 }
+        ),
+        rateLimit
       );
     }
 
     if (file.size > MAX_AUDIO_IMPORT_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: "Masyadong malaki ang audio file. Limitahan muna sa 20 MB o mas mababa." },
-        { status: 413 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: "Masyadong malaki ang audio file. Limitahan muna sa 20 MB o mas mababa." },
+          { status: 413 }
+        ),
+        rateLimit
       );
     }
 
@@ -71,18 +104,24 @@ export async function POST(request: Request) {
     });
 
     if (!result.transcript.trim()) {
-      return NextResponse.json(
-        { error: "Hindi sapat ang audio para makabuo ng transcript." },
-        { status: 422 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: "Hindi sapat ang audio para makabuo ng transcript." },
+          { status: 422 }
+        ),
+        rateLimit
       );
     }
 
-    return NextResponse.json(result);
+    return applyRateLimitHeaders(NextResponse.json(result), rateLimit);
   } catch (error) {
     console.error("Audio transcription failed", error);
-    return NextResponse.json(
-      { error: "Hindi ma-transcribe ang audio file sa ngayon." },
-      { status: 500 }
+    return applyRateLimitHeaders(
+      NextResponse.json(
+        { error: "Hindi ma-transcribe ang audio file sa ngayon." },
+        { status: 500 }
+      ),
+      rateLimit
     );
   }
 }
