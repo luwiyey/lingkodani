@@ -68,6 +68,18 @@ function getConfidenceBadgeVariant(confidenceTier: KnowledgeSupportInsight['conf
   return 'destructive' as const;
 }
 
+function getReviewRecommendationVariant(level: KnowledgeSupportInsight['reviewRecommendation']['level']) {
+  if (level === 'ready') {
+    return 'secondary' as const;
+  }
+
+  if (level === 'review') {
+    return 'outline' as const;
+  }
+
+  return 'destructive' as const;
+}
+
 export default function KnowledgeBasePage() {
   const router = useRouter();
   const { knowledgeArticles, addKnowledgeArticle, smsMessages } = useData();
@@ -635,6 +647,9 @@ export default function KnowledgeBasePage() {
                   <Badge variant={getConfidenceBadgeVariant(searchResults.supportInsight.confidenceTier)}>
                     {searchResults.supportInsight.confidenceLabel} confidence
                   </Badge>
+                  <Badge variant={getReviewRecommendationVariant(searchResults.supportInsight.reviewRecommendation.level)}>
+                    {searchResults.supportInsight.reviewRecommendation.label}
+                  </Badge>
                   <Badge variant="outline">
                     Local coverage {(searchResults.supportInsight.localCoverageRatio * 100).toFixed(0)}%
                   </Badge>
@@ -687,6 +702,19 @@ export default function KnowledgeBasePage() {
                   <div className="space-y-4">
                     <div className="rounded-xl border p-4">
                       <div className="flex items-center gap-2">
+                        <Bot className="h-4 w-4 text-primary" />
+                        <p className="text-sm font-semibold text-foreground">Why this answer</p>
+                      </div>
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {searchResults.supportInsight.whyThisAnswer}
+                      </p>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        {searchResults.supportInsight.reviewRecommendation.reason}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border p-4">
+                      <div className="flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-amber-600" />
                         <p className="text-sm font-semibold text-foreground">Conflict watch</p>
                       </div>
@@ -722,6 +750,59 @@ export default function KnowledgeBasePage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="grid gap-4 lg:grid-cols-[1.1fr_1.2fr]">
+                  <div className="rounded-xl border p-4">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <p className="text-sm font-semibold text-foreground">Assumptions to verify</p>
+                    </div>
+                    {searchResults.supportInsight.assumptions.length > 0 ? (
+                      <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                        {searchResults.supportInsight.assumptions.map((item) => (
+                          <p key={item}>{item}</p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        Mababa ang natitirang assumptions sa kasalukuyang query; puwede na itong gamitin nang mas diretso basta tugma sa aktwal na field conditions.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border p-4">
+                    <div className="flex items-center gap-2">
+                      <BookCheck className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-semibold text-foreground">Article track record</p>
+                    </div>
+                    {searchResults.supportInsight.articleUsageBreakdown.length > 0 ? (
+                      <div className="mt-3 space-y-3">
+                        {searchResults.supportInsight.articleUsageBreakdown.map((item) => (
+                          <div key={item.articleId} className="rounded-lg border bg-muted/20 p-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-medium text-foreground">{item.articleTitle}</p>
+                              <Badge variant="outline">{item.referencedCases} linked case{item.referencedCases === 1 ? '' : 's'}</Badge>
+                              {item.successRate !== null ? (
+                                <Badge variant="outline">
+                                  {Math.round(item.successRate * 100)}% confirmed
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline">No outcome history yet</Badge>
+                              )}
+                            </div>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Confirmed: {item.confirmedResolved} • Reopened: {item.reopenedCases} • Ongoing: {item.ongoingCases}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        Wala pang tracked case history para sa mga article na ginamit sa sagot na ito.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -742,6 +823,9 @@ export default function KnowledgeBasePage() {
                                           <span className="flex flex-wrap gap-2">
                                             <Badge variant="secondary">Approved</Badge>
                                             {article.sourceLabel ? <Badge variant="outline">Source: {article.sourceLabel}</Badge> : null}
+                                            {searchResults.supportInsight.strongestArticleTitle === article.title ? (
+                                              <Badge variant="outline">Primary evidence</Badge>
+                                            ) : null}
                                           </span>
                                         </CardDescription>
                                     </CardHeader>
@@ -749,6 +833,18 @@ export default function KnowledgeBasePage() {
                                         <div className="flex flex-wrap gap-2">
                                             {article.keywords.map(kw => <Badge key={kw} variant="outline">{kw}</Badge>)}
                                         </div>
+                                        {searchResults.supportInsight.articleUsageBreakdown.find((entry) => entry.articleId === article.id) ? (
+                                          <p className="mt-3 text-xs text-muted-foreground">
+                                            {(() => {
+                                              const usage = searchResults.supportInsight.articleUsageBreakdown.find((entry) => entry.articleId === article.id);
+                                              if (!usage) {
+                                                return null;
+                                              }
+
+                                              return `${usage.referencedCases} linked case${usage.referencedCases === 1 ? '' : 's'} • ${usage.confirmedResolved} confirmed • ${usage.reopenedCases} reopened`;
+                                            })()}
+                                          </p>
+                                        ) : null}
                                     </CardContent>
                                 </Card>
                             </Link>

@@ -1,9 +1,10 @@
 import {
   buildKnowledgeAutocompleteSuggestions,
+  buildKnowledgeSupportInsight,
   buildSuggestedArticlesLocally,
   searchArticlesLocally,
 } from "@/lib/knowledge-search";
-import type { KnowledgeArticle } from "@/lib/types";
+import type { KnowledgeArticle, SmsMessage } from "@/lib/types";
 
 const articles: KnowledgeArticle[] = [
   {
@@ -25,6 +26,41 @@ const articles: KnowledgeArticle[] = [
     lastUpdated: "2026-03-20T08:30:00.000Z",
     author: "Barangay Admin",
     type: "tip",
+  },
+];
+
+const smsMessages: SmsMessage[] = [
+  {
+    id: "SMS-KB-1",
+    farmerId: "FARM-1",
+    farmerName: "Juan",
+    phone: "+639171234567",
+    message: "May rice bugs sa palayan.",
+    timestamp: "2026-03-25T08:00:00.000Z",
+    parsedIntent: "PEST_DISEASE",
+    urgency: "medium",
+    status: "approved",
+    aiAdvice: "Mag-monitor at magpa-validate.",
+    aiConfidence: 0.84,
+    safetyFlag: "Medium",
+    knowledgeBaseId: "KB-1",
+    resolutionConfirmationStatus: "confirmed_by_farmer",
+  },
+  {
+    id: "SMS-KB-2",
+    farmerId: "FARM-2",
+    farmerName: "Maria",
+    phone: "+639181234567",
+    message: "May baha sa bukid namin.",
+    timestamp: "2026-03-26T08:00:00.000Z",
+    parsedIntent: "WEATHER_HELP",
+    urgency: "high",
+    status: "approved",
+    aiAdvice: "I-secure ang punla at i-dokumento ang pinsala.",
+    aiConfidence: 0.88,
+    safetyFlag: "High",
+    knowledgeBaseId: "KB-2",
+    resolutionConfirmationStatus: "reopened",
   },
 ];
 
@@ -52,5 +88,27 @@ describe("knowledge-search", () => {
     expect(suggestions).toContain("Gabay sa Rice Bugs");
     expect(suggestions).toContain("rice bugs");
     expect(suggestions.some((suggestion) => suggestion.startsWith("Paano sugpuin ang"))).toBe(true);
+  });
+
+  it("builds why-this-answer and article track record insight", () => {
+    const insight = buildKnowledgeSupportInsight({
+      query: "May rice bugs sa palay sa Zone 1",
+      relevantArticles: [articles[0]],
+      approvedArticles: articles,
+      answerMode: "local_ai",
+      usedWebGrounding: false,
+      smsMessages,
+    });
+
+    expect(insight.whyThisAnswer).toContain("Gabay sa Rice Bugs");
+    expect(insight.reviewRecommendation.label.length).toBeGreaterThan(0);
+    expect(insight.articleUsageBreakdown[0]).toEqual(
+      expect.objectContaining({
+        articleId: "KB-1",
+        referencedCases: 1,
+        confirmedResolved: 1,
+      })
+    );
+    expect(insight.assumptions.length).toBeGreaterThan(0);
   });
 });

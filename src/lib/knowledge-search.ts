@@ -11,9 +11,26 @@ export type KnowledgeSupportInsight = {
   confidenceTier: "high" | "medium" | "low";
   confidenceLabel: string;
   localCoverageRatio: number;
+  whyThisAnswer: string;
+  assumptions: string[];
   evidenceItems: string[];
   conflictWarnings: string[];
   gapWarnings: string[];
+  reviewRecommendation: {
+    level: "ready" | "review" | "caution";
+    label: string;
+    reason: string;
+  };
+  strongestArticleTitle?: string;
+  articleUsageBreakdown: Array<{
+    articleId: string;
+    articleTitle: string;
+    referencedCases: number;
+    confirmedResolved: number;
+    reopenedCases: number;
+    ongoingCases: number;
+    successRate: number | null;
+  }>;
   usageSummary: {
     referencedCases: number;
     confirmedResolved: number;
@@ -137,6 +154,75 @@ function formatArticleDate(value?: string) {
   });
 }
 
+function hasAnyToken(queryTokens: string[], values: string[]) {
+  const normalizedValues = values.map((value) => value.toLowerCase());
+  return queryTokens.some((token) => normalizedValues.includes(token));
+}
+
+function buildWhyThisAnswer(input: {
+  strongestArticle?: KnowledgeArticle;
+  answerMode: "local_only" | "local_ai" | "local_web";
+  relevantArticles: KnowledgeArticle[];
+  usedWebGrounding: boolean;
+  localCoverageRatio: number;
+}) {
+  const strongestTitle = input.strongestArticle?.title ?? input.relevantArticles[0]?.title;
+
+  if (!strongestTitle) {
+    return "Walang matibay na lokal na article match, kaya mas fallback-style at mas maingat ang sagot.";
+  }
+
+  if (input.answerMode === "local_web" && input.usedWebGrounding) {
+    return `Pangunahin pa ring nakaangkla ang sagot sa "${strongestTitle}", pero dinagdagan ito ng web grounding dahil hindi sapat ang lokal na coverage para sa buong tanong.`;
+  }
+
+  if (input.answerMode === "local_ai") {
+    return input.localCoverageRatio >= 0.75
+      ? `Naka-base ang sagot sa lokal na article na "${strongestTitle}" at nirewrite lang ng AI para maging mas malinaw ang paliwanag.`
+      : `Ginamit ang "${strongestTitle}" bilang pinakamalapit na lokal na source, pero medyo general pa ang coverage kaya kailangan pa ring i-verify ang field specifics.`;
+  }
+
+  return `Lokal na article matching lang ang ginamit, at ang pinakamalapit na pinanggalingan ay "${strongestTitle}".`;
+}
+
+function buildAssumptions(input: {
+  queryTokens: string[];
+  relevantArticles: KnowledgeArticle[];
+  localCoverageRatio: number;
+  usedWebGrounding: boolean;
+}) {
+  const assumptions: string[] = [];
+  const cropTerms = ["palay", "mais", "kamatis", "sibuyas", "talong", "sitaw", "gulay", "okra", "ampalaya"];
+  const locationTerms = ["zone", "sitio", "barangay", "batakil"];
+  const stageTerms = ["punla", "seedling", "vegetative", "flowering", "fruiting", "harvest", "ani"];
+
+  if (!hasAnyToken(input.queryTokens, cropTerms)) {
+    assumptions.push("Walang malinaw na crop term sa query, kaya ipinapalagay ng sagot na tugma ang article sa tinutukoy na pananim.");
+  }
+
+  if (!hasAnyToken(input.queryTokens, locationTerms)) {
+    assumptions.push("Walang espesipikong lokasyon sa query, kaya maaaring kailangan pa ring i-adjust ang payo ayon sa aktwal na zone, tubig, o weather condition.");
+  }
+
+  if (!hasAnyToken(input.queryTokens, stageTerms)) {
+    assumptions.push("Walang crop-stage detail sa query, kaya dapat pang i-check kung punla, vegetative, flowering, o malapit nang anihin ang pananim.");
+  }
+
+  if (input.localCoverageRatio < 0.7) {
+    assumptions.push("Hindi pa buo ang local coverage ng query, kaya may bahagi ng sagot na mas general kaysa fully localized.");
+  }
+
+  if (input.usedWebGrounding) {
+    assumptions.push("May dagdag na web grounding, pero local articles pa rin ang dapat tratuhing pangunahing source of truth.");
+  }
+
+  if (input.relevantArticles.length === 1) {
+    assumptions.push("Iisang pangunahing article lang ang tumama sa tanong na ito, kaya manipis pa ang corroboration mula sa ibang local source.");
+  }
+
+  return assumptions.slice(0, 5);
+}
+
 export function buildKnowledgeSupportInsight(input: {
   query: string;
   relevantArticles: KnowledgeArticle[];
@@ -201,6 +287,49 @@ export function buildKnowledgeSupportInsight(input: {
   const conflictWarnings: string[] = [];
   const gapWarnings: string[] = [];
   const evidenceItems: string[] = [];
+  const articleUsageBreakdown = relevantArticles.map((article) => {
+    const linkedCases = smsMessages.filter((message) => message.knowledgeBaseId === article.id);
+    const confirmedResolvedCount = linkedCases.filter((message) =>
+      isFarmerConfirmedResolution(message)
+    ).length;
+    const reopenedCount = linkedCases.filter(
+      (message) => message.resolutionConfirmationStatus === "reopened"
+    ).length;
+    const ongoingCount = linkedCases.filter((message) => {
+      const outcome = getEffectiveSmsCaseOutcome(message);
+      return outcome !== "resolved" && message.resolutionConfirmationStatus !== "reopened";
+    }).length;
+    const successRate =
+      linkedCases.length > 0
+        ? Number((confirmedResolvedCount / linkedCases.length).toFixed(2))
+        : null;
+
+    return {
+      articleId: article.id,
+      articleTitle: article.title,
+      referencedCases: linkedCases.length,
+      confirmedResolved: confirmedResolvedCount,
+      reopenedCases: reopenedCount,
+      ongoingCases: ongoingCount,
+      successRate,
+    };
+  });
+  const strongestArticle =
+    relevantArticles[0]
+      ? [...relevantArticles]
+          .sort((left, right) => {
+            const leftTokens = summarizeArticleTokens(left);
+            const rightTokens = summarizeArticleTokens(right);
+            const leftMatches = queryTokens.filter((token) => leftTokens.includes(token)).length;
+            const rightMatches = queryTokens.filter((token) => rightTokens.includes(token)).length;
+
+            if (rightMatches !== leftMatches) {
+              return rightMatches - leftMatches;
+            }
+
+            return new Date(right.lastUpdated).getTime() - new Date(left.lastUpdated).getTime();
+          })[0]
+      : undefined;
 
   if (relevantArticles.length === 0) {
     gapWarnings.push(
@@ -330,14 +459,51 @@ export function buildKnowledgeSupportInsight(input: {
     );
   }
 
+  const whyThisAnswer = buildWhyThisAnswer({
+    strongestArticle,
+    answerMode,
+    relevantArticles,
+    usedWebGrounding,
+    localCoverageRatio,
+  });
+  const assumptions = buildAssumptions({
+    queryTokens,
+    relevantArticles,
+    localCoverageRatio,
+    usedWebGrounding,
+  });
+  const reviewRecommendation =
+    confidenceTier === "high" && conflictWarnings.length === 0 && gapWarnings.length === 0
+      ? {
+          level: "ready" as const,
+          label: "Handa para sa staff use",
+          reason: "Matibay ang local support at wala pang malinaw na conflict o gap warning sa sagot na ito.",
+        }
+      : confidenceTier === "low" || conflictWarnings.length > 0 || gapWarnings.length >= 2
+        ? {
+            level: "caution" as const,
+            label: "Kailangan ng maingat na review",
+            reason: "May sapat na dahilan para huwag agad tratuhing final ang sagot nang walang human check o dagdag na detalye.",
+          }
+        : {
+            level: "review" as const,
+            label: "I-review bago gamitin",
+            reason: "May local support, pero may isa o dalawang uncertainty na dapat pang i-check bago ipadala sa magsasaka.",
+          };
+
   return {
     confidenceScore,
     confidenceTier,
     confidenceLabel,
     localCoverageRatio: Number(localCoverageRatio.toFixed(2)),
+    whyThisAnswer,
+    assumptions,
     evidenceItems,
     conflictWarnings,
     gapWarnings,
+    reviewRecommendation,
+    strongestArticleTitle: strongestArticle?.title,
+    articleUsageBreakdown,
     usageSummary: {
       referencedCases: referencedCases.length,
       confirmedResolved,
