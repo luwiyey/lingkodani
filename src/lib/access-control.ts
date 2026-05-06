@@ -27,6 +27,10 @@ export function canManageBarangaySettings(user?: Pick<User, "role" | "title" | "
   return resolveUserPermissions(user).manageBarangaySettings === true;
 }
 
+export function canDeleteFarmerRecords(user?: Pick<User, "role" | "title" | "permissions"> | null) {
+  return canManageBarangaySettings(user);
+}
+
 export function canManageAutomation(user?: Pick<User, "role" | "title" | "permissions"> | null) {
   return resolveUserPermissions(user).manageAutomation === true;
 }

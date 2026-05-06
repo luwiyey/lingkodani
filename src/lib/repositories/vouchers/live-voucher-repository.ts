@@ -9,6 +9,8 @@ import {
 } from "firebase/firestore";
 
 import { getClientFirestore } from "@/lib/firebase/client";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { Voucher } from "@/lib/types";
 import type { VoucherRepository } from "@/lib/repositories/vouchers/types";
 
@@ -19,18 +21,20 @@ export const liveVoucherRepository: VoucherRepository = {
       query(collection(db, "vouchers"), orderBy("issueDate", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as Voucher);
+    return snapshot.docs.map((item) => withFirestoreDocId<Voucher>(item));
   },
 
   async createVoucher(voucher) {
     const db = getClientFirestore();
-    await setDoc(doc(db, "vouchers", voucher.id), voucher);
-    return voucher;
+    const payload = sanitizeFirestoreDocument(voucher);
+    await setDoc(doc(db, "vouchers", voucher.id), payload);
+    return payload;
   },
 
   async updateVoucher(id, updates) {
     const db = getClientFirestore();
-    await updateDoc(doc(db, "vouchers", id), updates);
-    return { id, ...updates } as Voucher;
+    const payload = sanitizeFirestorePatch(updates);
+    await updateDoc(doc(db, "vouchers", id), payload);
+    return { id, ...payload } as Voucher;
   },
 };

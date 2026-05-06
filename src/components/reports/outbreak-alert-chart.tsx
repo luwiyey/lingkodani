@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -32,6 +33,14 @@ export function OutbreakAlertChart() {
   const { outbreakAlertData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
   const safeData = outbreakAlertData.length > 0 ? outbreakAlertData : [{ date: 'Wala pa', ulat: 0 }];
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Outbreak Alerts",
+      timeframe,
+      description: "Trend ng outbreak alert levels sa napiling timeframe.",
+      rows: sanitizePrintableRows(safeData),
+    });
+  };
 
   const peak = safeData.reduce((prev, current) => (prev.ulat > current.ulat) ? prev : current);
 
@@ -75,7 +84,7 @@ export function OutbreakAlertChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -127,4 +136,5 @@ export function OutbreakAlertChart() {
     </Dialog>
   )
 }
+
 

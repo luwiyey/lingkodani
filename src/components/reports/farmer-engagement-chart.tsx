@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -37,11 +38,21 @@ export function FarmerEngagementChart() {
   const totalFarmers = farmerEngagementData.reduce((acc, item) => acc + item.count, 0);
   const topSegment = farmerEngagementData.reduce((prev, current) => (prev.count > current.count ? prev : current), farmerEngagementData[0]);
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Pakikilahok ng Magsasaka",
+      timeframe,
+      description: "Bilang ng active at inactive farmer engagement records.",
+      rows: sanitizePrintableRows(farmerEngagementData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -135,4 +146,5 @@ export function FarmerEngagementChart() {
     </Dialog>
   )
 }
+
 

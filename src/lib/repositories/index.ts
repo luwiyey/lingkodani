@@ -1,4 +1,4 @@
-import { isDemoMode } from "@/lib/config/app-mode";
+import { isDemoRuntimeActive } from "@/lib/runtime-mode";
 import { demoAuditRepository } from "@/lib/repositories/audit/demo-audit-repository";
 import { liveAuditRepository } from "@/lib/repositories/audit/live-audit-repository";
 import { demoAlertHistoryRepository } from "@/lib/repositories/alert-history/demo-alert-history-repository";
@@ -30,18 +30,32 @@ import { liveUserRepository } from "@/lib/repositories/users/live-user-repositor
 import { demoVoucherRepository } from "@/lib/repositories/vouchers/demo-voucher-repository";
 import { liveVoucherRepository } from "@/lib/repositories/vouchers/live-voucher-repository";
 
-export const smsRepository = isDemoMode ? demoSmsRepository : liveSmsRepository;
-export const smsTrainingRepository = isDemoMode ? demoSmsTrainingRepository : liveSmsTrainingRepository;
-export const farmerRepository = isDemoMode ? demoFarmerRepository : liveFarmerRepository;
-export const auditRepository = isDemoMode ? demoAuditRepository : liveAuditRepository;
-export const alertHistoryRepository = isDemoMode ? demoAlertHistoryRepository : liveAlertHistoryRepository;
-export const assistanceRepository = isDemoMode ? demoAssistanceRepository : liveAssistanceRepository;
-export const fieldVisitRepository = isDemoMode ? demoFieldVisitRepository : liveFieldVisitRepository;
-export const knowledgeRepository = isDemoMode ? demoKnowledgeRepository : liveKnowledgeRepository;
-export const logbookRepository = isDemoMode ? demoLogbookRepository : liveLogbookRepository;
-export const marketPriceRepository = isDemoMode ? demoMarketPriceRepository : liveMarketPriceRepository;
-export const outboundMessageRepository = isDemoMode ? demoOutboundRepository : liveOutboundRepository;
-export const resourceRepository = isDemoMode ? demoResourceRepository : liveResourceRepository;
-export const voucherRepository = isDemoMode ? demoVoucherRepository : liveVoucherRepository;
-export const systemSettingsRepository = isDemoMode ? demoSystemSettingsRepository : liveSystemSettingsRepository;
-export const userRepository = isDemoMode ? demoUserRepository : liveUserRepository;
+function resolveRuntimeRepository<T extends object>(demoRepository: T, liveRepository: T) {
+  return isDemoRuntimeActive() ? demoRepository : liveRepository;
+}
+
+function createRuntimeRepositoryProxy<T extends object>(demoRepository: T, liveRepository: T): T {
+  return new Proxy({} as T, {
+    get(_target, property) {
+      const repository = resolveRuntimeRepository(demoRepository, liveRepository) as Record<PropertyKey, unknown>;
+      const value = repository[property];
+      return typeof value === "function" ? value.bind(repository) : value;
+    },
+  });
+}
+
+export const smsRepository = createRuntimeRepositoryProxy(demoSmsRepository, liveSmsRepository);
+export const smsTrainingRepository = createRuntimeRepositoryProxy(demoSmsTrainingRepository, liveSmsTrainingRepository);
+export const farmerRepository = createRuntimeRepositoryProxy(demoFarmerRepository, liveFarmerRepository);
+export const auditRepository = createRuntimeRepositoryProxy(demoAuditRepository, liveAuditRepository);
+export const alertHistoryRepository = createRuntimeRepositoryProxy(demoAlertHistoryRepository, liveAlertHistoryRepository);
+export const assistanceRepository = createRuntimeRepositoryProxy(demoAssistanceRepository, liveAssistanceRepository);
+export const fieldVisitRepository = createRuntimeRepositoryProxy(demoFieldVisitRepository, liveFieldVisitRepository);
+export const knowledgeRepository = createRuntimeRepositoryProxy(demoKnowledgeRepository, liveKnowledgeRepository);
+export const logbookRepository = createRuntimeRepositoryProxy(demoLogbookRepository, liveLogbookRepository);
+export const marketPriceRepository = createRuntimeRepositoryProxy(demoMarketPriceRepository, liveMarketPriceRepository);
+export const outboundMessageRepository = createRuntimeRepositoryProxy(demoOutboundRepository, liveOutboundRepository);
+export const resourceRepository = createRuntimeRepositoryProxy(demoResourceRepository, liveResourceRepository);
+export const voucherRepository = createRuntimeRepositoryProxy(demoVoucherRepository, liveVoucherRepository);
+export const systemSettingsRepository = createRuntimeRepositoryProxy(demoSystemSettingsRepository, liveSystemSettingsRepository);
+export const userRepository = createRuntimeRepositoryProxy(demoUserRepository, liveUserRepository);

@@ -91,7 +91,37 @@ flutter pub get
 flutter analyze
 flutter test
 flutter run
+flutter build appbundle --release
 ```
+
+## Play internal testing checklist
+
+1. Create an Android upload keystore.
+2. Copy `mobile_app/android/key.properties.example` to `mobile_app/android/key.properties`.
+3. Fill in the real keystore path, alias, and passwords.
+   Use `../lingkodani-upload-keystore.jks` if the keystore sits directly inside `mobile_app/android/`.
+4. Build the Android App Bundle:
+
+```bash
+flutter build appbundle --release
+```
+
+5. Upload the generated `.aab` from:
+
+```text
+mobile_app/build/app/outputs/bundle/release/app-release.aab
+```
+
+6. Use the public privacy policy URL for Play Console:
+
+```text
+https://lingkod-ani.com/privacy-policy
+```
+
+The Flutter Android release build now supports a real upload key. If
+`mobile_app/android/key.properties` is missing, local release builds still fall
+back to the debug signing config for validation, but Play Console uploads should
+use your real upload keystore.
 
 ## Current scope
 

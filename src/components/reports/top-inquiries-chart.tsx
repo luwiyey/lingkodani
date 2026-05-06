@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -31,6 +32,14 @@ const chartConfig = {
 export function TopInquiriesChart() {
   const { topInquiriesData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Top Inquiries",
+      timeframe,
+      description: "Pinakamadalas na uri ng inquiry mula sa mga magsasaka.",
+      rows: sanitizePrintableRows(topInquiriesData),
+    });
+  };
   const hasInquiryData = topInquiriesData.some((item) => item.count > 0);
   const topInquiry = hasInquiryData
     ? topInquiriesData.reduce((prev, current) => (prev.count > current.count) ? prev : current)
@@ -82,7 +91,7 @@ export function TopInquiriesChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -152,4 +161,5 @@ export function TopInquiriesChart() {
     </Dialog>
   )
 }
+
 

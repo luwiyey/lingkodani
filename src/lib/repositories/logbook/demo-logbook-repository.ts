@@ -1,41 +1,23 @@
 import type { LogbookEntry } from "@/lib/types";
 import type { LogbookRepository } from "@/lib/repositories/logbook/types";
+import { farmerLogbookEntries as initialLogbookEntries } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoLogbookStore?: LogbookEntry[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoLogbookStore) {
-    demoStore.__lingkodAniDemoLogbookStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoLogbookStore;
-}
+const store = createDemoCollectionStore<LogbookEntry>({
+  storageKey: "logbook",
+  initialData: initialLogbookEntries,
+});
 
 export const demoLogbookRepository: LogbookRepository = {
   async listEntries() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createEntry(entry) {
-    getStore().unshift(entry);
-    return entry;
+    return store.prepend(entry);
   },
 
   async updateEntry(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 };

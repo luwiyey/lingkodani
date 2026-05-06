@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 const chartConfig = {
   Tagumpay: { label: "Tagumpay", color: "hsl(var(--chart-1))" },
@@ -35,11 +36,21 @@ export function AdvisoryDeliveryChart() {
   const total = advisoryDeliveryData.reduce((acc, entry) => acc + entry.value, 0);
   const successPercentage = total > 0 && successEntry ? ((successEntry.value / total) * 100).toFixed(1) : '0.0';
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Status ng Delivery ng Advisory",
+      timeframe,
+      description: "Buod ng delivery status ng advisories sa napiling timeframe.",
+      rows: sanitizePrintableRows(advisoryDeliveryData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -136,6 +147,7 @@ export function AdvisoryDeliveryChart() {
     </Dialog>
   )
 }
+
 
 
 

@@ -185,6 +185,12 @@ function LoginPageContent() {
                   {selectedApplication === "live" ? "Live application" : "Application"}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
+                  Pangalan: <span className="font-medium text-foreground">{onboardingProfile.name || "Hindi naglagay"}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Numero: <span className="font-medium text-foreground">{onboardingProfile.phone || "Hindi naglagay"}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
                   Posisyon: <span className="font-medium text-foreground">{onboardingProfile.position}</span>
                 </p>
                 {onboardingProfile.age ? (

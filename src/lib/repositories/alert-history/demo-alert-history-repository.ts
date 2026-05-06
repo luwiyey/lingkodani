@@ -1,25 +1,19 @@
 import type { AlertHistoryEntry } from "@/lib/types";
 import type { AlertHistoryRepository } from "@/lib/repositories/alert-history/types";
+import { alertHistory as initialAlertHistory } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoAlertHistoryStore?: AlertHistoryEntry[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoAlertHistoryStore) {
-    demoStore.__lingkodAniDemoAlertHistoryStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoAlertHistoryStore;
-}
+const store = createDemoCollectionStore<AlertHistoryEntry>({
+  storageKey: "alertHistory",
+  initialData: initialAlertHistory,
+});
 
 export const demoAlertHistoryRepository: AlertHistoryRepository = {
   async listAlertHistory() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createAlertHistoryEntry(entry) {
-    getStore().unshift(entry);
-    return entry;
+    return store.prepend(entry);
   },
 };

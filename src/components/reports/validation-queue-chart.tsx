@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -30,6 +31,14 @@ const chartConfig = {
 export function ValidationQueueChart() {
   const { validationQueueData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Validation Queue",
+      timeframe,
+      description: "Bilang ng kasong naka-pending sa validation workflow.",
+      rows: sanitizePrintableRows(validationQueueData),
+    });
+  };
   
   const pendingCount = validationQueueData.find(d => d.name === 'Nakabinbin')?.value ?? 0;
 
@@ -79,7 +88,7 @@ export function ValidationQueueChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -131,4 +140,5 @@ export function ValidationQueueChart() {
     </Dialog>
   )
 }
+
 

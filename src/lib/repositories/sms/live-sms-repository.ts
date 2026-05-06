@@ -10,14 +10,10 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { NewSmsRecordInput, SmsRepository } from "@/lib/repositories/sms/types";
 import type { SmsMessage } from "@/lib/types";
-
-function compactUndefined<T extends Record<string, unknown>>(input: T) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
-}
 
 export const liveSmsRepository: SmsRepository = {
   async listMessages() {
@@ -26,7 +22,7 @@ export const liveSmsRepository: SmsRepository = {
       query(collection(db, firebaseCollections.smsMessages), orderBy("timestamp", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as SmsMessage);
+    return snapshot.docs.map((item) => withFirestoreDocId<SmsMessage>(item));
   },
 
   async createInboundMessage(input: NewSmsRecordInput) {
@@ -36,13 +32,14 @@ export const liveSmsRepository: SmsRepository = {
       id: input.id ?? `SMS${Date.now()}`,
     };
 
-    await setDoc(doc(db, firebaseCollections.smsMessages, message.id), message);
-    return message;
+    const payload = sanitizeFirestoreDocument(message);
+    await setDoc(doc(db, firebaseCollections.smsMessages, message.id), payload);
+    return payload;
   },
 
   async updateMessage(id, updates) {
     const db = getClientFirestore();
-    const payload = compactUndefined(updates);
+    const payload = sanitizeFirestorePatch(updates);
     await updateDoc(doc(db, firebaseCollections.smsMessages, id), payload);
     return {
       id,

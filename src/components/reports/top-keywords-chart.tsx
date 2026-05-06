@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -31,6 +32,14 @@ const chartConfig = {
 export function TopKeywordsChart() {
   const { topKeywordsData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Mga Karaniwang Salita",
+      timeframe,
+      description: "Mga keyword na pinakamadalas lumabas sa live SMS messages.",
+      rows: sanitizePrintableRows(topKeywordsData),
+    });
+  };
   const hasKeywordData = topKeywordsData.some((item) => item.count > 0);
   const topKeyword = hasKeywordData
     ? topKeywordsData.reduce((prev, current) => (prev.count > current.count) ? prev : current)
@@ -82,7 +91,7 @@ export function TopKeywordsChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -134,7 +143,7 @@ export function TopKeywordsChart() {
                 </div>
                 <div className="mt-8 text-sm text-muted-foreground space-y-2">
                     <p><strong>Detalyadong Pagsusuri:</strong> Batay sa live na mensahe, ang mga keyword na nasa itaas ang pinakamadalas lumabas sa napiling timeframe. Makakatulong ito para tukuyin kung anong mga alalahanin ang paulit-ulit na lumilitaw sa barangay feed.</p>
-                    <p><strong>Rekomendasyon:</strong> Gamitin ang mga keyword na ito para i-tag ang knowledge-base content at i-compare sa mga susunod na linggo kung may bagong concern na umuusbong.</p>
+                    <p><strong>Rekomendasyon:</strong> Gamitin ang mga keyword na ito para i-tag ang knowledge-base content at i-compare sa mga susunod na reporting period kung may bagong concern na umuusbong.</p>
                 </div>
               </>
             ) : (
@@ -152,6 +161,7 @@ export function TopKeywordsChart() {
     </Dialog>
   )
 }
+
 
 
 

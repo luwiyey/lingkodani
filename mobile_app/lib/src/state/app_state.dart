@@ -4,6 +4,7 @@ import '../core/models/mobile_models.dart';
 import '../core/services/lingkod_ani_api.dart';
 import '../core/services/mobile_action_queue_service.dart';
 import '../core/services/mobile_auth_service.dart';
+import '../core/services/permission_notice_store.dart';
 import '../core/services/push_notifications_service.dart';
 
 class AppState extends ChangeNotifier {
@@ -12,16 +13,20 @@ class AppState extends ChangeNotifier {
     LingkodAniApi? api,
     MobileActionQueueService? actionQueueService,
     PushNotificationsService? pushNotifications,
+    PermissionNoticeStore? permissionNoticeStore,
   }) : _authService = authService ?? MobileAuthService(),
        _api = api ?? const LingkodAniApi(),
        _actionQueueService =
            actionQueueService ?? const MobileActionQueueService(),
-       _pushNotifications = pushNotifications ?? PushNotificationsService();
+       _pushNotifications = pushNotifications ?? PushNotificationsService(),
+       _permissionNoticeStore =
+           permissionNoticeStore ?? const PermissionNoticeStore();
 
   final MobileAuthService _authService;
   final LingkodAniApi _api;
   final MobileActionQueueService _actionQueueService;
   final PushNotificationsService _pushNotifications;
+  final PermissionNoticeStore _permissionNoticeStore;
 
   bool _bootstrapping = true;
   bool _submitting = false;
@@ -32,6 +37,8 @@ class AppState extends ChangeNotifier {
   MobileProfile? _profile;
   List<MobileQueuedAction> _pendingActions = const [];
   DateTime? _lastPendingSyncAt;
+  bool _pushAlertsReady = false;
+  bool _enablingPushAlerts = false;
 
   bool get bootstrapping => _bootstrapping;
   bool get submitting => _submitting;
@@ -53,6 +60,8 @@ class AppState extends ChangeNotifier {
       _pendingActions.where((action) => action.needsManualReview).length;
   int get longPendingCount =>
       _pendingActions.where((action) => action.isLongPending).length;
+  bool get pushAlertsReady => _pushAlertsReady;
+  bool get enablingPushAlerts => _enablingPushAlerts;
 
   Duration? get timeSinceLastPendingSync => _lastPendingSyncAt == null
       ? null
@@ -88,13 +97,14 @@ class AppState extends ChangeNotifier {
         _errorMessage = null;
         _pendingActions = const [];
         _pendingSyncError = null;
+        _pushAlertsReady = false;
       } else {
         _session = restoredSession;
         _profile = await _api.fetchProfile(restoredSession.idToken);
         _pendingActions = await _actionQueueService.readActions(
           restoredSession.localId,
         );
-        await _pushNotifications.initializeForSession(
+        _pushAlertsReady = await _pushNotifications.initializeForSession(
           session: restoredSession,
           profile: _profile!,
         );
@@ -129,7 +139,7 @@ class AppState extends ChangeNotifier {
       _pendingActions = await _actionQueueService.readActions(
         nextSession.localId,
       );
-      await _pushNotifications.initializeForSession(
+      _pushAlertsReady = await _pushNotifications.initializeForSession(
         session: nextSession,
         profile: nextProfile,
       );
@@ -150,9 +160,42 @@ class AppState extends ChangeNotifier {
     _errorMessage = null;
     _pendingSyncError = null;
     _pendingActions = const [];
+    _pushAlertsReady = false;
     notifyListeners();
     await _pushNotifications.unregisterForSession(existingSession);
     await _authService.clearSession();
+  }
+
+  Future<bool> hasAcceptedNotificationDisclosure() {
+    return _permissionNoticeStore.hasAcceptedNotificationDisclosure();
+  }
+
+  Future<void> markNotificationDisclosureAccepted() {
+    return _permissionNoticeStore.markNotificationDisclosureAccepted();
+  }
+
+  Future<bool> enablePushAlerts() async {
+    final session = _session;
+    final profile = _profile;
+
+    if (session == null || profile == null) {
+      throw Exception('Wala pang active mobile session.');
+    }
+
+    _enablingPushAlerts = true;
+    notifyListeners();
+
+    try {
+      final enabled = await _pushNotifications.requestPermissionAndInitialize(
+        session: session,
+        profile: profile,
+      );
+      _pushAlertsReady = enabled;
+      return enabled;
+    } finally {
+      _enablingPushAlerts = false;
+      notifyListeners();
+    }
   }
 
   List<MobileQueuedAction> pendingActionsForMessage(String messageId) {

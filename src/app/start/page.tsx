@@ -18,13 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
-import { useAuth } from "@/context/auth-context";
 import { isDemoMode, isLiveMode } from "@/lib/config/app-mode";
 import {
   clearStartFlowDraft,
   clearDemoPreviewUser,
   createDemoPreviewUser,
-  pickDemoProfile,
   readStartFlowDraft,
   saveDemoPreviewUser,
   saveOnboardingProfile,
@@ -156,8 +154,9 @@ function getApplicationNotice(selectedApplication: ApplicationChoice | null): Ap
 
 export default function StartPage() {
   const router = useRouter();
-  const { startDemoSession } = useAuth();
   const [selectedApplication, setSelectedApplication] = useState<ApplicationChoice | null>(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [position, setPosition] = useState("");
   const [age, setAge] = useState("");
   const [yearsInService, setYearsInService] = useState("");
@@ -170,7 +169,9 @@ export default function StartPage() {
   const recommendedWorkspace = workspaceRecommendation?.preferredWorkspace ?? null;
   const recommendedWorkspaceLabel =
     recommendedWorkspace === "detailed" ? "Detalyado" : recommendedWorkspace === "simple" ? "Simple" : null;
+  const requiresPreviewIdentity = selectedApplication === "demo";
   const hasProfileInputs =
+    (!requiresPreviewIdentity || (name.trim().length > 0 && phone.trim().length > 0)) &&
     position.trim().length > 0 &&
     age.trim().length > 0 &&
     yearsInService.trim().length > 0;
@@ -183,6 +184,8 @@ export default function StartPage() {
 
     if (draft) {
       setSelectedApplication(draft.selectedApplication);
+      setName(draft.name ?? "");
+      setPhone(draft.phone ?? "");
       setPosition(draft.position);
       setAge(draft.age);
       setYearsInService(draft.yearsInService);
@@ -200,13 +203,15 @@ export default function StartPage() {
 
     saveStartFlowDraft({
       selectedApplication,
+      name,
+      phone,
       position,
       age,
       yearsInService,
       preferredWorkspace,
       workspaceTouched,
     });
-  }, [age, draftReady, position, preferredWorkspace, selectedApplication, workspaceTouched, yearsInService]);
+  }, [age, draftReady, name, phone, position, preferredWorkspace, selectedApplication, workspaceTouched, yearsInService]);
 
   useEffect(() => {
     if (!workspaceTouched && workspaceRecommendation) {
@@ -237,6 +242,8 @@ export default function StartPage() {
 
     const profile = {
       application: selectedApplication,
+      name: name.trim(),
+      phone: phone.trim(),
       position: position.trim(),
       age: age.trim(),
       yearsInService: yearsInService.trim(),
@@ -247,19 +254,6 @@ export default function StartPage() {
     saveOnboardingProfile(profile);
 
     if (selectedApplication === "demo") {
-      if (isDemoMode) {
-        clearDemoPreviewUser();
-        const demoProfile = pickDemoProfile(profile.position, profile.preferredWorkspace);
-        startDemoSession(demoProfile.email);
-        router.push(
-          getPreferredDashboardRoute({
-            role: demoProfile.role,
-            preferredWorkspace: profile.preferredWorkspace,
-          })
-        );
-        return;
-      }
-
       const previewUser = createDemoPreviewUser(profile);
       saveDemoPreviewUser(previewUser);
       router.push(getPreferredDashboardRoute(previewUser));
@@ -437,8 +431,40 @@ export default function StartPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="name" className="text-base font-semibold">
+                  2. Ano ang pangalan na gusto mong gamitin sa demo?
+                </Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Halimbawa: Juan Dela Cruz"
+                  required={selectedApplication === "demo"}
+                />
+                <p className="text-xs leading-5 text-slate-500">
+                  Ito ang ipapakitang pangalan sa demo dashboard, profile card, at preview session.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-base font-semibold">
+                  3. Anong mobile number ang gusto mong i-preview?
+                </Label>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="Halimbawa: +639171234567"
+                  required={selectedApplication === "demo"}
+                />
+                <p className="text-xs leading-5 text-slate-500">
+                  Kapag demo mode ang pinili mo, ito ang numerong mase-save sa preview profile mo para mas realistic ang walkthrough.
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="position" className="text-base font-semibold">
-                  2. Ano ang posisyon mo sa barangay?
+                  4. Ano ang posisyon mo sa barangay?
                 </Label>
                 <Input
                   id="position"
@@ -464,7 +490,7 @@ export default function StartPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="age" className="text-base font-semibold">
-                    3. Ilang taon ka na?
+                    5. Ilang taon ka na?
                   </Label>
                   <Input
                     id="age"
@@ -482,7 +508,7 @@ export default function StartPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="yearsInService" className="text-base font-semibold">
-                    4. Ilang taon ka na sa serbisyo?
+                    6. Ilang taon ka na sa serbisyo?
                   </Label>
                   <Input
                     id="yearsInService"
@@ -577,7 +603,7 @@ export default function StartPage() {
                 </>
               ) : (
                 <div className="rounded-[calc(var(--radius)+6px)] border border-dashed border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-500">
-                  Sagutan muna ang posisyon, edad, at taon sa serbisyo para lumabas ang rekomendasyon at workspace choices.
+                  Kumpletuhin muna ang pangalan, mobile number, posisyon, edad, at taon sa serbisyo para lumabas ang rekomendasyon at workspace choices.
                 </div>
               )}
 

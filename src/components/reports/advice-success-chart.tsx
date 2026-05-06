@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -39,10 +40,23 @@ export function AdviceSuccessChart() {
   const rejectedPercentage = total > 0 ? ((adviceSuccessData.find(d => d.status === 'Tinanggihan')?.value ?? 0) / total * 100).toFixed(0) : '0';
   
   const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const result = openPrintableReport({
+      title: "Mga Rate ng Pagpapatunay ng Payo",
+      timeframe,
+      description: "Buod ng approval, edit, at rejection outcomes para sa AI-generated advice.",
+      rows: adviceSuccessData.map((entry) => ({
+        Status: entry.status,
+        Bilang: entry.value,
+      })),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (

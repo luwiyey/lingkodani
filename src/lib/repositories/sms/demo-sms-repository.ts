@@ -1,21 +1,16 @@
 import type { SmsMessage } from "@/lib/types";
 import type { SmsRepository } from "@/lib/repositories/sms/types";
+import { smsMessages as initialSmsMessages } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoSmsStore?: SmsMessage[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoSmsStore) {
-    demoStore.__lingkodAniDemoSmsStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoSmsStore;
-}
+const store = createDemoCollectionStore<SmsMessage>({
+  storageKey: "smsMessages",
+  initialData: initialSmsMessages,
+});
 
 export const demoSmsRepository: SmsRepository = {
   async listMessages() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createInboundMessage(input) {
@@ -24,23 +19,10 @@ export const demoSmsRepository: SmsRepository = {
       id: input.id ?? `SMS${Date.now()}`,
     };
 
-    getStore().unshift(message);
-    return message;
+    return store.prepend(message);
   },
 
   async updateMessage(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 };

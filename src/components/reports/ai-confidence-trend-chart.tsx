@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -38,11 +39,21 @@ export function AIConfidenceTrendChart() {
   const firstConfidence = aiConfidenceTrendData[0]?.confidence ?? latestConfidence;
   const confidenceDelta = latestConfidence - firstConfidence;
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Trend ng AI Confidence",
+      timeframe,
+      description: "Average AI confidence scores sa bawat reporting period.",
+      rows: sanitizePrintableRows(aiConfidenceTrendData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -140,4 +151,5 @@ export function AIConfidenceTrendChart() {
     </Dialog>
   )
 }
+
 

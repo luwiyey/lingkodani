@@ -88,7 +88,7 @@ service cloud.firestore {
     match /farmers/{document=**} {
       allow read: if isAuthorizedStaff();
       allow create, update: if isAuthorizedStaff();
-      allow delete: if isDeveloper();
+      allow delete: if canManageBarangaySettings();
     }
 
     match /smsMessages/{document=**} {

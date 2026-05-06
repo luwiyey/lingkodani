@@ -1,47 +1,39 @@
 import type { User } from "@/lib/types";
 import type { UserRepository } from "@/lib/repositories/users/types";
 import { getUserRecordId } from "@/lib/user-record";
+import { registeredUsers as initialUsers } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoUserStore?: User[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoUserStore) {
-    demoStore.__lingkodAniDemoUserStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoUserStore;
-}
+const store = createDemoCollectionStore<User>({
+  storageKey: "users",
+  initialData: initialUsers,
+  getId: (user) => getUserRecordId(user),
+});
 
 export const demoUserRepository: UserRepository = {
   async listUsers() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createUser(user) {
-    getStore().push({
-      ...user,
-      id: getUserRecordId(user),
-    });
-    return user;
-  },
-
-  async updateUser(userId, user) {
-    const store = getStore();
-    const index = store.findIndex((item) => getUserRecordId(item) === userId);
-
-    if (index === -1) return null;
-
     const nextUser = {
       ...user,
       id: getUserRecordId(user),
     };
-    store[index] = nextUser;
-    return nextUser;
+
+    return store.append(nextUser);
+  },
+
+  async updateUser(userId, user) {
+    const nextUser = {
+      ...user,
+      id: getUserRecordId(user),
+    };
+
+    return store.updateById(userId, nextUser);
   },
 
   async deleteUser(userId) {
-    demoStore.__lingkodAniDemoUserStore = getStore().filter((item) => getUserRecordId(item) !== userId);
+    store.deleteById(userId);
   },
 };

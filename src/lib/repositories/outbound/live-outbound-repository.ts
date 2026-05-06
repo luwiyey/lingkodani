@@ -11,14 +11,10 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { OutboundMessage } from "@/lib/types";
 import type { OutboundMessageRepository } from "@/lib/repositories/outbound/types";
-
-function compactUndefined<T extends Record<string, unknown>>(input: T) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
-}
 
 export const liveOutboundRepository: OutboundMessageRepository = {
   async listOutboundMessages() {
@@ -27,18 +23,19 @@ export const liveOutboundRepository: OutboundMessageRepository = {
       query(collection(db, firebaseCollections.outboundMessages), orderBy("createdAt", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as OutboundMessage);
+    return snapshot.docs.map((item) => withFirestoreDocId<OutboundMessage>(item));
   },
 
   async createOutboundMessage(message) {
     const db = getClientFirestore();
-    await setDoc(doc(db, firebaseCollections.outboundMessages, message.id), message);
-    return message;
+    const payload = sanitizeFirestoreDocument(message);
+    await setDoc(doc(db, firebaseCollections.outboundMessages, message.id), payload);
+    return payload;
   },
 
   async updateOutboundMessage(id, updates) {
     const db = getClientFirestore();
-    const payload = compactUndefined(updates);
+    const payload = sanitizeFirestorePatch(updates);
     await updateDoc(doc(db, firebaseCollections.outboundMessages, id), payload);
     return {
       id,
@@ -56,6 +53,6 @@ export const liveOutboundRepository: OutboundMessageRepository = {
     );
 
     const first = snapshot.docs[0];
-    return first ? (first.data() as OutboundMessage) : null;
+    return first ? withFirestoreDocId<OutboundMessage>(first) : null;
   },
 };

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -15,11 +15,14 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { CaseOutcomeBadge } from '@/components/sms/case-outcome-badge';
 import { CaseOutcomeDialog } from '@/components/sms/case-outcome-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { getSmsCaseExceptionFlags } from '@/lib/sms-case-exceptions';
 import { findPotentialDuplicateCase } from '@/lib/sms-case-linking';
 import { isAwaitingFarmerConfirmation } from '@/lib/sms-case-outcomes';
 import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 import { buildAssignmentSuggestions, getNextBestAction, getSlaAgingMeta, type AssignmentSuggestion } from '@/lib/assignment-routing';
+import { getPreferredWorkspace } from '@/lib/user-workspace';
+import { isSmsAssignedToUser } from '@/lib/sms-assignment';
 
 const actionButtonClassName = 'h-auto min-h-12 w-full whitespace-normal break-words px-4 py-3 text-center leading-snug';
 
@@ -77,6 +80,24 @@ function TaskCard({
   );
 }
 
+function QuickResultCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-2xl border bg-background/90 p-4">
+      <p className="text-sm font-medium text-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
 function MessageTaskRow({
   message,
   latestOutbound,
@@ -86,6 +107,7 @@ function MessageTaskRow({
   onConfirmResolution,
   exceptionFlags = [],
   assignmentSuggestion,
+  isSimpleLanguage = false,
 }: {
   message: SmsMessage;
   latestOutbound?: OutboundMessage;
@@ -95,11 +117,15 @@ function MessageTaskRow({
   onConfirmResolution: (message: SmsMessage, confirmed: boolean) => void;
   exceptionFlags?: ReturnType<typeof getSmsCaseExceptionFlags>;
   assignmentSuggestion?: AssignmentSuggestion | null;
+  isSimpleLanguage?: boolean;
 }) {
   const router = useRouter();
   const awaitingConfirmation = isAwaitingFarmerConfirmation(message);
   const slaMeta = getSlaAgingMeta(message);
   const nextBestAction = getNextBestAction(message);
+  const timingSummary = isSimpleLanguage
+    ? `${slaMeta.ageHours.toFixed(1)} oras na mula nang gumalaw ito${slaMeta.overdue ? " | Dapat nang silipin" : " | Nasa oras pa"}`
+    : `SLA age: ${slaMeta.ageHours.toFixed(1)}h${slaMeta.overdue ? " | overdue" : " | on track"}`;
 
   return (
     <div
@@ -113,16 +139,27 @@ function MessageTaskRow({
             <Badge variant="outline">{message.urgency}</Badge>
             {message.caseStatus ? <Badge variant="outline">{message.caseStatus}</Badge> : null}
             <CaseOutcomeBadge message={message} />
-            {message.assignedTo ? <Badge variant="outline">Owner: {message.assignedTo}</Badge> : null}
-            {message.registrationRequired ? <Badge variant="outline">Need registration</Badge> : null}
-            {message.clarificationNeeded ? <Badge variant="outline">Need clarification</Badge> : null}
+            {message.assignedTo ? (
+              <Badge variant="outline">
+                {isSimpleLanguage ? `May hawak: ${message.assignedTo}` : `Owner: ${message.assignedTo}`}
+              </Badge>
+            ) : null}
+            {message.registrationRequired ? (
+              <Badge variant="outline">{isSimpleLanguage ? "Kulang ang rehistro" : "Need registration"}</Badge>
+            ) : null}
+            {message.clarificationNeeded ? (
+              <Badge variant="outline">{isSimpleLanguage ? "Kulang ang paliwanag" : "Need clarification"}</Badge>
+            ) : null}
             {message.triageUncertainty && getTriageLabel(message.triageUncertainty) ? (
               <Badge variant="outline">{getTriageLabel(message.triageUncertainty)}</Badge>
             ) : null}
-            {latestOutbound?.status === 'failed' ? <Badge variant="destructive">Send failed</Badge> : null}
+            {latestOutbound?.status === 'failed' ? (
+              <Badge variant="destructive">{isSimpleLanguage ? "Hindi naipadala" : "Send failed"}</Badge>
+            ) : null}
             {exceptionFlags.length > 0 ? (
               <Badge variant={exceptionFlags.some((flag) => flag.severity === 'high') ? 'destructive' : 'outline'}>
-                {exceptionFlags.length} supervisor flag{exceptionFlags.length > 1 ? 's' : ''}
+                {exceptionFlags.length}{" "}
+                {isSimpleLanguage ? "paalala para sa lead" : `supervisor flag${exceptionFlags.length > 1 ? 's' : ''}`}
               </Badge>
             ) : null}
           </div>
@@ -130,27 +167,28 @@ function MessageTaskRow({
           <p className="break-words text-sm leading-relaxed">{message.message}</p>
           {message.caseOutcomeSummary ? (
             <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Latest outcome</p>
+              <p className="font-medium text-foreground">
+                {isSimpleLanguage ? "Pinakahuling resulta" : "Latest outcome"}
+              </p>
               <p className="mt-1 leading-relaxed">{message.caseOutcomeSummary}</p>
             </div>
           ) : null}
           <div className="rounded-xl border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Next best action</p>
+            <p className="font-medium text-foreground">{isSimpleLanguage ? "Sunod na gawin" : "Next best action"}</p>
             <p className="mt-1 leading-relaxed">{nextBestAction}</p>
-            <p className="mt-2 text-xs">
-              SLA age: {slaMeta.ageHours.toFixed(1)}h
-              {slaMeta.overdue ? ' • overdue' : ' • on track'}
-            </p>
+            <p className="mt-2 text-xs">{timingSummary}</p>
           </div>
           {assignmentSuggestion ? (
             <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100">
-              <p className="font-medium">Suggested owner</p>
+              <p className="font-medium">{isSimpleLanguage ? "Mas bagay na taga-asikaso" : "Suggested owner"}</p>
               <p className="mt-1 leading-relaxed">
                 {assignmentSuggestion.name}
-                {assignmentSuggestion.title ? ` • ${assignmentSuggestion.title}` : ''}
+                {assignmentSuggestion.title ? ` | ${assignmentSuggestion.title}` : ''}
               </p>
               <p className="mt-1 text-xs">
-                Score {assignmentSuggestion.score} • {assignmentSuggestion.reasons.slice(0, 2).join(' • ')}
+                {isSimpleLanguage
+                  ? `Bakit siya ang bagay: ${assignmentSuggestion.reasons.slice(0, 2).join(', ')}`
+                  : `Score ${assignmentSuggestion.score} | ${assignmentSuggestion.reasons.slice(0, 2).join(' | ')}`}
               </p>
             </div>
           ) : null}
@@ -170,7 +208,7 @@ function MessageTaskRow({
           ) : null}
           {exceptionFlags.length > 0 ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-100">
-              <p className="font-medium">Supervisor review needed</p>
+              <p className="font-medium">{isSimpleLanguage ? "Ipa-check sa lead" : "Supervisor review needed"}</p>
               <p className="mt-1 leading-relaxed">{exceptionFlags[0]?.reason}</p>
             </div>
           ) : null}
@@ -198,7 +236,7 @@ function MessageTaskRow({
                 onRetry(message);
               }}
             >
-              Retry send
+              {isSimpleLanguage ? "Subukang ipadala ulit" : "Retry send"}
             </Button>
           ) : null}
 
@@ -211,7 +249,7 @@ function MessageTaskRow({
                 onRecordOutcome(message);
               }}
             >
-              I-record ang outcome
+              {isSimpleLanguage ? "Itala ang naging resulta" : "I-record ang outcome"}
             </Button>
           ) : null}
           {awaitingConfirmation ? (
@@ -221,10 +259,10 @@ function MessageTaskRow({
                 className={actionButtonClassName}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onConfirmResolution(message, true);
-                }}
-              >
-                Kinumpirma ng farmer
+                onConfirmResolution(message, true);
+              }}
+            >
+                {isSimpleLanguage ? "Okay na ayon sa magsasaka" : "Kinumpirma ng farmer"}
               </Button>
               <Button
                 variant="outline"
@@ -234,7 +272,7 @@ function MessageTaskRow({
                   onConfirmResolution(message, false);
                 }}
               >
-                Hindi pa pala okay
+                {isSimpleLanguage ? "Hindi pa pala ayos" : "Hindi pa pala okay"}
               </Button>
             </>
           ) : null}
@@ -247,7 +285,7 @@ function MessageTaskRow({
               router.push(`/dashboard/sms-feed?sms=${encodeURIComponent(message.id)}`);
             }}
           >
-            Buksan sa SMS Feed
+            {isSimpleLanguage ? "Buksan ang buong usapan" : "Buksan sa SMS Feed"}
           </Button>
         </div>
       </div>
@@ -260,8 +298,21 @@ export default function OperationsPage() {
   const { currentUserProfile } = useAuth();
   const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, farmers, assistanceRecords, fieldVisitTasks, users } = useData();
   const { toast, dismiss } = useToast();
+  const isSimpleWorkspace = getPreferredWorkspace(currentUserProfile) === 'simple';
+  const {
+    reportingReadyCases,
+    farmerConfirmedResolutionCount,
+    highRiskCount,
+    supervisorReviewCases,
+    topInquiriesData,
+    geographicHotspotData,
+    outbreakWatchSummary,
+    liveContextUpdatedAt,
+  } = useAnalytics();
   const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
   const [outcomeMessage, setOutcomeMessage] = React.useState<SmsMessage | null>(null);
+  const topInquiry = topInquiriesData[0] ?? null;
+  const topHotspot = geographicHotspotData[0] ?? null;
 
   const openMyQueue = React.useCallback(() => {
     dismiss();
@@ -340,7 +391,7 @@ export default function OperationsPage() {
         openCases: smsMessages.filter(
           (message) =>
             !message.closedAt &&
-            message.assignedTo?.trim().toLowerCase() === user.name.trim().toLowerCase()
+            isSmsAssignedToUser(message, user)
         ).length,
       }))
       .sort((left, right) => left.openCases - right.openCases);
@@ -375,8 +426,8 @@ export default function OperationsPage() {
     [latestOutboundByMessage, smsMessages]
   );
   const myQueue = React.useMemo(
-    () => smsMessages.filter((message) => !message.closedAt && message.assignedTo === activeOperatorName),
-    [activeOperatorName, smsMessages]
+    () => smsMessages.filter((message) => !message.closedAt && isSmsAssignedToUser(message, currentUserProfile)),
+    [currentUserProfile, smsMessages]
   );
   const supervisorReviewQueue = React.useMemo(
     () =>
@@ -493,52 +544,145 @@ export default function OperationsPage() {
     <div className="flex flex-col gap-6">
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Operations Center</h1>
-          <HelpDialog title="Operations Center" tooltipText="Tingnan ang mga agarang gawain ng barangay team.">
-            <p>Dito nakaayos ang mga pangunahing gawain para sa pang-araw-araw na farmer support, approvals, at follow-up work.</p>
-            <p>Mas simple ang page na ito at diretso na ang punta sa mga pinakaimportanteng susunod na hakbang.</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {isSimpleWorkspace ? 'Mga Dapat Unahin Ngayon' : 'Operations Center'}
+          </h1>
+          <HelpDialog
+            title={isSimpleWorkspace ? 'Mga Dapat Unahin Ngayon' : 'Operations Center'}
+            tooltipText={isSimpleWorkspace ? 'Tingnan ang mga dapat unahin ng barangay team ngayon.' : 'Tingnan ang mga agarang gawain ng barangay team.'}
+          >
+            <p>
+              {isSimpleWorkspace
+                ? 'Dito nakalista ang mga unang dapat buksan, sagutin, at balikan para sa mga magsasaka.'
+                : 'Dito nakaayos ang mga pangunahing gawain para sa pang-araw-araw na farmer support, approvals, at follow-up work.'}
+            </p>
+            <p>
+              {isSimpleWorkspace
+                ? 'Basahin lang ang nasa itaas pababa. Kapag may hindi malinaw, buksan ang buong usapan.'
+                : 'Mas simple ang page na ito at diretso na ang punta sa mga pinakaimportanteng susunod na hakbang.'}
+            </p>
           </HelpDialog>
         </div>
         <p className="text-base text-muted-foreground">
-          Mga dapat unahin ngayon para sa barangay agriculture team.
+          {isSimpleWorkspace
+            ? 'Ito ang pinakamadaling listahan ng mga kailangan ninyong unahin ngayon.'
+            : 'Mga dapat unahin ngayon para sa barangay agriculture team.'}
         </p>
       </div>
 
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background">
         <CardContent className="p-6">
           <div className="space-y-3">
-            <h2 className="text-2xl font-semibold">Gawin ang tatlong ito</h2>
+            <h2 className="text-2xl font-semibold">{isSimpleWorkspace ? 'Unahin ang tatlong ito' : 'Gawin ang tatlong ito'}</h2>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground sm:text-base">
-              <span>1. Basahin at i-assign ang mga bagong ulat.</span>
-              <span>2. Sagutin o i-retry ang may problema.</span>
-              <span>3. Mag-follow up at isara ang natapos na case.</span>
+              <span>1. {isSimpleWorkspace ? 'Basahin ang bagong mensahe at piliin kung sino ang sasagot.' : 'Basahin at i-assign ang mga bagong ulat.'}</span>
+              <span>2. {isSimpleWorkspace ? 'Ayusin ang hindi naipadala at sagutin ang kulang pa.' : 'Sagutin o i-retry ang may problema.'}</span>
+              <span>3. {isSimpleWorkspace ? 'Balikan ang mga naunang kaso at itala kung ano ang nangyari.' : 'Mag-follow up at isara ang natapos na case.'}</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <TaskCard href="/dashboard/sms-feed" title="Urgent na SMS" description="Mga dapat sagutin agad." count={urgentQueue.length} icon={MessageSquareWarning} />
-        <TaskCard href="/dashboard/farmers/approvals" title="Need Registration" description="Mga sender na kailangan munang marehistro." count={registrationQueue.length + pendingApprovals.length} icon={UserPlus2} />
-        <TaskCard href="/dashboard/sms-feed" title="Need Clarification" description="Mga mensaheng kulang ang detalye." count={clarificationQueue.length} icon={ClipboardList} />
-        <TaskCard href="/dashboard/sms-feed" title="Failed Sends" description="Mga SMS na kailangang i-retry." count={failedSendQueue.length} icon={RefreshCcw} />
-        <TaskCard href="/dashboard/follow-up" title="Due Follow-up" description="Mga dapat balikan sa magsasaka." count={followUpQueue.length} icon={BellRing} />
-        <TaskCard href="/dashboard/sms-feed" title="Aking Queue" description="Mga task na naka-assign sa iyo." count={myQueue.length} icon={CheckCircle2} />
-        <TaskCard href="/dashboard/reports" title="Supervisor Review" description="Mga case na may hidden risk o kulang na closeout." count={supervisorReviewQueue.length} icon={ClipboardList} />
+        <TaskCard href="/dashboard/sms-feed" title={isSimpleWorkspace ? "Mga dapat sagutin agad" : "Urgent na SMS"} description={isSimpleWorkspace ? "Unahin ang mga ito ngayon." : "Mga dapat sagutin agad."} count={urgentQueue.length} icon={MessageSquareWarning} />
+        <TaskCard href="/dashboard/farmers/approvals" title={isSimpleWorkspace ? "Mga kailangang irehistro" : "Need Registration"} description={isSimpleWorkspace ? "Mga sender na wala pang kumpletong tala." : "Mga sender na kailangan munang marehistro."} count={registrationQueue.length + pendingApprovals.length} icon={UserPlus2} />
+        <TaskCard href="/dashboard/sms-feed" title={isSimpleWorkspace ? "Mga kailangang linawin" : "Need Clarification"} description={isSimpleWorkspace ? "Mga mensaheng kulang pa ang paliwanag." : "Mga mensaheng kulang ang detalye."} count={clarificationQueue.length} icon={ClipboardList} />
+        <TaskCard href="/dashboard/sms-feed" title={isSimpleWorkspace ? "Mga hindi naipadala" : "Failed Sends"} description={isSimpleWorkspace ? "Subukang ipadala ulit ang mga ito." : "Mga SMS na kailangang i-retry."} count={failedSendQueue.length} icon={RefreshCcw} />
+        <TaskCard href="/dashboard/follow-up" title={isSimpleWorkspace ? "Mga dapat balikan" : "Due Follow-up"} description={isSimpleWorkspace ? "Mga magsasakang kailangang kamustahin ulit." : "Mga dapat balikan sa magsasaka."} count={followUpQueue.length} icon={BellRing} />
+        <TaskCard href="/dashboard/sms-feed" title="Aking Queue" description={isSimpleWorkspace ? "Mga naka-assign sa iyo." : "Mga task na naka-assign sa iyo."} count={myQueue.length} icon={CheckCircle2} />
+        <TaskCard href="/dashboard/reports" title={isSimpleWorkspace ? "Mga dapat ipa-check sa lead" : "Supervisor Review"} description={isSimpleWorkspace ? "Mga kasong kailangan ng mas maingat na tingin." : "Mga case na may hidden risk o kulang na closeout."} count={supervisorReviewQueue.length} icon={ClipboardList} />
       </div>
+
+      {isSimpleWorkspace ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle className="text-xl">Mahahalagang Resulta</CardTitle>
+              <CardDescription>
+                Simpleng buod ito ng pinakamahalagang bilang at napapansing pattern sa kasalukuyang data.
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/dashboard/reports">Buksan ang Buong Ulat</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <QuickResultCard
+                label="Maayos na handa para sa ulat"
+                value={String(reportingReadyCases)}
+                detail="Ito ang mga kasong may sapat na detalye para masama sa mas maaasahang ulat."
+              />
+              <QuickResultCard
+                label="Kumpirmadong okay na"
+                value={String(farmerConfirmedResolutionCount)}
+                detail="Ito ang mga kasong nagsabing maayos na ayon mismo sa magsasaka."
+              />
+              <QuickResultCard
+                label="Mataas ang prayoridad"
+                value={String(highRiskCount)}
+                detail="Ito ang bilang ng mga kasong dapat unahin dahil mataas ang panganib o bigat ng concern."
+              />
+              <QuickResultCard
+                label="Dapat ipa-check sa lead"
+                value={String(supervisorReviewCases)}
+                detail="Ito ang mga kasong may kulang, may conflict, o kailangang mas maingat na tingnan."
+              />
+              <QuickResultCard
+                label="Pinakakaraniwang concern"
+                value={topInquiry?.question ?? 'Wala pa'}
+                detail={
+                  topInquiry
+                    ? `${topInquiry.count} ulat ang pinakamaraming pumasok sa concern na ito.`
+                    : 'Kulang pa ang kasalukuyang records para makita ang pinakamadalas na concern.'
+                }
+              />
+              <QuickResultCard
+                label="Lugar na may pinakamaraming ulat"
+                value={topHotspot?.zone ?? 'Wala pa'}
+                detail={
+                  topHotspot
+                    ? `${topHotspot.issues} ulat ang naitala rito kaya puwede itong unahin sa pagtingin o pagbisita.`
+                    : 'Kulang pa ang location-linked reports para makakita ng malinaw na hotspot.'
+                }
+              />
+            </div>
+            <div className="rounded-2xl border border-dashed bg-background/80 p-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Mabilis na basa</p>
+              <p className="mt-2 leading-relaxed">
+                {outbreakWatchSummary.risingClusters > 0
+                  ? `May ${outbreakWatchSummary.risingClusters} tumataas na magkakaparehong ulat na dapat bantayan para hindi lumaki ang problema.`
+                  : 'Wala pang malinaw na tumataas na pattern ng magkakaparehong ulat sa ngayon.'}
+              </p>
+              <p className="mt-2 leading-relaxed">
+                Huling basehan ng buod na ito: {liveContextUpdatedAt.slice(0, 19).replace('T', ' ')} UTC
+              </p>
+              <p className="mt-2 leading-relaxed">
+                Kung gusto mong makita ang buong charts at mas detalyadong paliwanag, pindutin ang <strong>Buksan ang Buong Ulat</strong>.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">SLA at Aging Watch</CardTitle>
-            <CardDescription>Mga case na matagal nang walang aksyon o lampas na sa inaasahang response window.</CardDescription>
+            <CardTitle className="text-xl">{isSimpleWorkspace ? 'Mga matagal nang walang galaw' : 'SLA at Aging Watch'}</CardTitle>
+            <CardDescription>
+              {isSimpleWorkspace
+                ? 'Kapag nasa listahang ito ang kaso, matagal na itong hindi naaasikaso at dapat nang silipin.'
+                : 'Mga case na matagal nang walang aksyon o lampas na sa inaasahang response window.'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
               <Badge variant={overdueSlaCount > 0 ? 'destructive' : 'outline'}>
-                {overdueSlaCount} overdue SLA
+                {overdueSlaCount} {isSimpleWorkspace ? 'matagal nang walang galaw' : 'overdue SLA'}
               </Badge>
-              <Badge variant="outline">{supervisorReviewQueue.length} supervisor review</Badge>
+              <Badge variant="outline">{supervisorReviewQueue.length} {isSimpleWorkspace ? 'ipa-check sa lead' : 'supervisor review'}</Badge>
             </div>
             {smsMessages
               .filter((message) => getSlaAgingMeta(message).overdue)
@@ -548,20 +692,26 @@ export default function OperationsPage() {
                   <p className="font-medium">{message.farmerName}</p>
                   <p className="mt-1 text-muted-foreground">{getNextBestAction(message)}</p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Age: {getSlaAgingMeta(message).ageHours.toFixed(1)}h
+                    {isSimpleWorkspace ? 'Tagal nang walang galaw' : 'Age'}: {getSlaAgingMeta(message).ageHours.toFixed(1)}h
                   </p>
                 </div>
               ))}
             {overdueSlaCount === 0 ? (
-              <p className="text-sm text-muted-foreground">Walang lampas sa SLA sa kasalukuyang queue.</p>
+              <p className="text-sm text-muted-foreground">
+                {isSimpleWorkspace ? 'Wala pang kasong matagal nang nakatengga ngayon.' : 'Walang lampas sa SLA sa kasalukuyang queue.'}
+              </p>
             ) : null}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Workload Balance</CardTitle>
-            <CardDescription>Makikita rito kung sino ang mas may kapasidad humawak ng susunod na urgent cases.</CardDescription>
+            <CardTitle className="text-xl">{isSimpleWorkspace ? 'Sino ang puwedeng sumagot' : 'Workload Balance'}</CardTitle>
+            <CardDescription>
+              {isSimpleWorkspace
+                ? 'Tinutulungan kayo nitong makita kung sino pa ang may puwedeng asikasuhin.'
+                : 'Makikita rito kung sino ang mas may kapasidad humawak ng susunod na urgent cases.'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {workloadSummary.slice(0, 5).map(({ user, openCases }) => (
@@ -571,12 +721,19 @@ export default function OperationsPage() {
                     <p className="font-medium">{user.name}</p>
                     <p className="text-muted-foreground">{user.title ?? 'Barangay staff'}</p>
                   </div>
-                  <Badge variant="outline">{openCases} open</Badge>
+                  <Badge variant="outline">{openCases} {isSimpleWorkspace ? 'hawak na kaso' : 'open'}</Badge>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
                   Status: {user.availabilityStatus ?? 'available'}
                   {user.expertiseTags?.length ? ` • expertise: ${user.expertiseTags.join(', ')}` : ''}
                 </p>
+                {isSimpleWorkspace ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {user.expertiseTags?.length
+                      ? `Sanay sa: ${user.expertiseTags.join(', ')}`
+                      : 'Wala pang nakalagay na espesyalisasyon.'}
+                  </p>
+                ) : null}
               </div>
             ))}
           </CardContent>
@@ -586,7 +743,11 @@ export default function OperationsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">1. Mga urgent at pending ngayon</CardTitle>
-          <CardDescription>Basahin muna ang mga ito. I-assign sa sarili kung ikaw ang sasagot.</CardDescription>
+          <CardDescription>
+            {isSimpleWorkspace
+              ? 'Ito ang unang buksan. Piliin mo kung ikaw ang sasagot.'
+              : 'Basahin muna ang mga ito. I-assign sa sarili kung ikaw ang sasagot.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {urgentQueue.length > 0 ? urgentQueue.slice(0, 6).map((message) => (
@@ -606,8 +767,9 @@ export default function OperationsPage() {
               onConfirmResolution={handleConfirmResolution}
               exceptionFlags={exceptionFlagsByMessage.get(message.id)}
               assignmentSuggestion={assignmentSuggestions.get(message.id)}
+              isSimpleLanguage={isSimpleWorkspace}
             />
-          )) : <p className="text-sm text-muted-foreground">Walang urgent na pending SMS sa ngayon.</p>}
+          )) : <p className="text-sm text-muted-foreground">{isSimpleWorkspace ? 'Wala pang dapat sagutin agad sa ngayon.' : 'Walang urgent na pending SMS sa ngayon.'}</p>}
         </CardContent>
       </Card>
 
@@ -615,7 +777,11 @@ export default function OperationsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">2. Mga kailangang linawin o irehistro</CardTitle>
-            <CardDescription>Mahalaga ito para hindi mali ang maibigay na payo.</CardDescription>
+            <CardDescription>
+              {isSimpleWorkspace
+                ? 'Ayusin muna ito para hindi mali ang sagot sa magsasaka.'
+                : 'Mahalaga ito para hindi mali ang maibigay na payo.'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {[...registrationQueue, ...clarificationQueue].slice(0, 6).map((message) => (
@@ -635,16 +801,23 @@ export default function OperationsPage() {
                 onConfirmResolution={handleConfirmResolution}
                 exceptionFlags={exceptionFlagsByMessage.get(message.id)}
                 assignmentSuggestion={assignmentSuggestions.get(message.id)}
+                isSimpleLanguage={isSimpleWorkspace}
               />
             ))}
             {registrationQueue.length + clarificationQueue.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Walang registration o clarification queue sa ngayon.</p>
+              <p className="text-sm text-muted-foreground">
+                {isSimpleWorkspace ? 'Wala pang kulang sa rehistro o paliwanag sa ngayon.' : 'Walang registration o clarification queue sa ngayon.'}
+              </p>
             ) : null}
             {pendingApprovals.length > 0 ? (
               <Link href="/dashboard/farmers/approvals" className="block">
                 <div className="rounded-2xl border border-dashed p-4 transition-colors hover:bg-accent/30">
-                  <p className="font-medium">{pendingApprovals.length} pending farmer approval</p>
-                  <p className="mt-1 text-sm text-muted-foreground">May mga bagong farmer record na naghihintay ng pag-apruba.</p>
+                  <p className="font-medium">
+                    {pendingApprovals.length} {isSimpleWorkspace ? 'bagong magsasakang naghihintay' : 'pending farmer approval'}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {isSimpleWorkspace ? 'May mga bagong tala na kailangan munang aprubahan.' : 'May mga bagong farmer record na naghihintay ng pag-apruba.'}
+                  </p>
                 </div>
               </Link>
             ) : null}
@@ -654,7 +827,11 @@ export default function OperationsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">3. Mga kailangang balikan</CardTitle>
-            <CardDescription>I-retry ang failed send at i-follow up ang mga naunang natulungan.</CardDescription>
+            <CardDescription>
+              {isSimpleWorkspace
+                ? 'Balikan ang hindi naipadala at ang mga kasong dapat kamustahin ulit.'
+                : 'I-retry ang failed send at i-follow up ang mga naunang natulungan.'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {[...failedSendQueue, ...followUpQueue].slice(0, 6).map((message) => (
@@ -674,10 +851,13 @@ export default function OperationsPage() {
                 onConfirmResolution={handleConfirmResolution}
                 exceptionFlags={exceptionFlagsByMessage.get(message.id)}
                 assignmentSuggestion={assignmentSuggestions.get(message.id)}
+                isSimpleLanguage={isSimpleWorkspace}
               />
             ))}
             {failedSendQueue.length + followUpQueue.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Walang retry o follow-up queue sa ngayon.</p>
+              <p className="text-sm text-muted-foreground">
+                {isSimpleWorkspace ? 'Wala pang kailangang ipadala ulit o balikan sa ngayon.' : 'Walang retry o follow-up queue sa ngayon.'}
+              </p>
             ) : null}
           </CardContent>
         </Card>
@@ -686,7 +866,9 @@ export default function OperationsPage() {
       <Card id="aking-queue">
         <CardHeader>
           <CardTitle className="text-xl">4. Aking mga naka-assign na task</CardTitle>
-          <CardDescription>Mga case na ikaw ang may hawak ngayon.</CardDescription>
+          <CardDescription>
+            {isSimpleWorkspace ? 'Ito ang mga kasong ikaw mismo ang may hawak ngayon.' : 'Mga case na ikaw ang may hawak ngayon.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {myQueue.length > 0 ? myQueue.slice(0, 8).map((message) => (
@@ -706,9 +888,14 @@ export default function OperationsPage() {
               onConfirmResolution={handleConfirmResolution}
               exceptionFlags={exceptionFlagsByMessage.get(message.id)}
               assignmentSuggestion={assignmentSuggestions.get(message.id)}
+              isSimpleLanguage={isSimpleWorkspace}
             />
           )) : (
-            <p className="text-sm text-muted-foreground">Wala pang task na naka-assign sa iyo. Puwede kang mag-assign mula sa mga urgent at pending na ulat sa itaas.</p>
+            <p className="text-sm text-muted-foreground">
+              {isSimpleWorkspace
+                ? 'Wala pang nakatalaga sa iyo. Puwede kang pumili mula sa mga nasa itaas.'
+                : 'Wala pang task na naka-assign sa iyo. Puwede kang mag-assign mula sa mga urgent at pending na ulat sa itaas.'}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -727,7 +914,7 @@ export default function OperationsPage() {
         resolutionBlockers={outcomeReadiness?.blockers ?? []}
         resolutionEvidenceSummary={
           outcomeReadiness
-            ? `Assistance: ${outcomeReadiness.assistanceCount}, completed field visits: ${outcomeReadiness.completedVisitCount}`
+            ? `${isSimpleWorkspace ? 'Na-log na tulong' : 'Assistance'}: ${outcomeReadiness.assistanceCount}, ${isSimpleWorkspace ? 'natapos na field visit' : 'completed field visits'}: ${outcomeReadiness.completedVisitCount}`
             : undefined
         }
         onSubmit={handleSaveOutcome}
@@ -735,3 +922,4 @@ export default function OperationsPage() {
     </div>
   );
 }
+

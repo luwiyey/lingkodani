@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -52,11 +53,21 @@ export function IssueTrendsChart() {
       ].reduce((prev, current) => (prev.value > current.value ? prev : current))
     : { label: 'Walang sapat na data', value: 0 };
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Trend ng Uri ng Concern",
+      timeframe,
+      description: "Pagbabago ng pangunahing uri ng concern sa napiling timeframe.",
+      rows: sanitizePrintableRows(issueTrendsData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -157,4 +168,5 @@ export function IssueTrendsChart() {
     </Dialog>
   )
 }
+
 

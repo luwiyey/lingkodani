@@ -19,6 +19,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -31,8 +33,29 @@ const chartConfig = {
 export function MessageLengthChart() {
   const { messageLengthData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { toast } = useToast();
 
   const mostCommonRange = messageLengthData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
+
+  const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Haba ng Mensahe",
+      timeframe,
+      description: "Pamamahagi ng bilang ng inbound SMS ayon sa haba ng mensahe.",
+      rows: messageLengthData.map((entry) => ({
+        "Haba ng Mensahe": entry.range,
+        Bilang: entry.count,
+      })),
+    });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
@@ -73,7 +96,7 @@ export function MessageLengthChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

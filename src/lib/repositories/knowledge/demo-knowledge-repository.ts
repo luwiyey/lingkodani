@@ -1,30 +1,23 @@
 import type { KnowledgeArticle } from "@/lib/types";
 import type { KnowledgeRepository } from "@/lib/repositories/knowledge/types";
+import { knowledgeArticles as initialKnowledgeArticles } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoKnowledgeStore?: KnowledgeArticle[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoKnowledgeStore) {
-    demoStore.__lingkodAniDemoKnowledgeStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoKnowledgeStore;
-}
+const store = createDemoCollectionStore<KnowledgeArticle>({
+  storageKey: "knowledgeArticles",
+  initialData: initialKnowledgeArticles,
+});
 
 export const demoKnowledgeRepository: KnowledgeRepository = {
   async listKnowledgeArticles() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createKnowledgeArticle(article) {
-    getStore().unshift(article);
-    return article;
+    return store.prepend(article);
   },
 
   async updateKnowledgeArticles(articles) {
-    demoStore.__lingkodAniDemoKnowledgeStore = [...articles];
-    return articles;
+    return store.replaceAll(articles);
   },
 };

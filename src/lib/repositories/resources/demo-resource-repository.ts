@@ -1,43 +1,27 @@
 import type { Resource } from "@/lib/types";
 import type { ResourceRepository } from "@/lib/repositories/resources/types";
+import { resources as initialResources } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoResourceStore?: Resource[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoResourceStore) {
-    demoStore.__lingkodAniDemoResourceStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoResourceStore;
-}
+const store = createDemoCollectionStore<Resource>({
+  storageKey: "resources",
+  initialData: initialResources,
+});
 
 export const demoResourceRepository: ResourceRepository = {
   async listResources() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createResource(resource) {
-    getStore().unshift(resource);
-    return resource;
+    return store.prepend(resource);
   },
 
   async updateResource(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) return null;
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 
   async deleteResource(id) {
-    demoStore.__lingkodAniDemoResourceStore = getStore().filter((item) => item.id !== id);
+    store.deleteById(id);
   },
 };

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -39,11 +40,21 @@ export function HighRiskKeywordChart() {
     ? highRiskKeywordData.reduce((prev, current) => (prev.count > current.count) ? prev : current)
     : null;
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "High-Risk Keywords",
+      timeframe,
+      description: "Mga keyword na madalas lumabas sa high-risk SMS concerns.",
+      rows: sanitizePrintableRows(highRiskKeywordData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -162,4 +173,5 @@ export function HighRiskKeywordChart() {
     </Dialog>
   )
 }
+
 

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -31,6 +32,14 @@ const chartConfig = {
 export function RecommendationTypeChart() {
   const { recommendationTypeData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Uri ng Rekomendasyon",
+      timeframe,
+      description: "Mga uri ng rekomendasyong ibinigay ng system sa mga kaso.",
+      rows: sanitizePrintableRows(recommendationTypeData),
+    });
+  };
   
   const mostCommonType = recommendationTypeData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
 
@@ -73,7 +82,7 @@ export function RecommendationTypeChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -125,4 +134,5 @@ export function RecommendationTypeChart() {
     </Dialog>
   )
 }
+
 

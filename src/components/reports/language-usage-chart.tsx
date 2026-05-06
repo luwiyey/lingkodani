@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useMemo } from "react"
 import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 export function LanguageUsageChart() {
   const { languageUsageData } = useAnalytics();
@@ -45,11 +46,21 @@ export function LanguageUsageChart() {
     .filter((entry) => entry.language !== topLanguage.language)
     .sort((left, right) => right.value - left.value)[0];
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Wika ng mga Mensahe",
+      timeframe,
+      description: "Pamamahagi ng mga inbound message ayon sa wikang ginamit.",
+      rows: sanitizePrintableRows(languageUsageData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -146,4 +157,5 @@ export function LanguageUsageChart() {
     </Dialog>
   )
 }
+
 

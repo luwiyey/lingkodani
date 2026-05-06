@@ -19,6 +19,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -32,9 +34,37 @@ const chartConfig = {
 export function SmsVolumeChart() {
   const { smsVolumeData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { toast } = useToast();
 
   const totalSms = smsVolumeData.reduce((acc, item) => acc + item.total, 0);
   const peakDay = smsVolumeData.reduce((prev, current) => (prev.total > current.total) ? prev : current);
+  const timeframeLabel = timeframe === 'Ngayong Araw'
+    ? 'sa bawat 4 na oras'
+    : timeframe === 'Lingguhan'
+      ? 'sa bawat araw'
+      : timeframe === 'Buwanan'
+        ? 'sa bawat linggo'
+        : 'sa bawat buwan';
+
+  const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Chart ng Dami ng SMS",
+      timeframe,
+      description: "Kabuuang dami ng inbound SMS sa napiling reporting window.",
+      rows: smsVolumeData.map((entry) => ({
+        Panahon: entry.name,
+        "Dami ng SMS": entry.total,
+      })),
+    });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const renderChart = () => (
     <ResponsiveContainer width="100%" height="100%">
@@ -76,7 +106,7 @@ export function SmsVolumeChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -88,7 +118,7 @@ export function SmsVolumeChart() {
             </div>
             <div className="grid gap-0.5">
                 <CardTitle>Chart ng Dami ng SMS</CardTitle>
-                <CardDescription>Kabuuang papasok na SMS bawat araw.</CardDescription>
+                <CardDescription>Kabuuang papasok na SMS {timeframeLabel}.</CardDescription>
             </div>
         </CardHeader>
         <CardContent className="h-[180px] flex items-center justify-center p-0">
@@ -98,7 +128,7 @@ export function SmsVolumeChart() {
             </div>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamataas ang dami ng SMS noong {peakDay.name} ({peakDay.total} mensahe).</p>
+          <p className="text-xs text-muted-foreground">Pagsusuri: Pinakamataas ang dami ng SMS sa {peakDay.name} ({peakDay.total} mensahe).</p>
         </CardFooter>
       </Card>
        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
@@ -115,8 +145,8 @@ export function SmsVolumeChart() {
                 </ChartContainer>
             </div>
             <div className="mt-8 text-sm text-muted-foreground space-y-2">
-                <p><strong>Detalyadong Pagsusuri:</strong> Ang data ay nagpapakita ng isang malinaw na pattern ng aktibidad sa buong linggo, na may pinakamataas na dami ng mensahe tuwing {peakDay.name}. Ito ay maaaring magpahiwatig na ang mga magsasaka ay mas malamang na mag-ulat ng mga isyu bago ang katapusan ng linggo. Ang kabuuang {totalSms} na mensahe sa loob ng linggo ay nagpapakita ng malusog na antas ng pakikilahok.</p>
-                <p><strong>Rekomendasyon:</strong> Pag-aralan kung bakit ang {peakDay.name} ay isang araw na may mataas na aktibidad. Maaaring ito ay nauugnay sa mga iskedyul ng merkado o mga gawain sa bukid. Tiyakin na may sapat na suporta mula sa admin sa mga araw na ito upang pamahalaan ang pagdagsa ng mga mensahe. Isaalang-alang ang pagpapadala ng mga paalala o pangkalahatang payo sa mga araw na mas mababa ang aktibidad upang mapanatili ang pakikipag-ugnayan.</p>
+                <p><strong>Detalyadong Pagsusuri:</strong> Sa napiling timeframe, ang pinakamataas na bilang ng mga mensahe ay naitala sa {peakDay.name}. Ang kabuuang {totalSms} na inbound SMS ay nagbibigay ng mabilis na larawan kung kailan pinakaaktibo ang pag-uulat ng mga magsasaka sa kasalukuyang reporting window.</p>
+                <p><strong>Rekomendasyon:</strong> I-match ang staffing at follow-up readiness sa mga period na may pinakamataas na volume. Kapag tuloy-tuloy na mataas ang SMS count sa parehong period, maaaring maghanda ng mas maagang advisories o reminder broadcasts para hindi magsabay-sabay ang urgent cases.</p>
             </div>
         </div>
         <DialogFooter className="pt-4 border-t">

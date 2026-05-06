@@ -10,6 +10,8 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { LogbookRepository } from "@/lib/repositories/logbook/types";
 import type { LogbookEntry } from "@/lib/types";
 
@@ -20,21 +22,23 @@ export const liveLogbookRepository: LogbookRepository = {
       query(collection(db, firebaseCollections.logbookEntries), orderBy("timestamp", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as LogbookEntry);
+    return snapshot.docs.map((item) => withFirestoreDocId<LogbookEntry>(item));
   },
 
   async createEntry(entry) {
     const db = getClientFirestore();
-    await setDoc(doc(db, firebaseCollections.logbookEntries, entry.id), entry);
-    return entry;
+    const payload = sanitizeFirestoreDocument(entry);
+    await setDoc(doc(db, firebaseCollections.logbookEntries, entry.id), payload);
+    return payload;
   },
 
   async updateEntry(id, updates) {
     const db = getClientFirestore();
-    await updateDoc(doc(db, firebaseCollections.logbookEntries, id), updates);
+    const payload = sanitizeFirestorePatch(updates);
+    await updateDoc(doc(db, firebaseCollections.logbookEntries, id), payload);
     return {
       id,
-      ...updates,
+      ...payload,
     } as LogbookEntry;
   },
 };

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -30,6 +31,14 @@ const chartConfig = {
 export function SeverityIndexChart() {
   const { severityIndexData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Severity Index",
+      timeframe,
+      description: "Pamamahagi ng mga kaso ayon sa severity level.",
+      rows: sanitizePrintableRows(severityIndexData),
+    });
+  };
   
   const getSevereShare = (entry: { mild: number; moderate: number; severe: number }) => {
     const total = entry.mild + entry.moderate + entry.severe;
@@ -80,7 +89,7 @@ export function SeverityIndexChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -132,4 +141,5 @@ export function SeverityIndexChart() {
     </Dialog>
   )
 }
+
 

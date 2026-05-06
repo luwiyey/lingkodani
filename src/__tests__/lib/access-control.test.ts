@@ -1,6 +1,7 @@
 import {
   canAccessBarangaySettingsWorkspace,
   canAccessDataCenter,
+  canDeleteFarmerRecords,
   canManageBarangaySettings,
   canManageAutomation,
   canUseLiveSmsSimulation,
@@ -41,6 +42,12 @@ describe("access-control", () => {
 
   it("keeps AEW users out of manager-only settings", () => {
     expect(canManageBarangaySettings(aewUser)).toBe(false);
+    expect(canDeleteFarmerRecords(aewUser)).toBe(false);
+  });
+
+  it("lets barangay managers and developers delete farmer records", () => {
+    expect(canDeleteFarmerRecords(barangayAdmin)).toBe(true);
+    expect(canDeleteFarmerRecords(developerUser)).toBe(true);
   });
 
   it("still lets barangay staff open the Barangay Settings workspace", () => {

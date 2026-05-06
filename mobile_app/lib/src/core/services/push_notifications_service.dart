@@ -19,9 +19,9 @@ class PushNotificationsService {
     LingkodAniApi? api,
     FirebaseMessaging? messaging,
     void Function(RemoteMessage message)? onForegroundMessage,
-  })  : _api = api ?? const LingkodAniApi(),
-        _messaging = messaging,
-        _onForegroundMessage = onForegroundMessage;
+  }) : _api = api ?? const LingkodAniApi(),
+       _messaging = messaging,
+       _onForegroundMessage = onForegroundMessage;
 
   final LingkodAniApi _api;
   final FirebaseMessaging? _messaging;
@@ -34,7 +34,8 @@ class PushNotificationsService {
 
   static bool get isSupportedPlatform =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-  static bool get isConfigured => isSupportedPlatform && AppConfig.hasFirebaseMessagingConfig;
+  static bool get isConfigured =>
+      isSupportedPlatform && AppConfig.hasFirebaseMessagingConfig;
 
   static Future<bool> ensureFirebaseInitialized() async {
     if (!isConfigured) {
@@ -55,19 +56,46 @@ class PushNotificationsService {
     return true;
   }
 
-  Future<void> initializeForSession({
+  Future<bool> initializeForSession({
     required MobileSession session,
     required MobileProfile profile,
   }) async {
     final ready = await ensureFirebaseInitialized();
 
     if (!ready) {
-      return;
+      return false;
     }
 
     final messaging = _messaging ?? FirebaseMessaging.instance;
     await messaging.setAutoInitEnabled(true);
-    await messaging.requestPermission(
+    final settings = await messaging.getNotificationSettings();
+
+    if (!_isPermissionGranted(settings.authorizationStatus)) {
+      return false;
+    }
+
+    await _startForegroundHandling(
+      messaging: messaging,
+      session: session,
+      profile: profile,
+    );
+
+    return true;
+  }
+
+  Future<bool> requestPermissionAndInitialize({
+    required MobileSession session,
+    required MobileProfile profile,
+  }) async {
+    final ready = await ensureFirebaseInitialized();
+
+    if (!ready) {
+      return false;
+    }
+
+    final messaging = _messaging ?? FirebaseMessaging.instance;
+    await messaging.setAutoInitEnabled(true);
+    final settings = await messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -75,27 +103,46 @@ class PushNotificationsService {
       provisional: false,
     );
 
-    _foregroundMessageSubscription ??= FirebaseMessaging.onMessage.listen((message) {
+    if (!_isPermissionGranted(settings.authorizationStatus)) {
+      return false;
+    }
+
+    await _startForegroundHandling(
+      messaging: messaging,
+      session: session,
+      profile: profile,
+    );
+
+    return true;
+  }
+
+  Future<void> _startForegroundHandling({
+    required FirebaseMessaging messaging,
+    required MobileSession session,
+    required MobileProfile profile,
+  }) async {
+    _foregroundMessageSubscription ??= FirebaseMessaging.onMessage.listen((
+      message,
+    ) {
       _onForegroundMessage?.call(message);
     });
 
-    _tokenRefreshSubscription ??= messaging.onTokenRefresh.listen((token) async {
-      await _registerToken(
-        session: session,
-        profile: profile,
-        token: token,
-      );
+    _tokenRefreshSubscription ??= messaging.onTokenRefresh.listen((
+      token,
+    ) async {
+      await _registerToken(session: session, profile: profile, token: token);
     });
 
     final token = await messaging.getToken();
 
     if (token != null && token.trim().isNotEmpty) {
-      await _registerToken(
-        session: session,
-        profile: profile,
-        token: token,
-      );
+      await _registerToken(session: session, profile: profile, token: token);
     }
+  }
+
+  bool _isPermissionGranted(AuthorizationStatus status) {
+    return status == AuthorizationStatus.authorized ||
+        status == AuthorizationStatus.provisional;
   }
 
   Future<void> unregisterForSession(MobileSession? session) async {
@@ -120,10 +167,7 @@ class PushNotificationsService {
 
     if (token != null && token.trim().isNotEmpty) {
       try {
-        await _api.unregisterPushToken(
-          session.idToken,
-          token: token,
-        );
+        await _api.unregisterPushToken(session.idToken, token: token);
       } catch (_) {
         // Best-effort only; a failed unregister should not block sign-out.
       }
@@ -152,7 +196,8 @@ class PushNotificationsService {
     }
 
     final isAlreadyRegistered =
-        _registeredToken == normalizedToken && _registeredSessionUserId == session.localId;
+        _registeredToken == normalizedToken &&
+        _registeredSessionUserId == session.localId;
 
     if (isAlreadyRegistered) {
       return;

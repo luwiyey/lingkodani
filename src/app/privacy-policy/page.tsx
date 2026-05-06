@@ -1,48 +1,94 @@
-
-import type { Metadata } from 'next';
-import { LegalBackLink } from '@/components/legal/legal-back-link';
-
-export const metadata: Metadata = {
-  title: 'Patakaran sa Privacy | Lingkod-Ani',
-  description: 'Alamin kung paano namin pinangangalagaan ang iyong data.',
+export const metadata = {
+  title: "Privacy Policy | Lingkod-Ani",
 };
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <main className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold mb-6 text-primary">Patakaran sa Privacy para sa Lingkod-Ani</h1>
-        <div className="prose dark:prose-invert max-w-none space-y-6">
-          <p>Huling na-update: Enero 1, 2026</p>
-          <p>Ang Patakaran sa Privacy na ito ay naglalayong ipaliwanag kung paano kinokolekta, ginagamit, at pinoprotektahan ng Lingkod-Ani ("kami") ang personal na impormasyon ng mga magsasaka at ng mga Agricultural Extension Worker (AEW) na gumagamit ng platform. Ang inyong tiwala ay aming pinahahalagahan, at kami ay nakatuon sa pagsunod sa Data Privacy Act of 2012 ng Pilipinas.</p>
-          
-          <h2 className="text-2xl font-semibold">Anong Impormasyon ang Kinokolekta Namin?</h2>
-          <ul className="list-disc pl-5 space-y-2">
-            <li><strong>Impormasyon sa Profile ng Magsasaka:</strong> Kapag nagparehistro ang isang magsasaka (sa pamamagitan man ng SMS o manu-manong pag-input ng AEW), kinokolekta namin ang kanilang pangalan, numero ng telepono, lokasyon (barangay/sitio), at mga detalye ng sakahan tulad ng sukat at uri ng pananim.</li>
-            <li><strong>Data ng Komunikasyon:</strong> Iniimbak at sinusuri namin ang nilalaman ng mga mensaheng SMS na ipinapadala ng mga magsasaka. Ito ang ginagamit upang makabuo ng payo ng AI.</li>
-            <li><strong>Data ng Paggamit (para sa mga AEW):</strong> Itinatala namin ang mga aksyon na ginagawa ng mga AEW sa loob ng sistema (hal., pag-apruba ng payo, pag-update ng imbentaryo) para sa mga layunin ng pag-audit at seguridad.</li>
-          </ul>
+    <main className="min-h-screen bg-[#f6f8f3] px-6 py-10 text-slate-800">
+      <div className="mx-auto max-w-3xl rounded-3xl border border-green-100 bg-white p-8 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-green-700">
+          Lingkod-Ani
+        </p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight">
+          Privacy Policy
+        </h1>
+        <p className="mt-4 text-sm leading-7 text-slate-600">
+          This policy explains how Lingkod-Ani and Lingkod-Ani Mobile handle
+          staff account data, farmer-related operational records, device
+          notifications, and optional location verification used during field
+          visits.
+        </p>
 
-          <h2 className="text-2xl font-semibold">Paano Namin Ginagamit ang Iyong Data?</h2>
-          <p>Ang data na aming kinokolekta ay ginagamit para sa mga sumusunod na layunin:</p>
-           <ul className="list-disc pl-5 space-y-2">
-            <li><strong>Upang Magbigay ng Serbisyo:</strong> Ang data mula sa SMS at profile ng magsasaka ay ginagamit ng aming AI upang bumuo ng mga napapanahon at may-katuturang payo sa pagsasaka.</li>
-            <li><strong>Upang Pagbutihin ang Sistema:</strong> Sinusuri namin ang data (sa isang pinagsama-sama at hindi pagkakakilanlan na paraan) upang maunawaan ang mga pangkaraniwang problema, mapabuti ang katumpakan ng aming AI, at makita ang mga trend sa agrikultura.</li>
-            <li><strong>Para sa Komunikasyon:</strong> Ginagamit namin ang numero ng telepono upang magpadala ng mga tugon, alerto, at iba pang mahahalagang abiso.</li>
-            <li><strong>Para sa Seguridad at Pag-audit:</strong> Ang mga audit log ay tumutulong na tiyakin ang pananagutan at seguridad ng platform.</li>
-          </ul>
-          
-          <h2 className="text-2xl font-semibold">Pagbabahagi at Pagsisiwalat ng Data</h2>
-          <p>Ang personal na data ng mga magsasaka ay itinuturing na mahigpit na kumpidensyal. Ito ay magagamit lamang ng mga awtorisadong Agricultural Extension Workers (AEWs) ng inyong barangay para sa layunin ng pagbibigay ng suporta. Hindi namin ibebenta o ibabahagi ang inyong personal na data sa mga third party para sa mga layunin ng marketing.</p>
+        <section className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold">Information we collect</h2>
+          <p className="text-sm leading-7 text-slate-700">
+            Lingkod-Ani stores staff login details needed to authenticate mobile
+            users, operational case data, farmer records, offline action queues,
+            and device notification tokens when staff choose to enable mobile
+            alerts.
+          </p>
+          <p className="text-sm leading-7 text-slate-700">
+            The mobile app can also capture precise device location during a
+            field-visit verification step, but only when the user chooses that
+            action. Background location tracking is not used.
+          </p>
+        </section>
 
-          <h2 className="text-2xl font-semibold">Seguridad ng Iyong Personal na Data</h2>
-          <p>Gumagamit kami ng mga naaangkop na teknikal at organisasyonal na hakbang upang protektahan ang personal na data mula sa hindi awtorisadong pag-access, pagbabago, o pagkasira. Gayunpaman, tandaan na walang paraan ng paghahatid sa internet ang 100% na ligtas.</p>
-          
-          <h2 className="text-2xl font-semibold">Makipag-ugnayan sa Amin</h2>
-          <p>Kung mayroon kang anumang mga katanungan tungkol sa Patakaran sa Privacy na ito, maaari kang makipag-ugnayan sa amin sa pamamagitan ng email: luwiyeyz@gmail.com</p>
-          <LegalBackLink />
-        </div>
-      </main>
-    </div>
+        <section className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold">How we use information</h2>
+          <p className="text-sm leading-7 text-slate-700">
+            We use this information to authenticate staff, show farmer and SMS
+            case details, queue actions offline for later sync, send urgent
+            staff alerts, and verify field visits when GPS capture is requested
+            by the user.
+          </p>
+        </section>
+
+        <section className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold">Permissions</h2>
+          <ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-slate-700">
+            <li>
+              <strong>Notifications:</strong> used to deliver urgent staff
+              alerts after the user explicitly enables them.
+            </li>
+            <li>
+              <strong>Location:</strong> used only during field-visit GPS
+              verification initiated by the user.
+            </li>
+            <li>
+              <strong>Internet:</strong> used to sync data with the Lingkod-Ani
+              services.
+            </li>
+          </ul>
+        </section>
+
+        <section className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold">Data sharing and retention</h2>
+          <p className="text-sm leading-7 text-slate-700">
+            Operational data is processed for Lingkod-Ani service delivery and
+            staff coordination. Device tokens and offline mobile records are
+            kept only as needed to deliver alerts and complete pending sync.
+          </p>
+        </section>
+
+        <section className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold">Contact</h2>
+          <p className="text-sm leading-7 text-slate-700">
+            For privacy or support questions, contact{" "}
+            <a
+              href="mailto:support@lingkod-ani.com"
+              className="font-medium text-green-700 underline underline-offset-4"
+            >
+              support@lingkod-ani.com
+            </a>
+            .
+          </p>
+        </section>
+
+        <p className="mt-10 text-xs text-slate-500">
+          Last updated: April 20, 2026
+        </p>
+      </div>
+    </main>
   );
 }

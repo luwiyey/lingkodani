@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -31,6 +32,14 @@ const chartConfig = {
 export function SmsPeakHoursChart() {
   const { smsPeakHoursData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Peak Hours ng SMS",
+      timeframe,
+      description: "Mga oras kung kailan pinakamataas ang SMS activity.",
+      rows: sanitizePrintableRows(smsPeakHoursData),
+    });
+  };
   
   const peakHour = smsPeakHoursData.reduce((prev, current) => (prev.messages > current.messages) ? prev : current);
 
@@ -88,7 +97,7 @@ export function SmsPeakHoursChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -140,6 +149,7 @@ export function SmsPeakHoursChart() {
     </Dialog>
   )
 }
+
 
 
 

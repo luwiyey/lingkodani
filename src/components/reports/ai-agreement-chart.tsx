@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -36,11 +37,21 @@ export function AIAgreementChart() {
   const total = aiAgreementData.reduce((acc, curr) => acc + curr.value, 0);
   const approvedAsIsPercentage = ((aiAgreementData.find(d => d.name === 'Approved As-is')?.value ?? 0) / total * 100).toFixed(0);
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Pagkakatugma ng AI at Human Review",
+      timeframe,
+      description: "Paghahambing ng rekomendasyon ng AI at final human validation.",
+      rows: sanitizePrintableRows(aiAgreementData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -137,6 +148,7 @@ export function AIAgreementChart() {
     </Dialog>
   )
 }
+
 
 
 

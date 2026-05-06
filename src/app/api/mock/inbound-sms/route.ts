@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { screenInboundSms } from "@/lib/inbound-sms-screening";
 import { analyzeInboundSmsWithFallback } from "@/lib/services/server-sms-analysis-service";
+import { hasServerDemoPreviewAccess } from "@/lib/server/session-auth";
 
 function readMode() {
   return (process.env.APP_MODE ?? process.env.NEXT_PUBLIC_APP_MODE ?? "demo") === "live"
@@ -9,7 +11,7 @@ function readMode() {
 }
 
 export async function POST(request: Request) {
-  if (readMode() === "live") {
+  if (readMode() === "live" && !(await hasServerDemoPreviewAccess())) {
     return NextResponse.json(
       { error: "Naka-disable ang SMS simulation tool sa live deployment." },
       { status: 403 }
@@ -28,14 +30,29 @@ export async function POST(request: Request) {
       );
     }
 
+    const screening = screenInboundSms({ phone, message });
+
+    if (screening.ignored) {
+      return NextResponse.json({
+        accepted: true,
+        preview: false,
+        ignored: true,
+        reason: screening.reason,
+      });
+    }
+
     const analysis = await analyzeInboundSmsWithFallback({
       message,
     });
 
     return NextResponse.json({
+      accepted: true,
+      preview: false,
+      ignored: false,
       phone,
       message,
       analysis,
+      sourceProvider: "simulation",
     });
   } catch {
     return NextResponse.json(

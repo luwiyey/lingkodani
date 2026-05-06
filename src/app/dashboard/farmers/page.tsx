@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useRouter } from 'next/navigation';
 import { useData } from '@/context/data-context';
+import { useAuth } from '@/context/auth-context';
 import type { Farmer } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -51,6 +52,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { FarmerAvatar } from '@/components/farmers/farmer-avatar';
 import { formatFarmerRegistrationsAsCsv } from '@/lib/data-portability';
+import { canDeleteFarmerRecords } from '@/lib/access-control';
+import { isLiveMode } from '@/lib/config/app-mode';
 import { getFarmerIdentityAssessment } from '@/lib/farmer-identity';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +71,7 @@ function downloadFile(filename: string, content: string, mimeType: string) {
 
 export default function FarmersPage() {
   const { farmers, updateFarmerRecord, updateFarmerStatus, mergeFarmerRecords, deleteFarmerRecord } = useData();
+  const { currentUserProfile } = useAuth();
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
@@ -86,6 +90,7 @@ export default function FarmersPage() {
   });
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
+  const canDeleteFarmer = !isLiveMode || canDeleteFarmerRecords(currentUserProfile);
 
   const activeFarmers = farmers.filter(
     (f) => (f.status === 'active' || f.status === 'inactive') && !f.mergedIntoFarmerId
@@ -173,23 +178,55 @@ export default function FarmersPage() {
     toast({ title: "Tagumpay!", description: "Nai-update na ang datos ng magsasaka." });
   };
 
-  const handleDeleteFarmer = (farmerId: string) => {
-    deleteFarmerRecord(farmerId);
+  const handleDeleteFarmer = async (farmerId: string) => {
+    const result = await deleteFarmerRecord(farmerId);
+
+    if (!result.ok) {
+      toast({
+        title: 'Hindi natanggal ang farmer record',
+        description: result.reason === 'not_found'
+          ? 'Hindi na makita ang farmer record na ito.'
+          : 'May problema sa pag-delete ng farmer record. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({ title: "Tagumpay!", description: "Natanggal na ang magsasaka sa database.", variant: 'destructive' });
   };
 
-  const handleArchiveFarmer = (farmer: Farmer) => {
-    updateFarmerStatus(farmer.id, 'archived', {
+  const handleArchiveFarmer = async (farmer: Farmer) => {
+    const result = await updateFarmerStatus(farmer.id, 'archived', {
       archiveReason: 'Moved away, duplicate cleanup, or retained only for audit trail.',
     });
+
+    if (!result.ok) {
+      toast({
+        title: 'Hindi na-archive ang farmer record',
+        description: 'May problema sa pag-save ng archive action. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({
       title: 'Na-archive ang farmer record',
       description: `Nakatago na sa active roster si ${farmer.name}, pero nananatili ang history para sa audit at reporting.`,
     });
   };
 
-  const handleRestoreFarmer = (farmer: Farmer) => {
-    updateFarmerStatus(farmer.id, 'inactive');
+  const handleRestoreFarmer = async (farmer: Farmer) => {
+    const result = await updateFarmerStatus(farmer.id, 'inactive');
+
+    if (!result.ok) {
+      toast({
+        title: 'Hindi naibalik ang farmer record',
+        description: 'May problema sa pag-save ng restore action. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({
       title: 'Naibalik ang farmer record',
       description: `Naibalik si ${farmer.name} sa inactive roster para ma-reactivate kung kinakailangan.`,
@@ -546,11 +583,13 @@ export default function FarmersPage() {
                               </Button>
                             </HoverTooltip>
                             <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <HoverTooltip text="I-archive para manatiling nasa audit history">
-                                  <Button variant="outline" size="icon" className="h-8 w-8"><Archive className="h-4 w-4" /></Button>
-                                </HoverTooltip>
-                              </AlertDialogTrigger>
+                              <HoverTooltip text="I-archive para manatiling nasa audit history">
+                                <span className="inline-flex">
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="icon" className="h-8 w-8"><Archive className="h-4 w-4" /></Button>
+                                  </AlertDialogTrigger>
+                                </span>
+                              </HoverTooltip>
                               <AlertDialogContent>
                                   <AlertDialogHeader>
                                       <AlertDialogTitle>I-archive ang farmer record?</AlertDialogTitle>
@@ -560,29 +599,33 @@ export default function FarmersPage() {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                       <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleArchiveFarmer(farmer)}>I-archive</AlertDialogAction>
+                                      <AlertDialogAction onClick={() => void handleArchiveFarmer(farmer)}>I-archive</AlertDialogAction>
                                   </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
+                            {canDeleteFarmer ? (
+                              <AlertDialog>
                                 <HoverTooltip text="Alisin">
-                                  <Button variant="destructive" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
+                                  <span className="inline-flex">
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="destructive" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
+                                    </AlertDialogTrigger>
+                                  </span>
                                 </HoverTooltip>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                      <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                      Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
-                                      </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                        Ang aksyon na ito ay hindi na maaaring bawiin. Permanenteng tatanggalin nito ang datos ng magsasaka.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Kanselahin</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteFarmer(farmer.id)}>Ituloy</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            ) : null}
                             <HoverTooltip text="I-generate ang QR Code">
                               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => generateQr(farmer.id)}><QrCode className="h-4 w-4" /></Button>
                             </HoverTooltip>
@@ -642,7 +685,7 @@ export default function FarmersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRestoreFarmer(farmer)}
+                        onClick={() => void handleRestoreFarmer(farmer)}
                         disabled={Boolean(farmer.retentionRedactedAt)}
                       >
                         <ArchiveRestore className="mr-2 h-4 w-4" />

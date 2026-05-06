@@ -1,3 +1,4 @@
+import { createInitialsAvatarDataUrl } from "@/lib/avatar-placeholder";
 import { registeredUsers as initialUsers } from "@/lib/data";
 import { clearDemoPreviewAccessCookie, enableDemoPreviewAccessCookie } from "@/lib/demo-preview-access";
 import type { PreferredWorkspace, User } from "@/lib/types";
@@ -6,6 +7,8 @@ export type ApplicationChoice = "demo" | "live";
 
 export type OnboardingProfile = {
   application: ApplicationChoice;
+  name: string;
+  phone: string;
   position: string;
   age?: string;
   yearsInService: string;
@@ -15,6 +18,8 @@ export type OnboardingProfile = {
 
 export type StartFlowDraft = {
   selectedApplication: ApplicationChoice | null;
+  name: string;
+  phone: string;
   position: string;
   age: string;
   yearsInService: string;
@@ -32,6 +37,27 @@ function getDefaultDemoBarangayProfile(preferredWorkspace: PreferredWorkspace) {
   return preferredWorkspace === "simple"
     ? initialUsers.find((user) => user.email === "secretary@lingkodani.gov.ph") ?? initialUsers[0]
     : initialUsers.find((user) => user.email === "brgy-admin@lingkodani.gov.ph") ?? initialUsers[0];
+}
+
+function sanitizePreviewEmailSegment(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+function buildDemoPreviewEmail(name: string, phone: string, fallbackEmail: string) {
+  const normalizedName = sanitizePreviewEmailSegment(name);
+  const normalizedPhone = phone.replace(/\D/g, "").slice(-6);
+
+  if (!normalizedName && !normalizedPhone) {
+    return fallbackEmail;
+  }
+
+  const suffix = [normalizedName || "preview", normalizedPhone || "demo"].join("-");
+  return `${suffix}@demo.lingkodani.local`;
 }
 
 function canUseBrowserStorage() {
@@ -160,12 +186,19 @@ export function createDemoPreviewUser(profile: OnboardingProfile): User {
     profile.preferredWorkspace
   );
   const timestamp = new Date().toISOString();
+  const previewName = profile.name.trim() || baseProfile.name;
+  const previewPhone = profile.phone.trim() || baseProfile.phone;
+  const previewEmail = buildDemoPreviewEmail(previewName, previewPhone ?? "", baseProfile.email);
 
   return {
     ...baseProfile,
-    id: `preview-${baseProfile.id ?? baseProfile.email}`,
+    id: `preview-${baseProfile.id ?? baseProfile.email}-${Date.now()}`,
     uid: undefined,
+    email: previewEmail,
+    name: previewName,
     title: profile.position.trim() || baseProfile.title,
+    phone: previewPhone,
+    avatarUrl: createInitialsAvatarDataUrl(previewName),
     preferredWorkspace: profile.preferredWorkspace,
     status: "active",
     barangay: "Batakil",

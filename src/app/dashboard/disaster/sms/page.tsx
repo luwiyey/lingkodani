@@ -16,6 +16,7 @@ import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { FarmerAvatar } from '@/components/farmers/farmer-avatar';
 import { useData } from '@/context/data-context';
+import { createResourceOfferMessage } from '@/lib/resource-offers';
 
 type DialogState = {
   type: 'approve' | 'manual' | 'find' | null;
@@ -136,7 +137,9 @@ function DisasterSmsFeed() {
         setDialogState({ type, message });
         if (type === 'approve' && message.aiAdvice) {
             setEditableResponse(message.aiAdvice);
+            return;
         }
+        setEditableResponse('');
     };
 
     const closeDialog = () => {
@@ -201,7 +204,13 @@ function DisasterSmsFeed() {
             </DialogDescription>
           </DialogHeader>
           <HoverTooltip text="Isulat dito ang iyong custom na tugon.">
-            <Textarea className="my-4" placeholder="Simulan ang pagsusulat dito..." rows={5} />
+            <Textarea
+              className="my-4"
+              placeholder="Simulan ang pagsusulat dito..."
+              rows={5}
+              value={editableResponse}
+              onChange={(e) => setEditableResponse(e.target.value)}
+            />
           </HoverTooltip>
           <DialogFooter>
              <HoverTooltip text="Isara at huwag magpadala ng mensahe.">
@@ -210,7 +219,7 @@ function DisasterSmsFeed() {
                 </DialogClose>
             </HoverTooltip>
              <HoverTooltip text="Ipadala ang iyong isinulat na mensahe sa magsasaka.">
-                <Button onClick={() => handleAction('naipadala', { status: 'replied' })}>Ipadala ang Mensahe</Button>
+                <Button onClick={() => handleAction('naipadala', { status: 'replied', aiAdvice: editableResponse })}>Ipadala ang Mensahe</Button>
             </HoverTooltip>
           </DialogFooter>
         </DialogContent>
@@ -233,7 +242,15 @@ function DisasterSmsFeed() {
                             <p className="text-sm text-muted-foreground">{tool.stock} yunit ang magagamit</p>
                         </div>
                         <HoverTooltip text={`Ipadala ang isang SMS na nag-aalok ng ${tool.name} sa magsasaka.`}>
-                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`, { status: 'replied' })}>Mag-alok</Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAction(`inirekomenda ang ${tool.name}`, {
+                                status: 'replied',
+                                aiAdvice: createResourceOfferMessage(tool.name, tool.stock),
+                              })}
+                            >
+                              Mag-alok
+                            </Button>
                         </HoverTooltip>
                     </div>
                 ))}

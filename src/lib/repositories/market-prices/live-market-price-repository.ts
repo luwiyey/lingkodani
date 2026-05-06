@@ -11,14 +11,10 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { MarketPriceEntry } from "@/lib/types";
 import type { MarketPriceRepository } from "@/lib/repositories/market-prices/types";
-
-function compactUndefined<T extends Record<string, unknown>>(input: T) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
-}
 
 export const liveMarketPriceRepository: MarketPriceRepository = {
   async listMarketPrices() {
@@ -27,18 +23,19 @@ export const liveMarketPriceRepository: MarketPriceRepository = {
       query(collection(db, firebaseCollections.marketPrices), orderBy("updatedAt", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as MarketPriceEntry);
+    return snapshot.docs.map((item) => withFirestoreDocId<MarketPriceEntry>(item));
   },
 
   async createMarketPriceEntry(entry) {
     const db = getClientFirestore();
-    await setDoc(doc(db, firebaseCollections.marketPrices, entry.id), entry);
-    return entry;
+    const payload = sanitizeFirestoreDocument(entry);
+    await setDoc(doc(db, firebaseCollections.marketPrices, entry.id), payload);
+    return payload;
   },
 
   async updateMarketPriceEntry(id, updates) {
     const db = getClientFirestore();
-    const payload = compactUndefined(updates);
+    const payload = sanitizeFirestorePatch(updates);
     await updateDoc(doc(db, firebaseCollections.marketPrices, id), payload);
     return {
       id,

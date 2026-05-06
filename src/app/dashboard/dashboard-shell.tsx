@@ -10,10 +10,12 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
 import { LiveAutomationRunner } from "@/components/layout/live-automation-runner";
 import { MobileFooter } from "@/components/layout/mobile-footer";
+import { ModeBadge } from "@/components/layout/mode-badge";
 import { useAuth } from "@/context/auth-context";
 import { useData } from "@/context/data-context";
 import { isLiveMode } from "@/lib/config/app-mode";
 import { buildLegalPageHref } from "@/lib/legal-links";
+import { isDemoRuntimeActive } from "@/lib/runtime-mode";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 
 const developerAllowedPrefixes = [
@@ -31,8 +33,9 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { authLoading, currentUserProfile } = useAuth();
+  const { authLoading, currentUser, currentUserProfile } = useAuth();
   const { offlineMode, offlineOutboxCount, offlineSyncing, syncOfflineChanges } = useData();
+  const usingDemoSandbox = isDemoRuntimeActive({ currentUser, currentUserProfile });
   const isDisasterPath = pathname.startsWith("/dashboard/disaster");
   const isDeveloperPage = pathname.startsWith("/dashboard/developer");
   const isDeveloperRestrictedPage = developerAllowedPrefixes.some((prefix) => pathname.startsWith(prefix));
@@ -86,7 +89,18 @@ export function DashboardShell({
       <SidebarInset>
         <LiveAutomationRunner />
         <Header />
-        {isLiveMode && (offlineMode || offlineOutboxCount > 0) ? (
+        {usingDemoSandbox ? (
+          <div className="border-b bg-sky-50/90 px-4 py-3 text-sm text-sky-950 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <ModeBadge />
+                <p className="font-medium">Demo Mode - simulated data resets after logout.</p>
+              </div>
+              <p className="text-sky-900/80">Pwede kang magdagdag, mag-edit, mag-delete, at mag-approve nang hindi naaapektuhan ang live records.</p>
+            </div>
+          </div>
+        ) : null}
+        {isLiveMode && !usingDemoSandbox && (offlineMode || offlineOutboxCount > 0) ? (
           <div className="border-b bg-amber-50/80 px-4 py-3 text-sm text-amber-950 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-1">

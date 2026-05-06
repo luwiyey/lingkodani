@@ -1,41 +1,23 @@
 import type { SmsTrainingExample } from "@/lib/types";
 import type { SmsTrainingRepository } from "@/lib/repositories/sms-training/types";
+import { smsTrainingExamples as initialSmsTrainingExamples } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoSmsTrainingStore?: SmsTrainingExample[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoSmsTrainingStore) {
-    demoStore.__lingkodAniDemoSmsTrainingStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoSmsTrainingStore;
-}
+const store = createDemoCollectionStore<SmsTrainingExample>({
+  storageKey: "smsTrainingExamples",
+  initialData: initialSmsTrainingExamples,
+});
 
 export const demoSmsTrainingRepository: SmsTrainingRepository = {
   async listTrainingExamples() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createTrainingExample(example) {
-    getStore().unshift(example);
-    return example;
+    return store.prepend(example);
   },
 
   async updateTrainingExample(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 };

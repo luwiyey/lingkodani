@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useData } from '@/context/data-context';
-import { isLiveMode } from '@/lib/config/app-mode';
 import { HelpDialog } from "@/components/ui/help-dialog";
 import { Sprout, ArrowLeft } from 'lucide-react';
 import Link from "next/link";
@@ -14,6 +13,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HoverTooltip } from "@/components/ui/hover-tooltip";
 import React from "react";
+import { getLatestFarmerCropStage } from '@/lib/crop-stage';
 
 const stageColors: { [key: string]: string } = {
     'Pagtatanim': 'bg-blue-500/10 text-blue-500',
@@ -25,7 +25,7 @@ const stageColors: { [key: string]: string } = {
 
 export default function ActiveFarmsPage() {
   const router = useRouter();
-  const { farmers } = useData();
+  const { farmers, smsMessages } = useData();
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
@@ -33,19 +33,19 @@ export default function ActiveFarmsPage() {
   }, []);
 
   const activeFarms = farmers.filter(f => f.status === 'active').map((farmer, index) => {
-    const stages = ['Paglago', 'Pamumulaklak', 'Pagtatanim', 'Pag-aani'];
     const crops = farmer.crops.length > 0 ? farmer.crops : ['Unknown'];
-    const stage = isLiveMode ? 'Hindi pa naitatala' : stages[index % stages.length];
-    const fallbackLastUpdate = farmer.lastSmsActivity || farmer.registrationDate;
+    const latestMessage = smsMessages
+      .filter((message) => message.farmerId === farmer.id)
+      .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())[0];
+    const stage = getLatestFarmerCropStage(farmer, smsMessages);
+    const fallbackLastUpdate = latestMessage?.timestamp || farmer.lastSmsActivity || farmer.registrationDate;
     return {
         id: `CROP${String(index + 1).padStart(3, '0')}`,
         farmerId: farmer.id,
         farmerName: farmer.name,
         crop: crops[0], // Show the first crop for simplicity
         stage: stage,
-        lastUpdate: isLiveMode
-          ? fallbackLastUpdate
-          : new Date(new Date('2026-01-28').setDate(new Date('2026-01-28').getDate() - (index + 1))).toISOString()
+        lastUpdate: fallbackLastUpdate,
     }
   });
 
@@ -74,11 +74,9 @@ export default function ActiveFarmsPage() {
                     </HelpDialog>
                 </div>
                 <p className="text-muted-foreground">Subaybayan ang kasalukuyang yugto at pag-unlad ng mga pananim sa buong barangay.</p>
-                {isLiveMode ? (
-                  <p className="text-xs text-muted-foreground">
-                    Live mode ito: lalabas ang eksaktong crop stage kapag naitatala na ang structured farm-stage updates ng barangay team.
-                  </p>
-                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  Ang stage ay hinango mula sa pinakahuling crop-related SMS context ng bawat aktibong magsasaka. Kapag wala pang malinaw na stage signal, lalabas ito bilang "Hindi pa naitatala."
+                </p>
             </div>
       </div>
       <Card>

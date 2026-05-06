@@ -2,6 +2,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { isLiveMode } from "@/lib/config/app-mode";
 import { getClientStorage } from "@/lib/firebase/storage-client";
+import { hasActiveDemoPreview } from "@/lib/runtime-mode";
 
 const MAX_AVATAR_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 
@@ -48,7 +49,7 @@ function validateAvatarFile(file: File) {
 async function uploadAvatarFile(file: File, pathPrefix: string) {
   validateAvatarFile(file);
 
-  if (!isLiveMode) {
+  if (!isLiveMode || hasActiveDemoPreview()) {
     return {
       url: await readFileAsDataUrl(file),
       storagePath: undefined,

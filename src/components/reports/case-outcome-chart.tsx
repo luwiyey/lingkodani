@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Bar,
@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Calendar as CalendarIcon, Download, Expand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 const chartConfig = {
   value: {
@@ -71,11 +72,21 @@ export function CaseOutcomeChart() {
     .filter((item) => item.name !== "Nalutas")
     .reduce((total, item) => total + item.value, 0);
 
-  const handleDownload = () => {
-    toast({
-      title: "Nagsisimula ang Pag-download...",
-      description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Case Outcomes",
+      timeframe,
+      description: "Pamamahagi ng final case outcomes sa napiling timeframe.",
+      rows: sanitizePrintableRows(caseOutcomeData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -225,3 +236,4 @@ export function CaseOutcomeChart() {
     </Dialog>
   );
 }
+

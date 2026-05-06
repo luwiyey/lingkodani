@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/models/mobile_models.dart';
 import '../core/services/field_visit_location_service.dart';
+import '../core/services/permission_notice_store.dart';
 import 'mobile_shared_widgets.dart';
 import '../state/app_state.dart';
 
@@ -26,6 +27,8 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
   late Future<FarmerDetail> _future;
   final FieldVisitLocationService _locationService =
       const FieldVisitLocationService();
+  final PermissionNoticeStore _permissionNoticeStore =
+      const PermissionNoticeStore();
   String? _visitActionId;
   String? _latestFarmerSyncVersion;
 
@@ -53,7 +56,16 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
     });
 
     try {
-      final verification = await _locationService.captureVerification();
+      final shouldCaptureLocation = await _ensureLocationDisclosureAccepted();
+      final verification = shouldCaptureLocation
+          ? await _locationService.captureVerification()
+          : {
+              'status': 'manual_only',
+              'source': 'mobile_manual',
+              'capturedAt': DateTime.now().toIso8601String(),
+              'note':
+                  'Location capture was skipped by the user during the mobile field visit update.',
+            };
       final result = await appState.updateFieldVisitStatus(
         visitId: visit.id,
         status: nextStatus,
@@ -98,6 +110,43 @@ class _FarmerDetailScreenState extends State<FarmerDetailScreen> {
         });
       }
     }
+  }
+
+  Future<bool> _ensureLocationDisclosureAccepted() async {
+    final alreadyAccepted = await _permissionNoticeStore
+        .hasAcceptedLocationDisclosure();
+
+    if (alreadyAccepted || !mounted) {
+      return alreadyAccepted;
+    }
+
+    final accepted =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Use device location for visit verification?'),
+            content: const Text(
+              'Lingkod-Ani Mobile uses your device location only when you choose to verify a field visit with GPS. The app does not use background location tracking, and you can continue with manual verification if you skip this.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Use manual verification'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (accepted) {
+      await _permissionNoticeStore.markLocationDisclosureAccepted();
+    }
+
+    return accepted;
   }
 
   Future<void> _addFarmerNote() async {

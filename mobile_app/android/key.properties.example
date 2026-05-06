@@ -1,0 +1,4 @@
+storeFile=../lingkodani-upload-keystore.jks
+storePassword=CHANGE_ME
+keyAlias=lingkodani-upload
+keyPassword=CHANGE_ME

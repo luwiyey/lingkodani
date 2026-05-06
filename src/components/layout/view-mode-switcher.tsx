@@ -8,14 +8,14 @@ import { cn } from '@/lib/utils';
 const views = [
   {
     href: '/dashboard/operations',
-    label: 'Simple View',
-    hint: 'Madaling araw-araw na gamit',
+    label: 'Simple',
+    hint: 'Mas madaling araw-araw',
     isActive: (pathname: string) => pathname.startsWith('/dashboard/operations'),
   },
   {
     href: '/dashboard/sms-feed',
-    label: 'Detailed View',
-    hint: 'Buong tools at analysis',
+    label: 'Detalyado',
+    hint: 'Mas maraming tools',
     isActive: (pathname: string) => pathname.startsWith('/dashboard/sms-feed'),
   },
 ] as const;

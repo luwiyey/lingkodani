@@ -1,4 +1,5 @@
 import type { Farmer, SmsMessage, User } from "@/lib/types";
+import { isSmsAssignedToUser } from "@/lib/sms-assignment";
 
 export type AssignmentSuggestion = {
   userId: string;
@@ -94,12 +95,11 @@ function isWithinShiftWindow(user: User, now = Date.now()) {
   return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
 }
 
-function countOpenAssignments(messages: SmsMessage[], userName: string) {
-  const normalizedUserName = normalize(userName);
+function countOpenAssignments(messages: SmsMessage[], user: User) {
   return messages.filter(
     (message) =>
       !message.closedAt &&
-      normalize(message.assignedTo) === normalizedUserName
+      isSmsAssignedToUser(message, user)
   ).length;
 }
 
@@ -158,7 +158,7 @@ export function buildAssignmentSuggestions(input: {
     .map((user) => {
       const availabilityStatus = inferAvailability(user);
       const expertiseTags = inferExpertiseTags(user);
-      const openAssignments = countOpenAssignments(smsMessages, user.name);
+      const openAssignments = countOpenAssignments(smsMessages, user);
       const inShift = isWithinShiftWindow(user, now);
       const reasons: string[] = [];
       let score = 40;
@@ -321,7 +321,7 @@ export function getStaffingCoverageSummary(input: {
     .map((user) => ({
       userId: user.id ?? user.uid ?? user.email,
       name: user.name,
-      openAssignments: countOpenAssignments(smsMessages, user.name),
+      openAssignments: countOpenAssignments(smsMessages, user),
     }))
     .filter((user) => user.openAssignments >= 4)
     .sort((left, right) => right.openAssignments - left.openAssignments);

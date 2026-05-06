@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { findPotentialDuplicateCase, getPotentialDuplicateCases } from '@/lib/sms-case-linking';
 import { isAwaitingFarmerConfirmation } from '@/lib/sms-case-outcomes';
 import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
+import { createResourceOfferMessage } from '@/lib/resource-offers';
+import { isDemoRuntimeActive, isLiveRuntimeActive } from '@/lib/runtime-mode';
 
 type DialogState = {
   type: 'approve' | 'manual' | 'find' | null;
@@ -547,8 +549,10 @@ function SmsFeedPageContent() {
     const { toast, dismiss } = useToast();
     const focusedSmsId = searchParams.get('sms');
     const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
-    const showSimulationTool = !isLiveMode || (capabilities.liveSmsTestModeEnabled && canUseLiveSmsSimulation(currentUserProfile));
-    const liveSmsTestModeLocked = isLiveMode && canUseLiveSmsSimulation(currentUserProfile) && !capabilities.liveSmsTestModeEnabled;
+    const usingDemoSandbox = isDemoRuntimeActive({ currentUser, currentUserProfile });
+    const usingLiveData = isLiveRuntimeActive({ currentUser, currentUserProfile });
+    const showSimulationTool = usingDemoSandbox || (capabilities.liveSmsTestModeEnabled && canUseLiveSmsSimulation(currentUserProfile));
+    const liveSmsTestModeLocked = usingLiveData && canUseLiveSmsSimulation(currentUserProfile) && !capabilities.liveSmsTestModeEnabled;
 
     const latestOutboundByMessage = React.useMemo(() => {
       const map = new Map<string, OutboundMessage>();
@@ -728,7 +732,7 @@ function SmsFeedPageContent() {
             'Content-Type': 'application/json',
         };
 
-        if (isLiveMode) {
+        if (usingLiveData) {
             const idToken = await currentUser?.getIdToken();
 
             if (!idToken) {
@@ -743,7 +747,7 @@ function SmsFeedPageContent() {
             headers.Authorization = `Bearer ${idToken}`;
         }
 
-        const response = await fetch(isLiveMode ? '/api/system/test-inbound-sms' : '/api/mock/inbound-sms', {
+        const response = await fetch(usingLiveData ? '/api/system/test-inbound-sms' : '/api/mock/inbound-sms', {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -754,33 +758,35 @@ function SmsFeedPageContent() {
 
         const payload = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-            toast({
-                title: "Hindi naisagawa ang simulation",
+          if (!response.ok) {
+              toast({
+                  title: "Hindi naisagawa ang simulation",
                 description: typeof payload.error === 'string'
                   ? payload.error
                   : "Nagkaroon ng problema sa SMS simulation request.",
                 variant: "destructive",
-            });
-            return;
-        }
+              });
+              return;
+          }
 
-        if (isLiveMode) {
-            if (payload.ignored) {
-                toast({
-                    title: "Hindi ipinakita ang Test SMS",
-                    description: typeof payload.reason === 'string'
-                      ? payload.reason
-                      : "Na-detect ito bilang carrier o service message kaya hindi isinama sa preview.",
-                });
+          if (payload.ignored) {
+              toast({
+                  title: "Hindi ipinakita ang SMS",
+                  description: typeof payload.reason === 'string'
+                    ? payload.reason === 'carrier_promo'
+                      ? "Na-detect ito bilang carrier o promo message kaya hindi isinama sa system."
+                      : "Mukhang hindi valid na farmer sender ang numerong ito kaya hindi isinama sa system."
+                    : "Na-detect ito bilang service o invalid sender message kaya hindi isinama sa system.",
+              });
 
-                setSimulatedMessage('');
-                return;
-            }
+              setSimulatedMessage('');
+              return;
+          }
 
-            if (!payload.message) {
-                toast({
-                    title: "Walang nabuong preview",
+          if (usingLiveData) {
+              if (!payload.message) {
+                  toast({
+                      title: "Walang nabuong preview",
                     description: "Subukang muli gamit ang ibang test number o mensahe.",
                     variant: "destructive",
                 });
@@ -797,13 +803,14 @@ function SmsFeedPageContent() {
             return;
         }
 
-        const inbound = addInboundSms({
-            phone: payload.phone,
-            message: payload.message,
-            analysis: payload.analysis,
-        });
+          const inbound = addInboundSms({
+              phone: payload.phone,
+              message: payload.message,
+              analysis: payload.analysis,
+              sourceProvider: 'simulation',
+          });
 
-        if (!inbound) {
+          if (!inbound) {
             toast({
                 title: "Hindi ipinakita ang SMS",
                 description: "Na-detect ito bilang carrier o service message kaya hindi isinama sa app.",
@@ -813,10 +820,10 @@ function SmsFeedPageContent() {
             return;
         }
 
-        toast({
-            title: "Na-simulate ang SMS",
-            description: `Naidagdag sa feed ang sample report mula kay ${inbound.farmerName}.`,
-        });
+          toast({
+              title: "Na-simulate ang SMS",
+              description: `Naidagdag sa demo data ang sample report mula kay ${inbound.farmerName}. Makikita rin ito sa reports at iba pang demo views hanggang mag-logout ka.`,
+          });
 
         setSimulatedMessage('');
     };
@@ -1027,11 +1034,11 @@ function SmsFeedPageContent() {
               </div>
               <div className="min-w-0 space-y-1">
                 <CardTitle>Simulate Farmer SMS</CardTitle>
-                <CardDescription>
-                  {isLiveMode
-                    ? 'Developer-only safe preview ito para sa live SMS flow. Lalabas ito bilang Test SMS sa kasalukuyang session lang.'
-                    : 'Gamitin ang tool na ito upang subukan ang pagpasok ng SMS report mula sa magsasaka.'}
-                </CardDescription>
+                  <CardDescription>
+                    {usingLiveData
+                      ? 'Developer-only safe preview ito para sa live SMS flow. Lalabas ito bilang Test SMS sa kasalukuyang session lang.'
+                      : 'Gamitin ang tool na ito upang lumikha ng demo inbound SMS. Ang simulated messages ay mase-save sa demo data at makikita sa reports, queues, at iba pang demo views hanggang logout.'}
+                  </CardDescription>
               </div>
             </div>
             {webhookBridgeStatus === 'syncing' ? (
@@ -1182,7 +1189,15 @@ function SmsFeedPageContent() {
                             <p className="text-sm text-muted-foreground">{tool.stock} yunit ang magagamit</p>
                         </div>
                         <HoverTooltip text={`Ipadala ang isang SMS na nag-aalok ng ${tool.name} sa magsasaka.`}>
-                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`, { status: 'replied' })}>Mag-alok</Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAction(`inirekomenda ang ${tool.name}`, {
+                                status: 'replied',
+                                aiAdvice: createResourceOfferMessage(tool.name, tool.stock),
+                              })}
+                            >
+                              Mag-alok
+                            </Button>
                         </HoverTooltip>
                     </div>
                 ))}

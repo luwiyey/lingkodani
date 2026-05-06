@@ -516,8 +516,12 @@ function InventoryPageContent() {
         ));
 
         if (existingResource) {
-          updateResource(existingResource.id, importedResource);
-          updatedCount += 1;
+          const result = await updateResource(existingResource.id, importedResource);
+          if (result.ok) {
+            updatedCount += 1;
+          } else {
+            skippedCount += 1;
+          }
           continue;
         }
 
@@ -526,9 +530,13 @@ function InventoryPageContent() {
           continue;
         }
 
-        addResource(importedResource);
-        createdCount += 1;
-        knownKeys.add(resourceKey);
+        const result = await addResource(importedResource);
+        if (result.ok) {
+          createdCount += 1;
+          knownKeys.add(resourceKey);
+        } else {
+          skippedCount += 1;
+        }
       }
 
       toast({
@@ -690,7 +698,7 @@ function InventoryPageContent() {
     setSearchTerm('');
   };
 
-  const handleAddResource = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddResource = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const parsedDraft = parseResourceDraft(addDraft);
 
@@ -703,13 +711,26 @@ function InventoryPageContent() {
       return;
     }
 
-    addResource(parsedDraft);
+    const result = await addResource(parsedDraft);
+
+    if (!result.ok) {
+      toast({
+        title: result.reason === 'duplicate' ? 'May kaparehong rekurso' : 'Hindi ma-save ang rekurso',
+        description:
+          result.reason === 'duplicate'
+            ? 'May kaparehong pangalan at category na sa imbentaryo.'
+            : 'May problema sa pag-save ng resource record. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setAddDraft(DEFAULT_RESOURCE_DRAFT);
     setAddDialogOpen(false);
     toast({ title: 'Tagumpay!', description: 'Matagumpay na naidagdag ang rekurso.' });
   };
 
-  const handleEditResource = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEditResource = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!editingResource) {
@@ -727,13 +748,36 @@ function InventoryPageContent() {
       return;
     }
 
-    updateResource(editingResource.id, parsedDraft);
+    const result = await updateResource(editingResource.id, parsedDraft);
+
+    if (!result.ok) {
+      toast({
+        title: result.reason === 'duplicate' ? 'May kaparehong rekurso' : 'Hindi ma-save ang pagbabago',
+        description:
+          result.reason === 'duplicate'
+            ? 'May ibang resource na may kaparehong pangalan at category.'
+            : 'May problema sa pag-save ng resource update. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setEditingResource(null);
     toast({ title: 'Tagumpay!', description: 'Nai-update na ang rekurso.' });
   };
 
-  const handleDeleteResource = (resourceId: string) => {
-    deleteResource(resourceId);
+  const handleDeleteResource = async (resourceId: string) => {
+    const result = await deleteResource(resourceId);
+
+    if (!result.ok) {
+      toast({
+        title: 'Hindi natanggal ang rekurso',
+        description: 'May problema sa pag-delete ng resource record. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({ title: 'Tagumpay!', description: 'Natanggal na ang rekurso sa imbentaryo.', variant: 'destructive' });
   };
 
@@ -1039,7 +1083,7 @@ function InventoryPageContent() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
+                              <AlertDialogAction onClick={() => void handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -1062,7 +1106,7 @@ function InventoryPageContent() {
                 I-update ang pangkat, mas tukoy na uri, at gamit sa bukid para sa {editingResource.name}.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleEditResource}>
+            <form onSubmit={(event) => void handleEditResource(event)}>
               <ResourceFormFields draft={editDraft} onDraftChange={setEditDraft} prefix="edit-resource" />
               <DialogFooter>
                 <Button type="button" variant="secondary" onClick={() => setEditingResource(null)}>Kanselahin</Button>

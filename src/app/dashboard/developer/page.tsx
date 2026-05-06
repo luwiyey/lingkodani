@@ -759,11 +759,13 @@ export default function DeveloperPage() {
                             </HoverTooltip>
                           ) : null}
                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <HoverTooltip text="Permanenteng alisin ang user na ito sa system.">
-                                  <Button variant="destructive" size="sm"><Trash2 /> Alisin</Button>
-                                </HoverTooltip>
-                              </AlertDialogTrigger>
+                              <HoverTooltip text="Permanenteng alisin ang user na ito sa system.">
+                                <span className="inline-flex">
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm"><Trash2 /> Alisin</Button>
+                                  </AlertDialogTrigger>
+                                </span>
+                              </HoverTooltip>
                               <AlertDialogContent>
                               <AlertDialogHeader>
                                   <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>

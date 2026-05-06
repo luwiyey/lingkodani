@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -36,11 +37,21 @@ export function ClarificationNeededChart() {
   const total = clarificationNeededData.reduce((acc, entry) => acc + entry.value, 0);
   const neededClarification = total > 0 ? ((neededClarificationCount / total) * 100).toFixed(1) : '0.0';
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Mga Nangangailangan ng Clarification",
+      timeframe,
+      description: "Bilang ng cases na nangailangan o hindi nangailangan ng clarification.",
+      rows: sanitizePrintableRows(clarificationNeededData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -137,6 +148,7 @@ export function ClarificationNeededChart() {
     </Dialog>
   )
 }
+
 
 
 

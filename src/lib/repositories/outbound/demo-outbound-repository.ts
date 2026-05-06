@@ -1,45 +1,27 @@
 import type { OutboundMessage } from "@/lib/types";
 import type { OutboundMessageRepository } from "@/lib/repositories/outbound/types";
+import { outboundMessages as initialOutboundMessages } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoOutboundStore?: OutboundMessage[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoOutboundStore) {
-    demoStore.__lingkodAniDemoOutboundStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoOutboundStore;
-}
+const store = createDemoCollectionStore<OutboundMessage>({
+  storageKey: "outboundMessages",
+  initialData: initialOutboundMessages,
+});
 
 export const demoOutboundRepository: OutboundMessageRepository = {
   async listOutboundMessages() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createOutboundMessage(message) {
-    getStore().unshift(message);
-    return message;
+    return store.prepend(message);
   },
 
   async updateOutboundMessage(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 
   async findByProviderMessageId(providerMessageId) {
-    return getStore().find((item) => item.providerMessageId === providerMessageId) ?? null;
+    return store.find((item) => item.providerMessageId === providerMessageId);
   },
 };

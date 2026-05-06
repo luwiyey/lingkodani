@@ -36,6 +36,7 @@ import { useData } from "@/context/data-context";
 import { useAnalytics, type RiskAlert } from '@/hooks/use-analytics';
 import { FarmerAvatar } from '@/components/farmers/farmer-avatar';
 import { cn } from '@/lib/utils';
+import { createResourceOfferMessage } from "@/lib/resource-offers";
 
 const alertIconMap = {
     flood: Wind,
@@ -153,7 +154,7 @@ type DialogState = {
 }
 
 function ActiveIssuesPageContent() {
-    const { smsMessages, farmers, resources, updateSmsMessage } = useData();
+    const { smsMessages, farmers, resources, updateSmsMessage, broadcastAlert } = useData();
     const { riskAlerts } = useAnalytics();
     const highUrgencySms = smsMessages.filter(m => m.urgency === 'high' && m.status === 'pending_approval');
     const criticalAlerts = riskAlerts.filter(a => a.severity === 'Kritikal');
@@ -168,20 +169,48 @@ function ActiveIssuesPageContent() {
     const focusedAlertId = searchParams.get('alert');
     const focusedSmsId = searchParams.get('sms');
 
-    const handleSendNotification = () => {
+    const handleSendNotification = async () => {
         if (!confirmingAlert) return;
-        toast({
-            title: "Abiso Ipinadala!",
-            description: `Matagumpay na naipadala ang alerto sa ${confirmingAlert.affected} na magsasaka.`,
-        });
-        setConfirmingAlert(null);
+
+        const recommendation = confirmingAlert.kind === 'flood'
+          ? 'I-secure ang taniman at linisin ang daluyan ng tubig habang hinihintay ang susunod na update.'
+          : confirmingAlert.kind === 'pest'
+            ? 'Magsagawa ng inspeksyon sa loob ng 24 oras at makipag-ugnayan sa barangay kung lumalala ang infestation.'
+            : 'Makipag-ugnayan sa barangay hall kung kailangan ng alternatibong supply o mas maagang resource release.';
+
+        try {
+          const entry = await broadcastAlert({
+            title: confirmingAlert.title,
+            type: confirmingAlert.kind,
+            severity: confirmingAlert.severity === 'Kritikal' ? 'Critical' : 'Warning',
+            message: `${confirmingAlert.title}: ${confirmingAlert.description}`,
+            recommendation,
+            source: 'risk_center',
+          });
+
+          toast({
+              title: "Abiso Ipinadala!",
+              description: `Matagumpay na naipadala ang alerto sa ${entry.sentCount} na magsasaka.`,
+          });
+        } catch (error) {
+          console.error(error);
+          toast({
+            title: "Hindi naipadala ang alerto",
+            description: "May problem sa pag-broadcast ng barangay alert.",
+            variant: "destructive",
+          });
+        } finally {
+          setConfirmingAlert(null);
+        }
     };
 
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
         setDialogState({ type, message });
         if (type === 'approve' && message.aiAdvice) {
             setEditableResponse(message.aiAdvice);
+            return;
         }
+        setEditableResponse('');
     };
 
     const closeDialog = () => {
@@ -367,7 +396,13 @@ function ActiveIssuesPageContent() {
             </DialogDescription>
           </DialogHeader>
           <HoverTooltip text="Isulat dito ang iyong custom na tugon.">
-            <Textarea className="my-4" placeholder="Simulan ang pagsusulat dito..." rows={5} />
+            <Textarea
+              className="my-4"
+              placeholder="Simulan ang pagsusulat dito..."
+              rows={5}
+              value={editableResponse}
+              onChange={(e) => setEditableResponse(e.target.value)}
+            />
           </HoverTooltip>
           <DialogFooter>
              <HoverTooltip text="Isara at huwag magpadala ng mensahe.">
@@ -376,7 +411,7 @@ function ActiveIssuesPageContent() {
                 </DialogClose>
             </HoverTooltip>
              <HoverTooltip text="Ipadala ang iyong isinulat na mensahe sa magsasaka.">
-                <Button onClick={() => handleAction('naipadala', { status: 'replied' })}>Ipadala ang Mensahe</Button>
+                <Button onClick={() => handleAction('naipadala', { status: 'replied', aiAdvice: editableResponse })}>Ipadala ang Mensahe</Button>
             </HoverTooltip>
           </DialogFooter>
         </DialogContent>
@@ -399,7 +434,15 @@ function ActiveIssuesPageContent() {
                             <p className="text-sm text-muted-foreground">{tool.stock} yunit ang magagamit</p>
                         </div>
                         <HoverTooltip text={`Ipadala ang isang SMS na nag-aalok ng ${tool.name} sa magsasaka.`}>
-                            <Button size="sm" onClick={() => handleAction(`inirekomenda ang ${tool.name}`, { status: 'replied' })}>Mag-alok</Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAction(`inirekomenda ang ${tool.name}`, {
+                                status: 'replied',
+                                aiAdvice: createResourceOfferMessage(tool.name, tool.stock),
+                              })}
+                            >
+                              Mag-alok
+                            </Button>
                         </HoverTooltip>
                     </div>
                 ))}

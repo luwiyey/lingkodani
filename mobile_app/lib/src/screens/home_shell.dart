@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/models/mobile_models.dart';
+import '../core/services/permission_notice_store.dart';
+import '../core/services/push_notifications_service.dart';
 import '../state/app_state.dart';
 import 'farmer_detail_screen.dart';
+import 'legal_and_privacy_screen.dart';
 import 'mobile_alerts_tab.dart';
 import 'mobile_farmers_tab.dart';
 import 'mobile_shared_widgets.dart';
@@ -20,6 +23,12 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
+
+  void _openLegalAndPrivacy() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const LegalAndPrivacyScreen()),
+    );
+  }
 
   Future<void> _syncPendingActions() async {
     final messenger = ScaffoldMessenger.of(context);
@@ -99,13 +108,7 @@ class _HomeShellState extends State<HomeShell> {
       _KnowledgeTab(session: appState.session!),
     ];
 
-    final titles = [
-      'Overview',
-      'Alerts',
-      'SMS Feed',
-      'Farmers',
-      'Knowledge',
-    ];
+    final titles = ['Overview', 'Alerts', 'SMS Feed', 'Farmers', 'Knowledge'];
 
     return Scaffold(
       appBar: AppBar(
@@ -116,7 +119,9 @@ class _HomeShellState extends State<HomeShell> {
         actions: [
           IconButton(
             tooltip: 'I-sync ang pending actions',
-            onPressed: appState.syncingPendingActions ? null : _syncPendingActions,
+            onPressed: appState.syncingPendingActions
+                ? null
+                : _syncPendingActions,
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -184,6 +189,11 @@ class _HomeShellState extends State<HomeShell> {
             ),
           ),
           IconButton(
+            tooltip: 'Legal at privacy',
+            onPressed: _openLegalAndPrivacy,
+            icon: const Icon(Icons.verified_user_outlined),
+          ),
+          IconButton(
             tooltip: 'Mag-sign out',
             onPressed: () => context.read<AppState>().signOut(),
             icon: const Icon(Icons.logout_rounded),
@@ -231,10 +241,7 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 class _OverviewTab extends StatefulWidget {
-  const _OverviewTab({
-    required this.session,
-    required this.profile,
-  });
+  const _OverviewTab({required this.session, required this.profile});
 
   final MobileSession session;
   final MobileProfile profile;
@@ -246,6 +253,8 @@ class _OverviewTab extends StatefulWidget {
 class _OverviewTabState extends State<_OverviewTab> {
   late Future<MobileOverview> _future;
   String? _queueActionId;
+  final PermissionNoticeStore _permissionNoticeStore =
+      const PermissionNoticeStore();
 
   String _buildLastSyncLabel(AppState appState) {
     final syncAge = appState.timeSinceLastPendingSync;
@@ -292,7 +301,9 @@ class _OverviewTabState extends State<_OverviewTab> {
 
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Na-retry ang ${action.typeLabel.toLowerCase()} at natanggal na ito sa pending queue.'),
+          content: Text(
+            'Na-retry ang ${action.typeLabel.toLowerCase()} at natanggal na ito sa pending queue.',
+          ),
         ),
       );
     } catch (error) {
@@ -300,9 +311,7 @@ class _OverviewTabState extends State<_OverviewTab> {
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -329,7 +338,9 @@ class _OverviewTabState extends State<_OverviewTab> {
 
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Tinanggal sa pending queue ang ${action.typeLabel.toLowerCase()}.'),
+          content: Text(
+            'Tinanggal sa pending queue ang ${action.typeLabel.toLowerCase()}.',
+          ),
         ),
       );
     } catch (error) {
@@ -337,15 +348,82 @@ class _OverviewTabState extends State<_OverviewTab> {
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) {
         setState(() {
           _queueActionId = null;
         });
       }
+    }
+  }
+
+  Future<void> _enablePushAlerts() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final appState = context.read<AppState>();
+    final alreadyAccepted = await _permissionNoticeStore
+        .hasAcceptedNotificationDisclosure();
+
+    if (!mounted) {
+      return;
+    }
+
+    var accepted = alreadyAccepted;
+
+    if (!accepted) {
+      accepted =
+          await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Enable mobile alerts'),
+              content: const Text(
+                'Lingkod-Ani Mobile uses notification permission to send urgent staff alerts about cases and updates. This permission is optional, not used for ads, and you can keep using the app even if you skip it.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Not now'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Continue'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+
+      if (accepted) {
+        await appState.markNotificationDisclosureAccepted();
+      }
+    }
+
+    if (!accepted || !mounted) {
+      return;
+    }
+
+    try {
+      final enabled = await appState.enablePushAlerts();
+
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            enabled
+                ? 'Ready na ang mobile alerts sa device na ito.'
+                : 'Hindi na-enable ang alerts. Maaari mo itong subukan muli kapag pinayagan na ang notifications.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -400,6 +478,69 @@ class _OverviewTabState extends State<_OverviewTab> {
                 lastSyncLabel: _buildLastSyncLabel(appState),
                 errorMessage: appState.pendingSyncError,
               ),
+              const SizedBox(height: 12),
+              if (!appState.pushAlertsReady)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Mobile alerts setup',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          PushNotificationsService.isConfigured
+                              ? 'Enable notifications on this device so urgent Lingkod-Ani cases can reach you faster while you are in the field.'
+                              : 'Push notifications are not fully configured in this build yet. The app can still be tested, but device alerts will stay off until Firebase mobile push is configured.',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (PushNotificationsService.isConfigured)
+                          FilledButton.tonalIcon(
+                            onPressed: appState.enablingPushAlerts
+                                ? null
+                                : _enablePushAlerts,
+                            icon: const Icon(
+                              Icons.notifications_active_outlined,
+                            ),
+                            label: Text(
+                              appState.enablingPushAlerts
+                                  ? 'Enabling...'
+                                  : 'Enable alerts',
+                            ),
+                          )
+                        else
+                          OutlinedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.settings_outlined),
+                            label: const Text('Firebase push config needed'),
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.notifications_active_rounded,
+                      color: Color(0xFF2F7A3E),
+                    ),
+                    title: const Text('Mobile alerts ready'),
+                    subtitle: const Text(
+                      'This device can receive Lingkod-Ani mobile alerts.',
+                    ),
+                  ),
+                ),
               const SizedBox(height: 16),
               MobilePendingActionsCard(
                 actions: appState.pendingActions,
@@ -625,9 +766,9 @@ class _FarmersTabState extends State<_FarmersTab> {
 
   Future<List<FarmerSummary>> _load([String query = '']) {
     return context.read<AppState>().api.fetchFarmers(
-          widget.session.idToken,
-          query: query,
-        );
+      widget.session.idToken,
+      query: query,
+    );
   }
 
   @override
@@ -654,7 +795,9 @@ class _FarmersTabState extends State<_FarmersTab> {
               const SizedBox(width: 12),
               FilledButton(
                 onPressed: () {
-                  setState(() => _future = _load(_searchController.text.trim()));
+                  setState(
+                    () => _future = _load(_searchController.text.trim()),
+                  );
                 },
                 child: const Text('Hanap'),
               ),
@@ -672,7 +815,9 @@ class _FarmersTabState extends State<_FarmersTab> {
               if (snapshot.hasError) {
                 return _ErrorState(
                   message: '${snapshot.error}',
-                  onRetry: () => setState(() => _future = _load(_searchController.text.trim())),
+                  onRetry: () => setState(
+                    () => _future = _load(_searchController.text.trim()),
+                  ),
                 );
               }
 
@@ -680,7 +825,9 @@ class _FarmersTabState extends State<_FarmersTab> {
 
               return RefreshIndicator(
                 onRefresh: () async {
-                  setState(() => _future = _load(_searchController.text.trim()));
+                  setState(
+                    () => _future = _load(_searchController.text.trim()),
+                  );
                   await _future;
                 },
                 child: ListView.builder(
@@ -694,7 +841,9 @@ class _FarmersTabState extends State<_FarmersTab> {
                         leading: CircleAvatar(
                           backgroundColor: const Color(0xFFE7F4E8),
                           child: Text(
-                            farmer.name.isNotEmpty ? farmer.name[0].toUpperCase() : '?',
+                            farmer.name.isNotEmpty
+                                ? farmer.name[0].toUpperCase()
+                                : '?',
                             style: const TextStyle(
                               color: Color(0xFF2F7A3E),
                               fontWeight: FontWeight.w700,
@@ -705,13 +854,16 @@ class _FarmersTabState extends State<_FarmersTab> {
                         subtitle: Text(
                           [
                             if (farmer.sitio.isNotEmpty) farmer.sitio,
-                            if (farmer.crops.isNotEmpty) farmer.crops.join(', '),
+                            if (farmer.crops.isNotEmpty)
+                              farmer.crops.join(', '),
                             farmer.phone,
                           ].where((part) => part.isNotEmpty).join(' • '),
                         ),
                         trailing: _StatusChip(
                           text: farmer.status,
-                          color: farmer.status == 'active' ? Colors.green : Colors.orange,
+                          color: farmer.status == 'active'
+                              ? Colors.green
+                              : Colors.orange,
                         ),
                       ),
                     );
@@ -764,10 +916,10 @@ class _KnowledgeTabState extends State<_KnowledgeTab> {
 
     try {
       final result = await context.read<AppState>().api.searchKnowledge(
-            widget.session.idToken,
-            query: query,
-            includeWebGrounding: _includeWebGrounding,
-          );
+        widget.session.idToken,
+        query: query,
+        includeWebGrounding: _includeWebGrounding,
+      );
 
       setState(() {
         _result = result;
@@ -818,10 +970,7 @@ class _KnowledgeTabState extends State<_KnowledgeTab> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(
-            _error!,
-            style: const TextStyle(color: Color(0xFF991B1B)),
-          ),
+          Text(_error!, style: const TextStyle(color: Color(0xFF991B1B))),
         ],
         if (_result != null) ...[
           const SizedBox(height: 20),
@@ -897,7 +1046,10 @@ class _MetricCard extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 value,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 4),
               Text(label, style: TextStyle(color: Colors.grey.shade600)),
@@ -910,10 +1062,7 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.text,
-    required this.color,
-  });
+  const _StatusChip({required this.text, required this.color});
 
   final String text;
   final MaterialColor color;
@@ -954,20 +1103,14 @@ class _InfoChip extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorState({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -982,10 +1125,7 @@ class _ErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline_rounded, size: 40),
             const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-            ),
+            Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: onRetry,

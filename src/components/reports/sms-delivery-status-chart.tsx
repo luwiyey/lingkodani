@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Pie, PieChart, Cell, Legend, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -29,6 +30,14 @@ const chartConfig = {
 export function SmsDeliveryStatusChart() {
   const { smsDeliveryStatusData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "SMS Delivery Status",
+      timeframe,
+      description: "Katayuan ng outbound SMS delivery sa napiling timeframe.",
+      rows: sanitizePrintableRows(smsDeliveryStatusData),
+    });
+  };
 
   const successCount = smsDeliveryStatusData.find(d => d.name === 'Napadala')?.value ?? 0;
   const failureCount = smsDeliveryStatusData.find(d => d.name === 'Nabigo')?.value ?? 0;
@@ -77,7 +86,7 @@ export function SmsDeliveryStatusChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -129,6 +138,7 @@ export function SmsDeliveryStatusChart() {
     </Dialog>
   )
 }
+
 
 
 

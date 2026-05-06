@@ -14,11 +14,13 @@ import { registeredUsers as initialUsers } from "@/lib/data";
 import { getClientAuth } from "@/lib/firebase/auth-client";
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument } from "@/lib/firebase/sanitize-firestore";
 import { hasFirebaseConfig } from "@/lib/firebase/shared";
 import { getInviteLifecycleSummary } from "@/lib/invite-lifecycle";
 import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, normalizeDemoProfile, readDemoPreviewUser, readOnboardingProfile } from "@/lib/onboarding";
 import { syncUserOnboardingState } from "@/lib/onboarding-checklist";
 import { clearAllOfflineMutations } from "@/lib/offline-outbox";
+import { clearDemoStoreData } from "@/lib/repositories/demo-store";
 import type { User } from "@/lib/types";
 
 const DEMO_SESSION_KEY = "demoSessionEmail";
@@ -41,7 +43,7 @@ async function syncServerSession(user: FirebaseUser | null) {
     return;
   }
 
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   await fetch("/api/auth/session", {
     method: "POST",
     headers: {
@@ -67,7 +69,7 @@ function mergeLiveProfile(profile: User | null) {
 }
 
 async function fetchServerLiveProfile(user: FirebaseUser) {
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const response = await fetch("/api/auth/profile", {
     method: "GET",
     headers: {
@@ -111,6 +113,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const previewProfile = readDemoPreviewUser();
+
+    if (previewProfile) {
+      setCurrentUser(null);
+      setCurrentUserProfile(previewProfile);
+      setAuthError(null);
+      setAuthLoading(false);
+      return;
+    }
+
     const sessionEmail = localStorage.getItem(DEMO_SESSION_KEY)?.trim().toLowerCase();
     const storedUsers = localStorage.getItem("users");
     const users = storedUsers ? JSON.parse(storedUsers) as User[] : initialUsers;
@@ -146,10 +158,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isDemoMode) {
       loadDemoProfile();
       window.addEventListener(DEMO_SESSION_EVENT, loadDemoProfile);
+      window.addEventListener(DEMO_PREVIEW_EVENT, loadDemoProfile);
       window.addEventListener("storage", loadDemoProfile);
 
       return () => {
         window.removeEventListener(DEMO_SESSION_EVENT, loadDemoProfile);
+        window.removeEventListener(DEMO_PREVIEW_EVENT, loadDemoProfile);
         window.removeEventListener("storage", loadDemoProfile);
       };
     }
@@ -276,7 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         await setDoc(
           userRef,
-          syncUserOnboardingState({
+          sanitizeFirestoreDocument(syncUserOnboardingState({
             id: user.uid,
             uid: user.uid,
             email: user.email,
@@ -299,7 +313,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             onboarding: existingProfile.onboarding ?? serverProfile.onboarding,
             status: existingProfile.status ?? serverProfile.status,
             createdAt: existingProfile.createdAt ?? serverProfile.createdAt,
-          } as User, existingProfile.name || user.displayName || user.email.split("@")[0]),
+          } as User, existingProfile.name || user.displayName || user.email.split("@")[0])),
           { merge: true }
         );
 
@@ -361,6 +375,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authError,
     async signIn(email: string, password: string) {
       if (isDemoMode) {
+        clearDemoPreviewUser();
+        clearDemoStoreData();
         localStorage.setItem(DEMO_SESSION_KEY, email.trim().toLowerCase());
         window.dispatchEvent(new Event(DEMO_SESSION_EVENT));
         return;
@@ -375,6 +391,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     startDemoSession(email: string) {
       if (!isDemoMode) return;
+      clearDemoPreviewUser();
+      clearDemoStoreData();
       localStorage.setItem(DEMO_SESSION_KEY, email.trim().toLowerCase());
       window.dispatchEvent(new Event(DEMO_SESSION_EVENT));
     },
@@ -384,12 +402,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (isDemoMode) {
+        clearDemoStoreData();
         localStorage.removeItem(DEMO_SESSION_KEY);
+        clearDemoPreviewUser();
         window.dispatchEvent(new Event(DEMO_SESSION_EVENT));
         return;
       }
       if (isLiveMode) {
         if (!currentUser && readDemoPreviewUser()) {
+          clearDemoStoreData();
           clearDemoPreviewUser();
           setCurrentUserProfile(null);
           return;

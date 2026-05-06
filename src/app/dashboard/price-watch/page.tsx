@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowDown, ArrowRight, ArrowUp, Pencil, PlusCircle, Trash2 } from 'lucide-react';
 
@@ -59,6 +59,10 @@ function PriceWatchPageContent() {
   const { toast } = useToast();
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [form, setForm] = useState<PriceFormState>(DEFAULT_FORM);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
+  const formCardRef = useRef<HTMLDivElement | null>(null);
+  const cropInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!highlightedPriceId) {
@@ -70,6 +74,21 @@ function PriceWatchPageContent() {
       block: 'center',
     });
   }, [highlightedPriceId]);
+
+  useEffect(() => {
+    if (!editingEntryId) {
+      return;
+    }
+
+    formCardRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+    window.setTimeout(() => {
+      cropInputRef.current?.focus();
+      cropInputRef.current?.select();
+    }, 150);
+  }, [editingEntryId]);
 
   const sortedEntries = useMemo(() => sortMarketPricesByUpdatedAt(marketPrices), [marketPrices]);
   const latestTimestamp = getLatestMarketPriceTimestamp(sortedEntries);
@@ -89,7 +108,11 @@ function PriceWatchPageContent() {
     setEditingEntryId(null);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     const parsedPrice = Number(form.price);
 
     if (!form.crop.trim() || !form.unit.trim() || !form.source.trim() || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
@@ -109,20 +132,45 @@ function PriceWatchPageContent() {
       trend: form.trend,
     };
 
+    setIsSubmitting(true);
+
     if (editingEntryId) {
-      updateMarketPriceEntry(editingEntryId, payload);
+      const result = await updateMarketPriceEntry(editingEntryId, payload);
+
+      if (!result.ok) {
+        setIsSubmitting(false);
+        toast({
+          title: 'Hindi na-save ang price update',
+          description: 'May problema sa pag-save ng pagbabago sa price watch entry.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       toast({
         title: 'Na-update ang presyo',
         description: `${payload.crop} ay naisama na sa pinakahuling barangay price watch.`,
       });
     } else {
-      addMarketPriceEntry(payload);
+      const result = await addMarketPriceEntry(payload);
+
+      if (!result.ok) {
+        setIsSubmitting(false);
+        toast({
+          title: 'Hindi nadagdag ang presyo',
+          description: 'May problema sa pag-save ng bagong price watch entry.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       toast({
         title: 'Nadagdag ang presyo',
         description: `${payload.crop} ay pwede nang gamiting reference sa PRICE_CHECK replies.`,
       });
     }
 
+    setIsSubmitting(false);
     resetForm();
   };
 
@@ -135,13 +183,34 @@ function PriceWatchPageContent() {
       source: entry.source,
       trend: entry.trend,
     });
+    toast({
+      title: 'Handa nang i-edit ang entry',
+      description: `Nailipat ang ${entry.crop} sa itaas na form para ma-update mo agad ang presyo.`,
+    });
   };
 
-  const handleDelete = (entry: MarketPriceEntry) => {
-    deleteMarketPriceEntry(entry.id);
+  const handleDelete = async (entry: MarketPriceEntry) => {
+    if (deletingEntryId) {
+      return;
+    }
+
+    setDeletingEntryId(entry.id);
+    const result = await deleteMarketPriceEntry(entry.id);
+
+    if (!result.ok) {
+      setDeletingEntryId(null);
+      toast({
+        title: 'Hindi natanggal ang price entry',
+        description: 'May problema sa pag-delete ng market price entry.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (editingEntryId === entry.id) {
       resetForm();
     }
+    setDeletingEntryId(null);
     toast({
       title: 'Natanggal ang entry',
       description: `${entry.crop} price record ay inalis sa board.`,
@@ -191,18 +260,18 @@ function PriceWatchPageContent() {
         </Card>
       </div>
 
-      <Card>
+      <Card ref={formCardRef}>
         <CardHeader>
           <CardTitle>{editingEntryId ? 'I-edit ang Price Entry' : 'Magdagdag ng Price Entry'}</CardTitle>
           <CardDescription>Panatilihing updated ang presyo para mas kapaki-pakinabang ang advisories at SMS support.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-6">
-          <Input placeholder="Crop" value={form.crop} onChange={(event) => handleChange('crop', event.target.value)} />
-          <Input placeholder="Presyo" type="number" min="0" step="0.01" value={form.price} onChange={(event) => handleChange('price', event.target.value)} />
-          <Input placeholder="Unit" value={form.unit} onChange={(event) => handleChange('unit', event.target.value)} />
-          <Input placeholder="Source" value={form.source} onChange={(event) => handleChange('source', event.target.value)} />
+          <Input ref={cropInputRef} placeholder="Crop" value={form.crop} onChange={(event) => handleChange('crop', event.target.value)} disabled={isSubmitting} />
+          <Input placeholder="Presyo" type="number" min="0" step="0.01" value={form.price} onChange={(event) => handleChange('price', event.target.value)} disabled={isSubmitting} />
+          <Input placeholder="Unit" value={form.unit} onChange={(event) => handleChange('unit', event.target.value)} disabled={isSubmitting} />
+          <Input placeholder="Source" value={form.source} onChange={(event) => handleChange('source', event.target.value)} disabled={isSubmitting} />
           <Select value={form.trend} onValueChange={(value) => handleChange('trend', value as MarketPriceEntry['trend'])}>
-            <SelectTrigger>
+            <SelectTrigger disabled={isSubmitting}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -212,12 +281,12 @@ function PriceWatchPageContent() {
             </SelectContent>
           </Select>
           <div className="flex gap-2">
-            <Button onClick={handleSubmit} className="flex-1">
+            <Button onClick={() => void handleSubmit()} className="flex-1" disabled={isSubmitting}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              {editingEntryId ? 'I-save' : 'Idagdag'}
+              {isSubmitting ? 'Nagse-save...' : editingEntryId ? 'I-save' : 'Idagdag'}
             </Button>
             {editingEntryId ? (
-              <Button variant="outline" onClick={resetForm}>
+              <Button variant="outline" onClick={resetForm} disabled={isSubmitting}>
                 Kansela
               </Button>
             ) : null}
@@ -274,10 +343,10 @@ function PriceWatchPageContent() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="icon" onClick={() => handleEdit(entry)}>
+                        <Button variant="outline" size="icon" onClick={() => handleEdit(entry)} disabled={isSubmitting || deletingEntryId !== null}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="destructive" size="icon" onClick={() => handleDelete(entry)}>
+                        <Button variant="destructive" size="icon" onClick={() => void handleDelete(entry)} disabled={isSubmitting || deletingEntryId !== null}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

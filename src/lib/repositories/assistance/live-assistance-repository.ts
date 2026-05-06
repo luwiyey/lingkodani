@@ -10,14 +10,10 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { FarmerAssistanceRecord } from "@/lib/types";
 import type { AssistanceRepository } from "@/lib/repositories/assistance/types";
-
-function compactUndefined<T extends Record<string, unknown>>(input: T) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
-}
 
 export const liveAssistanceRepository: AssistanceRepository = {
   async listAssistanceRecords() {
@@ -26,18 +22,19 @@ export const liveAssistanceRepository: AssistanceRepository = {
       query(collection(db, firebaseCollections.assistanceRecords), orderBy("updatedAt", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as FarmerAssistanceRecord);
+    return snapshot.docs.map((item) => withFirestoreDocId<FarmerAssistanceRecord>(item));
   },
 
   async createAssistanceRecord(record) {
     const db = getClientFirestore();
-    await setDoc(doc(db, firebaseCollections.assistanceRecords, record.id), record);
-    return record;
+    const payload = sanitizeFirestoreDocument(record);
+    await setDoc(doc(db, firebaseCollections.assistanceRecords, record.id), payload);
+    return payload;
   },
 
   async updateAssistanceRecord(id, updates) {
     const db = getClientFirestore();
-    const payload = compactUndefined(updates);
+    const payload = sanitizeFirestorePatch(updates);
     await updateDoc(doc(db, firebaseCollections.assistanceRecords, id), payload);
     return {
       id,

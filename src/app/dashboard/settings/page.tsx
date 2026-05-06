@@ -40,6 +40,7 @@ import { summarizeTeachingCoverage } from '@/lib/sms-teaching';
 import { isSpreadsheetExtension, readSpreadsheetAsCsv } from '@/lib/spreadsheet-import';
 import type { SmsLexiconRule, SmsTone, SystemTemplate, SystemTemplateCategory } from '@/lib/types';
 import { defaultSystemSettings } from '@/lib/system-settings';
+import { getPreferredWorkspace } from '@/lib/user-workspace';
 import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { useRuntimeHealth } from '@/hooks/use-runtime-health';
 
@@ -175,6 +176,7 @@ export default function BarangaySettingsPage() {
     const [isImportingLexicon, setIsImportingLexicon] = useState(false);
     const [isImportingTraining, setIsImportingTraining] = useState(false);
     const canAccessSettingsWorkspace = canAccessBarangaySettingsWorkspace(currentUserProfile);
+    const isSimpleWorkspace = getPreferredWorkspace(currentUserProfile) === 'simple';
     const canOpenDataCenter = canAccessDataCenter(currentUserProfile);
     const teachingCoverage = summarizeTeachingCoverage(smsLexiconRules, smsTrainingExamples);
     const learningQueue = buildSmsLexiconLearningQueue(smsMessages);
@@ -712,25 +714,29 @@ export default function BarangaySettingsPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Mga Setting ng Barangay</h1>
         <p className="text-muted-foreground">
-          Dito lang inilalagay ang mga editable na setting para sa barangay. Ang technical health, live SMS watch, at automation diagnostics ay nasa hiwalay na page na ngayon.
+          {isSimpleWorkspace
+            ? 'Dito mo inaayos ang pangunahing detalye ng barangay, mga nakahandang sagot, at iba pang pang-araw-araw na setting.'
+            : 'Dito lang inilalagay ang mga editable na setting para sa barangay. Ang technical health, live SMS watch, at automation diagnostics ay nasa hiwalay na page na ngayon.'}
         </p>
       </div>
 
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader>
-          <CardTitle>Technical Status ay Nasa Hiwalay na Page</CardTitle>
+          <CardTitle>{isSimpleWorkspace ? 'May hiwalay na page para sa technical status' : 'Technical Status ay Nasa Hiwalay na Page'}</CardTitle>
           <CardDescription>
-            Para mas malinaw ang settings page, ang runtime health, delivery watch, at automation diagnostics ay nasa bagong Katayuan ng System page na.
+            {isSimpleWorkspace
+              ? 'Kung gusto mo lang makita kung maayos ang text, alerts, at automation, buksan ang Katayuan ng System.'
+              : 'Para mas malinaw ang settings page, ang runtime health, delivery watch, at automation diagnostics ay nasa bagong Katayuan ng System page na.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-background/80 p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Makikita mo na roon ang:</p>
+            <p className="font-medium text-foreground">{isSimpleWorkspace ? 'Doon mo makikita ang:' : 'Makikita mo na roon ang:'}</p>
             <div className="mt-3 space-y-2">
-              <p>1. Live SMS readiness at huling natanggap o naipadalang mensahe</p>
-              <p>2. AI, uploads, invite-email, at mobile push setup status</p>
-              <p>3. Overdue SMS, follow-up, at retention batch diagnostics</p>
-              <p>4. Delivery watch, webhook details, at manual rerun buttons</p>
+              <p>1. {isSimpleWorkspace ? 'Kung handa na ba ang text at ano ang huling pumasok o naipadala' : 'Live SMS readiness at huling natanggap o naipadalang mensahe'}</p>
+              <p>2. {isSimpleWorkspace ? 'Kung handa ang AI, uploads, email setup, at mobile alerts' : 'AI, uploads, invite-email, at mobile push setup status'}</p>
+              <p>3. {isSimpleWorkspace ? 'Kung maayos ang mga awtomatikong pag-check at paglilinis' : 'Overdue SMS, follow-up, at retention batch diagnostics'}</p>
+              <p>4. {isSimpleWorkspace ? 'Mga dapat i-retry o ayusin agad' : 'Delivery watch, webhook details, at manual rerun buttons'}</p>
             </div>
           </div>
         </CardContent>
@@ -992,10 +998,10 @@ export default function BarangaySettingsPage() {
 
       <Tabs defaultValue="barangay" className="space-y-6">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/60 p-1 md:grid-cols-4">
-          <TabsTrigger value="barangay">Barangay Info</TabsTrigger>
-          <TabsTrigger value="templates">Mga Template</TabsTrigger>
-          <TabsTrigger value="teaching">Pagtuturo</TabsTrigger>
-          <TabsTrigger value="emergency">Emergency</TabsTrigger>
+          <TabsTrigger value="barangay">{isSimpleWorkspace ? 'Pangunahing Info' : 'Barangay Info'}</TabsTrigger>
+          <TabsTrigger value="templates">{isSimpleWorkspace ? 'Mga Sagot' : 'Mga Template'}</TabsTrigger>
+          <TabsTrigger value="teaching">{isSimpleWorkspace ? 'Tinuturo sa App' : 'Pagtuturo'}</TabsTrigger>
+          <TabsTrigger value="emergency">{isSimpleWorkspace ? 'Agarang Tugon' : 'Emergency'}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="barangay" className="space-y-6">
@@ -1003,7 +1009,9 @@ export default function BarangaySettingsPage() {
         <CardHeader>
           <CardTitle>Impormasyon ng Barangay</CardTitle>
           <CardDescription>
-            I-update ang mga paglalarawan at i-configure ang mga setting ng system para sa iyong barangay.
+            {isSimpleWorkspace
+              ? 'Ayusin dito ang pangunahing detalye ng barangay at mga oras ng serbisyo.'
+              : 'I-update ang mga paglalarawan at i-configure ang mga setting ng system para sa iyong barangay.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -1060,7 +1068,9 @@ export default function BarangaySettingsPage() {
                         />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        Ito ang live service hours na ginagamit sa advisory notice at after-hours automation copy.
+                        {isSimpleWorkspace
+                          ? 'Ito ang oras kung kailan inaasahang sasagot ang barangay team.'
+                          : 'Ito ang live service hours na ginagamit sa advisory notice at after-hours automation copy.'}
                     </p>
                 </div>
                 <div className="space-y-2">
@@ -1071,7 +1081,9 @@ export default function BarangaySettingsPage() {
                         onChange={(e) => setAdminPhone(e.target.value)}
                     />
                      <p className="text-sm text-muted-foreground">
-                        Ang numerong ito ay ilalagay sa after-hours advisory notice.
+                        {isSimpleWorkspace
+                          ? 'Ito ang numerong ipapakita kapag sarado na ang regular na oras ng serbisyo.'
+                          : 'Ang numerong ito ay ilalagay sa after-hours advisory notice.'}
                      </p>
                 </div>
                 <div className="rounded-lg border p-4 space-y-4">
@@ -1080,7 +1092,9 @@ export default function BarangaySettingsPage() {
                         <div>
                           <Label className="text-base">Mobile Alerts at Push Policy</Label>
                           <p className="text-sm text-muted-foreground">
-                            Kontrolin dito kung kailan tatahimik ang non-critical mobile alerts, gaano kabilis magde-dedupe ang urgent push, at kailan gagawa ng SMS fallback para sa staff.
+                            {isSimpleWorkspace
+                              ? 'Dito mo inaayos kung kailan puwedeng tumahimik ang hindi urgent na alerts at kailan gagamit ng backup na text.'
+                              : 'Kontrolin dito kung kailan tatahimik ang non-critical mobile alerts, gaano kabilis magde-dedupe ang urgent push, at kailan gagawa ng SMS fallback para sa staff.'}
                           </p>
                         </div>
                         <Switch checked={pushQuietHoursEnabled} onCheckedChange={setPushQuietHoursEnabled} />
@@ -1107,7 +1121,9 @@ export default function BarangaySettingsPage() {
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Ang emergency o talagang high-risk na case ay puwedeng lumampas dito, pero ang mas mababang urgency ay masusuppress muna para iwas alert fatigue.
+                          {isSimpleWorkspace
+                            ? 'Kapag hindi naman urgent, puwedeng patahimikin muna ang alert sa mga oras na ito.'
+                            : 'Ang emergency o talagang high-risk na case ay puwedeng lumampas dito, pero ang mas mababang urgency ay masusuppress muna para iwas alert fatigue.'}
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -1120,7 +1136,9 @@ export default function BarangaySettingsPage() {
                           onChange={(e) => setUrgentPushCooldownMinutes(Number(e.target.value))}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Kapag parehong case ang nag-trigger ulit sa loob ng cooldown, hindi na ito magpapadala ng duplicate urgent push.
+                          {isSimpleWorkspace
+                            ? 'Kung parehong kaso lang ulit ito sa maikling oras, hindi na muling mag-aalerto.'
+                            : 'Kapag parehong case ang nag-trigger ulit sa loob ng cooldown, hindi na ito magpapadala ng duplicate urgent push.'}
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -1133,7 +1151,9 @@ export default function BarangaySettingsPage() {
                           onChange={(e) => setMaxConsecutivePushFailures(Number(e.target.value))}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Kapag lumampas dito ang sunod-sunod na push failure para sa isang urgent case, lilipat ang system sa SMS fallback kung available.
+                          {isSimpleWorkspace
+                            ? 'Kapag paulit-ulit na pumalya ang mobile alert, lilipat ang app sa backup na text kung meron.'
+                            : 'Kapag lumampas dito ang sunod-sunod na push failure para sa isang urgent case, lilipat ang system sa SMS fallback kung available.'}
                         </p>
                       </div>
                       <div className="space-y-3 rounded-md border bg-muted/20 p-3">
@@ -1141,13 +1161,17 @@ export default function BarangaySettingsPage() {
                           <div>
                             <Label className="text-sm">SMS fallback para sa staff</Label>
                             <p className="text-xs text-muted-foreground">
-                              Kapag bagsak ang push o walang device, puwedeng gumamit ng staff SMS reminder bilang backup.
+                              {isSimpleWorkspace
+                                ? 'Kapag hindi gumana ang mobile alert, puwedeng mag-text bilang backup.'
+                                : 'Kapag bagsak ang push o walang device, puwedeng gumamit ng staff SMS reminder bilang backup.'}
                             </p>
                           </div>
                           <Switch checked={fallbackToStaffSms} onCheckedChange={setFallbackToStaffSms} />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Gagamitin nito ang assigned officer, fallback official contact, o barangay hotline kung wala pang registered mobile device.
+                          {isSimpleWorkspace
+                            ? 'Gagamitin nito ang nakatalagang tao o opisyal na contact number ng barangay.'
+                            : 'Gagamitin nito ang assigned officer, fallback official contact, o barangay hotline kung wala pang registered mobile device.'}
                         </p>
                       </div>
                     </div>
@@ -1158,7 +1182,9 @@ export default function BarangaySettingsPage() {
                         <div>
                           <Label className="text-base">Data Retention at Privacy</Label>
                           <p className="text-sm text-muted-foreground">
-                            Awtomatikong i-redact ang lumang audit-log PII at mga archived farmer record na lampas na sa retention window.
+                            {isSimpleWorkspace
+                              ? 'Dito mo inaayos kung kailan tatakpan ng app ang lumang sensitibong detalye para sa privacy.'
+                              : 'Awtomatikong i-redact ang lumang audit-log PII at mga archived farmer record na lampas na sa retention window.'}
                           </p>
                         </div>
                         <Switch checked={retentionEnabled} onCheckedChange={setRetentionEnabled} />
@@ -1175,7 +1201,9 @@ export default function BarangaySettingsPage() {
                           onChange={(e) => setAuditLogRedactionDays(Number(e.target.value))}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Pagkalipas ng panahong ito, ang pangalan at detalye sa audit log ay ire-redact pero mananatili ang action at timestamp.
+                          {isSimpleWorkspace
+                            ? 'Paglipas ng bilang ng araw na ito, tatakpan ang sensitibong detalye pero mananatili ang petsa at ginawa.'
+                            : 'Pagkalipas ng panahong ito, ang pangalan at detalye sa audit log ay ire-redact pero mananatili ang action at timestamp.'}
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -1188,7 +1216,9 @@ export default function BarangaySettingsPage() {
                           onChange={(e) => setArchivedFarmerRedactionDays(Number(e.target.value))}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Para sa mga na-archive nang farmer, ire-redact ang direct PII pagkatapos ng retention window habang nananatili ang historical counts.
+                          {isSimpleWorkspace
+                            ? 'Kapag matagal nang naka-archive ang farmer record, tatakpan ang personal na detalye pero maiiwan ang bilang at history.'
+                            : 'Para sa mga na-archive nang farmer, ire-redact ang direct PII pagkatapos ng retention window habang nananatili ang historical counts.'}
                         </p>
                       </div>
                     </div>

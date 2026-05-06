@@ -55,14 +55,18 @@ import { getClientFirestore } from '@/lib/firebase/client';
 import { firebaseCollections } from '@/lib/firebase/collections';
 import { smsProvider } from '@/lib/providers/sms';
 import { alertHistoryRepository, assistanceRepository, auditRepository, farmerRepository, fieldVisitRepository, knowledgeRepository, logbookRepository, marketPriceRepository, outboundMessageRepository, resourceRepository, smsRepository, smsTrainingRepository, systemSettingsRepository, userRepository, voucherRepository } from '@/lib/repositories';
+import { clearDemoStoreData } from '@/lib/repositories/demo-store';
+import { DEMO_PREVIEW_EVENT } from '@/lib/onboarding';
 import type { PortableAppBackup, PortableAppDataBundle } from '@/lib/data-portability';
 import { isAutoReplyOverdue } from '@/lib/services/auto-reply-service';
 import { processDueFollowUpMessage, isFollowUpDue } from '@/lib/services/follow-up-service';
 import { processOverdueSmsMessage } from '@/lib/services/overdue-sms-service';
 import { sendOutboundMessage } from '@/lib/services/outbound-sms-service';
 import { applyPriceWatchAdvice } from '@/lib/services/price-watch-service';
+import { applyFarmerResolutionConfirmation, parseFarmerResolutionConfirmationReply } from '@/lib/services/resolution-confirmation-service';
 import { createSmsTrainingExample } from '@/lib/services/sms-training-service';
 import { applySmsStatusUpdate, processInboundSms } from '@/lib/services/sms-workflow-service';
+import { processOfficialReminderMessage } from '@/lib/services/staff-sms-service';
 import { filterVisibleInboundSmsMessages, screenInboundSms } from '@/lib/inbound-sms-screening';
 import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 import { getCaseStatusForOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
@@ -77,8 +81,10 @@ import {
   type OfflineMutation,
 } from '@/lib/offline-outbox';
 import { defaultSystemSettings, mergeSystemSettings, SYSTEM_SETTINGS_DOCUMENT_ID } from '@/lib/system-settings';
+import { getUserAssignmentId } from '@/lib/sms-assignment';
 import { getUserRecordId } from '@/lib/user-record';
 import { buildCaseId, deriveInitialCaseStatus } from '@/lib/services/sms-case-service';
+import { isDemoPreviewProfile } from '@/lib/runtime-mode';
 
 type NewResourceData = {
   name: string;
@@ -134,6 +140,49 @@ type FarmerStatusUpdateOptions = {
   archiveReason?: string;
 };
 
+type FarmerStatusUpdateFailureReason = 'not_found' | 'no_change' | 'persist_failed';
+
+type FarmerStatusUpdateResult = {
+  ok: boolean;
+  status: Farmer['status'];
+  farmer?: Farmer;
+  previousFarmer?: Farmer;
+  reason?: FarmerStatusUpdateFailureReason;
+  error?: unknown;
+};
+
+type FarmerBulkStatusUpdateResult = {
+  ok: boolean;
+  status: Farmer['status'];
+  updatedCount: number;
+  farmers: Farmer[];
+  reason?: 'none_selected' | 'persist_failed';
+  error?: unknown;
+};
+
+type EntityMutationFailureReason =
+  | 'not_found'
+  | 'persist_failed'
+  | 'invalid'
+  | 'duplicate'
+  | 'insufficient_stock'
+  | 'no_change';
+
+type EntityMutationResult<T> = {
+  ok: boolean;
+  item?: T;
+  previousItem?: T;
+  reason?: EntityMutationFailureReason;
+  error?: unknown;
+};
+
+type EntityDeletionResult<T> = {
+  ok: boolean;
+  deletedItem?: T;
+  reason?: 'not_found' | 'persist_failed';
+  error?: unknown;
+};
+
 type FieldVisitStatusUpdateOptions = {
   notes?: string;
   verificationStatus?: FieldVisitTask['verificationStatus'];
@@ -166,6 +215,7 @@ export type NewInboundSmsData = {
   phone: string;
   message: string;
   analysis?: InboundSmsAnalysis;
+  sourceProvider?: SmsMessage['sourceProvider'];
 };
 
 interface DataContextType {
@@ -176,10 +226,13 @@ interface DataContextType {
     farmerId: string,
     status: Farmer['status'],
     options?: FarmerStatusUpdateOptions
-  ) => void;
-  updateManyFarmerStatuses: (farmerIds: string[], status: Farmer['status']) => number;
+  ) => Promise<FarmerStatusUpdateResult>;
+  updateManyFarmerStatuses: (
+    farmerIds: string[],
+    status: Farmer['status']
+  ) => Promise<FarmerBulkStatusUpdateResult>;
   mergeFarmerRecords: (sourceFarmerId: string, targetFarmerId: string) => Promise<boolean>;
-  deleteFarmerRecord: (farmerId: string) => void;
+  deleteFarmerRecord: (farmerId: string) => Promise<EntityDeletionResult<Farmer>>;
   smsMessages: SmsMessage[];
   outboundMessages: OutboundMessage[];
   addInboundSms: (data: NewInboundSmsData) => SmsMessage | null;
@@ -201,13 +254,13 @@ interface DataContextType {
   splitSmsThread: (messageId: string) => Promise<boolean>;
   mergeSmsThreads: (sourceMessageId: string, targetMessageId: string) => Promise<boolean>;
   resources: Resource[];
-  addResource: (data: NewResourceData) => void;
-  updateResource: (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => void;
-  deleteResource: (resourceId: string) => void;
+  addResource: (data: NewResourceData) => Promise<EntityMutationResult<Resource>>;
+  updateResource: (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => Promise<EntityMutationResult<Resource>>;
+  deleteResource: (resourceId: string) => Promise<EntityDeletionResult<Resource>>;
   marketPrices: MarketPriceEntry[];
-  addMarketPriceEntry: (data: NewMarketPriceData) => void;
-  updateMarketPriceEntry: (entryId: string, data: NewMarketPriceData) => void;
-  deleteMarketPriceEntry: (entryId: string) => void;
+  addMarketPriceEntry: (data: NewMarketPriceData) => Promise<EntityMutationResult<MarketPriceEntry>>;
+  updateMarketPriceEntry: (entryId: string, data: NewMarketPriceData) => Promise<EntityMutationResult<MarketPriceEntry>>;
+  deleteMarketPriceEntry: (entryId: string) => Promise<EntityDeletionResult<MarketPriceEntry>>;
   knowledgeArticles: KnowledgeArticle[];
   addKnowledgeArticle: (data: NewKnowledgeArticleData) => void;
   setKnowledgeArticles: React.Dispatch<React.SetStateAction<KnowledgeArticle[]>>;
@@ -249,10 +302,10 @@ interface DataContextType {
   addUser: (user: UserManagementValues) => void;
   updateUser: (userId: string, updatedUser: User) => void;
   deleteUser: (userId: string) => void;
-  addPendingFarmer: (farmerData: FarmerRegistrationValues) => void;
+  addPendingFarmer: (farmerData: FarmerRegistrationValues) => Promise<EntityMutationResult<Farmer>>;
   vouchers: Voucher[];
-  addVoucher: (voucher: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => void;
-  updateVoucherStatus: (voucherId: string, status: VoucherStatus) => void;
+  addVoucher: (voucher: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => Promise<EntityMutationResult<Voucher>>;
+  updateVoucherStatus: (voucherId: string, status: VoucherStatus) => Promise<EntityMutationResult<Voucher>>;
   retryOutboundMessage: (outboundId: string) => Promise<OutboundMessage | null>;
   runDataRetentionSweep: () => Promise<{
     redactedAuditLogs: number;
@@ -278,6 +331,10 @@ function normalizeFarmerPhone(value?: string) {
 function normalizeTimestamp(value: string) {
   const timestamp = new Date(value).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function normalizeResourceRecordKey(name: string, category: Resource['category']) {
+  return `${category}:${name.trim().toLowerCase()}`;
 }
 
 function buildPersistableFarmerUpdates(farmer: Farmer): Partial<Farmer> {
@@ -442,6 +499,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     return "guest";
   }, [currentUser?.uid, currentUserProfile?.email, currentUserProfile?.uid]);
+  const demoPreviewActive = isLiveMode && !currentUser && isDemoPreviewProfile(currentUserProfile);
+  const usingDemoSandbox = isDemoMode || demoPreviewActive;
+  const usingLiveData = isLiveMode && !usingDemoSandbox;
 
   const queueOfflineMutation = useCallback((mutation: OfflineMutation) => {
     const storage = canUseBrowserStorage();
@@ -455,12 +515,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [offlineOutboxScope]);
 
   const shouldQueueLiveMutation = useCallback((error?: unknown) => {
-    if (!isLiveMode) {
+    if (!usingLiveData) {
       return false;
     }
 
     return offlineMode || isLikelyOfflinePersistenceError(error);
-  }, [offlineMode]);
+  }, [offlineMode, usingLiveData]);
 
   const processOfflineMutation = useCallback(async (mutation: OfflineMutation) => {
     switch (mutation.type) {
@@ -565,7 +625,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const storage = canUseBrowserStorage();
     const pending = readOfflineMutations(storage, offlineOutboxScope);
 
-    if (!isLiveMode || offlineSyncing || pending.length === 0) {
+    if (!usingLiveData || offlineSyncing || pending.length === 0) {
       return {
         processedCount: 0,
         remainingCount: pending.length,
@@ -596,65 +656,97 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       processedCount,
       remainingCount: remaining.length,
     };
-  }, [offlineOutboxScope, offlineSyncing, persistOfflineOutbox, processOfflineMutation]);
+  }, [offlineOutboxScope, offlineSyncing, persistOfflineOutbox, processOfflineMutation, usingLiveData]);
 
-  useEffect(() => {
-    if (!isDemoMode) return;
+  const hydrateDemoState = useCallback(() => {
+    if (!usingDemoSandbox || typeof window === 'undefined') {
+      return;
+    }
 
     try {
       const storedFarmers = localStorage.getItem('farmers');
-      if (storedFarmers) setFarmers(JSON.parse(storedFarmers));
+      setFarmers(storedFarmers ? JSON.parse(storedFarmers) : initialFarmers);
 
       const storedSms = localStorage.getItem('smsMessages');
-      if (storedSms) setSmsMessages(sortVisibleSmsMessages(JSON.parse(storedSms) as SmsMessage[]));
+      setSmsMessages(storedSms ? sortVisibleSmsMessages(JSON.parse(storedSms) as SmsMessage[]) : sortVisibleSmsMessages(initialSmsMessages));
 
       const storedResources = localStorage.getItem('resources');
-      if (storedResources) setResources(JSON.parse(storedResources));
+      setResources(storedResources ? JSON.parse(storedResources) : initialResources);
 
       const storedMarketPrices = localStorage.getItem('marketPrices');
-      if (storedMarketPrices) setMarketPrices(JSON.parse(storedMarketPrices));
+      setMarketPrices(storedMarketPrices ? JSON.parse(storedMarketPrices) : initialMarketPrices);
 
       const storedKnowledge = localStorage.getItem('knowledgeArticles');
-      if (storedKnowledge) setKnowledgeArticles(JSON.parse(storedKnowledge));
-      
+      setKnowledgeArticles(storedKnowledge ? JSON.parse(storedKnowledge) : initialKnowledgeArticles);
+
       const storedLogbook = localStorage.getItem('logbook');
-      if (storedLogbook) setLogbook(JSON.parse(storedLogbook));
+      setLogbook(storedLogbook ? JSON.parse(storedLogbook) : initialLogbookEntries);
 
       const storedAudit = localStorage.getItem('auditLogs');
-      if (storedAudit) setAuditLogs(JSON.parse(storedAudit));
+      setAuditLogs(storedAudit ? JSON.parse(storedAudit) : initialAuditLogs);
 
       const storedAlertHistory = localStorage.getItem('alertHistory');
-      if (storedAlertHistory) setAlertHistory(JSON.parse(storedAlertHistory));
+      setAlertHistory(storedAlertHistory ? JSON.parse(storedAlertHistory) : initialAlertHistory);
 
       const storedAssistanceRecords = localStorage.getItem('assistanceRecords');
-      if (storedAssistanceRecords) setAssistanceRecords(JSON.parse(storedAssistanceRecords));
+      setAssistanceRecords(storedAssistanceRecords ? JSON.parse(storedAssistanceRecords) : initialAssistanceRecords);
 
       const storedFieldVisitTasks = localStorage.getItem('fieldVisitTasks');
-      if (storedFieldVisitTasks) setFieldVisitTasks(JSON.parse(storedFieldVisitTasks));
+      setFieldVisitTasks(storedFieldVisitTasks ? JSON.parse(storedFieldVisitTasks) : initialFieldVisitTasks);
 
       const storedTrainingExamples = localStorage.getItem('smsTrainingExamples');
-      if (storedTrainingExamples) setSmsTrainingExamples(JSON.parse(storedTrainingExamples));
+      setSmsTrainingExamples(storedTrainingExamples ? JSON.parse(storedTrainingExamples) : initialSmsTrainingExamples);
 
       const storedSystemSettings = localStorage.getItem('systemSettings');
-      if (storedSystemSettings) setSystemSettings(mergeSystemSettings(JSON.parse(storedSystemSettings)));
+      setSystemSettings(storedSystemSettings ? mergeSystemSettings(JSON.parse(storedSystemSettings)) : defaultSystemSettings);
 
       const storedUsers = localStorage.getItem('users');
-      if (storedUsers) setUsers(JSON.parse(storedUsers));
-      
+      setUsers(storedUsers ? JSON.parse(storedUsers) : initialUsers);
+
       const storedVouchers = localStorage.getItem('vouchers');
-      if (storedVouchers) setVouchers(JSON.parse(storedVouchers));
+      setVouchers(storedVouchers ? JSON.parse(storedVouchers) : initialVouchers);
 
       const storedOutbound = localStorage.getItem('outboundMessages');
-      if (storedOutbound) setOutboundMessages(JSON.parse(storedOutbound));
-
+      setOutboundMessages(storedOutbound ? JSON.parse(storedOutbound) : initialOutboundMessages);
     } catch (error) {
       console.error("Error loading data from localStorage", error);
+      setFarmers(initialFarmers);
+      setSmsMessages(sortVisibleSmsMessages(initialSmsMessages));
+      setResources(initialResources);
+      setMarketPrices(initialMarketPrices);
+      setKnowledgeArticles(initialKnowledgeArticles);
+      setLogbook(initialLogbookEntries);
+      setAuditLogs(initialAuditLogs);
+      setAlertHistory(initialAlertHistory);
+      setAssistanceRecords(initialAssistanceRecords);
+      setFieldVisitTasks(initialFieldVisitTasks);
+      setSmsTrainingExamples(initialSmsTrainingExamples);
+      setSystemSettings(defaultSystemSettings);
+      setUsers(initialUsers);
+      setVouchers(initialVouchers);
+      setOutboundMessages(initialOutboundMessages);
     }
+
     setHydrated(true);
-  }, []);
+  }, [usingDemoSandbox]);
 
   useEffect(() => {
-    if (!isLiveMode || typeof window === 'undefined') {
+    if (!usingDemoSandbox) return;
+
+    hydrateDemoState();
+    window.addEventListener('demo-session-change', hydrateDemoState);
+    window.addEventListener(DEMO_PREVIEW_EVENT, hydrateDemoState);
+    window.addEventListener('storage', hydrateDemoState);
+
+    return () => {
+      window.removeEventListener('demo-session-change', hydrateDemoState);
+      window.removeEventListener(DEMO_PREVIEW_EVENT, hydrateDemoState);
+      window.removeEventListener('storage', hydrateDemoState);
+    };
+  }, [hydrateDemoState, usingDemoSandbox]);
+
+  useEffect(() => {
+    if (!usingLiveData || typeof window === 'undefined') {
       return;
     }
 
@@ -680,10 +772,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [offlineOutboxScope, syncOfflineChanges]);
+  }, [offlineOutboxScope, syncOfflineChanges, usingLiveData]);
 
   useEffect(() => {
-    if (!isLiveMode) return;
+    if (!usingLiveData) return;
     if (authLoading) return;
 
     if (!currentUser) {
@@ -762,31 +854,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setWebhookBridgeStatus('error');
       setHydrated(true);
     }
-  }, [authLoading, currentUser, currentUserProfile]);
+  }, [authLoading, currentUser, currentUserProfile, usingLiveData]);
 
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('farmers', JSON.stringify(farmers)); }, [farmers, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('smsMessages', JSON.stringify(smsMessages)); }, [smsMessages, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('resources', JSON.stringify(resources)); }, [resources, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('marketPrices', JSON.stringify(marketPrices)); }, [marketPrices, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('knowledgeArticles', JSON.stringify(knowledgeArticles)); }, [knowledgeArticles, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('logbook', JSON.stringify(logbook)); }, [logbook, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('auditLogs', JSON.stringify(auditLogs)); }, [auditLogs, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('alertHistory', JSON.stringify(alertHistory)); }, [alertHistory, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('assistanceRecords', JSON.stringify(assistanceRecords)); }, [assistanceRecords, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('fieldVisitTasks', JSON.stringify(fieldVisitTasks)); }, [fieldVisitTasks, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('smsTrainingExamples', JSON.stringify(smsTrainingExamples)); }, [smsTrainingExamples, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('systemSettings', JSON.stringify(systemSettings)); }, [systemSettings, hydrated]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('farmers', JSON.stringify(farmers)); }, [farmers, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('smsMessages', JSON.stringify(smsMessages)); }, [smsMessages, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('resources', JSON.stringify(resources)); }, [resources, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('marketPrices', JSON.stringify(marketPrices)); }, [marketPrices, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('knowledgeArticles', JSON.stringify(knowledgeArticles)); }, [knowledgeArticles, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('logbook', JSON.stringify(logbook)); }, [logbook, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('auditLogs', JSON.stringify(auditLogs)); }, [auditLogs, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('alertHistory', JSON.stringify(alertHistory)); }, [alertHistory, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('assistanceRecords', JSON.stringify(assistanceRecords)); }, [assistanceRecords, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('fieldVisitTasks', JSON.stringify(fieldVisitTasks)); }, [fieldVisitTasks, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('smsTrainingExamples', JSON.stringify(smsTrainingExamples)); }, [smsTrainingExamples, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('systemSettings', JSON.stringify(systemSettings)); }, [systemSettings, hydrated, usingDemoSandbox]);
   useEffect(() => {
-    if (hydrated && isDemoMode) {
+    if (hydrated && usingDemoSandbox) {
       localStorage.setItem('users', JSON.stringify(users));
-      window.dispatchEvent(new Event('demo-session-change'));
     }
-  }, [users, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('vouchers', JSON.stringify(vouchers)); }, [vouchers, hydrated]);
-  useEffect(() => { if (hydrated && isDemoMode) localStorage.setItem('outboundMessages', JSON.stringify(outboundMessages)); }, [outboundMessages, hydrated]);
+  }, [users, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('vouchers', JSON.stringify(vouchers)); }, [vouchers, hydrated, usingDemoSandbox]);
+  useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('outboundMessages', JSON.stringify(outboundMessages)); }, [outboundMessages, hydrated, usingDemoSandbox]);
 
   useEffect(() => {
-    if (!hydrated || isLiveMode) return;
+    if (!hydrated || !usingDemoSandbox) return;
 
     let active = true;
 
@@ -814,6 +905,98 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           });
 
           if (screening.ignored) {
+            continue;
+          }
+
+          const confirmationReply = parseFarmerResolutionConfirmationReply(item.message);
+          const awaitingConfirmationMessages = confirmationReply
+            ? smsMessages
+                .filter((message) => (
+                  normalizeFarmerPhone(message.phone) === normalizeFarmerPhone(item.phone) &&
+                  message.resolutionConfirmationStatus === 'awaiting_farmer' &&
+                  !message.closedAt
+                ))
+                .sort((left, right) => normalizeTimestamp(right.timestamp) - normalizeTimestamp(left.timestamp))
+            : [];
+          const awaitingConfirmationMessage = confirmationReply
+            ? (
+                confirmationReply.caseId
+                  ? awaitingConfirmationMessages.find((message) => (message.caseId ?? '').toUpperCase() === confirmationReply.caseId)
+                  : awaitingConfirmationMessages[0]
+              ) ?? awaitingConfirmationMessages[0]
+            : null;
+
+          if (confirmationReply && awaitingConfirmationMessage) {
+            const confirmationResult = applyFarmerResolutionConfirmation({
+              message: awaitingConfirmationMessage,
+              confirmationStatus: confirmationReply.status,
+              replyBody: item.message,
+            });
+            const reminderResult = confirmationReply.status === 'reopened'
+              ? await processOfficialReminderMessage({
+                  message: confirmationResult.updatedMessage,
+                  users,
+                  settings: systemSettings,
+                  provider: smsProvider,
+                  providerName: item.provider ?? 'demo',
+                  actorName: 'system',
+                  force: true,
+                })
+              : null;
+            const finalMessage = reminderResult?.updatedMessage ?? confirmationResult.updatedMessage;
+
+            setSmsMessages((prev) => sortVisibleSmsMessages(prev.map((message) => (
+              message.id === awaitingConfirmationMessage.id ? finalMessage : message
+            ))));
+            setAuditLogs((prev) => [
+              ...(reminderResult ? [reminderResult.auditLog] : []),
+              confirmationResult.auditLog,
+              ...prev,
+            ]);
+            setLogbook((prev) => [
+              ...(reminderResult ? [reminderResult.logbookEntry] : []),
+              confirmationResult.logbookEntry,
+              ...prev,
+            ]);
+
+            if (reminderResult) {
+              setOutboundMessages((prev) => [reminderResult.outboundRecord, ...prev]);
+            }
+
+            void Promise.all([
+              smsRepository.updateMessage(awaitingConfirmationMessage.id, {
+                caseStatus: finalMessage.caseStatus,
+                closedAt: finalMessage.closedAt,
+                caseOutcomeStatus: finalMessage.caseOutcomeStatus,
+                caseOutcomeSummary: finalMessage.caseOutcomeSummary,
+                caseOutcomeUpdatedAt: finalMessage.caseOutcomeUpdatedAt,
+                caseOutcomeUpdatedBy: finalMessage.caseOutcomeUpdatedBy,
+                resolutionConfirmationStatus: finalMessage.resolutionConfirmationStatus,
+                resolutionConfirmedAt: finalMessage.resolutionConfirmedAt,
+                resolutionConfirmedBy: finalMessage.resolutionConfirmedBy,
+                resolutionConfirmationNote: finalMessage.resolutionConfirmationNote,
+                followUpDueAt: finalMessage.followUpDueAt,
+                assignedTo: finalMessage.assignedTo,
+                assignedToUserId: finalMessage.assignedToUserId,
+                assignedAt: finalMessage.assignedAt,
+                officialReminderRecipientName: finalMessage.officialReminderRecipientName,
+                officialReminderRecipientPhone: finalMessage.officialReminderRecipientPhone,
+                officialReminderDueAt: finalMessage.officialReminderDueAt,
+                officialReminderLastSentAt: finalMessage.officialReminderLastSentAt,
+                officialReminderCount: finalMessage.officialReminderCount,
+              }),
+              auditRepository.createAuditLog(confirmationResult.auditLog),
+              logbookRepository.createEntry(confirmationResult.logbookEntry),
+              ...(reminderResult
+                ? [
+                    auditRepository.createAuditLog(reminderResult.auditLog),
+                    logbookRepository.createEntry(reminderResult.logbookEntry),
+                    outboundMessageRepository.createOutboundMessage(reminderResult.outboundRecord),
+                  ]
+                : []),
+            ]).catch((error) => {
+              console.error('Failed to persist webhook farmer confirmation', error);
+            });
             continue;
           }
 
@@ -878,11 +1061,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       active = false;
       window.clearInterval(interval);
     };
-  }, [farmers, hydrated, marketPrices, smsMessages, systemSettings]);
+  }, [farmers, hydrated, marketPrices, smsMessages, systemSettings, users, usingDemoSandbox]);
 
   useEffect(() => {
     if (!hydrated) return;
-    if (isLiveMode) return;
+    if (!usingDemoSandbox) return;
 
     let active = true;
 
@@ -899,7 +1082,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             message,
             settings: systemSettings,
             provider: smsProvider,
-            providerName: isDemoMode ? 'mock-sms-provider' : 'live-sms-provider',
+            providerName: usingDemoSandbox ? 'mock-sms-provider' : 'live-sms-provider',
             actorName: 'system',
           });
 
@@ -945,10 +1128,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       active = false;
       window.clearInterval(interval);
     };
-  }, [hydrated, smsMessages, systemSettings]);
+  }, [hydrated, smsMessages, systemSettings, usingDemoSandbox]);
 
   useEffect(() => {
-    if (!hydrated || isLiveMode) return;
+    if (!hydrated || !usingDemoSandbox) return;
 
     let active = true;
 
@@ -1004,7 +1187,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       active = false;
       window.clearInterval(interval);
     };
-  }, [hydrated, smsMessages]);
+  }, [hydrated, smsMessages, usingDemoSandbox]);
 
 
   const addUser = (userData: UserManagementValues) => {
@@ -1097,7 +1280,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       action: 'UPDATE_USER_RECORD',
       details: `${nextUser.name} (${nextUser.email}) - ${nextUser.role}, ${nextUser.status ?? 'active'}, ${nextUser.preferredWorkspace ?? 'simple'}`,
     };
-    setUsers(prev => prev.map(u => (getUserRecordId(u) === userId ? nextUser : u)).sort((a, b) => a.name.localeCompare(b.name)));
+    setUsers(prev => {
+      const hasExistingUser = prev.some((user) => getUserRecordId(user) === userId);
+      const nextUsers = hasExistingUser
+        ? prev.map((user) => (getUserRecordId(user) === userId ? nextUser : user))
+        : [...prev, nextUser];
+      return nextUsers.sort((left, right) => left.name.localeCompare(right.name));
+    });
     setAuditLogs(prev => [auditLog, ...prev]);
     void userRepository.updateUser(userId, nextUser).catch((error) => {
       console.error("Failed to persist user update", error);
@@ -1185,7 +1374,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setSmsTrainingExamples(nextExamples);
     setAuditLogs((prev) => sortByDateDescending([auditLog, ...prev], (entry) => entry.timestamp));
 
-      if (isLiveMode) {
+      if (usingLiveData) {
         await Promise.all([
           ...normalizedExamples.map((example) => smsTrainingRepository.createTrainingExample(example)),
           auditRepository.createAuditLog(auditLog),
@@ -1238,7 +1427,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setKnowledgeArticles(nextArticles);
     setAuditLogs((prev) => sortByDateDescending([auditLog, ...prev], (entry) => entry.timestamp));
 
-    if (isLiveMode) {
+    if (usingLiveData) {
       await Promise.all([
         knowledgeRepository.updateKnowledgeArticles(nextArticles),
         auditRepository.createAuditLog(auditLog),
@@ -1378,7 +1567,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setSystemSettings(nextSystemSettings);
     setAuditLogs(sortByDateDescending([...mergedAuditLogs.items, importAuditLog], (item) => item.timestamp));
 
-    if (isLiveMode) {
+    if (usingLiveData) {
       await Promise.all([
         ...backup.data.farmers.map((item) => farmerRepository.createFarmer(item)),
         ...importableSmsMessages.map((item) => smsRepository.createInboundMessage(item)),
@@ -1480,15 +1669,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const updateFarmerStatus = (
+  const updateFarmerStatus = async (
     farmerId: string,
     status: Farmer['status'],
     options?: FarmerStatusUpdateOptions
   ) => {
     const currentFarmer = farmers.find((farmer) => farmer.id === farmerId);
 
-    if (!currentFarmer || currentFarmer.status === status) {
-      return;
+    if (!currentFarmer) {
+      return {
+        ok: false,
+        status,
+        reason: 'not_found' as const,
+      };
+    }
+
+    if (currentFarmer.status === status) {
+      return {
+        ok: false,
+        status,
+        farmer: currentFarmer,
+        previousFarmer: currentFarmer,
+        reason: 'no_change' as const,
+      };
     }
 
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
@@ -1550,13 +1753,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     )));
     setAuditLogs(prev => [auditLog, ...prev]);
 
-    void farmerRepository.updateFarmer(farmerId, {
-      ...buildPersistableFarmerUpdates(nextFarmer),
-    }).then(() => {
-      return auditRepository.createAuditLog(auditLog).catch((error) => {
+    try {
+      const persistedFarmer = await farmerRepository.updateFarmer(farmerId, {
+        ...buildPersistableFarmerUpdates(nextFarmer),
+      });
+
+      if (!persistedFarmer) {
+        throw new Error('Farmer record was not found in the demo data store.');
+      }
+
+      await auditRepository.createAuditLog(auditLog).catch((error) => {
         console.error("Failed to persist farmer status audit log", error);
       });
-    }).catch((error) => {
+
+      return {
+        ok: true,
+        status,
+        farmer: nextFarmer,
+        previousFarmer: currentFarmer,
+      };
+    } catch (error) {
       setFarmers(prev => prev.map((farmer) => (
         farmer.id === farmerId
           ? currentFarmer
@@ -1564,15 +1780,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       )));
       setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist farmer status update", error);
-    });
+      return {
+        ok: false,
+        status,
+        farmer: currentFarmer,
+        previousFarmer: currentFarmer,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
-  const updateManyFarmerStatuses = (farmerIds: string[], status: Farmer['status']) => {
+  const updateManyFarmerStatuses = async (farmerIds: string[], status: Farmer['status']) => {
     const normalizedIds = Array.from(new Set(farmerIds));
     const targetFarmers = farmers.filter((farmer) => normalizedIds.includes(farmer.id) && farmer.status !== status);
 
     if (targetFarmers.length === 0) {
-      return 0;
+      return {
+        ok: false,
+        status,
+        updatedCount: 0,
+        farmers: [],
+        reason: 'none_selected' as const,
+      };
     }
 
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
@@ -1601,31 +1831,54 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     )));
     setAuditLogs(prev => [auditLog, ...prev]);
 
-    void Promise.all(
-      preparedFarmers.map((farmer) =>
-        farmerRepository.updateFarmer(farmer.id, buildPersistableFarmerUpdates(farmer))
-      )
-    ).then(() => {
-      return auditRepository.createAuditLog(auditLog).catch((error) => {
+    try {
+      const persistedFarmers = await Promise.all(
+        preparedFarmers.map((farmer) =>
+          farmerRepository.updateFarmer(farmer.id, buildPersistableFarmerUpdates(farmer))
+        )
+      );
+
+      if (persistedFarmers.some((farmer) => !farmer)) {
+        throw new Error('One or more farmer records were missing from the demo data store.');
+      }
+
+      await auditRepository.createAuditLog(auditLog).catch((error) => {
         console.error("Failed to persist bulk farmer status audit log", error);
       });
-    }).catch((error) => {
+
+      return {
+        ok: true,
+        status,
+        updatedCount: preparedFarmers.length,
+        farmers: preparedFarmers,
+      };
+    } catch (error) {
       setFarmers(prev => prev.map((farmer) => {
         const originalFarmer = targetFarmers.find((candidate) => candidate.id === farmer.id);
         return originalFarmer ? originalFarmer : farmer;
       }));
       setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist bulk farmer status update", error);
-    });
 
-    return preparedFarmers.length;
+      return {
+        ok: false,
+        status,
+        updatedCount: 0,
+        farmers: targetFarmers,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
-  const deleteFarmerRecord = (farmerId: string) => {
+  const deleteFarmerRecord = async (farmerId: string) => {
     const currentFarmer = farmers.find((farmer) => farmer.id === farmerId);
 
     if (!currentFarmer) {
-      return;
+      return {
+        ok: false,
+        reason: 'not_found' as const,
+      };
     }
 
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
@@ -1641,15 +1894,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setFarmers(prev => prev.filter((farmer) => farmer.id !== farmerId));
     setAuditLogs(prev => [auditLog, ...prev]);
 
-    void farmerRepository.deleteFarmer(farmerId).then(() => {
-      return auditRepository.createAuditLog(auditLog).catch((error) => {
+    try {
+      await farmerRepository.deleteFarmer(farmerId);
+      await auditRepository.createAuditLog(auditLog).catch((error) => {
         console.error("Failed to persist farmer deletion audit log", error);
       });
-    }).catch((error) => {
+      return {
+        ok: true,
+        deletedItem: currentFarmer,
+      };
+    } catch (error) {
       setFarmers(prev => sortByDateDescending([currentFarmer, ...prev], (farmer) => farmer.registrationDate));
       setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist farmer deletion", error);
-    });
+      return {
+        ok: false,
+        deletedItem: currentFarmer,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
   const mergeFarmerRecords = async (sourceFarmerId: string, targetFarmerId: string) => {
@@ -1907,7 +2171,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addPendingFarmer = (farmerData: FarmerRegistrationValues) => {
+  const addPendingFarmer = async (farmerData: FarmerRegistrationValues) => {
+    const normalizedPhone = normalizeFarmerPhone(farmerData.phone);
+    const duplicateFarmer = farmers.find((farmer) => (
+      !farmer.mergedIntoFarmerId &&
+      farmer.status !== 'archived' &&
+      normalizeFarmerPhone(farmer.phone) === normalizedPhone &&
+      !(farmer.sharedPhone || farmerData.sharedPhone)
+    ));
+
+    if (duplicateFarmer) {
+      return {
+        ok: false,
+        reason: 'duplicate' as const,
+        item: duplicateFarmer,
+      };
+    }
+
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
     const timestamp = new Date().toISOString();
     const newFarmer = prepareFarmerRecord({
@@ -1934,10 +2214,36 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       timestamp,
       reason: 'Manually submitted pending farmer registration.',
     });
-    setFarmers(prev => [...prev, newFarmer]);
-    void farmerRepository.createFarmer(newFarmer).catch((error) => {
+    const auditLog: AuditLog = {
+      id: createEntityId('AUD'),
+      timestamp,
+      user: actorName,
+      action: 'CREATE_PENDING_FARMER',
+      details: `${newFarmer.name} (${newFarmer.phone})`,
+    };
+
+    setFarmers(prev => sortByDateDescending([newFarmer, ...prev], (farmer) => farmer.registrationDate));
+    setAuditLogs(prev => [auditLog, ...prev]);
+
+    try {
+      await farmerRepository.createFarmer(newFarmer);
+      await auditRepository.createAuditLog(auditLog).catch((error) => {
+        console.error("Failed to persist pending farmer audit log", error);
+      });
+      return {
+        ok: true,
+        item: newFarmer,
+      };
+    } catch (error) {
+      setFarmers(prev => prev.filter((farmer) => farmer.id !== newFarmer.id));
+      setAuditLogs(prev => prev.filter((entry) => entry.id !== auditLog.id));
       console.error("Failed to persist pending farmer", error);
-    });
+      return {
+        ok: false,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
   
   const addKnowledgeArticle = (data: NewKnowledgeArticleData) => {
@@ -1986,7 +2292,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   };
   
-  const addVoucher = (voucherData: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => {
+  const addVoucher = async (voucherData: Omit<Voucher, 'id' | 'code' | 'status' | 'issueDate'>) => {
+    const farmer = farmers.find((entry) => entry.id === voucherData.farmerId);
+    const resource = resources.find((entry) => entry.id === voucherData.resourceId);
+
+    if (!farmer || !resource || voucherData.quantity <= 0) {
+      return {
+        ok: false,
+        reason: 'invalid' as const,
+      };
+    }
+
+    if (resource.stock < voucherData.quantity) {
+      return {
+        ok: false,
+        reason: 'insufficient_stock' as const,
+        previousItem: resource as unknown as Voucher,
+      };
+    }
+
     const newVoucher: Voucher = {
       ...voucherData,
       id: `VOUCH${Date.now()}`,
@@ -1995,82 +2319,283 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       issueDate: new Date().toISOString(),
     };
     setVouchers(prev => [newVoucher, ...prev]);
-    void voucherRepository.createVoucher(newVoucher).catch((error) => {
+    try {
+      await voucherRepository.createVoucher(newVoucher);
+      return {
+        ok: true,
+        item: newVoucher,
+      };
+    } catch (error) {
+      setVouchers(prev => prev.filter((voucher) => voucher.id !== newVoucher.id));
       console.error("Failed to persist voucher", error);
-    });
+      return {
+        ok: false,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
-  const updateVoucherStatus = (voucherId: string, status: VoucherStatus) => {
+  const updateVoucherStatus = async (voucherId: string, status: VoucherStatus) => {
+    const previousVoucher = vouchers.find((voucher) => voucher.id === voucherId);
+
+    if (!previousVoucher) {
+      return {
+        ok: false,
+        reason: 'not_found' as const,
+      };
+    }
+
+    if (previousVoucher.status === status) {
+      return {
+        ok: false,
+        reason: 'no_change' as const,
+        item: previousVoucher,
+        previousItem: previousVoucher,
+      };
+    }
+
+    if ((previousVoucher.status === 'redeemed' || previousVoucher.status === 'voided') && status === 'redeemed') {
+      return {
+        ok: false,
+        reason: 'invalid' as const,
+        item: previousVoucher,
+        previousItem: previousVoucher,
+      };
+    }
+
+    const linkedResource = resources.find((resource) => resource.id === previousVoucher.resourceId);
+    const previousResource = linkedResource ? { ...linkedResource } : undefined;
     const nextRedemptionDate = status === 'redeemed' ? new Date().toISOString() : undefined;
+    const stockDelta =
+      previousVoucher.status !== 'redeemed' && status === 'redeemed'
+        ? -previousVoucher.quantity
+        : previousVoucher.status === 'redeemed' && status !== 'redeemed'
+          ? previousVoucher.quantity
+          : 0;
+
+    if (stockDelta !== 0 && !linkedResource) {
+      return {
+        ok: false,
+        reason: 'invalid' as const,
+        item: previousVoucher,
+        previousItem: previousVoucher,
+      };
+    }
+
+    if (linkedResource && linkedResource.stock + stockDelta < 0) {
+      return {
+        ok: false,
+        reason: 'insufficient_stock' as const,
+        item: previousVoucher,
+        previousItem: previousVoucher,
+      };
+    }
+
+    const nextVoucher: Voucher = {
+      ...previousVoucher,
+      status,
+      redemptionDate: nextRedemptionDate ?? previousVoucher.redemptionDate,
+    };
+    const nextResource = linkedResource && stockDelta !== 0
+      ? {
+          ...linkedResource,
+          stock: linkedResource.stock + stockDelta,
+          lastUpdated: new Date().toISOString(),
+        }
+      : undefined;
     setVouchers(prev =>
       prev.map(v =>
         v.id === voucherId
-          ? { ...v, status, redemptionDate: nextRedemptionDate ?? v.redemptionDate }
+          ? nextVoucher
           : v
       )
     );
-    void voucherRepository.updateVoucher(voucherId, {
-      status,
-      redemptionDate: nextRedemptionDate,
-    }).catch((error) => {
+    if (nextResource) {
+      setResources(prev => prev.map((resource) => (
+        resource.id === nextResource.id ? nextResource : resource
+      )));
+    }
+
+    try {
+      await voucherRepository.updateVoucher(voucherId, {
+        status,
+        redemptionDate: nextRedemptionDate,
+      });
+
+      if (nextResource) {
+        const persistedResource = await resourceRepository.updateResource(nextResource.id, {
+          stock: nextResource.stock,
+          lastUpdated: nextResource.lastUpdated,
+        });
+
+        if (!persistedResource) {
+          throw new Error('Resource record was not found while updating voucher stock.');
+        }
+      }
+
+      return {
+        ok: true,
+        item: nextVoucher,
+        previousItem: previousVoucher,
+      };
+    } catch (error) {
+      setVouchers(prev =>
+        prev.map((voucher) => (
+          voucher.id === voucherId ? previousVoucher : voucher
+        ))
+      );
+      if (previousResource) {
+        setResources(prev => prev.map((resource) => (
+          resource.id === previousResource.id ? previousResource : resource
+        )));
+      }
       console.error("Failed to persist voucher update", error);
-    });
+      return {
+        ok: false,
+        reason: 'persist_failed' as const,
+        item: previousVoucher,
+        previousItem: previousVoucher,
+        error,
+      };
+    }
   };
   
-  const addResource = (data: NewResourceData) => {
+  const addResource = async (data: NewResourceData) => {
+    const duplicateResource = resources.find((resource) => (
+      normalizeResourceRecordKey(resource.name, resource.category) === normalizeResourceRecordKey(data.name, data.category)
+    ));
+
+    if (duplicateResource) {
+      return {
+        ok: false,
+        reason: 'duplicate' as const,
+        item: duplicateResource,
+      };
+    }
+
     const newResource: Resource = {
       ...data,
       id: `RES${Date.now()}`,
       lastUpdated: new Date().toISOString(),
     };
     setResources(prev => [newResource, ...prev]);
-    void resourceRepository.createResource(newResource).catch((error) => {
+    try {
+      await resourceRepository.createResource(newResource);
+      return {
+        ok: true,
+        item: newResource,
+      };
+    } catch (error) {
       setResources(prev => prev.filter((resource) => resource.id !== newResource.id));
       console.error("Failed to persist resource", error);
-    });
+      return {
+        ok: false,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
-  const updateResource = (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => {
+  const updateResource = async (resourceId: string, data: Partial<Omit<Resource, 'id' | 'lastUpdated'>>) => {
     const previousResource = resources.find((resource) => resource.id === resourceId);
 
     if (!previousResource) {
-      return;
+      return {
+        ok: false,
+        reason: 'not_found' as const,
+      };
+    }
+
+    const candidateName = data.name ?? previousResource.name;
+    const candidateCategory = data.category ?? previousResource.category;
+    const duplicateResource = resources.find((resource) => (
+      resource.id !== resourceId &&
+      normalizeResourceRecordKey(resource.name, resource.category) === normalizeResourceRecordKey(candidateName, candidateCategory)
+    ));
+
+    if (duplicateResource) {
+      return {
+        ok: false,
+        reason: 'duplicate' as const,
+        item: previousResource,
+        previousItem: previousResource,
+      };
     }
 
     const nextUpdatedAt = new Date().toISOString();
-    setResources(prev =>
-      prev.map(r =>
-        r.id === resourceId ? { ...r, ...data, lastUpdated: nextUpdatedAt } : r
-      )
-    );
-    void resourceRepository.updateResource(resourceId, {
+    const nextResource: Resource = {
+      ...previousResource,
       ...data,
       lastUpdated: nextUpdatedAt,
-    }).catch((error) => {
+    };
+    setResources(prev =>
+      prev.map(r =>
+        r.id === resourceId ? nextResource : r
+      )
+    );
+    try {
+      const persistedResource = await resourceRepository.updateResource(resourceId, {
+        ...data,
+        lastUpdated: nextUpdatedAt,
+      });
+
+      if (!persistedResource) {
+        throw new Error('Resource record was not found in the data store.');
+      }
+
+      return {
+        ok: true,
+        item: nextResource,
+        previousItem: previousResource,
+      };
+    } catch (error) {
       setResources(prev => prev.map((resource) => (
         resource.id === resourceId ? previousResource : resource
       )));
       console.error("Failed to persist resource update", error);
-    });
+      return {
+        ok: false,
+        reason: 'persist_failed' as const,
+        item: previousResource,
+        previousItem: previousResource,
+        error,
+      };
+    }
   };
   
-  const deleteResource = (resourceId: string) => {
+  const deleteResource = async (resourceId: string) => {
     const previousResource = resources.find((resource) => resource.id === resourceId);
 
     if (!previousResource) {
-      return;
+      return {
+        ok: false,
+        reason: 'not_found' as const,
+      };
     }
 
     setResources(prev => prev.filter(r => r.id !== resourceId));
-    void resourceRepository.deleteResource(resourceId).catch((error) => {
+    try {
+      await resourceRepository.deleteResource(resourceId);
+      return {
+        ok: true,
+        deletedItem: previousResource,
+      };
+    } catch (error) {
       setResources(prev => [previousResource, ...prev].sort((left, right) => (
         normalizeTimestamp(right.lastUpdated) - normalizeTimestamp(left.lastUpdated)
       )));
       console.error("Failed to persist resource deletion", error);
-    });
+      return {
+        ok: false,
+        deletedItem: previousResource,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
-  const addMarketPriceEntry = (data: NewMarketPriceData) => {
+  const addMarketPriceEntry = async (data: NewMarketPriceData) => {
     const nextEntry: MarketPriceEntry = {
       ...data,
       id: createEntityId('PRICE'),
@@ -2078,35 +2603,101 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     setMarketPrices(prev => [nextEntry, ...prev]);
-    void marketPriceRepository.createMarketPriceEntry(nextEntry).catch((error) => {
+    try {
+      await marketPriceRepository.createMarketPriceEntry(nextEntry);
+      return {
+        ok: true,
+        item: nextEntry,
+      };
+    } catch (error) {
+      setMarketPrices(prev => prev.filter((entry) => entry.id !== nextEntry.id));
       console.error("Failed to persist market price entry", error);
-    });
+      return {
+        ok: false,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
-  const updateMarketPriceEntry = (entryId: string, data: NewMarketPriceData) => {
+  const updateMarketPriceEntry = async (entryId: string, data: NewMarketPriceData) => {
+    const previousEntry = marketPrices.find((entry) => entry.id === entryId);
+
+    if (!previousEntry) {
+      return {
+        ok: false,
+        reason: 'not_found' as const,
+      };
+    }
+
     const nextUpdatedAt = new Date().toISOString();
-    setMarketPrices(prev => prev.map((entry) => (
-      entry.id === entryId
-        ? {
-            ...entry,
-            ...data,
-            updatedAt: nextUpdatedAt,
-          }
-        : entry
-    )));
-    void marketPriceRepository.updateMarketPriceEntry(entryId, {
+    const nextEntry: MarketPriceEntry = {
+      ...previousEntry,
       ...data,
       updatedAt: nextUpdatedAt,
-    }).catch((error) => {
+    };
+    setMarketPrices(prev => prev.map((entry) => (
+      entry.id === entryId
+        ? nextEntry
+        : entry
+    )));
+    try {
+      const persistedEntry = await marketPriceRepository.updateMarketPriceEntry(entryId, {
+        ...data,
+        updatedAt: nextUpdatedAt,
+      });
+
+      if (!persistedEntry) {
+        throw new Error('Market price entry was not found in the data store.');
+      }
+
+      return {
+        ok: true,
+        item: nextEntry,
+        previousItem: previousEntry,
+      };
+    } catch (error) {
+      setMarketPrices(prev => prev.map((entry) => (
+        entry.id === entryId ? previousEntry : entry
+      )));
       console.error("Failed to persist market price update", error);
-    });
+      return {
+        ok: false,
+        reason: 'persist_failed' as const,
+        item: previousEntry,
+        previousItem: previousEntry,
+        error,
+      };
+    }
   };
 
-  const deleteMarketPriceEntry = (entryId: string) => {
+  const deleteMarketPriceEntry = async (entryId: string) => {
+    const previousEntry = marketPrices.find((entry) => entry.id === entryId);
+
+    if (!previousEntry) {
+      return {
+        ok: false,
+        reason: 'not_found' as const,
+      };
+    }
+
     setMarketPrices(prev => prev.filter((entry) => entry.id !== entryId));
-    void marketPriceRepository.deleteMarketPriceEntry(entryId).catch((error) => {
+    try {
+      await marketPriceRepository.deleteMarketPriceEntry(entryId);
+      return {
+        ok: true,
+        deletedItem: previousEntry,
+      };
+    } catch (error) {
+      setMarketPrices(prev => sortByDateDescending([previousEntry, ...prev], (entry) => entry.updatedAt));
       console.error("Failed to delete market price entry", error);
-    });
+      return {
+        ok: false,
+        deletedItem: previousEntry,
+        reason: 'persist_failed' as const,
+        error,
+      };
+    }
   };
 
   const broadcastAlert = async (data: NewAlertBroadcastData) => {
@@ -2561,6 +3152,103 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
+    const confirmationReply = parseFarmerResolutionConfirmationReply(data.message);
+    const awaitingConfirmationMessages = confirmationReply
+      ? smsMessages
+          .filter((message) => (
+            normalizeFarmerPhone(message.phone) === normalizeFarmerPhone(data.phone) &&
+            message.resolutionConfirmationStatus === 'awaiting_farmer' &&
+            !message.closedAt
+          ))
+          .sort((left, right) => normalizeTimestamp(right.timestamp) - normalizeTimestamp(left.timestamp))
+      : [];
+    const awaitingConfirmationMessage = confirmationReply
+      ? (
+          confirmationReply.caseId
+            ? awaitingConfirmationMessages.find((message) => (message.caseId ?? '').toUpperCase() === confirmationReply.caseId)
+            : awaitingConfirmationMessages[0]
+        ) ?? awaitingConfirmationMessages[0]
+      : null;
+
+    if (confirmationReply && awaitingConfirmationMessage) {
+      const confirmationResult = applyFarmerResolutionConfirmation({
+        message: awaitingConfirmationMessage,
+        confirmationStatus: confirmationReply.status,
+        replyBody: data.message,
+      });
+      const reminderPromise = confirmationReply.status === 'reopened'
+        ? processOfficialReminderMessage({
+            message: confirmationResult.updatedMessage,
+            users,
+            settings: systemSettings,
+            provider: smsProvider,
+            providerName: 'demo',
+            actorName: 'system',
+            force: true,
+          })
+        : Promise.resolve(null);
+
+      void reminderPromise.then((reminderResult) => {
+        const finalMessage = reminderResult?.updatedMessage ?? confirmationResult.updatedMessage;
+
+        setSmsMessages((prev) => sortVisibleSmsMessages(prev.map((message) => (
+          message.id === awaitingConfirmationMessage.id ? finalMessage : message
+        ))));
+        setAuditLogs((prev) => [
+          ...(reminderResult ? [reminderResult.auditLog] : []),
+          confirmationResult.auditLog,
+          ...prev,
+        ]);
+        setLogbook((prev) => [
+          ...(reminderResult ? [reminderResult.logbookEntry] : []),
+          confirmationResult.logbookEntry,
+          ...prev,
+        ]);
+        if (reminderResult) {
+          setOutboundMessages((prev) => [reminderResult.outboundRecord, ...prev]);
+        }
+
+        void Promise.all([
+          smsRepository.updateMessage(awaitingConfirmationMessage.id, {
+            caseStatus: finalMessage.caseStatus,
+            closedAt: finalMessage.closedAt,
+            caseOutcomeStatus: finalMessage.caseOutcomeStatus,
+            caseOutcomeSummary: finalMessage.caseOutcomeSummary,
+            caseOutcomeUpdatedAt: finalMessage.caseOutcomeUpdatedAt,
+            caseOutcomeUpdatedBy: finalMessage.caseOutcomeUpdatedBy,
+            resolutionConfirmationStatus: finalMessage.resolutionConfirmationStatus,
+            resolutionConfirmedAt: finalMessage.resolutionConfirmedAt,
+            resolutionConfirmedBy: finalMessage.resolutionConfirmedBy,
+            resolutionConfirmationNote: finalMessage.resolutionConfirmationNote,
+            followUpDueAt: finalMessage.followUpDueAt,
+            assignedTo: finalMessage.assignedTo,
+            assignedToUserId: finalMessage.assignedToUserId,
+            assignedAt: finalMessage.assignedAt,
+            officialReminderRecipientName: finalMessage.officialReminderRecipientName,
+            officialReminderRecipientPhone: finalMessage.officialReminderRecipientPhone,
+            officialReminderDueAt: finalMessage.officialReminderDueAt,
+            officialReminderLastSentAt: finalMessage.officialReminderLastSentAt,
+            officialReminderCount: finalMessage.officialReminderCount,
+          }),
+          auditRepository.createAuditLog(confirmationResult.auditLog),
+          logbookRepository.createEntry(confirmationResult.logbookEntry),
+          ...(reminderResult
+            ? [
+                auditRepository.createAuditLog(reminderResult.auditLog),
+                logbookRepository.createEntry(reminderResult.logbookEntry),
+                outboundMessageRepository.createOutboundMessage(reminderResult.outboundRecord),
+              ]
+            : []),
+        ]).catch((error) => {
+          console.error('Failed to persist inbound farmer confirmation', error);
+        });
+      }).catch((error) => {
+        console.error('Failed to apply inbound farmer confirmation', error);
+      });
+
+      return confirmationResult.updatedMessage;
+    }
+
     const workflow = processInboundSms({
       phone: data.phone,
       message: data.message,
@@ -2568,7 +3256,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       existingMessages: smsMessages,
       analysis: data.analysis,
       settings: systemSettings,
-      sourceProvider: 'demo',
+      sourceProvider: data.sourceProvider ?? 'demo',
     });
     const newMessage = applyPriceWatchAdvice(workflow.message, marketPrices);
 
@@ -2702,7 +3390,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         ? {
             sourceMessage: nextMessage,
             body: nextMessage.aiAdvice,
-            providerName: isDemoMode ? 'mock-sms-provider' : 'live-sms-provider',
+              providerName: usingDemoSandbox ? 'mock-sms-provider' : 'live-sms-provider',
             audience: 'farmer' as const,
             purpose: 'manual_reply' as const,
           }
@@ -2778,13 +3466,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const assignSmsMessage = (messageId: string, assigneeName?: string) => {
     const assignedAt = new Date().toISOString();
-    const actorName = assigneeName ?? currentUserProfile?.name ?? 'Brgy. Admin';
+    const assigneeUser = users.find((user) => (
+      getUserAssignmentId(user) === assigneeName?.trim().toLowerCase() ||
+      user.name.trim().toLowerCase() === assigneeName?.trim().toLowerCase()
+    )) ?? currentUserProfile ?? null;
+    const actorName = assigneeName ?? assigneeUser?.name ?? currentUserProfile?.name ?? 'Brgy. Admin';
+    const actorUserId = getUserAssignmentId(assigneeUser);
 
     setSmsMessages(prev => prev.map((message) => (
       message.id === messageId
         ? {
             ...message,
             assignedTo: actorName,
+            assignedToUserId: actorUserId || message.assignedToUserId,
             assignedAt,
             caseStatus: message.caseStatus === 'closed' ? 'closed' : 'assigned',
           }
@@ -2802,6 +3496,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const assignmentUpdates = {
       assignedTo: actorName,
+      assignedToUserId: actorUserId || undefined,
       assignedAt,
       caseStatus: 'assigned' as const,
     };
@@ -2951,7 +3646,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
 
-    if (isLiveMode && outcomeStatus === 'resolved') {
+    if (usingLiveData && outcomeStatus === 'resolved') {
       void (async () => {
         try {
           const idToken = await getClientAuth().currentUser?.getIdToken();
@@ -3362,7 +4057,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       sourceMessage,
       body: currentRecord.body,
       provider: smsProvider,
-      providerName: isDemoMode ? 'mock-sms-provider' : 'live-sms-provider',
+      providerName: usingDemoSandbox ? 'mock-sms-provider' : 'live-sms-provider',
       audience: currentRecord.audience,
       purpose: currentRecord.purpose,
     });
@@ -3463,27 +4158,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setFieldVisitTasks(initialFieldVisitTasks);
       setSmsTrainingExamples(initialSmsTrainingExamples);
       setSystemSettings(defaultSystemSettings);
-      setUsers(initialUsers);
-      setVouchers(initialVouchers);
-      setOutboundMessages(initialOutboundMessages);
-
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('farmers');
-      localStorage.removeItem('smsMessages');
-      localStorage.removeItem('resources');
-      localStorage.removeItem('marketPrices');
-      localStorage.removeItem('knowledgeArticles');
-      localStorage.removeItem('logbook');
-      localStorage.removeItem('auditLogs');
-      localStorage.removeItem('alertHistory');
-      localStorage.removeItem('assistanceRecords');
-      localStorage.removeItem('fieldVisitTasks');
-      localStorage.removeItem('smsTrainingExamples');
-      localStorage.removeItem('systemSettings');
-      localStorage.removeItem('users');
-      localStorage.removeItem('vouchers');
-      localStorage.removeItem('outboundMessages');
-    }
+    setUsers(initialUsers);
+    setVouchers(initialVouchers);
+    setOutboundMessages(initialOutboundMessages);
+    clearDemoStoreData();
   };
 
   React.useEffect(() => {

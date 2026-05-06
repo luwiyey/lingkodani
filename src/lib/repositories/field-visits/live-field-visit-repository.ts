@@ -10,14 +10,10 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { FieldVisitTask } from "@/lib/types";
 import type { FieldVisitRepository } from "@/lib/repositories/field-visits/types";
-
-function compactUndefined<T extends Record<string, unknown>>(input: T) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
-}
 
 export const liveFieldVisitRepository: FieldVisitRepository = {
   async listFieldVisitTasks() {
@@ -26,18 +22,19 @@ export const liveFieldVisitRepository: FieldVisitRepository = {
       query(collection(db, firebaseCollections.fieldVisitTasks), orderBy("scheduledFor", "asc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as FieldVisitTask);
+    return snapshot.docs.map((item) => withFirestoreDocId<FieldVisitTask>(item));
   },
 
   async createFieldVisitTask(task) {
     const db = getClientFirestore();
-    await setDoc(doc(db, firebaseCollections.fieldVisitTasks, task.id), task);
-    return task;
+    const payload = sanitizeFirestoreDocument(task);
+    await setDoc(doc(db, firebaseCollections.fieldVisitTasks, task.id), payload);
+    return payload;
   },
 
   async updateFieldVisitTask(id, updates) {
     const db = getClientFirestore();
-    const payload = compactUndefined(updates);
+    const payload = sanitizeFirestorePatch(updates);
     await updateDoc(doc(db, firebaseCollections.fieldVisitTasks, id), payload);
     return {
       id,

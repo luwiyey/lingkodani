@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 
 import { isLiveMode } from "@/lib/config/app-mode";
 import { consumeInboundWebhooks, peekInboundWebhookCount } from "@/lib/server/inbound-sms-queue";
+import { hasServerDemoPreviewAccess } from "@/lib/server/session-auth";
 
 export async function GET() {
-  if (isLiveMode) {
+  if (isLiveMode && !(await hasServerDemoPreviewAccess())) {
     return NextResponse.json({
       queued: 0,
     });
@@ -16,7 +17,7 @@ export async function GET() {
 }
 
 export async function POST() {
-  if (isLiveMode) {
+  if (isLiveMode && !(await hasServerDemoPreviewAccess())) {
     return NextResponse.json({
       items: [],
       count: 0,

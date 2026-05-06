@@ -93,6 +93,8 @@ function ApprovalsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [updatingFarmerIds, setUpdatingFarmerIds] = useState<string[]>([]);
+  const [isApprovingAll, setIsApprovingAll] = useState(false);
   const importRef = React.useRef<HTMLInputElement>(null);
   const focusedFarmerId = searchParams.get('farmer');
 
@@ -147,13 +149,50 @@ function ApprovalsPageContent() {
     );
   }, [farmers, pendingFarmers]);
 
-  const handleApproval = (farmerId: string, isApproved: boolean) => {
+  const handleApproval = async (farmerId: string, isApproved: boolean) => {
     const farmerToUpdate = farmers.find((farmer) => farmer.id === farmerId);
-    if (!farmerToUpdate) return;
+
+    if (!farmerToUpdate) {
+      toast({
+        title: 'Walang farmer record',
+        description: 'Hindi na makita ang pending farmer na ito. Subukang i-refresh ang page.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (farmerToUpdate.status !== 'pending_approval') {
+      toast({
+        title: 'Hindi na valid ang approval action',
+        description: `Si ${farmerToUpdate.name} ay wala na sa pending approvals queue.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (updatingFarmerIds.includes(farmerId)) {
+      return;
+    }
 
     const newStatus = isApproved ? 'active' : 'rejected';
 
-    updateFarmerStatus(farmerId, newStatus);
+    setUpdatingFarmerIds((prev) => [...prev, farmerId]);
+    const result = await updateFarmerStatus(farmerId, newStatus);
+    setUpdatingFarmerIds((prev) => prev.filter((id) => id !== farmerId));
+
+    if (!result.ok) {
+      toast({
+        title: 'Hindi natuloy ang update',
+        description:
+          result.reason === 'no_change'
+            ? `Si ${farmerToUpdate.name} ay na-process na dati.`
+            : result.reason === 'not_found'
+              ? 'Hindi makita ang farmer record sa demo data store.'
+              : 'May problema sa pag-save ng approval sa demo data store.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     toast({
       title: isApproved ? "Magsasaka Inaprubahan" : "Magsasaka Tinanggihan",
@@ -161,7 +200,7 @@ function ApprovalsPageContent() {
     });
   };
 
-  const handleApproveAll = () => {
+  const handleApproveAll = async () => {
     if (pendingFarmers.length === 0) {
       toast({
         title: "Walang Nakabinbing Pag-apruba",
@@ -186,14 +225,28 @@ function ApprovalsPageContent() {
       return;
     }
 
-    updateManyFarmerStatuses(
+    setIsApprovingAll(true);
+    const result = await updateManyFarmerStatuses(
       reviewSafeFarmers.map((farmer) => farmer.id),
       'active'
     );
+    setIsApprovingAll(false);
+
+    if (!result.ok) {
+      toast({
+        title: 'Hindi natuloy ang bulk approval',
+        description:
+          result.reason === 'none_selected'
+            ? 'Walang valid na farmer records para i-update.'
+            : 'May problema sa pag-save ng bulk approval sa demo data store.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     toast({
       title: "Lahat ay Inaprubahan",
-      description: `${reviewSafeFarmers.length} na magsasaka ang naaprubahan.${skippedForReview > 0 ? ` ${skippedForReview} ang iniwan muna para sa duplicate review.` : ''}`,
+      description: `${result.updatedCount} na magsasaka ang naaprubahan.${skippedForReview > 0 ? ` ${skippedForReview} ang iniwan muna para sa duplicate review.` : ''}`,
     });
   };
 
@@ -250,9 +303,14 @@ function ApprovalsPageContent() {
           continue;
         }
 
-        addPendingFarmer(importedFarmer);
-        existingPhones.add(normalizedPhone);
-        importedCount += 1;
+        const result = await addPendingFarmer(importedFarmer);
+
+        if (result.ok) {
+          existingPhones.add(normalizedPhone);
+          importedCount += 1;
+        } else {
+          skippedCount += 1;
+        }
       }
 
       toast({
@@ -317,7 +375,9 @@ function ApprovalsPageContent() {
               <DropdownMenuItem onClick={() => handleExport('json')}>Export JSON</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button onClick={handleApproveAll}>Aprubahan Lahat</Button>
+          <Button onClick={() => void handleApproveAll()} disabled={isApprovingAll}>
+            {isApprovingAll ? 'Inaaprubahan...' : 'Aprubahan Lahat'}
+          </Button>
         </div>
       </div>
 
@@ -412,12 +472,23 @@ function ApprovalsPageContent() {
                         <TableCell className="text-right px-2 py-4 md:px-4">
                           <div className="flex justify-end gap-2">
                             <HoverTooltip text="Aprubahan">
-                              <Button size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, true)}>
+                              <Button
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => void handleApproval(farmer.id, true)}
+                                disabled={updatingFarmerIds.includes(farmer.id)}
+                              >
                                 <Check className="h-4 w-4" />
                               </Button>
                             </HoverTooltip>
                             <HoverTooltip text="Tanggihan">
-                              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleApproval(farmer.id, false)}>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => void handleApproval(farmer.id, false)}
+                                disabled={updatingFarmerIds.includes(farmer.id)}
+                              >
                                 <X className="h-4 w-4" />
                               </Button>
                             </HoverTooltip>

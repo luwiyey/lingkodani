@@ -28,5 +28,13 @@ service firebase.storage {
     match /farmer-evidence/{allPaths=**} {
       allow read, write: if isAuthorizedStaff();
     }
+
+    match /profile-avatars/users/{allPaths=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
+
+    match /profile-avatars/farmers/{allPaths=**} {
+      allow read, write: if isAuthorizedStaff();
+    }
   }
 }

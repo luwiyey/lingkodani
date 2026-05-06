@@ -9,6 +9,8 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { AlertHistoryEntry } from "@/lib/types";
 import type { AlertHistoryRepository } from "@/lib/repositories/alert-history/types";
 
@@ -19,12 +21,13 @@ export const liveAlertHistoryRepository: AlertHistoryRepository = {
       query(collection(db, firebaseCollections.alertHistory), orderBy("timestamp", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as AlertHistoryEntry);
+    return snapshot.docs.map((item) => withFirestoreDocId<AlertHistoryEntry>(item));
   },
 
   async createAlertHistoryEntry(entry) {
     const db = getClientFirestore();
-    await setDoc(doc(db, firebaseCollections.alertHistory, entry.id), entry);
-    return entry;
+    const payload = sanitizeFirestoreDocument(entry);
+    await setDoc(doc(db, firebaseCollections.alertHistory, entry.id), payload);
+    return payload;
   },
 };

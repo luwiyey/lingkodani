@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_config.dart';
+import 'legal_and_privacy_screen.dart';
 import '../state/app_state.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -39,7 +40,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(appState.errorMessage ?? 'Hindi makapag-sign in sa ngayon.'),
+          content: Text(
+            appState.errorMessage ?? 'Hindi makapag-sign in sa ngayon.',
+          ),
         ),
       );
     }
@@ -158,7 +161,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
                             child: Text(
-                              appState.submitting ? 'Nagla-login...' : 'Mag-log in',
+                              appState.submitting
+                                  ? 'Nagla-login...'
+                                  : 'Mag-log in',
                             ),
                           ),
                         ),
@@ -168,6 +173,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const LegalAndPrivacyScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.verified_user_outlined),
+                            label: const Text('Privacy, data use, and support'),
+                          ),
+                        ),
+                        Text(
+                          'Privacy policy: ${AppConfig.privacyPolicyUrl}',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
                           ),
                         ),
                       ],

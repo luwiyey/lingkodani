@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Pie, PieChart, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -31,6 +32,14 @@ const chartConfig = {
 export function MessageToneChart() {
   const { messageToneData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Tono ng Mensahe",
+      timeframe,
+      description: "Pamamahagi ng mensahe ayon sa natukoy na tono.",
+      rows: sanitizePrintableRows(messageToneData),
+    });
+  };
   
   const concernedTone = messageToneData.find(d => d.tone === 'Nag-aalala')?.count ?? 0;
   const criticalTone = messageToneData.find(d => d.tone === 'Kritikal')?.count ?? 0;
@@ -78,7 +87,7 @@ export function MessageToneChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -130,6 +139,7 @@ export function MessageToneChart() {
     </Dialog>
   )
 }
+
 
 
 

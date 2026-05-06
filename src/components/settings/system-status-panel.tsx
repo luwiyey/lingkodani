@@ -12,6 +12,7 @@ import { useRuntimeHealth } from "@/hooks/use-runtime-health";
 import { canAccessDataCenter } from "@/lib/access-control";
 import { isLiveMode } from "@/lib/config/app-mode";
 import type { RuntimeHealthStatus } from "@/lib/types";
+import { getPreferredWorkspace } from "@/lib/user-workspace";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,7 @@ export function SystemStatusPanel() {
   const [retryingOutboundId, setRetryingOutboundId] = useState<string | null>(null);
 
   const canOpenDataCenter = canAccessDataCenter(currentUserProfile);
+  const isSimpleWorkspace = getPreferredWorkspace(currentUserProfile) === "simple";
   const loading = capabilitiesLoading || runtimeHealthLoading;
   const overdueHealth = runtimeHealth.records.find((record) => record.id === "automation_overdue");
   const followUpHealth = runtimeHealth.records.find((record) => record.id === "automation_followups");
@@ -137,37 +139,59 @@ export function SystemStatusPanel() {
   const priorityItems: string[] = [];
 
   if (!capabilities.liveSmsConfigured) {
-    priorityItems.push("Tapusin ang SMS provider setup bago umasa sa totoong mensahe mula sa mga magsasaka.");
+    priorityItems.push(
+      isSimpleWorkspace
+        ? "Hindi pa handa ang totoong text para sa magsasaka. Ayusin muna ang SMS setup."
+        : "Tapusin ang SMS provider setup bago umasa sa totoong mensahe mula sa mga magsasaka."
+    );
   }
 
   if (runtimeHealth.latestFailure?.lastError) {
     priorityItems.push(
-      `May huling isyu sa ${runtimeHealth.latestFailure.label}. Tingnan ang technical details para sa error at susunod na aksyon.`
+      isSimpleWorkspace
+        ? `May huling problema sa ${runtimeHealth.latestFailure.label}. Tingnan sa ibaba kung ano ang susunod na gagawin.`
+        : `May huling isyu sa ${runtimeHealth.latestFailure.label}. Tingnan ang technical details para sa error at susunod na aksyon.`
     );
   }
 
   if (outboundSummary.needsAttentionCount > 0) {
     priorityItems.push(
-      `${outboundSummary.needsAttentionCount} recent outbound SMS ang nangangailangan ng manual review o follow-up.`
+      isSimpleWorkspace
+        ? `${outboundSummary.needsAttentionCount} mensahe ang may kailangang silipin o balikan.`
+        : `${outboundSummary.needsAttentionCount} recent outbound SMS ang nangangailangan ng manual review o follow-up.`
     );
   }
 
   if (!capabilities.inviteEmailConfigured) {
-    priorityItems.push("Kung gusto ng mas ligtas na onboarding ng staff, i-set up ang automatic invite email.");
+    priorityItems.push(
+      isSimpleWorkspace
+        ? "Kung may bagong staff, mas mabuting ayusin ang automatic na setup link sa email."
+        : "Kung gusto ng mas ligtas na onboarding ng staff, i-set up ang automatic invite email."
+    );
   }
 
   if (!capabilities.mobilePushConfigured) {
-    priorityItems.push("Kung gagamitin ang mobile app sa field, tapusin ang Firebase mobile push setup.");
+    priorityItems.push(
+      isSimpleWorkspace
+        ? "Kung gagamitin ang cellphone app sa field, tapusin muna ang mobile alert setup."
+        : "Kung gagamitin ang mobile app sa field, tapusin ang Firebase mobile push setup."
+    );
   }
 
   if (outboundReconciliation.statusMismatchCount > 0 || outboundReconciliation.providerIdMissingCount > 0) {
     priorityItems.push(
-      `${outboundReconciliation.statusMismatchCount + outboundReconciliation.providerIdMissingCount} outbound record ang may reconciliation mismatch o kulang na provider metadata.`
+      isSimpleWorkspace
+        ? `${outboundReconciliation.statusMismatchCount + outboundReconciliation.providerIdMissingCount} mensahe ang may kulang o hindi tugmang tala.`
+        : `${outboundReconciliation.statusMismatchCount + outboundReconciliation.providerIdMissingCount} outbound record ang may reconciliation mismatch o kulang na provider metadata.`
     );
   }
 
   if (priorityItems.length === 0) {
-    priorityItems.push("Maayos ang pangunahing live features ngayon. Bantayan na lang ang bagong SMS, alerts, at training review queue.");
+    priorityItems.push(
+      isSimpleWorkspace
+        ? "Maayos ang pangunahing takbo ng app ngayon. Silipin na lang paminsan-minsan ang bagong text at alerts."
+        : "Maayos ang pangunahing live features ngayon. Bantayan na lang ang bagong SMS, alerts, at training review queue."
+    );
   }
 
   const handleRetryOutbound = async (outboundId: string) => {
@@ -269,7 +293,9 @@ export function SystemStatusPanel() {
       tone: smsCapability.tone,
       detail:
         capabilities.reasons.liveSms ??
-        "Tumatanggap at nagpapadala ng live SMS ang system kapag kumpleto ang provider setup.",
+        (isSimpleWorkspace
+          ? "Kapag kumpleto ang setup, puwede nang tumanggap at magpadala ng totoong text."
+          : "Tumatanggap at nagpapadala ng live SMS ang system kapag kumpleto ang provider setup."),
     },
     {
       title: "AI Assistant",
@@ -277,7 +303,9 @@ export function SystemStatusPanel() {
       tone: aiCapability.tone,
       detail:
         capabilities.reasons.ai ??
-        "Handa ang AI assistance, pero kailangan pa ring bantayan ang fallback at human review sa sensitibong kaso.",
+        (isSimpleWorkspace
+          ? "Tumutulong ang AI sa pagbasa ng mensahe, pero tao pa rin ang huling check sa sensitibong kaso."
+          : "Handa ang AI assistance, pero kailangan pa ring bantayan ang fallback at human review sa sensitibong kaso."),
     },
     {
       title: "File uploads",
@@ -285,7 +313,9 @@ export function SystemStatusPanel() {
       tone: uploadCapability.tone,
       detail:
         capabilities.reasons.storageUpload ??
-        "Puwede ang document, larawan, at audio uploads para sa case evidence at knowledge files.",
+        (isSimpleWorkspace
+          ? "Puwedeng mag-save ng litrato, dokumento, at audio bilang ebidensya."
+          : "Puwede ang document, larawan, at audio uploads para sa case evidence at knowledge files."),
     },
     {
       title: "Setup link ng staff",
@@ -293,7 +323,9 @@ export function SystemStatusPanel() {
       tone: inviteCapability.tone,
       detail:
         capabilities.inviteEmailConfigured
-          ? "Awtomatikong naie-email ang secure setup link sa bagong staff accounts."
+          ? (isSimpleWorkspace
+              ? "Awtomatikong naipapadala ang setup link sa bagong staff."
+              : "Awtomatikong naie-email ang secure setup link sa bagong staff accounts.")
           : capabilities.reasons.inviteEmail,
     },
     {
@@ -302,7 +334,9 @@ export function SystemStatusPanel() {
       tone: pushCapability.tone,
       detail:
         capabilities.mobilePushConfigured
-          ? "Puwedeng magpadala ng Android push alerts para sa urgent cases."
+          ? (isSimpleWorkspace
+              ? "Makakatanggap ang cellphone app ng agarang alerto para sa urgent na kaso."
+              : "Puwedeng magpadala ng Android push alerts para sa urgent cases.")
           : capabilities.reasons.mobilePush,
     },
     {
@@ -311,8 +345,12 @@ export function SystemStatusPanel() {
       tone: automationStatus.tone,
       detail:
         capabilities.mode === "live"
-          ? "Ito ang batch checks para sa overdue SMS, follow-up, at retention sweeps sa live setup."
-          : "Sa demo preview, mano-manong sinusubok ang technical batch checks at maaaring walang live diagnostics.",
+          ? (isSimpleWorkspace
+              ? "Ito ang mga awtomatikong pag-check para sa mga dapat balikan at linisin."
+              : "Ito ang batch checks para sa overdue SMS, follow-up, at retention sweeps sa live setup.")
+          : (isSimpleWorkspace
+              ? "Sa demo, mano-mano munang sinusubok ang mga technical na galaw."
+              : "Sa demo preview, mano-manong sinusubok ang technical batch checks at maaaring walang live diagnostics."),
     },
   ];
 
@@ -322,8 +360,9 @@ export function SystemStatusPanel() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Katayuan ng System</h1>
           <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
-            Hiwalay ito sa mga setting ng barangay para mas madaling makita kung alin ang handa, alin ang may dapat bantayan,
-            at alin ang technical details lamang para sa admin o developer.
+            {isSimpleWorkspace
+              ? "Dito mo makikita kung maayos ang takbo ng text, alerts, at awtomatikong gawain. Kapag may babala, sundin lang ang gabay sa ibaba."
+              : "Hiwalay ito sa mga setting ng barangay para mas madaling makita kung alin ang handa, alin ang may dapat bantayan, at alin ang technical details lamang para sa admin o developer."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -345,9 +384,11 @@ export function SystemStatusPanel() {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
-              <CardTitle>Malinaw na Buod</CardTitle>
+              <CardTitle>{isSimpleWorkspace ? "Pinakasimpleng Tingin" : "Malinaw na Buod"}</CardTitle>
               <CardDescription>
-                Tingnan muna ang mga card na ito. Kapag may kailangang ayusin, nasa ibaba ang susunod na hakbang at technical details.
+                {isSimpleWorkspace
+                  ? "Tingnan muna ang mga kahon na ito. Kapag may kailangang ayusin, may malinaw na susunod na hakbang sa ibaba."
+                  : "Tingnan muna ang mga card na ito. Kapag may kailangang ayusin, nasa ibaba ang susunod na hakbang at technical details."}
               </CardDescription>
             </div>
             <Badge variant="outline">{loading ? "Sinusuri..." : "Na-refresh"}</Badge>
@@ -380,9 +421,11 @@ export function SystemStatusPanel() {
       <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Huling Galaw ng System</CardTitle>
+            <CardTitle>{isSimpleWorkspace ? "Pinakahuling Galaw" : "Huling Galaw ng System"}</CardTitle>
             <CardDescription>
-              Ito ang pinakahuling activity na nakikita ng system para sa inbound SMS, outbound delivery, at background jobs.
+              {isSimpleWorkspace
+                ? "Makikita rito ang pinakahuling text, padala, at awtomatikong galaw ng app."
+                : "Ito ang pinakahuling activity na nakikita ng system para sa inbound SMS, outbound delivery, at background jobs."}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
@@ -436,9 +479,11 @@ export function SystemStatusPanel() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Ano ang Dapat Unahin</CardTitle>
+            <CardTitle>{isSimpleWorkspace ? "Ano ang Dapat Gawin" : "Ano ang Dapat Unahin"}</CardTitle>
             <CardDescription>
-              Simpleng gabay kung ano ang susunod na dapat tingnan o ayusin para manatiling dependable ang app.
+              {isSimpleWorkspace
+                ? "Ito ang pinakasimpleng listahan ng dapat mong silipin o ayusin."
+                : "Simpleng gabay kung ano ang susunod na dapat tingnan o ayusin para manatiling dependable ang app."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

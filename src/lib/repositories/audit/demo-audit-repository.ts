@@ -1,42 +1,23 @@
 import type { AuditLog } from "@/lib/types";
 import type { AuditRepository } from "@/lib/repositories/audit/types";
+import { auditLogs as initialAuditLogs } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoAuditStore?: AuditLog[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoAuditStore) {
-    demoStore.__lingkodAniDemoAuditStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoAuditStore;
-}
+const store = createDemoCollectionStore<AuditLog>({
+  storageKey: "auditLogs",
+  initialData: initialAuditLogs,
+});
 
 export const demoAuditRepository: AuditRepository = {
   async listAuditLogs() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createAuditLog(input) {
-    getStore().unshift(input);
-    return input;
+    return store.prepend(input);
   },
 
   async updateAuditLog(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((entry) => entry.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    const next = {
-      ...store[index],
-      ...updates,
-    };
-
-    store[index] = next;
-    return next;
+    return store.updateById(id, updates);
   },
 };

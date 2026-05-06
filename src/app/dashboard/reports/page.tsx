@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 import { Bot, Calendar as CalendarIcon, ArrowDownToLine, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -246,10 +246,10 @@ function ReportsPageContent() {
               Export TXT
             </Button>
           </HoverTooltip>
-          <HoverTooltip text="Bubuksan ang print dialog para mai-save mo bilang PDF.">
+          <HoverTooltip text="Bubuksan ang print dialog ng browser para ma-print o mai-save mo bilang PDF.">
             <Button onClick={handleExportSummaryPdf}>
               <ArrowDownToLine className="mr-2 h-4 w-4" />
-              Save as PDF
+              Print / Save as PDF
             </Button>
           </HoverTooltip>
         </div>
@@ -565,3 +565,4 @@ export default function ReportsPage() {
       </ReportsTimeframeProvider>
     );
 }
+

@@ -1,41 +1,23 @@
 import type { FarmerAssistanceRecord } from "@/lib/types";
 import type { AssistanceRepository } from "@/lib/repositories/assistance/types";
+import { assistanceRecords as initialAssistanceRecords } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoAssistanceStore?: FarmerAssistanceRecord[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoAssistanceStore) {
-    demoStore.__lingkodAniDemoAssistanceStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoAssistanceStore;
-}
+const store = createDemoCollectionStore<FarmerAssistanceRecord>({
+  storageKey: "assistanceRecords",
+  initialData: initialAssistanceRecords,
+});
 
 export const demoAssistanceRepository: AssistanceRepository = {
   async listAssistanceRecords() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createAssistanceRecord(record) {
-    getStore().unshift(record);
-    return record;
+    return store.prepend(record);
   },
 
   async updateAssistanceRecord(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 };

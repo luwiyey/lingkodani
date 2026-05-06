@@ -251,7 +251,7 @@ export function useRuntimeHealth() {
 
     void (async () => {
       try {
-        const idToken = await getClientAuth().currentUser?.getIdToken();
+        const idToken = await getClientAuth().currentUser?.getIdToken(true);
 
         if (!idToken) {
           return;

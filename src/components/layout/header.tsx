@@ -44,10 +44,8 @@ import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { getPreferredDashboardRoute } from '@/lib/user-workspace';
-import {
-  getLatestMarketPriceTimestamp,
-  isMarketPriceStale,
-} from '@/lib/services/price-watch-service';
+import { isMarketPriceStale } from '@/lib/services/price-watch-service';
+import { isSmsAssignedToUser } from '@/lib/sms-assignment';
 import { HoverTooltip } from '../ui/hover-tooltip';
 
 type DashboardNotification = {
@@ -130,7 +128,6 @@ export function Header() {
   }, [outboundMessages]);
 
   const notifications = useMemo<DashboardNotification[]>(() => {
-    const operatorName = currentUserProfile?.name?.trim() || '';
     const pendingFarmerNotifications = farmers
       .filter((farmer) => farmer.status === 'pending_approval')
       .map((farmer) => ({
@@ -169,7 +166,7 @@ export function Header() {
       }));
 
     const myQueueNotifications = smsMessages
-      .filter((message) => !message.closedAt && message.assignedTo === operatorName)
+      .filter((message) => !message.closedAt && isSmsAssignedToUser(message, currentUserProfile))
       .map((message) => ({
         id: createNotificationId('assigned', message.id, message.assignedAt ?? message.timestamp),
         title: `Task mo ito: ${message.farmerName}`,
@@ -276,10 +273,7 @@ export function Header() {
         };
       });
 
-    const latestMarketPriceTimestamp = getLatestMarketPriceTimestamp(marketPrices);
-    const marketPriceReferenceDate = latestMarketPriceTimestamp
-      ? new Date(latestMarketPriceTimestamp)
-      : new Date();
+    const marketPriceReferenceDate = new Date();
     const stalePriceNotifications = marketPrices
       .filter((entry) => isMarketPriceStale(entry, marketPriceReferenceDate))
       .map((entry) => ({
@@ -308,7 +302,7 @@ export function Header() {
       ));
   }, [
     assistanceRecords,
-    currentUserProfile?.name,
+    currentUserProfile,
     farmers,
     fieldVisitTasks,
     latestOutboundByMessage,

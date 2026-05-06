@@ -1,0 +1,18 @@
+
+> nextn@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.5.9 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.56.1:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 722ms
+ ✓ Ready in 8s
+ ○ Compiling / ...
+ ✓ Compiled / in 13.9s
+ ✓ Compiled in 4.9s
+ ✓ Compiled in 2.3s
+ ✓ Compiled in 1187ms

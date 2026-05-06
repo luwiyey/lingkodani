@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -39,10 +40,23 @@ export function CropStageChart() {
   const growingStage = cropStageData.find(d => d.name === 'Paglago')?.value ?? 0;
   
   const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const result = openPrintableReport({
+      title: "Pamamahagi ng Yugto ng Pananim",
+      timeframe,
+      description: "Bilang ng active farmers ayon sa pinakabagong crop-stage signal na naitala sa system.",
+      rows: cropStageData.map((entry) => ({
+        Yugto: entry.name,
+        Bilang: entry.value,
+      })),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -116,7 +130,7 @@ export function CropStageChart() {
               </div>
              ) : (
               <div className="px-6 text-center text-sm text-muted-foreground">
-                Wala pang structured crop-stage records sa live mode, kaya hindi muna ipinapakita ang chart na ito.
+                Wala pang sapat na crop-stage signals sa napiling timeframe, kaya walang maipapakitang distribution sa ngayon.
               </div>
              )}
         </CardContent>
@@ -124,7 +138,7 @@ export function CropStageChart() {
           <p className="text-xs text-muted-foreground">
             {hasCropStageData
               ? 'Pagsusuri: Batay ito sa aktuwal na crop-stage records na naitala sa system.'
-              : 'Kailangang magtala muna ng structured crop-stage updates bago maging available ang insight na ito sa live mode.'}
+              : 'Kailangang magkaroon ng mas maraming crop-stage updates bago lumabas ang insight na ito sa napiling timeframe.'}
           </p>
         </CardFooter>
       </Card>
@@ -150,7 +164,7 @@ export function CropStageChart() {
               </>
             ) : (
               <div className="mt-4 rounded-lg border border-dashed border-border/70 bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-                Hindi pa sapat ang live crop-stage encoding para makabuo ng expanded crop-stage report.
+                Hindi pa sapat ang naitalang crop-stage updates para makabuo ng expanded crop-stage report sa napiling timeframe.
               </div>
             )}
         </div>

@@ -263,6 +263,7 @@ export function AppSidebar() {
           { title: "Pamamahala ng Alerto", href: "/dashboard/alerts" },
         ],
       },
+      { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart },
       {
         title: "Rekurso",
         href: "/dashboard/inventory",

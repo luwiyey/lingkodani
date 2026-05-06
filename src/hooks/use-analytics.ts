@@ -9,6 +9,7 @@ import { getSmsCaseExceptionFlags } from '@/lib/sms-case-exceptions';
 import { getSmsCaseReportingCompleteness } from '@/lib/sms-case-quality';
 import { getEffectiveSmsCaseOutcome, isAwaitingFarmerConfirmation, isFarmerConfirmedResolution } from '@/lib/sms-case-outcomes';
 import { buildInterventionEffectiveness, buildOutbreakSeries, getCaseOperationalConfidence, inferOutbreakClusters, summarizeOutbreakClusters } from '@/lib/case-intelligence';
+import { getLatestFarmerCropStage } from '@/lib/crop-stage';
 import { countStaleMarketPrices } from '@/lib/services/price-watch-service';
 import { normalizeSmsMessage } from '@/lib/sms-normalization';
 
@@ -49,14 +50,94 @@ function asDate(value: string): Date {
   return new Date(value);
 }
 
-function dateKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 function startOfDay(value: Date) {
   const next = new Date(value);
   next.setHours(0, 0, 0, 0);
   return next;
+}
+
+function endOfDay(value: Date) {
+  const next = new Date(value);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+type TimeBucket = {
+  label: string;
+  start: Date;
+  end: Date;
+};
+
+function buildTimeBuckets(anchor: Date, timeframe: ReportsTimeframe): TimeBucket[] {
+  if (timeframe === 'Ngayong Araw') {
+    const dayStart = startOfDay(anchor);
+    return Array.from({ length: 6 }, (_, index) => {
+      const start = new Date(dayStart);
+      start.setHours(index * 4, 0, 0, 0);
+      const end = new Date(start);
+      end.setHours(start.getHours() + 3, 59, 59, 999);
+      return {
+        label: start.toLocaleTimeString('en-PH', { hour: 'numeric' }),
+        start,
+        end,
+      };
+    });
+  }
+
+  if (timeframe === 'Lingguhan') {
+    const rangeStart = getRangeStart(anchor, timeframe);
+    return Array.from({ length: 7 }, (_, index) => {
+      const start = new Date(rangeStart);
+      start.setDate(rangeStart.getDate() + index);
+      return {
+        label: DAY_NAMES[start.getDay()],
+        start,
+        end: endOfDay(start),
+      };
+    });
+  }
+
+  if (timeframe === 'Buwanan') {
+    const rangeStart = getRangeStart(anchor, timeframe);
+    return Array.from({ length: 4 }, (_, index) => {
+      const start = new Date(rangeStart);
+      start.setDate(rangeStart.getDate() + index * 7);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      return {
+        label: `Linggo ${index + 1}`,
+        start,
+        end: endOfDay(end),
+      };
+    });
+  }
+
+  if (timeframe === 'Quarterly') {
+    return Array.from({ length: 3 }, (_, index) => {
+      const start = new Date(anchor.getFullYear(), anchor.getMonth() - (2 - index), 1);
+      const end = endOfDay(new Date(anchor.getFullYear(), anchor.getMonth() - (1 - index), 0));
+      return {
+        label: MONTH_NAMES[start.getMonth()],
+        start,
+        end,
+      };
+    });
+  }
+
+  return Array.from({ length: 12 }, (_, index) => {
+    const start = new Date(anchor.getFullYear(), index, 1);
+    const end = endOfDay(new Date(anchor.getFullYear(), index + 1, 0));
+    return {
+      label: MONTH_NAMES[start.getMonth()],
+      start,
+      end,
+    };
+  });
+}
+
+function isWithinBucket(timestamp: string, bucket: TimeBucket) {
+  const value = asDate(timestamp).getTime();
+  return value >= bucket.start.getTime() && value <= bucket.end.getTime();
 }
 
 function getRangeStart(anchor: Date, timeframe: ReportsTimeframe) {
@@ -293,20 +374,12 @@ export function useAnalytics() {
     const sortedByTime = [...filteredSms].sort((a, b) => asDate(a.timestamp).getTime() - asDate(b.timestamp).getTime());
     const latestDate = sortedByTime.length > 0 ? asDate(sortedByTime[sortedByTime.length - 1].timestamp) : anchorDate;
 
-    const dayBuckets = new Map<string, number>();
-    for (const msg of sortedByTime) {
-      const key = dateKey(asDate(msg.timestamp));
-      dayBuckets.set(key, (dayBuckets.get(key) ?? 0) + 1);
-    }
+    const timeBuckets = buildTimeBuckets(latestDate, timeframe);
 
-    const smsVolumeData = Array.from({ length: 7 }, (_, idx) => {
-      const d = new Date(latestDate);
-      d.setDate(latestDate.getDate() - (6 - idx));
-      return {
-        name: DAY_NAMES[d.getDay()],
-        total: dayBuckets.get(dateKey(d)) ?? 0,
-      };
-    });
+    const smsVolumeData = timeBuckets.map((bucket) => ({
+      name: bucket.label,
+      total: sortedByTime.filter((message) => isWithinBucket(message.timestamp, bucket)).length,
+    }));
 
     const smsPeakHoursCounter: Record<string, number> = {
       '8-10am': 0,
@@ -393,14 +466,11 @@ export function useAnalytics() {
       reports: seasonalMap.get(idx) ?? 0,
     }));
 
-    const issueTrendsData = Array.from({ length: 4 }, (_, idx) => {
-      const d = new Date(latestDate);
-      d.setDate(latestDate.getDate() - ((3 - idx) * 2));
-      const key = dateKey(d);
-      const dayMessages = sortedByTime.filter((m) => dateKey(asDate(m.timestamp)) <= key);
-      const breakdown = issueBreakdown(dayMessages);
+    const issueTrendsData = timeBuckets.map((bucket) => {
+      const bucketMessages = sortedByTime.filter((message) => isWithinBucket(message.timestamp, bucket));
+      const breakdown = issueBreakdown(bucketMessages);
       return {
-        date: `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`,
+        date: bucket.label,
         MgaPeste: breakdown.pests,
         Sakit: breakdown.sakit,
         Patubig: breakdown.patubig,
@@ -451,18 +521,11 @@ export function useAnalytics() {
       { name: 'Rejected', value: rejectedCount, fill: COLOR_DESTRUCTIVE },
     ];
 
-    const aiConfidenceTrendData = Array.from({ length: 4 }, (_, idx) => {
-      const start = new Date(latestDate);
-      start.setDate(latestDate.getDate() - ((3 - idx) * 7));
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      const window = sortedByTime.filter((m) => {
-        const ts = asDate(m.timestamp).getTime();
-        return ts >= start.getTime() && ts <= end.getTime();
-      });
-      const avg = window.length > 0 ? window.reduce((acc, m) => acc + m.aiConfidence, 0) / window.length : 0;
+    const aiConfidenceTrendData = timeBuckets.map((bucket) => {
+      const window = sortedByTime.filter((message) => isWithinBucket(message.timestamp, bucket));
+      const avg = window.length > 0 ? window.reduce((acc, message) => acc + message.aiConfidence, 0) / window.length : 0;
       return {
-        date: `${MONTH_NAMES[end.getMonth()]} ${String(end.getDate()).padStart(2, '0')}`,
+        date: bucket.label,
         confidence: Math.round(avg * 100),
       };
     });
@@ -494,7 +557,32 @@ export function useAnalytics() {
     }
     const recommendationTypeData = [...recommendationTypeCounter.entries()].map(([name, count]) => ({ name, count }));
 
-    const cropStageData: Array<{ name: string; value: number; fill: string }> = [];
+    const cropStageCounts = new Map<string, number>([
+      ['Pagtatanim', 0],
+      ['Paglago', 0],
+      ['Pamumulaklak', 0],
+      ['Pag-aani', 0],
+      ['Hindi pa naitatala', 0],
+    ]);
+    const cropStageSourceMessages = smsMessages.filter((message) => asDate(message.timestamp).getTime() <= latestDate.getTime());
+    for (const farmer of farmers.filter((entry) => entry.status === 'active' && !entry.mergedIntoFarmerId)) {
+      const stage = getLatestFarmerCropStage(farmer, cropStageSourceMessages);
+      cropStageCounts.set(stage, (cropStageCounts.get(stage) ?? 0) + 1);
+    }
+    const cropStageColors = new Map<string, string>([
+      ['Pagtatanim', COLOR_1],
+      ['Paglago', COLOR_2],
+      ['Pamumulaklak', COLOR_3],
+      ['Pag-aani', COLOR_4],
+      ['Hindi pa naitatala', COLOR_5],
+    ]);
+    const cropStageData = [...cropStageCounts.entries()]
+      .filter(([, value]) => value > 0)
+      .map(([name, value]) => ({
+        name,
+        value,
+        fill: cropStageColors.get(name) ?? COLOR_5,
+      }));
 
     const interventionEventPeriods = new Map<string, { visits: number; sortTime: number }>();
     for (const task of filteredFieldVisitTasks) {

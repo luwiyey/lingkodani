@@ -10,6 +10,7 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument } from "@/lib/firebase/sanitize-firestore";
 import type { UserRepository } from "@/lib/repositories/users/types";
 import type { User } from "@/lib/types";
 import { getUserRecordId } from "@/lib/user-record";
@@ -30,22 +31,22 @@ export const liveUserRepository: UserRepository = {
   async createUser(user) {
     const db = getClientFirestore();
     const userId = getUserRecordId(user);
-    const nextUser = {
+    const nextUser = sanitizeFirestoreDocument({
       ...user,
       id: userId,
       uid: user.uid ?? userId,
-    };
+    });
     await setDoc(doc(db, firebaseCollections.users, userId), nextUser);
     return nextUser;
   },
 
   async updateUser(userId, user) {
     const db = getClientFirestore();
-    const nextUser = {
+    const nextUser = sanitizeFirestoreDocument({
       ...user,
       id: user.id ?? user.uid ?? userId,
       uid: user.uid ?? user.id ?? userId,
-    };
+    });
     await setDoc(doc(db, firebaseCollections.users, userId), nextUser, { merge: true });
     return nextUser;
   },

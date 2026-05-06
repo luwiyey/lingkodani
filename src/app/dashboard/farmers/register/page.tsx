@@ -38,8 +38,20 @@ export default function RegisterFarmerPage() {
   });
   const sharedPhone = form.watch('sharedPhone');
 
-  const handleRegisterFarmer = (data: FarmerRegistrationValues) => {
-    addPendingFarmer(data);
+  const handleRegisterFarmer = async (data: FarmerRegistrationValues) => {
+    const result = await addPendingFarmer(data);
+
+    if (!result.ok) {
+      toast({
+        title: result.reason === 'duplicate' ? 'May kaparehong registration' : 'Hindi na-save ang registration',
+        description:
+          result.reason === 'duplicate'
+            ? 'May kaparehong numero na sa roster. Gamitin ang shared household option kung iisang numero talaga ito.'
+            : 'Nagkaroon ng problema sa pag-save ng farmer registration. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     toast({
       title: 'Nakabinbin para sa Pag-apruba',
@@ -71,7 +83,7 @@ export default function RegisterFarmerPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleRegisterFarmer)} className="max-w-2xl">
+            <form onSubmit={form.handleSubmit((data) => void handleRegisterFarmer(data))} className="max-w-2xl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}

@@ -62,7 +62,7 @@ export default function DisasterInventoryPage() {
     setSortConfig({ key, direction });
   };
 
-  const handleAddResource = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddResource = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const newResourceData = {
@@ -71,12 +71,25 @@ export default function DisasterInventoryPage() {
       stock: Number(formData.get('stock') as string),
       unit: formData.get('unit') as string,
     };
-    addResource(newResourceData);
+    const result = await addResource(newResourceData);
+
+    if (!result.ok) {
+      toast({
+        title: result.reason === 'duplicate' ? 'May kaparehong rekurso' : 'Hindi ma-save ang rekurso',
+        description:
+          result.reason === 'duplicate'
+            ? 'May kaparehong pangalan at category na sa disaster inventory.'
+            : 'May problema sa pag-save ng resource record. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setAddDialogOpen(false);
     toast({ title: "Tagumpay!", description: "Matagumpay na naidagdag ang rekurso." });
   };
   
-  const handleEditResource = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEditResource = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingResource) return;
     const formData = new FormData(event.currentTarget);
@@ -86,13 +99,36 @@ export default function DisasterInventoryPage() {
       stock: Number(formData.get('stock') as string),
       unit: formData.get('unit') as string,
     };
-    updateResource(editingResource.id, updatedData);
+    const result = await updateResource(editingResource.id, updatedData);
+
+    if (!result.ok) {
+      toast({
+        title: result.reason === 'duplicate' ? 'May kaparehong rekurso' : 'Hindi ma-save ang pagbabago',
+        description:
+          result.reason === 'duplicate'
+            ? 'May ibang resource na may kaparehong pangalan at category.'
+            : 'May problema sa pag-save ng resource update. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setEditingResource(null);
     toast({ title: "Tagumpay!", description: "Nai-update na ang rekurso." });
   };
 
-  const handleDeleteResource = (resourceId: string) => {
-    deleteResource(resourceId);
+  const handleDeleteResource = async (resourceId: string) => {
+    const result = await deleteResource(resourceId);
+
+    if (!result.ok) {
+      toast({
+        title: 'Hindi natanggal ang rekurso',
+        description: 'May problema sa pag-delete ng resource record. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({ title: "Tagumpay!", description: "Natanggal na ang rekurso sa imbentaryo.", variant: 'destructive' });
   };
 
@@ -292,11 +328,13 @@ export default function DisasterInventoryPage() {
                                   <Button variant="outline" size="sm" onClick={() => setEditingResource(resource)}><Edit /></Button>
                                 </HoverTooltip>
                                 <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <HoverTooltip text="Permanenteng tanggalin ang rekurso na ito.">
-                                          <Button variant="destructive" size="sm"><Trash2 /></Button>
-                                      </HoverTooltip>
-                                    </AlertDialogTrigger>
+                                    <HoverTooltip text="Permanenteng tanggalin ang rekurso na ito.">
+                                      <span className="inline-flex">
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="sm"><Trash2 /></Button>
+                                        </AlertDialogTrigger>
+                                      </span>
+                                    </HoverTooltip>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>Sigurado ka ba?</AlertDialogTitle>
@@ -306,7 +344,7 @@ export default function DisasterInventoryPage() {
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => void handleDeleteResource(resource.id)}>Ituloy</AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
@@ -329,7 +367,7 @@ export default function DisasterInventoryPage() {
                 <DialogTitle>I-edit ang Rekurso</DialogTitle>
                 <DialogDescription>I-update ang mga detalye para sa {editingResource.name}.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleEditResource}>
+              <form onSubmit={(event) => void handleEditResource(event)}>
                   <div className="grid gap-4 py-4">
                      <HoverTooltip text="Baguhin ang pangalan ng item.">
                         <div className="grid grid-cols-4 items-center gap-4">

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -31,6 +32,14 @@ const chartConfig = {
 export function SeasonalTrendChart() {
   const { seasonalTrendData } = useAnalytics();
   const { timeframe, setTimeframe } = useReportsTimeframe();
+  const handleDownload = () => {
+    void openPrintableReport({
+      title: "Seasonal Trend",
+      timeframe,
+      description: "Paggalaw ng mga ulat ayon sa seasonal reporting pattern.",
+      rows: sanitizePrintableRows(seasonalTrendData),
+    });
+  };
 
   const peakMonth = seasonalTrendData.reduce((prev, current) => (prev.reports > current.reports) ? prev : current);
 
@@ -74,7 +83,7 @@ export function SeasonalTrendChart() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDownload}>
                         <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -126,4 +135,5 @@ export function SeasonalTrendChart() {
     </Dialog>
   )
 }
+
 

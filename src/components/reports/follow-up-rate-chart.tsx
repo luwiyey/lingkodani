@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
 
 const chartConfig = {
@@ -37,11 +38,21 @@ export function FollowUpRateChart() {
   const total = followUpRateData.reduce((acc, entry) => acc + entry.value, 0);
   const noFollowUpRate = total > 0 ? ((noFollowUpCount / total) * 100).toFixed(1) : '0.0';
   
-  const handleDownload = () => {
-    toast({
-        title: "Nagsisimula ang Pag-download...",
-        description: "Ang iyong chart ay ini-export bilang PDF.",
+    const handleDownload = () => {
+    const result = openPrintableReport({
+      title: "Follow-up Completion Rate",
+      timeframe,
+      description: "Katayuan ng follow-up completion para sa mga tracked cases.",
+      rows: sanitizePrintableRows(followUpRateData),
     });
+
+    if (!result.ok) {
+      toast({
+        title: "Hindi nabuksan ang PDF export",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderChart = () => (
@@ -139,4 +150,5 @@ export function FollowUpRateChart() {
     </Dialog>
   )
 }
+
 

@@ -44,24 +44,78 @@ export default function VouchersPage() {
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isIssuingVoucher, setIsIssuingVoucher] = useState(false);
+  const [processingVoucherId, setProcessingVoucherId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const handleIssueVoucher = () => {
+  const handleIssueVoucher = async () => {
+    if (isIssuingVoucher) {
+      return;
+    }
+
     if (!selectedFarmer || !selectedResource) {
       toast({ title: 'Kulang ang Impormasyon', description: 'Pumili ng magsasaka at rekurso.', variant: 'destructive' });
       return;
     }
-    
-    addVoucher({ farmerId: selectedFarmer, resourceId: selectedResource, quantity });
-    
+
+    setIsIssuingVoucher(true);
+    const result = await addVoucher({ farmerId: selectedFarmer, resourceId: selectedResource, quantity });
+
+    if (!result.ok) {
+      setIsIssuingVoucher(false);
+      toast({
+        title: result.reason === 'insufficient_stock' ? 'Kulang ang stock' : 'Hindi na-issue ang voucher',
+        description:
+          result.reason === 'insufficient_stock'
+            ? 'Hindi sapat ang stock ng rekurso para sa daming hinihingi.'
+            : 'May problema sa pag-save ng voucher. Subukang muli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsIssuingVoucher(false);
     toast({ title: 'Tagumpay!', description: 'Naisyu na ang voucher at ipinadala sa magsasaka.' });
     setIssueDialogOpen(false);
     setSelectedFarmer('');
     setSelectedResource('');
     setQuantity(1);
+  };
+
+  const handleVoucherStatusAction = async (voucherId: string, status: VoucherStatus) => {
+    if (processingVoucherId) {
+      return;
+    }
+
+    setProcessingVoucherId(voucherId);
+    const result = await updateVoucherStatus(voucherId, status);
+
+    if (!result.ok) {
+      setProcessingVoucherId(null);
+      toast({
+        title: status === 'redeemed' ? 'Hindi natuloy ang redemption' : 'Hindi nakansela ang voucher',
+        description:
+          status === 'redeemed'
+            ? result.reason === 'insufficient_stock'
+              ? 'Kulang ang stock ng naka-link na rekurso para ma-redeem ang voucher.'
+              : 'May problema sa pag-save ng voucher redemption.'
+            : 'May problema sa pag-save ng voucher status.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setProcessingVoucherId(null);
+    toast({
+      title: 'Tagumpay!',
+      description: status === 'redeemed'
+        ? 'Nakatatak na bilang "redeemed" ang voucher.'
+        : 'Nakatatak na bilang "voided" ang voucher.',
+      variant: status === 'voided' ? 'destructive' : 'default',
+    });
   };
   
   const filteredVouchers = useMemo(() => {
@@ -143,7 +197,9 @@ export default function VouchersPage() {
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">Kanselahin</Button></DialogClose>
-                    <Button onClick={handleIssueVoucher}>I-isyu ang Voucher</Button>
+                    <Button onClick={() => void handleIssueVoucher()} disabled={isIssuingVoucher}>
+                      {isIssuingVoucher ? 'Nag-iisyu...' : 'I-isyu ang Voucher'}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -194,11 +250,13 @@ export default function VouchersPage() {
                                 {voucher.status === 'issued' && (
                                     <>
                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                             <HoverTooltip text="Markahan bilang nagamit na">
-                                                <Button size="icon" className="h-8 w-8"><Check className="h-4 w-4"/></Button>
-                                            </HoverTooltip>
-                                        </AlertDialogTrigger>
+                                        <HoverTooltip text="Markahan bilang nagamit na">
+                                            <span className="inline-flex">
+                                                <AlertDialogTrigger asChild>
+                                                    <Button size="icon" className="h-8 w-8" disabled={processingVoucherId !== null}><Check className="h-4 w-4"/></Button>
+                                                </AlertDialogTrigger>
+                                            </span>
+                                        </HoverTooltip>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Kumpirmahin ang Pag-redeem</AlertDialogTitle>
@@ -208,19 +266,20 @@ export default function VouchersPage() {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Kanselahin</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => {
-                                                    updateVoucherStatus(voucher.id, 'redeemed');
-                                                    toast({title: 'Tagumpay!', description: 'Nakatatak na bilang "redeemed" ang voucher.'});
-                                                }}>Ituloy</AlertDialogAction>
+                                                <AlertDialogAction disabled={processingVoucherId !== null} onClick={() => void handleVoucherStatusAction(voucher.id, 'redeemed')}>
+                                                  {processingVoucherId === voucher.id ? 'Pinoproseso...' : 'Ituloy'}
+                                                </AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <HoverTooltip text="Kanselahin ang voucher">
-                                                <Button variant="destructive" size="icon" className="h-8 w-8"><X className="h-4 w-4"/></Button>
-                                            </HoverTooltip>
-                                        </AlertDialogTrigger>
+                                        <HoverTooltip text="Kanselahin ang voucher">
+                                            <span className="inline-flex">
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" size="icon" className="h-8 w-8" disabled={processingVoucherId !== null}><X className="h-4 w-4"/></Button>
+                                                </AlertDialogTrigger>
+                                            </span>
+                                        </HoverTooltip>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Kanselahin ang Voucher?</AlertDialogTitle>
@@ -230,10 +289,9 @@ export default function VouchersPage() {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Bumalik</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => {
-                                                    updateVoucherStatus(voucher.id, 'voided');
-                                                    toast({title: 'Tagumpay!', description: 'Nakatatak na bilang "voided" ang voucher.', variant: 'destructive'});
-                                                }}>Kanselahin</AlertDialogAction>
+                                                <AlertDialogAction disabled={processingVoucherId !== null} onClick={() => void handleVoucherStatusAction(voucher.id, 'voided')}>
+                                                  {processingVoucherId === voucher.id ? 'Pinoproseso...' : 'Kanselahin'}
+                                                </AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>

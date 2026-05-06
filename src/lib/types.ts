@@ -428,6 +428,7 @@ export type SmsMessage = {
   caseId?: string;
   caseStatus?: SmsCaseStatus;
   assignedTo?: string;
+  assignedToUserId?: string;
   assignedAt?: string;
   slaDueAt?: string;
   escalatedAt?: string;

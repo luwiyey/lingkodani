@@ -1,41 +1,23 @@
 import type { FieldVisitTask } from "@/lib/types";
 import type { FieldVisitRepository } from "@/lib/repositories/field-visits/types";
+import { fieldVisitTasks as initialFieldVisitTasks } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoFieldVisitStore?: FieldVisitTask[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoFieldVisitStore) {
-    demoStore.__lingkodAniDemoFieldVisitStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoFieldVisitStore;
-}
+const store = createDemoCollectionStore<FieldVisitTask>({
+  storageKey: "fieldVisitTasks",
+  initialData: initialFieldVisitTasks,
+});
 
 export const demoFieldVisitRepository: FieldVisitRepository = {
   async listFieldVisitTasks() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createFieldVisitTask(task) {
-    getStore().unshift(task);
-    return task;
+    return store.prepend(task);
   },
 
   async updateFieldVisitTask(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 };

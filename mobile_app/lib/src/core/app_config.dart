@@ -29,6 +29,16 @@ class AppConfig {
     defaultValue: '',
   );
 
+  static const privacyPolicyUrl = String.fromEnvironment(
+    'PRIVACY_POLICY_URL',
+    defaultValue: 'https://lingkod-ani.com/privacy-policy',
+  );
+
+  static const supportEmail = String.fromEnvironment(
+    'SUPPORT_EMAIL',
+    defaultValue: 'support@lingkod-ani.com',
+  );
+
   static bool get hasFirebaseWebApiKey => firebaseWebApiKey.trim().isNotEmpty;
 
   static bool get hasFirebaseMessagingConfig =>

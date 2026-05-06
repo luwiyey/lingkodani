@@ -1,5 +1,6 @@
 import type { SmsProvider } from "@/lib/providers/sms/types";
 import { normalizePhone } from "@/lib/sms-simulator";
+import { getUserAssignmentId, resolveSmsAssignee } from "@/lib/sms-assignment";
 import { createAuditEntry } from "@/lib/services/audit-service";
 import { sendOutboundMessage } from "@/lib/services/outbound-sms-service";
 import { requestFarmerResolutionConfirmation } from "@/lib/services/resolution-confirmation-service";
@@ -91,15 +92,17 @@ function pickReminderRecipient(input: {
     return {
       name: input.message.officialReminderRecipientName ?? input.message.assignedTo ?? "Barangay agriculture team",
       phone: input.message.officialReminderRecipientPhone,
+      userId: input.message.assignedToUserId,
     };
   }
 
-  const assignedUser = usersWithPhone.find((user) => normalizeName(user.name) === normalizeName(input.message.assignedTo));
+  const assignedUser = resolveSmsAssignee(usersWithPhone, input.message);
 
   if (assignedUser?.phone) {
     return {
       name: assignedUser.name,
       phone: assignedUser.phone,
+      userId: getUserAssignmentId(assignedUser),
     };
   }
 
@@ -109,6 +112,7 @@ function pickReminderRecipient(input: {
     return {
       name: fallbackUser.name,
       phone: fallbackUser.phone,
+      userId: getUserAssignmentId(fallbackUser),
     };
   }
 
@@ -172,6 +176,7 @@ export async function processOfficialReminderMessage(input: {
       input.message.caseStatus && input.message.caseStatus !== "open"
         ? input.message.caseStatus
         : "assigned",
+    assignedToUserId: input.message.assignedToUserId ?? recipient.userId,
     officialReminderRecipientName: recipient.name,
     officialReminderRecipientPhone: recipient.phone,
     officialReminderLastSentAt: timestamp,

@@ -1,45 +1,27 @@
 import type { MarketPriceEntry } from "@/lib/types";
 import type { MarketPriceRepository } from "@/lib/repositories/market-prices/types";
+import { marketPrices as initialMarketPrices } from "@/lib/data";
+import { createDemoCollectionStore } from "@/lib/repositories/demo-store";
 
-const demoStore = globalThis as typeof globalThis & {
-  __lingkodAniDemoMarketPriceStore?: MarketPriceEntry[];
-};
-
-function getStore() {
-  if (!demoStore.__lingkodAniDemoMarketPriceStore) {
-    demoStore.__lingkodAniDemoMarketPriceStore = [];
-  }
-
-  return demoStore.__lingkodAniDemoMarketPriceStore;
-}
+const store = createDemoCollectionStore<MarketPriceEntry>({
+  storageKey: "marketPrices",
+  initialData: initialMarketPrices,
+});
 
 export const demoMarketPriceRepository: MarketPriceRepository = {
   async listMarketPrices() {
-    return [...getStore()];
+    return store.list();
   },
 
   async createMarketPriceEntry(entry) {
-    getStore().unshift(entry);
-    return entry;
+    return store.prepend(entry);
   },
 
   async updateMarketPriceEntry(id, updates) {
-    const store = getStore();
-    const index = store.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    store[index] = {
-      ...store[index],
-      ...updates,
-    };
-
-    return store[index];
+    return store.updateById(id, updates);
   },
 
   async deleteMarketPriceEntry(id) {
-    demoStore.__lingkodAniDemoMarketPriceStore = getStore().filter((item) => item.id !== id);
+    store.deleteById(id);
   },
 };

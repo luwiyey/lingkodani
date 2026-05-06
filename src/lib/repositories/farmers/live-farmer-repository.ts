@@ -11,6 +11,8 @@ import {
 
 import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
+import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
 import type { FarmerRepository } from "@/lib/repositories/farmers/types";
 import type { Farmer } from "@/lib/types";
 
@@ -21,21 +23,23 @@ export const liveFarmerRepository: FarmerRepository = {
       query(collection(db, firebaseCollections.farmers), orderBy("registrationDate", "desc"))
     );
 
-    return snapshot.docs.map((item) => item.data() as Farmer);
+    return snapshot.docs.map((item) => withFirestoreDocId<Farmer>(item));
   },
 
   async createFarmer(input) {
     const db = getClientFirestore();
-    await setDoc(doc(db, firebaseCollections.farmers, input.id), input);
-    return input;
+    const payload = sanitizeFirestoreDocument(input);
+    await setDoc(doc(db, firebaseCollections.farmers, input.id), payload);
+    return payload;
   },
 
   async updateFarmer(id, updates) {
     const db = getClientFirestore();
-    await updateDoc(doc(db, firebaseCollections.farmers, id), updates);
+    const payload = sanitizeFirestorePatch(updates);
+    await updateDoc(doc(db, firebaseCollections.farmers, id), payload);
     return {
       id,
-      ...updates,
+      ...payload,
     } as Farmer;
   },
 
