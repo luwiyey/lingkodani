@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard/', '/verify', '/reset-password'],
     },
-    sitemap: 'https://lingkod-ani.example.com/sitemap.xml',
+    sitemap: 'https://lingkod-ani.com/sitemap.xml',
   }
 }

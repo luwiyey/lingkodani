@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 import { farmers, knowledgeArticles } from '@/lib/data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://lingkod-ani.example.com';
+  const baseUrl = 'https://lingkod-ani.com';
 
   // Static pages
   const staticRoutes = [
