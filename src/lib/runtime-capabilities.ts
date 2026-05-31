@@ -9,6 +9,7 @@ export type RuntimeCapabilities = {
   firebaseAdminConfigured: boolean;
   storageUploadConfigured: boolean;
   knowledgeAudioUploadConfigured: boolean;
+  superadminProvisioningEnabled: boolean;
   appVersion?: string;
   buildCommit?: string;
   automationMode?: string;
@@ -21,6 +22,7 @@ export type RuntimeCapabilities = {
     mobilePush?: string;
     storageUpload?: string;
     knowledgeAudio?: string;
+    superadminProvisioning?: string;
   };
 };
 
@@ -33,9 +35,14 @@ function readRealSmsEnabled() {
   return (process.env.NEXT_PUBLIC_ENABLE_REAL_SMS ?? process.env.ENABLE_REAL_SMS ?? "false") === "true";
 }
 
+function readSuperadminProvisioningEnabled() {
+  return (process.env.ALLOW_DEVELOPER_ACCOUNT_PROVISIONING ?? "false") === "true";
+}
+
 export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
   const mode = readMode();
   const realSmsEnabled = readRealSmsEnabled();
+  const superadminProvisioningEnabled = readSuperadminProvisioningEnabled();
   const liveSmsConfigured = mode !== "live" || !realSmsEnabled;
   const storageUploadConfigured = mode !== "live";
   const knowledgeAudioUploadConfigured = storageUploadConfigured;
@@ -51,6 +58,7 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
     firebaseAdminConfigured: false,
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
+    superadminProvisioningEnabled,
     appVersion: "0.1.0",
     buildCommit: "local",
     automationMode: mode === "live" ? "manual or scheduled background checks" : "demo/manual",
@@ -63,7 +71,7 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
         ? undefined
         : "Naka-lock muna ang live SMS actions habang hindi pa kumpleto ang SMS provider configuration.",
       liveSmsTestMode:
-        "Ang live SMS preview/testing route ay naka-lock by default at dapat lang buksan sa controlled developer smoke tests.",
+        "Ang live SMS preview/testing route ay naka-lock by default at dapat lang buksan sa controlled superadmin smoke tests.",
       inviteEmail:
         "Naka-manual link fallback pa ang bagong staff provisioning habang wala pang configured invite email delivery provider.",
       mobilePush:
@@ -74,6 +82,9 @@ export function getFallbackRuntimeCapabilities(): RuntimeCapabilities {
       knowledgeAudio: knowledgeAudioUploadConfigured
         ? undefined
         : "Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase storage setup.",
+      superadminProvisioning: superadminProvisioningEnabled
+        ? "Puwedeng gumawa ng live superadmin accounts mula sa secure provisioning flow ng dashboard."
+        : "Naka-lock muna ang live superadmin provisioning sa dashboard. Ang privileged superadmin accounts ay kailangang i-set up direkta sa secure Firebase/Auth at user-profile admin flow.",
     },
   };
 }

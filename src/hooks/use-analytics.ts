@@ -3,7 +3,11 @@
 import { useMemo } from 'react';
 
 import { useData } from '@/context/data-context';
-import { useReportsTimeframe, type ReportsTimeframe } from '@/context/reports-timeframe-context';
+import {
+  useReportsTimeframe,
+  type ReportsResolvedWindow,
+  type ReportsTimeframePreset,
+} from '@/context/reports-timeframe-context';
 import type { Resource, SmsMessage } from '@/lib/types';
 import { getSmsCaseExceptionFlags } from '@/lib/sms-case-exceptions';
 import { getSmsCaseReportingCompleteness } from '@/lib/sms-case-quality';
@@ -68,7 +72,7 @@ type TimeBucket = {
   end: Date;
 };
 
-function buildTimeBuckets(anchor: Date, timeframe: ReportsTimeframe): TimeBucket[] {
+function buildTimeBuckets(anchor: Date, timeframe: ReportsTimeframePreset): TimeBucket[] {
   if (timeframe === 'Ngayong Araw') {
     const dayStart = startOfDay(anchor);
     return Array.from({ length: 6 }, (_, index) => {
@@ -97,7 +101,7 @@ function buildTimeBuckets(anchor: Date, timeframe: ReportsTimeframe): TimeBucket
     });
   }
 
-  if (timeframe === 'Buwanan') {
+  if (timeframe === 'Monthly') {
     const rangeStart = getRangeStart(anchor, timeframe);
     return Array.from({ length: 4 }, (_, index) => {
       const start = new Date(rangeStart);
@@ -140,7 +144,7 @@ function isWithinBucket(timestamp: string, bucket: TimeBucket) {
   return value >= bucket.start.getTime() && value <= bucket.end.getTime();
 }
 
-function getRangeStart(anchor: Date, timeframe: ReportsTimeframe) {
+function getRangeStart(anchor: Date, timeframe: ReportsTimeframePreset) {
   const start = startOfDay(anchor);
 
   if (timeframe === 'Ngayong Araw') return start;
@@ -148,7 +152,7 @@ function getRangeStart(anchor: Date, timeframe: ReportsTimeframe) {
     start.setDate(start.getDate() - 6);
     return start;
   }
-  if (timeframe === 'Buwanan') {
+  if (timeframe === 'Monthly') {
     start.setDate(start.getDate() - 29);
     return start;
   }
@@ -161,7 +165,7 @@ function getRangeStart(anchor: Date, timeframe: ReportsTimeframe) {
   return start;
 }
 
-function filterByTimeframe<T>(items: T[], getTimestamp: (item: T) => string, timeframe: ReportsTimeframe, anchor: Date) {
+function filterByTimeframe<T>(items: T[], getTimestamp: (item: T) => string, timeframe: ReportsTimeframePreset, anchor: Date) {
   const rangeStart = getRangeStart(anchor, timeframe).getTime();
   const rangeEnd = anchor.getTime();
 
@@ -268,12 +272,163 @@ function isMessageResolved(message: SmsMessage) {
   return getEffectiveSmsCaseOutcome(message) === 'resolved' && isFarmerConfirmedResolution(message);
 }
 
-function formatInterventionPeriodLabel(date: Date, timeframe: ReportsTimeframe) {
-  if (timeframe === 'Ngayong Araw' || timeframe === 'Lingguhan') {
+function formatInterventionPeriodLabel(date: Date, useDailyLabel: boolean) {
+  if (useDailyLabel) {
     return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`;
   }
 
   return MONTH_NAMES[date.getMonth()];
+}
+
+function formatBucketDateLabel(date: Date) {
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`;
+}
+
+function getRangeSpanDays(start: Date, end: Date) {
+  const diff = end.getTime() - start.getTime();
+  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
+function buildCustomRangeBuckets(window: ReportsResolvedWindow): TimeBucket[] {
+  const spanDays = getRangeSpanDays(window.start, window.end);
+
+  if (spanDays <= 1) {
+    const dayStart = startOfDay(window.start);
+    return Array.from({ length: 6 }, (_, index) => {
+      const start = new Date(dayStart);
+      start.setHours(index * 4, 0, 0, 0);
+      const end = new Date(start);
+      end.setHours(start.getHours() + 3, 59, 59, 999);
+      return {
+        label: start.toLocaleTimeString('en-PH', { hour: 'numeric' }),
+        start,
+        end,
+      };
+    });
+  }
+
+  if (spanDays <= 14) {
+    const buckets: TimeBucket[] = [];
+    const cursor = startOfDay(window.start);
+
+    while (cursor.getTime() <= window.end.getTime()) {
+      const start = new Date(cursor);
+      const end = endOfDay(cursor);
+      buckets.push({
+        label: formatBucketDateLabel(start),
+        start,
+        end,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return buckets;
+  }
+
+  if (spanDays <= 62) {
+    const buckets: TimeBucket[] = [];
+    const cursor = startOfDay(window.start);
+
+    while (cursor.getTime() <= window.end.getTime()) {
+      const start = new Date(cursor);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      if (end.getTime() > window.end.getTime()) {
+        end.setTime(window.end.getTime());
+      }
+      buckets.push({
+        label: `${formatBucketDateLabel(start)}-${formatBucketDateLabel(end)}`,
+        start,
+        end,
+      });
+      cursor.setDate(cursor.getDate() + 7);
+    }
+
+    return buckets;
+  }
+
+  if (spanDays <= 370) {
+    const buckets: TimeBucket[] = [];
+    const cursor = new Date(window.start.getFullYear(), window.start.getMonth(), 1);
+
+    while (cursor.getTime() <= window.end.getTime()) {
+      const start = new Date(cursor);
+      const end = endOfDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0));
+      buckets.push({
+        label: MONTH_NAMES[start.getMonth()],
+        start,
+        end: end.getTime() > window.end.getTime() ? new Date(window.end) : end,
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return buckets;
+  }
+
+  const buckets: TimeBucket[] = [];
+  const quarterCursor = new Date(window.start.getFullYear(), Math.floor(window.start.getMonth() / 3) * 3, 1);
+
+  while (quarterCursor.getTime() <= window.end.getTime()) {
+    const start = new Date(quarterCursor);
+    const end = endOfDay(new Date(start.getFullYear(), start.getMonth() + 3, 0));
+    buckets.push({
+      label: `Q${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()}`,
+      start,
+      end: end.getTime() > window.end.getTime() ? new Date(window.end) : end,
+    });
+    quarterCursor.setMonth(quarterCursor.getMonth() + 3);
+  }
+
+  return buckets;
+}
+
+function filterByResolvedWindow<T>(
+  items: T[],
+  getTimestamp: (item: T) => string,
+  window: ReportsResolvedWindow
+) {
+  const start = window.start.getTime();
+  const end = window.end.getTime();
+
+  return items.filter((item) => {
+    const timestamp = asDate(getTimestamp(item)).getTime();
+    return !Number.isNaN(timestamp) && timestamp >= start && timestamp <= end;
+  });
+}
+
+function normalizeGenderLabel(value?: string) {
+  const normalized = value?.trim().toLowerCase() ?? '';
+
+  if (normalized.startsWith('f') || normalized.includes('babae') || normalized.includes('female')) {
+    return 'Babae';
+  }
+
+  if (normalized.startsWith('m') || normalized.includes('lalaki') || normalized.includes('male')) {
+    return 'Lalaki';
+  }
+
+  if (normalized.includes('non') || normalized.includes('other') || normalized.includes('iba')) {
+    return 'Iba';
+  }
+
+  return 'Hindi tukoy';
+}
+
+function getAgeGroupLabel(age: number) {
+  if (!Number.isFinite(age) || age <= 0) return 'Hindi tukoy';
+  if (age <= 29) return '18-29';
+  if (age <= 44) return '30-44';
+  if (age <= 59) return '45-59';
+  return '60+';
+}
+
+function getFarmSizeBandLabel(size: number) {
+  if (!Number.isFinite(size) || size <= 0) return 'Hindi tukoy';
+  if (size < 1) return 'Below 1 ha';
+  if (size < 3) return '1-2.9 ha';
+  if (size < 5) return '3-4.9 ha';
+  return '5 ha and up';
 }
 
 function buildRiskAlerts(messages: SmsMessage[], resources: Resource[]): RiskAlert[] {
@@ -338,7 +493,7 @@ export function useAnalytics() {
     alertHistory,
     marketPrices,
   } = useData();
-  const { timeframe } = useReportsTimeframe();
+  const { timeframe, resolvedWindow } = useReportsTimeframe();
 
   return useMemo(() => {
     const allTimes: number[] = [
@@ -358,23 +513,31 @@ export function useAnalytics() {
       ...alertHistory.map((entry) => asDate(entry.timestamp).getTime()),
       ...marketPrices.map((entry) => asDate(entry.updatedAt).getTime()),
     ].filter((value) => !Number.isNaN(value));
-    const anchorDate = new Date(Math.max(...allTimes, Date.now()));
+    const isCustomRange = timeframe === 'Custom Range';
+    const presetTimeframe = isCustomRange ? 'Lingguhan' : timeframe;
+    const anchorDate = isCustomRange
+      ? new Date(resolvedWindow.end)
+      : new Date(Math.max(...allTimes, Date.now()));
 
-    const filteredSms = filterByTimeframe(smsMessages, (m) => m.timestamp, timeframe, anchorDate);
-    const filteredAuditLogs = filterByTimeframe(auditLogs, (l) => l.timestamp, timeframe, anchorDate);
-    const filteredOutboundMessages = filterByTimeframe(
+    const filterItems = <T,>(items: T[], getTimestamp: (item: T) => string) =>
+      isCustomRange
+        ? filterByResolvedWindow(items, getTimestamp, resolvedWindow)
+        : filterByTimeframe(items, getTimestamp, presetTimeframe, anchorDate);
+
+    const filteredSms = filterItems(smsMessages, (m) => m.timestamp);
+    const filteredAuditLogs = filterItems(auditLogs, (l) => l.timestamp);
+    const filteredOutboundMessages = filterItems(
       outboundMessages.filter((message) => message.audience !== 'official'),
-      (o) => o.createdAt,
-      timeframe,
-      anchorDate
+      (o) => o.createdAt
     );
-    const filteredFieldVisitTasks = filterByTimeframe(fieldVisitTasks, (task) => task.updatedAt, timeframe, anchorDate);
-    const filteredAssistanceRecords = filterByTimeframe(assistanceRecords, (record) => record.updatedAt, timeframe, anchorDate);
-    const filteredAlertHistory = filterByTimeframe(alertHistory, (entry) => entry.timestamp, timeframe, anchorDate);
+    const filteredFieldVisitTasks = filterItems(fieldVisitTasks, (task) => task.updatedAt);
+    const filteredAssistanceRecords = filterItems(assistanceRecords, (record) => record.updatedAt);
+    const filteredAlertHistory = filterItems(alertHistory, (entry) => entry.timestamp);
     const sortedByTime = [...filteredSms].sort((a, b) => asDate(a.timestamp).getTime() - asDate(b.timestamp).getTime());
     const latestDate = sortedByTime.length > 0 ? asDate(sortedByTime[sortedByTime.length - 1].timestamp) : anchorDate;
-
-    const timeBuckets = buildTimeBuckets(latestDate, timeframe);
+    const timeBuckets = isCustomRange
+      ? buildCustomRangeBuckets(resolvedWindow)
+      : buildTimeBuckets(latestDate, presetTimeframe);
 
     const smsVolumeData = timeBuckets.map((bucket) => ({
       name: bucket.label,
@@ -584,12 +747,132 @@ export function useAnalytics() {
         fill: cropStageColors.get(name) ?? COLOR_5,
       }));
 
+    const activeRosterFarmers = farmers.filter((entry) => entry.status === 'active' && !entry.mergedIntoFarmerId);
+    const demographicFarmerMap = new Map<string, (typeof activeRosterFarmers)[number]>();
+    const scopeFarmerIds = new Set(sortedByTime.map((message) => message.farmerId));
+    const recentFarmerActivity = filterItems(activeRosterFarmers, (farmer) => farmer.lastSmsActivity);
+    const registeredFarmersInScope = filterItems(activeRosterFarmers, (farmer) => farmer.registrationDate);
+
+    for (const farmer of activeRosterFarmers) {
+      if (scopeFarmerIds.has(farmer.id)) {
+        demographicFarmerMap.set(farmer.id, farmer);
+      }
+    }
+    for (const farmer of recentFarmerActivity) {
+      demographicFarmerMap.set(farmer.id, farmer);
+    }
+    for (const farmer of registeredFarmersInScope) {
+      demographicFarmerMap.set(farmer.id, farmer);
+    }
+
+    const demographicFarmers = [...demographicFarmerMap.values()];
+    const totalDemographicFarmers = demographicFarmers.length;
+    const farmersWithAge = demographicFarmers.filter((farmer) => Number.isFinite(farmer.age) && farmer.age > 0);
+    const farmersWithFarmSize = demographicFarmers.filter((farmer) => Number.isFinite(farmer.farmSize) && farmer.farmSize > 0);
+    const averageFarmerAge =
+      farmersWithAge.length > 0
+        ? Number(
+            (
+              farmersWithAge.reduce((acc, farmer) => acc + farmer.age, 0) /
+              farmersWithAge.length
+            ).toFixed(1)
+          )
+        : 0;
+    const averageFarmSizeHectares =
+      farmersWithFarmSize.length > 0
+        ? Number(
+            (
+              farmersWithFarmSize.reduce((acc, farmer) => acc + farmer.farmSize, 0) /
+              farmersWithFarmSize.length
+            ).toFixed(1)
+          )
+        : 0;
+
+    const genderCounter = new Map<string, number>();
+    const ageGroupCounter = new Map<string, number>([
+      ['18-29', 0],
+      ['30-44', 0],
+      ['45-59', 0],
+      ['60+', 0],
+      ['Hindi tukoy', 0],
+    ]);
+    const farmSizeCounter = new Map<string, number>([
+      ['Below 1 ha', 0],
+      ['1-2.9 ha', 0],
+      ['3-4.9 ha', 0],
+      ['5 ha and up', 0],
+      ['Hindi tukoy', 0],
+    ]);
+    const cropCounter = new Map<string, number>();
+
+    for (const farmer of demographicFarmers) {
+      const genderLabel = normalizeGenderLabel(farmer.gender);
+      genderCounter.set(genderLabel, (genderCounter.get(genderLabel) ?? 0) + 1);
+
+      const ageGroup = getAgeGroupLabel(farmer.age);
+      ageGroupCounter.set(ageGroup, (ageGroupCounter.get(ageGroup) ?? 0) + 1);
+
+      const farmSizeBand = getFarmSizeBandLabel(farmer.farmSize);
+      farmSizeCounter.set(farmSizeBand, (farmSizeCounter.get(farmSizeBand) ?? 0) + 1);
+
+      for (const crop of farmer.crops) {
+        const normalizedCrop = crop.trim();
+        if (!normalizedCrop) {
+          continue;
+        }
+        cropCounter.set(normalizedCrop, (cropCounter.get(normalizedCrop) ?? 0) + 1);
+      }
+    }
+
+    const demographicPalette = [COLOR_1, COLOR_2, COLOR_3, COLOR_4, COLOR_5, COLOR_DESTRUCTIVE];
+    const genderDistributionData = [...genderCounter.entries()].map(([name, value], index) => ({
+      name,
+      value,
+      fill: demographicPalette[index % demographicPalette.length],
+    }));
+    const farmerAgeGroupData = [...ageGroupCounter.entries()].map(([group, count], index) => ({
+      group,
+      count,
+      fill: demographicPalette[index % demographicPalette.length],
+    }));
+    const farmSizeDistributionData = [...farmSizeCounter.entries()].map(([band, count], index) => ({
+      band,
+      count,
+      fill: demographicPalette[index % demographicPalette.length],
+    }));
+    const farmerCropProfileData = [...cropCounter.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 6)
+      .map(([crop, count], index) => ({
+        crop,
+        count,
+        fill: demographicPalette[index % demographicPalette.length],
+      }));
+    const topCropProfile = farmerCropProfileData[0] ?? null;
+    const dominantGenderEntry = genderDistributionData.reduce(
+      (best, current) => (!best || current.value > best.value ? current : best),
+      genderDistributionData[0] ?? null
+    );
+    const topSitioByFarmerCount = [...demographicFarmers]
+      .reduce((counter, farmer) => {
+        const sitio = farmer.sitio?.trim() || 'Hindi tukoy';
+        counter.set(sitio, (counter.get(sitio) ?? 0) + 1);
+        return counter;
+      }, new Map<string, number>())
+      .entries();
+    const topFarmerLocation = [...topSitioByFarmerCount]
+      .sort((left, right) => right[1] - left[1])[0] ?? null;
+
+    const interventionUsesDailyLabel = isCustomRange
+      ? getRangeSpanDays(resolvedWindow.start, resolvedWindow.end) <= 14
+      : presetTimeframe === 'Ngayong Araw' || presetTimeframe === 'Lingguhan';
+
     const interventionEventPeriods = new Map<string, { visits: number; sortTime: number }>();
     for (const task of filteredFieldVisitTasks) {
       const taskDate = asDate(task.scheduledFor);
-      const period = formatInterventionPeriodLabel(taskDate, timeframe);
+      const period = formatInterventionPeriodLabel(taskDate, interventionUsesDailyLabel);
       const sortTime =
-        timeframe === 'Ngayong Araw' || timeframe === 'Lingguhan'
+        interventionUsesDailyLabel
           ? startOfDay(taskDate).getTime()
           : new Date(taskDate.getFullYear(), taskDate.getMonth(), 1).getTime();
       const current = interventionEventPeriods.get(period);
@@ -600,9 +883,9 @@ export function useAnalytics() {
     }
     for (const record of filteredAssistanceRecords) {
       const recordDate = asDate(record.updatedAt);
-      const period = formatInterventionPeriodLabel(recordDate, timeframe);
+      const period = formatInterventionPeriodLabel(recordDate, interventionUsesDailyLabel);
       const sortTime =
-        timeframe === 'Ngayong Araw' || timeframe === 'Lingguhan'
+        interventionUsesDailyLabel
           ? startOfDay(recordDate).getTime()
           : new Date(recordDate.getFullYear(), recordDate.getMonth(), 1).getTime();
       const current = interventionEventPeriods.get(period);
@@ -829,6 +1112,19 @@ export function useAnalytics() {
       failedBroadcastRecipients,
       trackedMarketPrices: marketPrices.length,
       stalePriceCount,
+      totalDemographicFarmers,
+      newRegisteredFarmers: registeredFarmersInScope.length,
+      averageFarmerAge,
+      averageFarmSizeHectares,
+      dominantGenderLabel: dominantGenderEntry?.name ?? 'N/A',
+      dominantGenderCount: dominantGenderEntry?.value ?? 0,
+      topFarmerLocationLabel: topFarmerLocation?.[0] ?? 'N/A',
+      topFarmerLocationCount: topFarmerLocation?.[1] ?? 0,
+      topCropProfile,
+      genderDistributionData,
+      farmerAgeGroupData,
+      farmSizeDistributionData,
+      farmerCropProfileData,
       smsVolumeData,
       issueTrendsData,
       adviceSuccessData,
@@ -858,5 +1154,5 @@ export function useAnalytics() {
       messageToneData,
       responseTimeData,
     };
-  }, [alertHistory, assistanceRecords, auditLogs, farmers, fieldVisitTasks, marketPrices, outboundMessages, resources, smsMessages, timeframe, vouchers]);
+  }, [alertHistory, assistanceRecords, auditLogs, farmers, fieldVisitTasks, marketPrices, outboundMessages, resolvedWindow, resources, smsMessages, timeframe, vouchers]);
 }

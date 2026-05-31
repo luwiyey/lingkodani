@@ -7,6 +7,7 @@ import { getServerSystemSettings } from "@/lib/server/system-settings";
 import { processDueFollowUpMessage } from "@/lib/services/follow-up-service";
 import { sendLiveSms } from "@/lib/services/server-live-outbound-sms-service";
 import { processOfficialReminderMessage } from "@/lib/services/staff-sms-service";
+import { isWithinReplyWindow } from "@/lib/system-settings";
 import type { SmsMessage, User } from "@/lib/types";
 
 const liveServerSmsProvider: SmsProvider = {
@@ -24,6 +25,8 @@ function withoutUndefined<T extends Record<string, unknown>>(value: T) {
 export async function processLiveFollowUpMessages(actorName = "system") {
   const db = getServerFirestore();
   const systemSettings = await getServerSystemSettings();
+  const nowTimestamp = new Date().toISOString();
+  const withinReplyWindow = isWithinReplyWindow(nowTimestamp, systemSettings);
   const snapshot = await db.collection(firebaseCollections.smsMessages).get();
   const userSnapshot = await db.collection(firebaseCollections.users).get();
   const messages = snapshot.docs
@@ -35,6 +38,12 @@ export async function processLiveFollowUpMessages(actorName = "system") {
 
   for (const message of messages) {
     try {
+      const allowAfterHoursAutomation = message.parsedIntent === "EMERGENCY";
+
+      if (!withinReplyWindow && !allowAfterHoursAutomation) {
+        continue;
+      }
+
       const result = await processDueFollowUpMessage({
         message,
         provider: liveServerSmsProvider,

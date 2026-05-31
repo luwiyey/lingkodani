@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ const chartConfig = {
 
 export function MessageLengthChart() {
   const { messageLengthData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
 
   const mostCommonRange = messageLengthData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
@@ -40,7 +40,7 @@ export function MessageLengthChart() {
   const handleDownload = () => {
     const result = openPrintableReport({
       title: "Haba ng Mensahe",
-      timeframe,
+      timeframe: activeLabel,
       description: "Pamamahagi ng bilang ng inbound SMS ayon sa haba ng mensahe.",
       rows: messageLengthData.map((entry) => ({
         "Haba ng Mensahe": entry.range,
@@ -73,21 +73,7 @@ export function MessageLengthChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{timeframe}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              <ReportScopePicker />
               <DialogTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
                       <Expand className="h-4 w-4" />
@@ -123,7 +109,7 @@ export function MessageLengthChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Haba ng Mensahe ({timeframe})</DialogTitle>
+            <DialogTitle>Haba ng Mensahe ({activeLabel})</DialogTitle>
             <DialogDescription>
               Sinusuri ng ulat na ito ang haba ng mga papasok na mensahe ng SMS. Ang pag-unawa kung gaano kahaba o kaikli ang mga mensahe ng magsasaka ay makakatulong sa pag-optimize ng pag-unawa ng AI at sa pag-disenyo ng mga epektibong tugon.
             </DialogDescription>

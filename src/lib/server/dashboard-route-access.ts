@@ -2,7 +2,11 @@ import {
   canAccessBarangaySettingsWorkspace,
   canAccessDataCenter,
 } from "@/lib/access-control";
-import { hasServerDemoPreviewAccess, readServerSessionProfile } from "@/lib/server/session-auth";
+import {
+  hasServerDemoPreviewAccess,
+  readServerDemoPreviewProfile,
+  readServerSessionProfile,
+} from "@/lib/server/session-auth";
 import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 
 type GuardKind = "developer" | "settings" | "dataCenter";
@@ -18,8 +22,29 @@ function resolveUnauthenticatedRedirect(hasDemoPreviewAccess: boolean) {
 export async function resolveDashboardRouteAccess(kind: GuardKind): Promise<GuardResult> {
   const session = await readServerSessionProfile();
   const hasDemoPreviewAccess = await hasServerDemoPreviewAccess();
+  const demoPreviewProfile = hasDemoPreviewAccess ? await readServerDemoPreviewProfile() : null;
 
   if (!session) {
+    if (demoPreviewProfile) {
+      if (kind === "developer") {
+        return demoPreviewProfile.role === "developer"
+          ? { allowed: true }
+          : { allowed: false, redirectTo: getPreferredDashboardRoute(demoPreviewProfile) };
+      }
+
+      if (kind === "dataCenter") {
+        return demoPreviewProfile.role === "developer"
+          ? { allowed: true }
+          : { allowed: false, redirectTo: getPreferredDashboardRoute(demoPreviewProfile) };
+      }
+
+      if (kind === "settings") {
+        return demoPreviewProfile.role === "developer" || demoPreviewProfile.role === "barangay"
+          ? { allowed: true }
+          : { allowed: false, redirectTo: getPreferredDashboardRoute(demoPreviewProfile) };
+      }
+    }
+
     if (hasDemoPreviewAccess && kind === "settings") {
       return { allowed: true };
     }

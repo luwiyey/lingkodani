@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ const chartConfig = {
 
 export function SmsVolumeChart() {
   const { smsVolumeData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { timeframe, activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
 
   const totalSms = smsVolumeData.reduce((acc, item) => acc + item.total, 0);
@@ -42,14 +42,14 @@ export function SmsVolumeChart() {
     ? 'sa bawat 4 na oras'
     : timeframe === 'Lingguhan'
       ? 'sa bawat araw'
-      : timeframe === 'Buwanan'
+      : timeframe === 'Monthly'
         ? 'sa bawat linggo'
         : 'sa bawat buwan';
 
   const handleDownload = () => {
     const result = openPrintableReport({
       title: "Chart ng Dami ng SMS",
-      timeframe,
+      timeframe: activeLabel,
       description: "Kabuuang dami ng inbound SMS sa napiling reporting window.",
       rows: smsVolumeData.map((entry) => ({
         Panahon: entry.name,
@@ -83,21 +83,7 @@ export function SmsVolumeChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{timeframe}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              <ReportScopePicker />
               <DialogTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
                       <Expand className="h-4 w-4" />
@@ -124,7 +110,7 @@ export function SmsVolumeChart() {
         <CardContent className="h-[180px] flex items-center justify-center p-0">
             <div className="flex flex-col items-center gap-2">
                 <p className="text-5xl font-bold text-chart-1">{totalSms}</p>
-                <p className="text-sm text-muted-foreground">Kabuuang SMS ({timeframe})</p>
+                <p className="text-sm text-muted-foreground">Kabuuang SMS ({activeLabel})</p>
             </div>
         </CardContent>
         <CardFooter>
@@ -133,7 +119,7 @@ export function SmsVolumeChart() {
       </Card>
        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Chart ng Dami ng SMS ({timeframe})</DialogTitle>
+            <DialogTitle>Chart ng Dami ng SMS ({activeLabel})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng ulat na ito ang dami ng mga papasok na mensahe ng SMS sa isang tinukoy na panahon. Nakakatulong ito sa mga admin na maunawaan ang mga pattern ng komunikasyon at mga panahon ng mataas na aktibidad.
             </DialogDescription>

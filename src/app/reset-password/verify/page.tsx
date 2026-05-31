@@ -301,7 +301,7 @@ function ResetPasswordVerifyPageContent() {
                   </div>
                 </div>
                 <div className="rounded-[calc(var(--radius)+4px)] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                  Kung wala kang natanggap na reset email sa loob ng ilang minuto, posibleng hindi pa naka-set up ng developer o barangay admin ang live account na ito.
+                  Kung wala kang natanggap na reset email sa loob ng ilang minuto, posibleng hindi pa naka-set up ng superadmin o barangay admin ang live account na ito.
                 </div>
                 <Button asChild variant="outline" className="w-full">
                   <Link href={`/request-access?source=reset_password&email=${encodeURIComponent(emailFromQuery ?? '')}`}>Humiling ng access setup</Link>

@@ -93,24 +93,42 @@ export async function POST(request: Request) {
   }
 
   if (isLiveMode) {
-    const result = await persistLiveInboundSms({
-      phone: inbound.phone,
-      message: inbound.message,
-      analysis: inbound.analysis,
-      sourceProvider: inbound.provider,
-      externalId: inbound.externalId,
-    });
+    try {
+      const result = await persistLiveInboundSms({
+        phone: inbound.phone,
+        message: inbound.message,
+        analysis: inbound.analysis,
+        sourceProvider: inbound.provider,
+        externalId: inbound.externalId,
+        receivedAt: inbound.receivedAt,
+      });
 
-    return NextResponse.json({
-      accepted: true,
-      persisted: result.persisted ?? !result.duplicate,
-      duplicate: result.duplicate,
-      ignored: result.ignored ?? false,
-      ignoreReason: result.reason ?? null,
-      handledBy: result.handledBy ?? "farmer",
-      provider: inbound.provider,
-      messageId: result.message?.id ?? null,
-    });
+      return NextResponse.json({
+        accepted: true,
+        persisted: result.persisted ?? !result.duplicate,
+        duplicate: result.duplicate,
+        ignored: result.ignored ?? false,
+        ignoreReason: result.reason ?? null,
+        handledBy: result.handledBy ?? "farmer",
+        provider: inbound.provider,
+        messageId: result.message?.id ?? null,
+      });
+    } catch (error) {
+      console.error("Live inbound SMS webhook failed.", {
+        provider: inbound.provider,
+        phone: inbound.phone,
+        externalId: inbound.externalId,
+        error,
+      });
+
+      return NextResponse.json(
+        {
+          error: "Failed to persist live inbound SMS.",
+          provider: inbound.provider,
+        },
+        { status: 500 }
+      );
+    }
   }
 
   enqueueInboundWebhook(inbound);

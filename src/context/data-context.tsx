@@ -53,6 +53,7 @@ import { useAuth } from '@/context/auth-context';
 import { getClientAuth } from '@/lib/firebase/auth-client';
 import { getClientFirestore } from '@/lib/firebase/client';
 import { firebaseCollections } from '@/lib/firebase/collections';
+import { withFirestoreDocId } from '@/lib/firebase/with-firestore-doc-id';
 import { smsProvider } from '@/lib/providers/sms';
 import { alertHistoryRepository, assistanceRepository, auditRepository, farmerRepository, fieldVisitRepository, knowledgeRepository, logbookRepository, marketPriceRepository, outboundMessageRepository, resourceRepository, smsRepository, smsTrainingRepository, systemSettingsRepository, userRepository, voucherRepository } from '@/lib/repositories';
 import { clearDemoStoreData } from '@/lib/repositories/demo-store';
@@ -314,11 +315,14 @@ interface DataContextType {
   offlineMode: boolean;
   offlineSyncing: boolean;
   offlineOutboxCount: number;
+  liveDataReady: boolean;
   syncOfflineChanges: () => Promise<{ processedCount: number; remainingCount: number }>;
   resetDemoData: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
+const LIVE_BOOTSTRAP_KEYS = ['systemSettings', 'resources', 'marketPrices', 'farmers', 'smsMessages', 'users'] as const;
+type LiveBootstrapKey = typeof LIVE_BOOTSTRAP_KEYS[number];
 
 function createEntityId(prefix: string) {
   return `${prefix}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -411,6 +415,10 @@ function sortByDateAscending<T>(items: T[], getDateValue: (item: T) => string) {
   return [...items].sort((left, right) => normalizeTimestamp(getDateValue(left)) - normalizeTimestamp(getDateValue(right)));
 }
 
+function getRuntimeInitialItems<T>(demoItems: T[]) {
+  return isLiveMode ? [] as T[] : demoItems;
+}
+
 function canUseBrowserStorage() {
   return typeof window !== 'undefined' ? window.localStorage : null;
 }
@@ -463,23 +471,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const autoReplyInFlight = React.useRef<Set<string>>(new Set());
   const followUpInFlight = React.useRef<Set<string>>(new Set());
   const retentionSweepStarted = React.useRef(false);
+  const liveBootstrapRef = React.useRef<Set<LiveBootstrapKey>>(new Set());
+  const liveBootstrapApiLoaded = React.useRef(false);
+  const liveSmsApiFallbackLoaded = React.useRef(false);
   const [hydrated, setHydrated] = useState(false);
+  const [liveDataReady, setLiveDataReady] = useState(!isLiveMode);
   
-  const [farmers, setFarmers] = useState<Farmer[]>(initialFarmers);
-  const [smsMessages, setSmsMessages] = useState<SmsMessage[]>(sortVisibleSmsMessages(initialSmsMessages));
-  const [resources, setResources] = useState<Resource[]>(initialResources);
-  const [marketPrices, setMarketPrices] = useState<MarketPriceEntry[]>(initialMarketPrices);
-  const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>(initialKnowledgeArticles);
-  const [logbook, setLogbook] = useState<LogbookEntry[]>(initialLogbookEntries);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
-  const [alertHistory, setAlertHistory] = useState<AlertHistoryEntry[]>(initialAlertHistory);
-  const [assistanceRecords, setAssistanceRecords] = useState<FarmerAssistanceRecord[]>(initialAssistanceRecords);
-  const [fieldVisitTasks, setFieldVisitTasks] = useState<FieldVisitTask[]>(initialFieldVisitTasks);
-  const [smsTrainingExamples, setSmsTrainingExamples] = useState<SmsTrainingExample[]>(initialSmsTrainingExamples);
+  const [farmers, setFarmers] = useState<Farmer[]>(() => getRuntimeInitialItems(initialFarmers));
+  const [smsMessages, setSmsMessages] = useState<SmsMessage[]>(() => (
+    isLiveMode ? [] : sortVisibleSmsMessages(initialSmsMessages)
+  ));
+  const [resources, setResources] = useState<Resource[]>(() => getRuntimeInitialItems(initialResources));
+  const [marketPrices, setMarketPrices] = useState<MarketPriceEntry[]>(() => getRuntimeInitialItems(initialMarketPrices));
+  const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>(() => getRuntimeInitialItems(initialKnowledgeArticles));
+  const [logbook, setLogbook] = useState<LogbookEntry[]>(() => getRuntimeInitialItems(initialLogbookEntries));
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => getRuntimeInitialItems(initialAuditLogs));
+  const [alertHistory, setAlertHistory] = useState<AlertHistoryEntry[]>(() => getRuntimeInitialItems(initialAlertHistory));
+  const [assistanceRecords, setAssistanceRecords] = useState<FarmerAssistanceRecord[]>(() => getRuntimeInitialItems(initialAssistanceRecords));
+  const [fieldVisitTasks, setFieldVisitTasks] = useState<FieldVisitTask[]>(() => getRuntimeInitialItems(initialFieldVisitTasks));
+  const [smsTrainingExamples, setSmsTrainingExamples] = useState<SmsTrainingExample[]>(() => getRuntimeInitialItems(initialSmsTrainingExamples));
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(defaultSystemSettings);
-  const [users, setUsers] = useState<User[]>(initialUsers);
-  const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
-  const [outboundMessages, setOutboundMessages] = useState<OutboundMessage[]>(initialOutboundMessages);
+  const [users, setUsers] = useState<User[]>(() => getRuntimeInitialItems(initialUsers));
+  const [vouchers, setVouchers] = useState<Voucher[]>(() => getRuntimeInitialItems(initialVouchers));
+  const [outboundMessages, setOutboundMessages] = useState<OutboundMessage[]>(() => getRuntimeInitialItems(initialOutboundMessages));
   const [webhookBridgeStatus, setWebhookBridgeStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [offlineMode, setOfflineMode] = useState(false);
   const [offlineSyncing, setOfflineSyncing] = useState(false);
@@ -521,6 +535,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     return offlineMode || isLikelyOfflinePersistenceError(error);
   }, [offlineMode, usingLiveData]);
+
+  const markLiveBootstrapReady = useCallback((key: LiveBootstrapKey) => {
+    liveBootstrapRef.current.add(key);
+
+    if (LIVE_BOOTSTRAP_KEYS.every((requiredKey) => liveBootstrapRef.current.has(requiredKey))) {
+      setLiveDataReady(true);
+    }
+  }, []);
 
   const processOfflineMutation = useCallback(async (mutation: OfflineMutation) => {
     switch (mutation.type) {
@@ -728,6 +750,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     setHydrated(true);
+    setLiveDataReady(true);
   }, [usingDemoSandbox]);
 
   useEffect(() => {
@@ -775,59 +798,70 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [offlineOutboxScope, syncOfflineChanges, usingLiveData]);
 
   useEffect(() => {
-    if (!usingLiveData) return;
+    if (!usingLiveData) {
+      setLiveDataReady(true);
+      return;
+    }
     if (authLoading) return;
 
     if (!currentUser) {
       setHydrated(true);
+      setLiveDataReady(true);
       return;
     }
 
     try {
+      liveBootstrapRef.current = new Set();
+      setLiveDataReady(false);
       const db = getClientFirestore();
       const unsubscribers = [
         onSnapshot(doc(db, firebaseCollections.systemSettings, SYSTEM_SETTINGS_DOCUMENT_ID), (snapshot) => {
           setSystemSettings(mergeSystemSettings(snapshot.exists() ? (snapshot.data() as Partial<SystemSettings>) : null));
+          markLiveBootstrapReady('systemSettings');
         }),
         onSnapshot(query(collection(db, firebaseCollections.resources), orderBy('lastUpdated', 'desc')), (snapshot) => {
-          setResources(snapshot.docs.map((item) => item.data() as Resource));
+          setResources(snapshot.docs.map((item) => withFirestoreDocId<Resource>(item)));
           setWebhookBridgeStatus('idle');
+          markLiveBootstrapReady('resources');
         }),
         onSnapshot(query(collection(db, firebaseCollections.marketPrices), orderBy('updatedAt', 'desc')), (snapshot) => {
-          setMarketPrices(snapshot.docs.map((item) => item.data() as MarketPriceEntry));
+          setMarketPrices(snapshot.docs.map((item) => withFirestoreDocId<MarketPriceEntry>(item)));
+          markLiveBootstrapReady('marketPrices');
         }),
         onSnapshot(query(collection(db, firebaseCollections.alertHistory), orderBy('timestamp', 'desc')), (snapshot) => {
-          setAlertHistory(snapshot.docs.map((item) => item.data() as AlertHistoryEntry));
+          setAlertHistory(snapshot.docs.map((item) => withFirestoreDocId<AlertHistoryEntry>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.assistanceRecords), orderBy('updatedAt', 'desc')), (snapshot) => {
-          setAssistanceRecords(snapshot.docs.map((item) => item.data() as FarmerAssistanceRecord));
+          setAssistanceRecords(snapshot.docs.map((item) => withFirestoreDocId<FarmerAssistanceRecord>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.fieldVisitTasks), orderBy('scheduledFor', 'asc')), (snapshot) => {
-          setFieldVisitTasks(snapshot.docs.map((item) => item.data() as FieldVisitTask));
+          setFieldVisitTasks(snapshot.docs.map((item) => withFirestoreDocId<FieldVisitTask>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.knowledgeArticles), orderBy('lastUpdated', 'desc')), (snapshot) => {
-          setKnowledgeArticles(snapshot.docs.map((item) => item.data() as KnowledgeArticle));
+          setKnowledgeArticles(snapshot.docs.map((item) => withFirestoreDocId<KnowledgeArticle>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.vouchers), orderBy('issueDate', 'desc')), (snapshot) => {
-          setVouchers(snapshot.docs.map((item) => item.data() as Voucher));
+          setVouchers(snapshot.docs.map((item) => withFirestoreDocId<Voucher>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.farmers), orderBy('registrationDate', 'desc')), (snapshot) => {
-          setFarmers(snapshot.docs.map((item) => item.data() as Farmer));
+          setFarmers(snapshot.docs.map((item) => withFirestoreDocId<Farmer>(item)));
+          markLiveBootstrapReady('farmers');
         }),
         onSnapshot(query(collection(db, firebaseCollections.smsMessages), orderBy('timestamp', 'desc')), (snapshot) => {
-          setSmsMessages(sortVisibleSmsMessages(snapshot.docs.map((item) => item.data() as SmsMessage)));
+          setSmsMessages(sortVisibleSmsMessages(snapshot.docs.map((item) => withFirestoreDocId<SmsMessage>(item))));
+          markLiveBootstrapReady('smsMessages');
         }),
         onSnapshot(query(collection(db, firebaseCollections.auditLogs), orderBy('timestamp', 'desc')), (snapshot) => {
-          setAuditLogs(snapshot.docs.map((item) => item.data() as AuditLog));
+          setAuditLogs(snapshot.docs.map((item) => withFirestoreDocId<AuditLog>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.outboundMessages), orderBy('createdAt', 'desc')), (snapshot) => {
-          setOutboundMessages(snapshot.docs.map((item) => item.data() as OutboundMessage));
+          setOutboundMessages(snapshot.docs.map((item) => withFirestoreDocId<OutboundMessage>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.logbookEntries), orderBy('timestamp', 'desc')), (snapshot) => {
-          setLogbook(snapshot.docs.map((item) => item.data() as LogbookEntry));
+          setLogbook(snapshot.docs.map((item) => withFirestoreDocId<LogbookEntry>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.smsTrainingExamples), orderBy('finalReview.reviewedAt', 'desc')), (snapshot) => {
-          setSmsTrainingExamples(snapshot.docs.map((item) => item.data() as SmsTrainingExample));
+          setSmsTrainingExamples(snapshot.docs.map((item) => withFirestoreDocId<SmsTrainingExample>(item)));
         }),
       ];
 
@@ -838,10 +872,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               id: item.id,
               ...(item.data() as User),
             })));
+            markLiveBootstrapReady('users');
           })
         );
       } else {
         setUsers(currentUserProfile ? [currentUserProfile] : []);
+        markLiveBootstrapReady('users');
       }
 
       setHydrated(true);
@@ -853,8 +889,113 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       console.error("Error attaching live listeners", error);
       setWebhookBridgeStatus('error');
       setHydrated(true);
+      setLiveDataReady(true);
     }
-  }, [authLoading, currentUser, currentUserProfile, usingLiveData]);
+  }, [authLoading, currentUser, currentUserProfile, markLiveBootstrapReady, usingLiveData]);
+
+  useEffect(() => {
+    if (!usingLiveData || authLoading || !currentUser) {
+      liveBootstrapApiLoaded.current = false;
+      liveSmsApiFallbackLoaded.current = false;
+      return;
+    }
+
+    if (liveBootstrapApiLoaded.current) {
+      return;
+    }
+
+    liveBootstrapApiLoaded.current = true;
+
+    let cancelled = false;
+
+    const loadLiveBootstrap = async () => {
+      const idToken = await getClientAuth().currentUser?.getIdToken();
+
+      if (!idToken) {
+        throw new Error('Missing live ID token for bootstrap preload.');
+      }
+
+      const response = await fetch('/api/system/live-bootstrap', {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Live bootstrap failed with HTTP ${response.status}.`);
+      }
+
+      const payload = await response.json();
+      const bootstrap = payload.bootstrap ?? {};
+
+      if (cancelled) {
+        return;
+      }
+
+      setSystemSettings((current) => mergeSystemSettings(bootstrap.systemSettings ?? current));
+      setResources((current) => current.length > 0 ? current : (bootstrap.resources ?? []));
+      setMarketPrices((current) => current.length > 0 ? current : (bootstrap.marketPrices ?? []));
+      setFarmers((current) => current.length > 0 ? current : (bootstrap.farmers ?? []));
+      setSmsMessages((current) => current.length > 0 ? current : sortVisibleSmsMessages(bootstrap.smsMessages ?? []));
+      setUsers((current) => current.length > 0 ? current : (bootstrap.users ?? []));
+      setVouchers((current) => current.length > 0 ? current : (bootstrap.vouchers ?? []));
+      setAssistanceRecords((current) => current.length > 0 ? current : (bootstrap.assistanceRecords ?? []));
+      setFieldVisitTasks((current) => current.length > 0 ? current : (bootstrap.fieldVisitTasks ?? []));
+      setAlertHistory((current) => current.length > 0 ? current : (bootstrap.alertHistory ?? []));
+      setOutboundMessages((current) => current.length > 0 ? current : (bootstrap.outboundMessages ?? []));
+
+      markLiveBootstrapReady('systemSettings');
+      markLiveBootstrapReady('resources');
+      markLiveBootstrapReady('marketPrices');
+      markLiveBootstrapReady('farmers');
+      markLiveBootstrapReady('smsMessages');
+      markLiveBootstrapReady('users');
+    };
+
+    void loadLiveBootstrap().catch((error) => {
+      console.error('Failed to preload live bootstrap payload.', error);
+      liveBootstrapApiLoaded.current = false;
+    });
+
+    if (smsMessages.length > 0 || liveSmsApiFallbackLoaded.current) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    liveSmsApiFallbackLoaded.current = true;
+
+    void fetch('/api/mobile/sms-feed', {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'same-origin',
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Live SMS fallback failed with HTTP ${response.status}.`);
+        }
+
+        const payload = await response.json();
+        const nextMessages = Array.isArray(payload.messages)
+          ? sortVisibleSmsMessages(payload.messages as SmsMessage[])
+          : [];
+
+        if (!cancelled && nextMessages.length > 0) {
+          setSmsMessages(nextMessages);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to hydrate live SMS feed from API fallback.', error);
+        liveSmsApiFallbackLoaded.current = false;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, currentUser, markLiveBootstrapReady, smsMessages.length, usingLiveData]);
 
   useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('farmers', JSON.stringify(farmers)); }, [farmers, hydrated, usingDemoSandbox]);
   useEffect(() => { if (hydrated && usingDemoSandbox) localStorage.setItem('smsMessages', JSON.stringify(smsMessages)); }, [smsMessages, hydrated, usingDemoSandbox]);
@@ -4245,6 +4386,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     offlineMode,
     offlineSyncing,
     offlineOutboxCount,
+    liveDataReady,
     syncOfflineChanges,
     resetDemoData,
   };

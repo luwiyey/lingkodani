@@ -17,7 +17,7 @@ import { firebaseCollections } from "@/lib/firebase/collections";
 import { sanitizeFirestoreDocument } from "@/lib/firebase/sanitize-firestore";
 import { hasFirebaseConfig } from "@/lib/firebase/shared";
 import { getInviteLifecycleSummary } from "@/lib/invite-lifecycle";
-import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, normalizeDemoProfile, readDemoPreviewUser, readOnboardingProfile } from "@/lib/onboarding";
+import { clearDemoPreviewUser, DEMO_PREVIEW_EVENT, normalizeDemoProfile, readDemoPreviewUser, readOnboardingProfile, saveOnboardingProfile } from "@/lib/onboarding";
 import { syncUserOnboardingState } from "@/lib/onboarding-checklist";
 import { clearAllOfflineMutations } from "@/lib/offline-outbox";
 import { clearDemoStoreData } from "@/lib/repositories/demo-store";
@@ -64,7 +64,7 @@ function mergeLiveProfile(profile: User | null) {
     ...profile,
     preferredWorkspace: profile.role === "developer"
       ? "detailed"
-      : onboardingProfile?.preferredWorkspace ?? profile.preferredWorkspace,
+      : profile.preferredWorkspace ?? onboardingProfile?.preferredWorkspace ?? "simple",
   };
 }
 
@@ -98,6 +98,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   startDemoSession: (email: string) => void;
   signOutUser: () => Promise<void>;
+  applyProfilePatch: (patch: Partial<User>) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -255,7 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (inviteLifecycle.status === "revoked") {
           await syncServerSession(null);
           setCurrentUserProfile(null);
-          setAuthError("Naka-hold muna ang setup invite na ito. Makipag-ugnayan sa developer o barangay admin para sa panibagong invite.");
+          setAuthError("Naka-hold muna ang setup invite na ito. Makipag-ugnayan sa superadmin o barangay admin para sa panibagong invite.");
           await signOut(auth);
           setAuthLoading(false);
           return;
@@ -422,6 +423,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const auth = getClientAuth();
         await syncServerSession(null);
         await signOut(auth);
+      }
+    },
+    applyProfilePatch(patch: Partial<User>) {
+      setCurrentUserProfile((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          ...patch,
+        };
+      });
+
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const currentOnboarding = readOnboardingProfile();
+      if (currentOnboarding && patch.preferredWorkspace) {
+        saveOnboardingProfile({
+          ...currentOnboarding,
+          preferredWorkspace: patch.preferredWorkspace,
+        });
       }
     },
   }), [authError, authLoading, currentUser, currentUserProfile]);

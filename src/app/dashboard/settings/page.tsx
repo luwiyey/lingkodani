@@ -701,7 +701,7 @@ export default function BarangaySettingsPage() {
               <CardHeader>
                 <CardTitle>Limitado ang Access sa Settings</CardTitle>
                 <CardDescription>
-                  Ang page na ito ay available lamang para sa barangay at developer accounts. Ibinabalik ka na sa dashboard.
+                  Ang page na ito ay available lamang para sa barangay at superadmin accounts. Ibinabalik ka na sa dashboard.
                 </CardDescription>
               </CardHeader>
             </Card>

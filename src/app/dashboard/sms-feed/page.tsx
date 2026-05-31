@@ -46,6 +46,7 @@ type KnowledgeReplyDraft = {
   articleTitles?: string[];
   createdAt?: string;
 };
+type SmsFeedView = 'actionable' | 'monitoring' | 'closed' | 'all';
 
 const typeInfo: Record<SmsIntent, {label: string, icon: React.ElementType }> = {
     REGISTER: { label: 'Pagpaparehistro', icon: User },
@@ -167,6 +168,47 @@ function createReviewDraft(message: SmsMessage): ReviewDraft {
   };
 }
 
+function matchesSmsFeedView(message: SmsMessage, view: SmsFeedView) {
+  const isClosed = message.caseStatus === 'closed' || Boolean(message.closedAt);
+  const isMonitoring =
+    !isClosed &&
+    (
+      message.caseStatus === 'monitoring' ||
+      message.caseOutcomeStatus === 'resolved' ||
+      message.caseOutcomeStatus === 'improving' ||
+      message.caseOutcomeStatus === 'needs_follow_up' ||
+      isAwaitingFarmerConfirmation(message) ||
+      message.status === 'approved' ||
+      message.status === 'replied'
+    );
+  const isActionable =
+    !isClosed &&
+    !isMonitoring &&
+    (
+      message.status === 'pending_approval' ||
+      message.caseStatus === 'open' ||
+      message.caseStatus === 'awaiting_clarification' ||
+      message.caseStatus === 'awaiting_registration' ||
+      message.caseStatus === 'assigned' ||
+      message.caseStatus === 'escalated' ||
+      !message.caseStatus
+    );
+
+  if (view === 'all') {
+    return true;
+  }
+
+  if (view === 'closed') {
+    return isClosed;
+  }
+
+  if (view === 'monitoring') {
+    return isMonitoring;
+  }
+
+  return isActionable;
+}
+
 function ReviewMetadataFields({
   draft,
   setDraft,
@@ -283,6 +325,9 @@ function SmsMessageCard({
     const farmerName = farmer ? farmer.name : message.farmerName;
     const avatarUrl = farmer?.avatarUrl;
     const awaitingConfirmation = isAwaitingFarmerConfirmation(message);
+    const confidenceLabel = Number.isFinite(message.aiConfidence)
+      ? `${(message.aiConfidence * 100).toFixed(0)}%`
+      : 'N/A';
 
     return (
         <Card
@@ -335,7 +380,7 @@ function SmsMessageCard({
                             {intentLabel}
                         </Badge>
                         <Badge variant="outline" className={getRiskBadgeClassName(message.safetyFlag)}>{message.safetyFlag} Risk</Badge>
-                        <Badge variant="outline" className={neutralBadgeClassName}>Conf: {(message.aiConfidence * 100).toFixed(0)}%</Badge>
+                        <Badge variant="outline" className={neutralBadgeClassName}>Conf: {confidenceLabel}</Badge>
                         <Badge variant="outline" className={neutralBadgeClassName}>
                           Source: {getAnalysisSourceLabel(message.analysisSource)}
                         </Badge>
@@ -546,6 +591,7 @@ function SmsFeedPageContent() {
     const [threadReviewMessage, setThreadReviewMessage] = React.useState<SmsMessage | null>(null);
     const [simulatedPhone, setSimulatedPhone] = React.useState('+639171234567');
     const [simulatedMessage, setSimulatedMessage] = React.useState('Marami pong uod sa palay namin at mabilis dumami ngayong umaga.');
+    const [feedView, setFeedView] = React.useState<SmsFeedView>('actionable');
     const { toast, dismiss } = useToast();
     const focusedSmsId = searchParams.get('sms');
     const activeOperatorName = currentUserProfile?.name?.trim() || 'Brgy. Admin';
@@ -619,6 +665,48 @@ function SmsFeedPageContent() {
             })
           : null,
       [assistanceRecords, fieldVisitTasks, outcomeMessage]
+    );
+    const feedViewOptions = React.useMemo(
+      () => ([
+        {
+          id: 'actionable' as const,
+          label: 'Kailangang Aksyunan',
+          description: 'Mga bagong case, pending approvals, at mga concern na kailangan pang galawan ngayon.',
+        },
+        {
+          id: 'monitoring' as const,
+          label: 'Monitoring',
+          description: 'Mga mensaheng may naibigay nang action pero bukas pa para sa follow-up o farmer confirmation.',
+        },
+        {
+          id: 'closed' as const,
+          label: 'Sarado',
+          description: 'Mga kasong tuluyang naisara at napanatili para sa audit trail at reports.',
+        },
+        {
+          id: 'all' as const,
+          label: 'Lahat',
+          description: 'Buong SMS history para sa review, verification, at troubleshooting.',
+        },
+      ]),
+      []
+    );
+    const feedViewCounts = React.useMemo(
+      () =>
+        feedViewOptions.reduce<Record<SmsFeedView, number>>((accumulator, option) => {
+          accumulator[option.id] = smsMessages.filter((message) => matchesSmsFeedView(message, option.id)).length;
+          return accumulator;
+        }, {
+          actionable: 0,
+          monitoring: 0,
+          closed: 0,
+          all: smsMessages.length,
+        }),
+      [feedViewOptions, smsMessages]
+    );
+    const visibleSmsMessages = React.useMemo(
+      () => smsMessages.filter((message) => matchesSmsFeedView(message, feedView)),
+      [feedView, smsMessages]
     );
     
     const openDialog = (type: DialogState['type'], message: SmsMessage) => {
@@ -737,8 +825,8 @@ function SmsFeedPageContent() {
 
             if (!idToken) {
                 toast({
-                    title: "Walang live developer session",
-                    description: "Mag-sign in muna sa live developer account bago gumamit ng safe SMS test mode.",
+                    title: "Walang live superadmin session",
+                    description: "Mag-sign in muna sa live superadmin account bago gumamit ng safe SMS test mode.",
                     variant: "destructive",
                 });
                 return;
@@ -1020,7 +1108,7 @@ function SmsFeedPageContent() {
           <CardHeader>
             <CardTitle className="text-base">Naka-lock ang live SMS test mode</CardTitle>
             <CardDescription>
-              Available ito para sa developer accounts, pero kailangan munang i-enable ang live test flag sa server bago lumabas ang safe preview tool.
+              Available ito para sa superadmin accounts, pero kailangan munang i-enable ang live test flag sa server bago lumabas ang safe preview tool.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -1084,8 +1172,45 @@ function SmsFeedPageContent() {
           </CardContent>
         </Card>
       ) : null}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {smsMessages.map(message => (
+      <Card className="mb-6 border-border/80">
+        <CardHeader className="space-y-3">
+          <CardTitle className="text-base">Ayos ng SMS feed</CardTitle>
+          <CardDescription>
+            Ang mga mensaheng may naaksyunan na ay hindi agad binubura. Inaalis sila sa default actionable queue at inililipat sa
+            <span className="font-medium"> Monitoring</span> o <span className="font-medium">Sarado</span> para tuloy-tuloy ang audit trail, reports, at follow-up tracking.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {feedViewOptions.map((option) => {
+              const isActive = feedView === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setFeedView(option.id)}
+                  className={cn(
+                    "rounded-xl border px-4 py-3 text-left transition-colors",
+                    isActive
+                      ? "border-primary/35 bg-primary/5 ring-1 ring-primary/10"
+                      : "border-border/80 bg-background hover:border-primary/20 hover:bg-muted/40"
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold">{option.label}</p>
+                    <Badge variant="outline" className={isActive ? infoBadgeClassName : neutralBadgeClassName}>
+                      {feedViewCounts[option.id]}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{option.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {visibleSmsMessages.map(message => (
               <SmsMessageCard
                 key={message.id}
                 message={{
@@ -1110,6 +1235,13 @@ function SmsFeedPageContent() {
               />
           ))}
       </div>
+      {visibleSmsMessages.length === 0 ? (
+        <Card className="mt-4 border-dashed border-border/80">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Walang mensaheng tumutugma sa kasalukuyang feed view. Subukang lumipat sa ibang tab para makita ang monitoring o closed history.
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Dialog open={dialogState.type === 'approve'} onOpenChange={closeDialog}>
         <DialogContent>

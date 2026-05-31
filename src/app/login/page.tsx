@@ -82,7 +82,7 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [lastAttemptedEmail, setLastAttemptedEmail] = useState("");
   const [accessErrorMessage, setAccessErrorMessage] = useState(
-    "Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa developer upang ma-access ang Lingkod-Ani."
+    "Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa superadmin o barangay administrator upang ma-access ang Lingkod-Ani."
   );
 
   useEffect(() => {
@@ -135,7 +135,7 @@ function LoginPageContent() {
     const user = users.find((candidate) => candidate.email === email);
 
     if (user?.status === "disabled") {
-      setAccessErrorMessage("Ang account na ito ay naka-disable. Mangyaring makipag-ugnayan sa developer o barangay administrator.");
+      setAccessErrorMessage("Ang account na ito ay naka-disable. Mangyaring makipag-ugnayan sa superadmin o barangay administrator.");
       setShowNotRegisteredDialog(true);
       setLoading(false);
       return;
@@ -147,7 +147,7 @@ function LoginPageContent() {
       return;
     }
 
-    setAccessErrorMessage("Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa developer upang ma-access ang Lingkod-Ani.");
+    setAccessErrorMessage("Ang email address na iyong inilagay ay hindi nakarehistro sa aming sistema. Mangyaring makipag-ugnayan sa superadmin o barangay administrator upang ma-access ang Lingkod-Ani.");
     setShowNotRegisteredDialog(true);
     setLoading(false);
   };
@@ -218,9 +218,11 @@ function LoginPageContent() {
 
             {requestedAccess ? (
               <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left text-sm text-emerald-900">
-                Naisumite na ang access request mo. Hintayin ang developer o barangay admin na ma-provision ang account bago subukang mag-login muli.
+                Naisumite na ang access request mo. Hintayin ang superadmin o barangay admin na ma-provision ang account bago subukang mag-login muli.
               </div>
             ) : null}
+
+
 
             <form onSubmit={handleLogin} className="mt-2 space-y-5">
               <HoverTooltip text="Ilagay ang email address na nakarehistro sa iyong account.">

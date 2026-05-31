@@ -374,7 +374,7 @@ export function Header() {
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold leading-tight tracking-tight">Lingkod-Ani</p>
                 <p className="truncate text-[11px] text-muted-foreground">
-                  {isDeveloperView ? 'Developer Console' : 'Kaagapay ng Magsasaka'}
+                  {isDeveloperView ? 'Superadmin Console' : 'Kaagapay ng Magsasaka'}
                 </p>
               </div>
             </Link>
@@ -386,7 +386,7 @@ export function Header() {
         {isDeveloperView ? (
           <div className="hidden items-center gap-2 rounded-full border border-border/90 bg-card px-3 py-2 text-[13px] font-medium tracking-tight text-muted-foreground shadow-sm sm:flex">
             <BadgeCheck className="h-4 w-4 text-primary" />
-            <span>Developer Console</span>
+            <span>Superadmin Console</span>
           </div>
         ) : (
           <HoverTooltip text={isDisasterModeActive ? 'I-deactivate ang Disaster Mode' : 'I-activate ang Disaster Mode'}>

@@ -56,9 +56,11 @@ export default function LandingPage() {
               <span className="text-[11px] text-muted-foreground">Kaagapay ng Magsasaka</span>
             </div>
           </Link>
-          <Link href="/login" className={buttonVariants()}>
-            Mag Log-in
-          </Link>
+           <div className="flex items-center gap-3">
+             <Link href="/login" className={buttonVariants()}>
+               Mag Log-in
+             </Link>
+           </div>
         </div>
       </header>
 

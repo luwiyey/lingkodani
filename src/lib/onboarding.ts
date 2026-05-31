@@ -130,7 +130,10 @@ export function saveDemoPreviewUser(user: User) {
   }
 
   window.localStorage.setItem(DEMO_PREVIEW_STORAGE_KEY, JSON.stringify(user));
-  enableDemoPreviewAccessCookie();
+  enableDemoPreviewAccessCookie({
+    role: user.role,
+    preferredWorkspace: user.preferredWorkspace,
+  });
   window.dispatchEvent(new Event(DEMO_PREVIEW_EVENT));
 }
 
@@ -146,6 +149,16 @@ export function clearDemoPreviewUser() {
 
 export function pickDemoProfile(position: string, preferredWorkspace: PreferredWorkspace) {
   const normalizedPosition = position.trim().toLowerCase();
+
+  if (
+    normalizedPosition.includes("superadmin") ||
+    normalizedPosition.includes("developer") ||
+    normalizedPosition.includes("municipal") ||
+    normalizedPosition.includes("system admin") ||
+    normalizedPosition.includes("platform")
+  ) {
+    return initialUsers.find((user) => user.email === "dev@lingkodani.gov.ph") ?? initialUsers[0];
+  }
 
   if (normalizedPosition.includes("secretary") || normalizedPosition.includes("sekret")) {
     return initialUsers.find((user) => user.email === "secretary@lingkodani.gov.ph") ?? initialUsers[0];
@@ -170,7 +183,7 @@ export function normalizeDemoProfile(
   profile: User | null | undefined,
   preferredWorkspace: PreferredWorkspace
 ) {
-  const baseProfile = !profile || profile.role === "developer"
+  const baseProfile = !profile
     ? getDefaultDemoBarangayProfile(preferredWorkspace)
     : profile;
 

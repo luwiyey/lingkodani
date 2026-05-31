@@ -20,7 +20,11 @@ import { getPreferredDashboardRoute } from "@/lib/user-workspace";
 
 const developerAllowedPrefixes = [
   "/dashboard/developer",
+  "/dashboard/export-center",
+  "/dashboard/archive-management",
   "/dashboard/data-center",
+  "/dashboard/reports",
+  "/dashboard/audit-log",
   "/dashboard/account",
   "/dashboard/settings",
   "/dashboard/system-status",
@@ -34,7 +38,7 @@ export function DashboardShell({
   const pathname = usePathname();
   const router = useRouter();
   const { authLoading, currentUser, currentUserProfile } = useAuth();
-  const { offlineMode, offlineOutboxCount, offlineSyncing, syncOfflineChanges } = useData();
+  const { liveDataReady, offlineMode, offlineOutboxCount, offlineSyncing, syncOfflineChanges } = useData();
   const usingDemoSandbox = isDemoRuntimeActive({ currentUser, currentUserProfile });
   const isDisasterPath = pathname.startsWith("/dashboard/disaster");
   const isDeveloperPage = pathname.startsWith("/dashboard/developer");
@@ -75,10 +79,18 @@ export function DashboardShell({
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Sinusuri ang session...</div>;
   }
 
+  if (isLiveMode && !authLoading && currentUser && !liveDataReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6 text-center text-sm text-muted-foreground">
+        Inihahanda ang live records, SMS feed, at dashboard summaries...
+      </div>
+    );
+  }
+
   if (!authLoading && shouldRedirectDeveloperHome) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Binubuksan ang developer dashboard...
+        Binubuksan ang superadmin dashboard...
       </div>
     );
   }

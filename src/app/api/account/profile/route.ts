@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
+import { sanitizeFirestoreDocument } from "@/lib/firebase/sanitize-firestore";
 import { getServerFirestore } from "@/lib/firebase/server";
 import { isUserOnboardingComplete, syncUserOnboardingState } from "@/lib/onboarding-checklist";
 import { createAuditEntry } from "@/lib/services/audit-service";
@@ -21,7 +22,11 @@ function normalizeWorkspace(value: unknown, role: User["role"], fallback: Prefer
     return "detailed" as const;
   }
 
-  return value === "detailed" ? "detailed" : fallback;
+  if (value === "simple" || value === "detailed") {
+    return value;
+  }
+
+  return fallback;
 }
 
 export async function PATCH(request: Request) {
@@ -87,11 +92,11 @@ export async function PATCH(request: Request) {
       ),
       updatedAt: timestamp,
     });
-    const nextProfile = syncUserOnboardingState(
+    const nextProfile = sanitizeFirestoreDocument(syncUserOnboardingState(
       nextProfileBase,
       auth.profile.name ?? auth.email,
       timestamp
-    );
+    ));
 
     if (body.phoneVerifiedAt && !nextProfile.phone?.trim()) {
       return NextResponse.json(
@@ -122,7 +127,8 @@ export async function PATCH(request: Request) {
       updated: true,
       profile: nextProfile,
     });
-  } catch {
+  } catch (error) {
+    console.error("Failed to save live account profile", error);
     return NextResponse.json(
       { error: "Hindi na-save ang live account profile." },
       { status: 500 }

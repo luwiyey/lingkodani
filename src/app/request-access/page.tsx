@@ -131,7 +131,7 @@ function RequestAccessPageContent() {
             </div>
             <CardTitle className="auth-card-title text-2xl">Humiling ng Access</CardTitle>
             <CardDescription className="auth-card-description mx-auto mt-1 max-w-[36rem] text-[14px] leading-7">
-              Kung wala ka pang live account, ilagay ang iyong detalye rito para ma-review ng developer at ma-set up ang access mo.
+              Kung wala ka pang live account, ilagay ang iyong detalye rito para ma-review ng superadmin o barangay administrator at ma-set up ang access mo.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6 pt-2 sm:px-7 sm:pb-7">
@@ -188,7 +188,7 @@ function RequestAccessPageContent() {
               </HoverTooltip>
 
               <div className="rounded-[calc(var(--radius)+4px)] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                Hindi agad ito automatic approval. Makakatanggap ka lang ng working login kapag na-provision na ng developer o barangay admin ang account mo.
+                Hindi agad ito automatic approval. Makakatanggap ka lang ng working login kapag na-provision na ng superadmin o barangay admin ang account mo.
               </div>
 
               <Button type="submit" className="h-12 w-full text-base font-semibold" disabled={isSubmitting}>

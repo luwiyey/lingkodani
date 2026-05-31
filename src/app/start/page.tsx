@@ -481,6 +481,7 @@ export default function StartPage() {
                   <option value="Agricultural Extension Worker (AEW)" />
                   <option value="Barangay Kagawad" />
                   <option value="Municipal Agriculture Staff" />
+                  <option value="Municipal Support / Superadmin" />
                 </datalist>
                 <p className="text-xs leading-5 text-slate-500">
                   Pumili mula sa mga karaniwang role sa dropdown o mag-type ng sarili mong posisyon.

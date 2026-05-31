@@ -57,7 +57,7 @@ export default function AccountSettingsPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const photoUploadRef = React.useRef<HTMLInputElement>(null);
-  const { currentUser, currentUserProfile } = useAuth();
+  const { currentUser, currentUserProfile, applyProfilePatch } = useAuth();
   const { updateUser, users, farmers, resetDemoData } = useData();
   const [newEmailAddress, setNewEmailAddress] = React.useState('');
   const [workspacePreference, setWorkspacePreference] = React.useState<User['preferredWorkspace']>('simple');
@@ -183,6 +183,17 @@ export default function AccountSettingsPage() {
         preferredWorkspace: nextProfile.preferredWorkspace ?? currentOnboarding.preferredWorkspace,
       });
     }
+
+    applyProfilePatch({
+      name: nextProfile.name,
+      title: nextProfile.title,
+      barangay: nextProfile.barangay,
+      phone: nextProfile.phone,
+      avatarUrl: nextProfile.avatarUrl,
+      preferredWorkspace: nextProfile.preferredWorkspace,
+      updatedAt: nextProfile.updatedAt,
+      phoneVerifiedAt: nextProfile.phoneVerifiedAt,
+    });
 
     toast({
       title: 'Tagumpay!',
@@ -619,9 +630,9 @@ export default function AccountSettingsPage() {
                     <div className="space-y-3 md:col-span-2">
                       <Label>Workspace sa Dashboard</Label>
                       <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
-                        <p className="font-medium text-foreground">Developer Console</p>
+                        <p className="font-medium text-foreground">Superadmin Console</p>
                         <p className="mt-1">
-                          Ang developer accounts ay laging binubuksan sa developer console para sa user management,
+                          Ang superadmin accounts ay laging binubuksan sa superadmin console para sa user management,
                           data oversight, at platform administration.
                         </p>
                       </div>
@@ -630,20 +641,20 @@ export default function AccountSettingsPage() {
                     <div className="space-y-3 md:col-span-2">
                         <Label>Workspace sa Dashboard</Label>
                         <RadioGroup value={workspacePreference ?? 'simple'} onValueChange={(value) => setWorkspacePreference(value as User['preferredWorkspace'])} className="grid gap-3 md:grid-cols-2">
-                          <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
+                          <Label htmlFor="workspace-simple" className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
                             <RadioGroupItem value="simple" id="workspace-simple" className="mt-1" />
                             <div>
                               <p className="font-medium">Simple</p>
                               <p className="text-sm text-muted-foreground">Mas mabilis maintindihan at mas kaunting choices sa screen.</p>
                             </div>
-                          </label>
-                          <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
+                          </Label>
+                          <Label htmlFor="workspace-detailed" className="flex cursor-pointer items-start gap-3 rounded-xl border p-4">
                             <RadioGroupItem value="detailed" id="workspace-detailed" className="mt-1" />
                             <div>
                               <p className="font-medium">Detalyado</p>
                               <p className="text-sm text-muted-foreground">Mas maraming controls at mas kumpletong analysis tools.</p>
                             </div>
-                          </label>
+                          </Label>
                         </RadioGroup>
                     </div>
                   )}

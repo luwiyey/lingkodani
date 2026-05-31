@@ -25,6 +25,10 @@ function readRealSmsEnabled() {
   return (process.env.ENABLE_REAL_SMS ?? process.env.NEXT_PUBLIC_ENABLE_REAL_SMS ?? "false") === "true";
 }
 
+function readSuperadminProvisioningEnabled() {
+  return (process.env.ALLOW_DEVELOPER_ACCOUNT_PROVISIONING ?? "false") === "true";
+}
+
 function resolveFirebaseAdminConfigured() {
   if (
     isPresent(process.env.FIREBASE_SERVICE_ACCOUNT_JSON) ||
@@ -154,6 +158,7 @@ export async function GET() {
   const liveSmsStatus = resolveLiveSmsStatus(mode, realSmsEnabled);
   const storageUploadConfigured = resolveStorageUploadConfigured(mode);
   const knowledgeAudioUploadConfigured = storageUploadConfigured;
+  const superadminProvisioningEnabled = readSuperadminProvisioningEnabled();
   const buildCommit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? process.env.NEXT_PUBLIC_APP_COMMIT ?? "local";
   const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "0.1.0";
 
@@ -168,6 +173,7 @@ export async function GET() {
     firebaseAdminConfigured,
     storageUploadConfigured,
     knowledgeAudioUploadConfigured,
+    superadminProvisioningEnabled,
     appVersion,
     buildCommit,
     automationMode:
@@ -183,8 +189,8 @@ export async function GET() {
         : "Naka-lock muna ang AI feature habang hindi pa configured ang Gemini/Genkit service sa server.",
       liveSms: liveSmsStatus.configured ? undefined : liveSmsStatus.reason,
       liveSmsTestMode: liveSmsTestModeEnabled
-        ? "Naka-enable ngayon ang developer-only live SMS preview route para sa controlled smoke testing. I-disable muli ito pagkatapos ng tests."
-        : "Naka-lock ngayon ang live SMS preview route. I-enable lang ito sa controlled developer smoke tests.",
+        ? "Naka-enable ngayon ang superadmin-only live SMS preview route para sa controlled smoke testing. I-disable muli ito pagkatapos ng tests."
+        : "Naka-lock ngayon ang live SMS preview route. I-enable lang ito sa controlled superadmin smoke tests.",
       inviteEmail: inviteEmailConfig.configured
         ? "Handa na ang automatic invite email delivery para sa bagong staff provisioning."
         : inviteEmailConfig.reason,
@@ -197,6 +203,9 @@ export async function GET() {
       knowledgeAudio: knowledgeAudioUploadConfigured
         ? undefined
         : "Naka-lock muna ang audio upload habang hindi pa kumpleto ang live Firebase web/storage setup.",
+      superadminProvisioning: superadminProvisioningEnabled
+        ? "Puwedeng gumawa ng live superadmin accounts mula sa secure provisioning flow ng dashboard."
+        : "Naka-lock muna ang live superadmin provisioning sa dashboard. Ang privileged superadmin accounts ay kailangang i-set up direkta sa secure Firebase/Auth at user-profile admin flow.",
     },
   };
 

@@ -92,7 +92,7 @@ const simpleNavItems: FooterNavItem[] = [
 ];
 
 const developerNavItems: FooterNavItem[] = [
-  { href: '/dashboard/developer', label: 'Developer', icon: Shield },
+  { href: '/dashboard/developer', label: 'Superadmin', icon: Shield },
   { href: '/dashboard/developer/add-user', label: 'Users', icon: Users },
   { href: '/dashboard/developer/training-data', label: 'Training', icon: FileJson },
   { href: '/dashboard/data-center', label: 'Data', icon: Database },

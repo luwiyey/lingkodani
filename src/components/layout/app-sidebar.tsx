@@ -288,15 +288,23 @@ export function AppSidebar() {
     ? barangayNavItems
     : barangayNavItems.filter((item) => !barangayWorkspaceOnlyRoutes.has(item.href));
   const developerNavItems: NavItem[] = [
-      { title: "Developer Home", href: "/dashboard/developer", icon: Shield },
+      { title: "Superadmin Home", href: "/dashboard/developer", icon: Shield },
+      { title: "User Management", href: "/dashboard/developer#user-management", icon: Users },
+      { title: "Access Requests", href: "/dashboard/developer#access-requests", icon: Users },
+      { title: "AI Analytics", href: "/dashboard/reports", icon: BarChart },
+      { title: "Export Center", href: "/dashboard/export-center", icon: FileJson },
+      { title: "Archive Management", href: "/dashboard/archive-management", icon: Archive },
+      { title: "Audit Logs", href: "/dashboard/audit-log", icon: History },
+      { title: "System Settings", href: "/dashboard/settings", icon: Settings },
       { title: "Magdagdag ng User", href: "/dashboard/developer/add-user", icon: Users },
+      { title: "Mag-provision ng Superadmin", href: "/dashboard/developer/add-superadmin", icon: Shield },
       { title: "Training Data", href: "/dashboard/developer/training-data", icon: FileJson },
       { title: "Data Center", href: "/dashboard/data-center", icon: Database },
       { title: "Aking Account", href: "/dashboard/account", icon: Settings },
     ];
   const navItems = isDeveloper ? developerNavItems : filteredBarangayNavItems;
-  const sidebarTitle = isDeveloper ? "Developer Console" : "Kaagapay ng Magsasaka";
-  const menuLabel = isDeveloper ? "Menu ng Developer" : "Menu ng Barangay";
+  const sidebarTitle = isDeveloper ? "Superadmin Console" : "Kaagapay ng Magsasaka";
+  const menuLabel = isDeveloper ? "Menu ng Superadmin" : "Menu ng Barangay";
 
   return (
     <Sidebar collapsible="icon">

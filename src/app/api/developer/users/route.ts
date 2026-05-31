@@ -109,7 +109,11 @@ function normalizeWorkspace(
     return "detailed" as const;
   }
 
-  return value === "detailed" ? "detailed" : fallback;
+  if (value === "simple" || value === "detailed") {
+    return value;
+  }
+
+  return fallback;
 }
 
 function buildUserProfile(input: {

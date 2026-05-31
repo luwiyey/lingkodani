@@ -52,7 +52,7 @@ function readFriendlyResetError(error: unknown) {
   }
 
   if (normalized.includes('user-not-found')) {
-    return 'Mukhang wala pang existing live account para sa email na ito. Kailangan muna itong i-set up ng developer o barangay admin bago magamit ang reset password.';
+    return 'Mukhang wala pang existing live account para sa email na ito. Kailangan muna itong i-set up ng superadmin o barangay admin bago magamit ang reset password.';
   }
 
   return 'Hindi naipadala ang password reset email. Subukan muli pagkatapos ng ilang sandali.';
@@ -168,7 +168,7 @@ function ResetPasswordPageContent() {
                   <KeyRound className="mt-0.5 h-4 w-4 shrink-0" />
                   <div className="space-y-2">
                     <p>
-                      Para lang ito sa <span className="font-semibold">existing live accounts</span> na na-set up na ng developer o barangay admin.
+                      Para lang ito sa <span className="font-semibold">existing live accounts</span> na na-set up na ng superadmin o barangay admin.
                     </p>
                     <p>
                       Kung wala kang natanggap na reset email pagkatapos ng ilang minuto, malamang ay hindi pa naka-provision ang account mo o maling email ang nailagay.

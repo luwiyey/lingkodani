@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ const chartConfig = {
 
 export function AdviceSuccessChart() {
   const { adviceSuccessData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
 
   const total = adviceSuccessData.reduce((acc, curr) => acc + curr.value, 0);
@@ -42,7 +42,7 @@ export function AdviceSuccessChart() {
   const handleDownload = () => {
     const result = openPrintableReport({
       title: "Mga Rate ng Pagpapatunay ng Payo",
-      timeframe,
+      timeframe: activeLabel,
       description: "Buod ng approval, edit, at rejection outcomes para sa AI-generated advice.",
       rows: adviceSuccessData.map((entry) => ({
         Status: entry.status,
@@ -78,21 +78,7 @@ export function AdviceSuccessChart() {
       <Card>
         <CardHeader>
            <div className="flex justify-end gap-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex items-center gap-2">
-                            <CalendarIcon className="w-4 h-4" />
-                            <span>{timeframe}</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <ReportScopePicker />
                 <DialogTrigger asChild>
                     <Button variant="outline" size="icon" className="h-8 w-8">
                         <Expand className="h-4 w-4" />
@@ -128,7 +114,7 @@ export function AdviceSuccessChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
             <DialogHeader>
-                <DialogTitle>Mga Rate ng Pagpapatunay ng Payo ({timeframe})</DialogTitle>
+                <DialogTitle>Mga Rate ng Pagpapatunay ng Payo ({activeLabel})</DialogTitle>
                 <DialogDescription>
                     Isang detalyadong pagtingin sa kung paano pinangangasiwaan ng mga admin ang mga mungkahi ng AI. Ang mataas na rate ng pag-apruba ay nagpapahiwatig ng malakas na pagganap at pagkakahanay ng AI sa kaalaman ng eksperto.
                 </DialogDescription>

@@ -1,13 +1,13 @@
-﻿"use client"
+"use client"
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,11 +31,11 @@ const chartConfig = {
 
 export function SeasonalTrendChart() {
   const { seasonalTrendData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const handleDownload = () => {
     void openPrintableReport({
       title: "Seasonal Trend",
-      timeframe,
+      timeframe: activeLabel,
       description: "Paggalaw ng mga ulat ayon sa seasonal reporting pattern.",
       rows: sanitizePrintableRows(seasonalTrendData),
     });
@@ -60,21 +60,7 @@ export function SeasonalTrendChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{timeframe}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              <ReportScopePicker />
               <DialogTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
                       <Expand className="h-4 w-4" />
@@ -110,7 +96,7 @@ export function SeasonalTrendChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Dami ng Ulat Ayon sa Panahon ({timeframe})</DialogTitle>
+            <DialogTitle>Dami ng Ulat Ayon sa Panahon ({activeLabel})</DialogTitle>
             <DialogDescription>
                 Ipinapakita ng ulat na ito ang buwanang dami ng mga ulat ng SMS sa buong taon. Ang pag-unawa sa mga seasonal na pattern ay mahalaga para sa pag-anticipate ng mga pangangailangan at pagpaplano ng mga aktibidad ng barangay.
             </DialogDescription>

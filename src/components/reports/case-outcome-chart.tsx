@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   Bar,
@@ -26,12 +26,7 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import {
   Dialog,
   DialogClose,
@@ -48,7 +43,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Calendar as CalendarIcon, Download, Expand } from "lucide-react";
+import { Download, Expand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export";
 
@@ -60,7 +55,7 @@ const chartConfig = {
 
 export function CaseOutcomeChart() {
   const { caseOutcomeData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
 
   const resolvedCount =
@@ -75,7 +70,7 @@ export function CaseOutcomeChart() {
     const handleDownload = () => {
     const result = openPrintableReport({
       title: "Case Outcomes",
-      timeframe,
+      timeframe: activeLabel,
       description: "Pamamahagi ng final case outcomes sa napiling timeframe.",
       rows: sanitizePrintableRows(caseOutcomeData),
     });
@@ -122,35 +117,7 @@ export function CaseOutcomeChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <CalendarIcon className="h-4 w-4" />
-                  <span>{timeframe}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setTimeframe("Ngayong Araw")}>
-                  Ngayong Araw
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTimeframe("Lingguhan")}>
-                  Lingguhan
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTimeframe("Buwanan")}>
-                  Buwanan
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTimeframe("Quarterly")}>
-                  Quarterly
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTimeframe("Taunan")}>
-                  Taunan
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ReportScopePicker />
             <DialogTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8">
                 <Expand className="h-4 w-4" />
@@ -199,7 +166,7 @@ export function CaseOutcomeChart() {
       </Card>
       <DialogContent className="flex max-h-[85vh] w-[95vw] max-w-4xl flex-col">
         <DialogHeader>
-          <DialogTitle>Case Outcomes ({timeframe})</DialogTitle>
+          <DialogTitle>Case Outcomes ({activeLabel})</DialogTitle>
           <DialogDescription>
             Ipinapakita ng chart na ito kung may malinaw na resulta na ba ang
             bawat farmer concern, o kung nasa monitoring, follow-up, o referral

@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ const chartConfig = {
 
 export function CropStageChart() {
   const { cropStageData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
   const hasCropStageData = cropStageData.some((item) => item.value > 0);
 
@@ -42,7 +42,7 @@ export function CropStageChart() {
   const handleDownload = () => {
     const result = openPrintableReport({
       title: "Pamamahagi ng Yugto ng Pananim",
-      timeframe,
+      timeframe: activeLabel,
       description: "Bilang ng active farmers ayon sa pinakabagong crop-stage signal na naitala sa system.",
       rows: cropStageData.map((entry) => ({
         Yugto: entry.name,
@@ -78,21 +78,7 @@ export function CropStageChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{timeframe}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              <ReportScopePicker />
               <DialogTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
                       <Expand className="h-4 w-4" />
@@ -144,7 +130,7 @@ export function CropStageChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Pamamahagi ng Yugto ng Pananim ({timeframe})</DialogTitle>
+            <DialogTitle>Pamamahagi ng Yugto ng Pananim ({activeLabel})</DialogTitle>
             <DialogDescription>
               Nagbibigay ang ulat na ito ng pangkalahatang-ideya ng kasalukuyang estado ng agrikultura sa barangay. Ang pag-alam kung anong yugto ang karamihan sa mga magsasaka ay nakakatulong sa pag-prioritize ng mga mapagkukunan at payo.
             </DialogDescription>

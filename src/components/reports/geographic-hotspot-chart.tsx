@@ -1,13 +1,13 @@
-﻿"use client"
+"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ const chartConfig = {
 
 export function GeographicHotspotChart() {
   const { geographicHotspotData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
   const hasHotspotData = geographicHotspotData.some((item) => item.issues > 0);
 
@@ -43,7 +43,7 @@ export function GeographicHotspotChart() {
     const handleDownload = () => {
     const result = openPrintableReport({
       title: "Geographic Hotspots",
-      timeframe,
+      timeframe: activeLabel,
       description: "Mga zone na may pinakamaraming naitalang concerns.",
       rows: sanitizePrintableRows(geographicHotspotData),
     });
@@ -73,21 +73,7 @@ export function GeographicHotspotChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{timeframe}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              <ReportScopePicker />
               <DialogTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
                       <Expand className="h-4 w-4" />
@@ -133,7 +119,7 @@ export function GeographicHotspotChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Mga Hotspot ng Suliranin ({timeframe})</DialogTitle>
+            <DialogTitle>Mga Hotspot ng Suliranin ({activeLabel})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng mapang ito kung saan sa barangay nagkukumpol ang mga isyu. Ang pagtukoy sa mga "hotspot" na ito ay nagbibigay-daan para sa naka-target na interbensyon at mahusay na paglalaan ng mga mapagkukunan.
             </DialogDescription>

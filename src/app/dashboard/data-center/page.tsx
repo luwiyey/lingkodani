@@ -504,7 +504,7 @@ export default function DataCenterPage() {
       <div className="flex min-h-[40vh] items-center justify-center">
         <Card className="max-w-lg border-amber-300/40 bg-amber-50/60">
           <CardHeader>
-            <CardTitle>Developer-only ang Data Center</CardTitle>
+            <CardTitle>Superadmin-only ang Data Center</CardTitle>
             <CardDescription>
               Ang import/export at backup center ay para sa platform oversight at controlled data portability lamang. Ibinabalik ka na sa dashboard.
             </CardDescription>
@@ -522,7 +522,7 @@ export default function DataCenterPage() {
       <Input ref={staffImportRef} type="file" className="hidden" accept=".json,.csv,.xls,.xlsx,application/json,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleImportStaffSelect} />
 
       <div className="flex items-center gap-4">
-        <HoverTooltip text="Bumalik sa developer dashboard">
+        <HoverTooltip text="Bumalik sa superadmin dashboard">
           <Button variant="outline" size="icon" asChild>
             <Link href={backHref}>
               <ArrowLeft />
@@ -548,7 +548,7 @@ export default function DataCenterPage() {
         <CardContent className="flex items-start gap-3 p-5 text-sm text-muted-foreground">
           <Shield className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div className="space-y-1">
-            <p className="font-semibold tracking-tight text-foreground">Developer oversight mode</p>
+            <p className="font-semibold tracking-tight text-foreground">Superadmin oversight mode</p>
             <p>
               Ang page na ito ay para sa platform monitoring, staff provisioning, at controlled data portability.
               Hindi ito barangay operations page at hindi ito kapalit ng pang-araw-araw na barangay settings workflow.

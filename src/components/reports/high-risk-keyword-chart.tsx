@@ -1,13 +1,13 @@
-﻿"use client"
+"use client"
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ const chartConfig = {
 
 export function HighRiskKeywordChart() {
   const { highRiskKeywordData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
   const hasHighRiskData = highRiskKeywordData.some((item) => item.count > 0);
   
@@ -43,7 +43,7 @@ export function HighRiskKeywordChart() {
     const handleDownload = () => {
     const result = openPrintableReport({
       title: "High-Risk Keywords",
-      timeframe,
+      timeframe: activeLabel,
       description: "Mga keyword na madalas lumabas sa high-risk SMS concerns.",
       rows: sanitizePrintableRows(highRiskKeywordData),
     });
@@ -80,21 +80,7 @@ export function HighRiskKeywordChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{timeframe}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              <ReportScopePicker />
               <DialogTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
                       <Expand className="h-4 w-4" />
@@ -140,7 +126,7 @@ export function HighRiskKeywordChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Mga Salitang Nagti-trigger ng Alerto ({timeframe})</DialogTitle>
+            <DialogTitle>Mga Salitang Nagti-trigger ng Alerto ({activeLabel})</DialogTitle>
             <DialogDescription>
               Ipinapakita ng ulat na ito ang dalas ng mga partikular na salita na awtomatikong nag-trigger ng high-risk na alerto sa sistema. Ang pag-unawa sa mga ito ay nakakatulong na i-validate ang escalation logic ng AI.
             </DialogDescription>

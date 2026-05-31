@@ -1,13 +1,13 @@
-﻿"use client"
+"use client"
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,12 +31,12 @@ const chartConfig = {
 
 export function OutbreakAlertChart() {
   const { outbreakAlertData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const safeData = outbreakAlertData.length > 0 ? outbreakAlertData : [{ date: 'Wala pa', ulat: 0 }];
   const handleDownload = () => {
     void openPrintableReport({
       title: "Outbreak Alerts",
-      timeframe,
+      timeframe: activeLabel,
       description: "Trend ng outbreak alert levels sa napiling timeframe.",
       rows: sanitizePrintableRows(safeData),
     });
@@ -61,21 +61,7 @@ export function OutbreakAlertChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{timeframe}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+              <ReportScopePicker />
               <DialogTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8">
                       <Expand className="h-4 w-4" />
@@ -111,7 +97,7 @@ export function OutbreakAlertChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Mga Alerto sa Peste ({timeframe})</DialogTitle>
+            <DialogTitle>Mga Alerto sa Peste ({activeLabel})</DialogTitle>
             <DialogDescription>
               Sinusubaybayan ng chart na ito ang mga biglaang pagtaas sa bilang ng mga ulat tungkol sa parehong uri ng peste o sakit sa isang maikling panahon, na maaaring magpahiwatig ng isang outbreak.
             </DialogDescription>

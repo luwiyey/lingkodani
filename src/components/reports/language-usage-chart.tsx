@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useMemo } from "react"
 import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Cell } from "recharts"
@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAnalytics } from "@/hooks/use-analytics"
 import { useReportsTimeframe } from "@/context/reports-timeframe-context"
 import { ChartConfig, ChartContainer, ChartLegendContent, ChartTooltipContent } from "../ui/chart"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReportScopePicker } from "@/components/reports/report-scope-picker";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Expand, Download } from "lucide-react";
+import { Expand, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ import { openPrintableReport, sanitizePrintableRows } from "@/lib/report-export"
 
 export function LanguageUsageChart() {
   const { languageUsageData } = useAnalytics();
-  const { timeframe, setTimeframe } = useReportsTimeframe();
+  const { activeLabel } = useReportsTimeframe();
   const { toast } = useToast();
   const chartConfig = useMemo<ChartConfig>(() => (
     languageUsageData.reduce<ChartConfig>((config, entry) => {
@@ -49,7 +49,7 @@ export function LanguageUsageChart() {
     const handleDownload = () => {
     const result = openPrintableReport({
       title: "Wika ng mga Mensahe",
-      timeframe,
+      timeframe: activeLabel,
       description: "Pamamahagi ng mga inbound message ayon sa wikang ginamit.",
       rows: sanitizePrintableRows(languageUsageData),
     });
@@ -82,21 +82,7 @@ export function LanguageUsageChart() {
       <Card>
         <CardHeader>
           <div className="flex justify-end gap-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex items-center gap-2">
-                            <CalendarIcon className="w-4 h-4" />
-                            <span>{timeframe}</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => setTimeframe('Ngayong Araw')}>Ngayong Araw</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Lingguhan')}>Lingguhan</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Buwanan')}>Buwanan</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Quarterly')}>Quarterly</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTimeframe('Taunan')}>Taunan</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <ReportScopePicker />
                 <DialogTrigger asChild>
                     <Button variant="outline" size="icon" className="h-8 w-8">
                         <Expand className="h-4 w-4" />
@@ -132,7 +118,7 @@ export function LanguageUsageChart() {
       </Card>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle>Paggamit ng Wika ({timeframe})</DialogTitle>
+            <DialogTitle>Paggamit ng Wika ({activeLabel})</DialogTitle>
             <DialogDescription>
                 Ipinapakita ng ulat na ito ang distribusyon ng mga wika at diyalekto na ginagamit ng mga magsasaka sa kanilang mga mensahe. Ito ay kritikal na impormasyon para sa pag-optimize ng AI's Natural Language Understanding (NLU) model.
             </DialogDescription>

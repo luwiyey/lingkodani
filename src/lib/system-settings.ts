@@ -191,7 +191,7 @@ export const defaultSystemSettings: SystemSettings = {
     description: `Paglalarawan para sa Zone ${index + 1}...`,
   })),
   replyStartTime: "08:00",
-  replyEndTime: "19:00",
+  replyEndTime: "18:00",
   adminPhone: "+639123456789",
   notificationPolicy: {
     quietHoursEnabled: true,

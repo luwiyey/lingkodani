@@ -1,3 +1,4 @@
+import { sanitizeFirestoreDocument } from "@/lib/firebase/sanitize-firestore";
 import type { AuditLog } from "@/lib/types";
 
 export function createAuditEntry(input: {
@@ -16,7 +17,7 @@ export function createAuditEntry(input: {
 }): AuditLog {
   const timestamp = input.timestamp ?? new Date().toISOString();
 
-  return {
+  return sanitizeFirestoreDocument({
     id: input.id ?? `AUD${Date.now()}`,
     timestamp,
     user: input.user ?? "system",
@@ -29,5 +30,5 @@ export function createAuditEntry(input: {
     beforeSnapshot: input.beforeSnapshot,
     afterSnapshot: input.afterSnapshot,
     securitySensitive: input.securitySensitive,
-  };
+  });
 }

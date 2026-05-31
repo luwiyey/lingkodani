@@ -1,9 +1,12 @@
 import { cookies } from "next/headers";
 
-import { DEMO_PREVIEW_ACCESS_COOKIE_NAME } from "@/lib/demo-preview-access";
+import {
+  DEMO_PREVIEW_ACCESS_COOKIE_NAME,
+  DEMO_PREVIEW_PROFILE_COOKIE_NAME,
+} from "@/lib/demo-preview-access";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerAuth, getServerFirestore } from "@/lib/firebase/server";
-import type { User } from "@/lib/types";
+import type { PreferredWorkspace, User, UserRole } from "@/lib/types";
 
 export const SESSION_COOKIE_NAME = "lingkod_ani_session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 5;
@@ -66,4 +69,36 @@ export async function readServerSessionProfile(): Promise<ServerSessionProfile |
 export async function hasServerDemoPreviewAccess() {
   const cookieStore = await cookies();
   return cookieStore.get(DEMO_PREVIEW_ACCESS_COOKIE_NAME)?.value === "1";
+}
+
+type ServerDemoPreviewProfile = {
+  role: UserRole;
+  preferredWorkspace?: PreferredWorkspace;
+};
+
+export async function readServerDemoPreviewProfile(): Promise<ServerDemoPreviewProfile | null> {
+  const cookieStore = await cookies();
+  const rawProfile = cookieStore.get(DEMO_PREVIEW_PROFILE_COOKIE_NAME)?.value;
+
+  if (!rawProfile) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(decodeURIComponent(rawProfile)) as Partial<ServerDemoPreviewProfile>;
+    const role = parsed.role === "developer" ? "developer" : parsed.role === "barangay" ? "barangay" : null;
+    const preferredWorkspace =
+      parsed.preferredWorkspace === "detailed" ? "detailed" : parsed.preferredWorkspace === "simple" ? "simple" : undefined;
+
+    if (!role) {
+      return null;
+    }
+
+    return {
+      role,
+      preferredWorkspace,
+    };
+  } catch {
+    return null;
+  }
 }
