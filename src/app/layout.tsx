@@ -1,17 +1,14 @@
 
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
 import { DataProvider } from '@/context/data-context';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-
 export const metadata: Metadata = {
   title: 'Lingkod-Ani: Plataporma para sa Matalinong Pagsasaka',
-  description: 'Platform ng payo sa agrikultura na pinapagana ng AI at suporta sa pagpapasya ng barangay.',
+  description: 'SMS-based na platform para sa payong pang-agrikultura, maayos na follow-up, at pagpapasya ng barangay.',
   icons: {
     icon: '/logo.png',
     shortcut: '/logo.png',
@@ -25,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-body antialiased`}>
+    <html lang="fil" suppressHydrationWarning>
+      <body className="font-body antialiased">
         <ThemeProvider
             defaultTheme="light"
         >

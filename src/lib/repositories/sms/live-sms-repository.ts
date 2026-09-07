@@ -12,6 +12,7 @@ import { getClientFirestore } from "@/lib/firebase/client";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { sanitizeFirestoreDocument, sanitizeFirestorePatch } from "@/lib/firebase/sanitize-firestore";
 import { withFirestoreDocId } from "@/lib/firebase/with-firestore-doc-id";
+import { filterVisibleInboundSmsMessages } from "@/lib/inbound-sms-screening";
 import type { NewSmsRecordInput, SmsRepository } from "@/lib/repositories/sms/types";
 import type { SmsMessage } from "@/lib/types";
 
@@ -22,7 +23,9 @@ export const liveSmsRepository: SmsRepository = {
       query(collection(db, firebaseCollections.smsMessages), orderBy("timestamp", "desc"))
     );
 
-    return snapshot.docs.map((item) => withFirestoreDocId<SmsMessage>(item));
+    return filterVisibleInboundSmsMessages(
+      snapshot.docs.map((item) => withFirestoreDocId<SmsMessage>(item))
+    );
   },
 
   async createInboundMessage(input: NewSmsRecordInput) {

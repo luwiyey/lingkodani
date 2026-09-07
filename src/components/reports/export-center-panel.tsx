@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useData } from "@/context/data-context";
 import { useToast } from "@/hooks/use-toast";
@@ -74,43 +75,43 @@ export function ExportCenterPanel({
       {
         key: "sms-cases",
         fileSlug: "sms-cases",
-        statsLabel: `${filteredSms.length} filtered SMS cases`,
+        statsLabel: `${filteredSms.length} SMS concern sa napiling petsa`,
         table: buildSmsCasesExportTable(filteredSms),
       },
       {
         key: "farmer-registrations",
         fileSlug: "farmer-registrations",
-        statsLabel: `${filteredFarmers.length} farmer registrations`,
+        statsLabel: `${filteredFarmers.length} rehistrasyon ng magsasaka`,
         table: buildFarmerRegistrationsExportTable(filteredFarmers),
       },
       {
         key: "farmer-demographics",
         fileSlug: "farmer-demographics",
-        statsLabel: `${filteredFarmers.length} farmer demographic records`,
+        statsLabel: `${filteredFarmers.length} demographic record ng magsasaka`,
         table: buildFarmerDemographicsExportTable(filteredFarmers),
       },
       {
         key: "voucher-transactions",
         fileSlug: "voucher-transactions",
-        statsLabel: `${filteredVouchers.length} voucher transactions`,
+        statsLabel: `${filteredVouchers.length} transaksyon ng voucher`,
         table: buildVoucherTransactionsExportTable(filteredVouchers, farmers, resources),
       },
       {
         key: "inventory-updates",
         fileSlug: "inventory-updates",
-        statsLabel: `${filteredInventoryUpdates.length} inventory updates`,
+        statsLabel: `${filteredInventoryUpdates.length} update sa imbentaryo`,
         table: buildInventoryUpdatesExportTable(filteredInventoryUpdates),
       },
       {
         key: "price-watch",
         fileSlug: "price-watch",
-        statsLabel: `${filteredPriceWatch.length} price watch updates`,
+        statsLabel: `${filteredPriceWatch.length} update sa presyo`,
         table: buildPriceWatchExportTable(filteredPriceWatch),
       },
       {
         key: "ai-analytics",
         fileSlug: "ai-analytics",
-        statsLabel: `${filteredSms.length} SMS cases summarized into AI analytics`,
+        statsLabel: `${filteredSms.length} SMS concern sa buod ng pagsusuri`,
         table: buildAiAnalyticsExportTable(filteredSms),
       },
     ],
@@ -203,7 +204,7 @@ export function ExportCenterPanel({
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
               <CalendarRange className="h-5 w-5" />
-              Flexible Report Export
+              Pag-download ng Ulat ayon sa Petsa
             </CardTitle>
             <CardDescription>
               Piliin ang preset, specific date, o custom date range bago i-download ang mga summary at records.
@@ -213,7 +214,7 @@ export function ExportCenterPanel({
             <Badge variant="outline">{windowInfo.label}</Badge>
             {showOpenPageLink ? (
               <Button variant="outline" asChild>
-                <Link href="/dashboard/export-center">Open Export Center</Link>
+                <Link href="/dashboard/export-center">Buksan ang Download Center</Link>
               </Button>
             ) : null}
           </div>
@@ -222,9 +223,9 @@ export function ExportCenterPanel({
       <CardContent className="space-y-6">
         <div className="grid gap-3 lg:grid-cols-[1.5fr,1fr]">
           <div className="rounded-xl border bg-background/80 p-4">
-            <p className="text-sm font-medium text-foreground">Preset Filters</p>
+            <p className="text-sm font-medium text-foreground">Mabilisang Pili</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Quick filters for today, this week, and this month. Choose custom controls below for exact dates.
+              Piliin ang araw na ito, linggong ito, o buwang ito. Gamitin ang mga kahon sa ibaba para sa eksaktong petsa.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
@@ -232,41 +233,41 @@ export function ExportCenterPanel({
                 size="sm"
                 onClick={() => setFilter((current) => ({ ...current, mode: "preset", preset: "today" }))}
               >
-                Today
+                Ngayong Araw
               </Button>
               <Button
                 variant={filter.mode === "preset" && filter.preset === "this_week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter((current) => ({ ...current, mode: "preset", preset: "this_week" }))}
               >
-                This Week
+                Linggong Ito
               </Button>
               <Button
                 variant={filter.mode === "preset" && filter.preset === "this_month" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter((current) => ({ ...current, mode: "preset", preset: "this_month" }))}
               >
-                This Month
+                Buwang Ito
               </Button>
               <Button
                 variant={filter.mode === "date_range" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter((current) => ({ ...current, mode: "date_range", preset: "custom" }))}
               >
-                Custom Range
+                Sariling Saklaw
               </Button>
             </div>
           </div>
 
           <div className="rounded-xl border bg-background/80 p-4">
-            <p className="text-sm font-medium text-foreground">Filtered Scope</p>
+            <p className="text-sm font-medium text-foreground">Laman ng Napiling Saklaw</p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
               <Badge variant="secondary">{filteredSms.length} SMS</Badge>
-              <Badge variant="secondary">{filteredFarmers.length} farmers</Badge>
-              <Badge variant="secondary">{filteredFarmers.length} demographics</Badge>
-              <Badge variant="secondary">{filteredVouchers.length} vouchers</Badge>
-              <Badge variant="secondary">{filteredInventoryUpdates.length} inventory updates</Badge>
-              <Badge variant="secondary">{filteredPriceWatch.length} price updates</Badge>
+              <Badge variant="secondary">{filteredFarmers.length} magsasaka</Badge>
+              <Badge variant="secondary">{filteredFarmers.length} demograpiko</Badge>
+              <Badge variant="secondary">{filteredVouchers.length} voucher</Badge>
+              <Badge variant="secondary">{filteredInventoryUpdates.length} update sa imbentaryo</Badge>
+              <Badge variant="secondary">{filteredPriceWatch.length} update sa presyo</Badge>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Ang parehong filter na ito ang gagamitin ng CSV at PDF exports sa ibaba.
@@ -276,9 +277,10 @@ export function ExportCenterPanel({
 
         <div className="grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border bg-background/80 p-4">
-            <p className="text-sm font-medium text-foreground">Specific Date</p>
+            <Label htmlFor={`${sectionId ?? "export"}-specific-date`}>Isang Petsa</Label>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row">
               <Input
+                id={`${sectionId ?? "export"}-specific-date`}
                 type="date"
                 value={filter.specificDate}
                 onChange={(event) =>
@@ -297,34 +299,42 @@ export function ExportCenterPanel({
                   }))
                 }
               >
-                Apply Date
+                Gamitin ang Petsa
               </Button>
             </div>
           </div>
 
           <div className="rounded-xl border bg-background/80 p-4">
-            <p className="text-sm font-medium text-foreground">Date Range</p>
+            <p className="text-sm font-medium text-foreground">Saklaw ng Petsa</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-[1fr,1fr,auto]">
-              <Input
-                type="date"
-                value={filter.rangeStart}
-                onChange={(event) =>
-                  setFilter((current) => ({
-                    ...current,
-                    rangeStart: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                type="date"
-                value={filter.rangeEnd}
-                onChange={(event) =>
-                  setFilter((current) => ({
-                    ...current,
-                    rangeEnd: event.target.value,
-                  }))
-                }
-              />
+              <div className="space-y-2">
+                <Label htmlFor={`${sectionId ?? "export"}-range-start`}>Mula</Label>
+                <Input
+                  id={`${sectionId ?? "export"}-range-start`}
+                  type="date"
+                  value={filter.rangeStart}
+                  onChange={(event) =>
+                    setFilter((current) => ({
+                      ...current,
+                      rangeStart: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`${sectionId ?? "export"}-range-end`}>Hanggang</Label>
+                <Input
+                  id={`${sectionId ?? "export"}-range-end`}
+                  type="date"
+                  value={filter.rangeEnd}
+                  onChange={(event) =>
+                    setFilter((current) => ({
+                      ...current,
+                      rangeEnd: event.target.value,
+                    }))
+                  }
+                />
+              </div>
               <Button
                 variant="outline"
                 onClick={() =>
@@ -335,7 +345,7 @@ export function ExportCenterPanel({
                   }))
                 }
               >
-                Apply Range
+                Gamitin ang Saklaw
               </Button>
             </div>
           </div>
@@ -353,11 +363,11 @@ export function ExportCenterPanel({
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleCsvExport(dataset)}>
                     <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Download CSV
+                    I-download ang CSV
                   </Button>
                   <Button size="sm" onClick={() => void handlePdfExport(dataset)} disabled={exportingKey === dataset.key}>
                     <ArrowDownToLine className="mr-2 h-4 w-4" />
-                    {exportingKey === dataset.key ? "Preparing PDF..." : "Download PDF"}
+                    {exportingKey === dataset.key ? "Inihahanda ang PDF..." : "I-download ang PDF"}
                   </Button>
                 </div>
               </CardContent>
@@ -367,10 +377,10 @@ export function ExportCenterPanel({
 
         {!embedded ? (
           <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Export Notes</p>
+            <p className="font-medium text-foreground">Paalala sa Pag-download</p>
             <p className="mt-2">
-              CSV downloads are ready for spreadsheet use, while PDF downloads provide a formal report copy for documentation.
-              When the app is in demo or preview mode, the PDF action falls back to a browser print view if no live authenticated session is available.
+              Ang CSV ay para sa spreadsheet at karagdagang pagsusuri. Ang PDF ay pormal na kopya para sa dokumentasyon.
+              Sa demo o preview mode, maaaring magbukas ang print view kapag walang live authenticated session.
             </p>
           </div>
         ) : (
@@ -378,7 +388,7 @@ export function ExportCenterPanel({
             <Button variant="ghost" size="sm" asChild>
               <Link href="/dashboard/export-center">
                 <Printer className="mr-2 h-4 w-4" />
-                Open full export workspace
+                Buksan ang buong Download Center
               </Link>
             </Button>
           </div>

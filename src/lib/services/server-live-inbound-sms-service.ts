@@ -1,5 +1,6 @@
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { screenInboundSms } from "@/lib/inbound-sms-screening";
+import { redactSmsSender } from "@/lib/sms-privacy";
 import { getServerFirestore } from "@/lib/firebase/server";
 import { readLiveSmsProvider } from "@/lib/providers/sms/live-sms-config";
 import { getServerSystemSettings } from "@/lib/server/system-settings";
@@ -112,7 +113,7 @@ export async function persistLiveInboundSms(input: {
     if (screening.ignored) {
       await recordRuntimeHealthWarning("sms_inbound", "Live Inbound SMS", {
         reason: screening.reason,
-        phone: input.phone,
+        phone: redactSmsSender(input.phone),
       });
       return {
         duplicate: false,
@@ -375,7 +376,7 @@ export async function persistLiveInboundSms(input: {
     };
   } catch (error) {
     await recordRuntimeHealthFailure("sms_inbound", "Live Inbound SMS", error, {
-      phone: input.phone,
+      phone: redactSmsSender(input.phone),
       sourceProvider: input.sourceProvider ?? "unknown",
       externalId: input.externalId,
       receivedAt: input.receivedAt,

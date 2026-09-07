@@ -36,7 +36,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/auth-context';
 import { useData } from '@/context/data-context';
-import { useRuntimeCapabilities } from '@/hooks/use-runtime-capabilities';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { getManagedBarangayUsers, getPlatformDeveloperUsers } from '@/lib/access-control';
@@ -63,7 +62,6 @@ function parseListInput(value: string) {
 export default function DeveloperPage() {
     const { currentUser } = useAuth();
     const { users, updateUser, deleteUser, auditLogs, systemSettings, smsMessages } = useData();
-    const { capabilities } = useRuntimeCapabilities();
     const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
     const [accessRequestsLoading, setAccessRequestsLoading] = useState(false);
     const [showStepUpDialog, setShowStepUpDialog] = useState(false);
@@ -121,7 +119,7 @@ export default function DeveloperPage() {
             const idToken = await getClientAuth().currentUser?.getIdToken();
 
             if (!idToken) {
-                throw new Error('Walang authenticated superadmin session.');
+                throw new Error('Walang aktibong developer session.');
             }
 
             const response = await fetch('/api/access-request', {
@@ -155,7 +153,7 @@ export default function DeveloperPage() {
         const idToken = await getClientAuth().currentUser?.getIdToken();
 
         if (!idToken) {
-            throw new Error('Walang authenticated superadmin session.');
+            throw new Error('Walang aktibong developer session.');
         }
 
         return idToken;
@@ -413,12 +411,12 @@ export default function DeveloperPage() {
       <div id="user-management" className="space-y-1">
         <div className="flex items-center">
             <Shield className="mr-2 h-6 w-6"/>
-            <h1 className="text-2xl font-bold tracking-tight">Superadmin User Management</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Pamamahala ng User at Access</h1>
             <HelpDialog title="Pamamahala ng User" tooltipText="Pamahalaan kung sino ang maaaring maka-access sa system.">
-                <p>Ang pahinang ito ay para sa superadmin o platform overseer upang pamahalaan kung sino ang maaaring maka-access sa Lingkod-Ani system para sa isang partikular na barangay.</p>
+                <p>Ang pahinang ito ay para sa developer na namamahala sa mga account at access ng Lingkod-Ani para sa barangay.</p>
                 <p><strong>Magdagdag ng User:</strong> Gamitin ang button na ito upang mag-rehistro ng isang bagong barangay user (hal., ang Barangay Captain, Secretary, o AEW). Sila ay magkakaroon ng access sa system pagkatapos maidagdag dito.</p>
                 <p><strong>Workspace:</strong> Puwedeng itakda kung ang user ay magsisimula sa mas simpleng workspace o sa detailed tools sa pag-login.</p>
-                <p><strong>Named audit trail:</strong> Ang paglikha, pag-edit, at pagtanggal ng user access ay naitatala rin sa audit log gamit ang pangalan ng aktwal na superadmin o staff account.</p>
+                <p><strong>Tala ng mga aksyon:</strong> Ang paglikha, pag-edit, at pagtanggal ng user access ay naitatala gamit ang pangalan ng aktwal na developer o staff account.</p>
                 <p><strong>I-edit:</strong> I-update ang pangalan, tungkulin, status, at workspace ng isang kasalukuyang barangay user.</p>
                 <p><strong>Alisin:</strong> Ang pag-alis sa isang user ay magbabawi ng kanilang access sa system.</p>
             </HelpDialog>
@@ -457,7 +455,7 @@ export default function DeveloperPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Simple Workspace</CardTitle>
-            <CardDescription>Good for older AEWs na gusto ng mas kaunting choices.</CardDescription>
+            <CardDescription>Mas kaunting menu para sa staff na nais ng mas payak na paggamit.</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{simpleWorkspaceUsers}</p>
@@ -578,7 +576,7 @@ export default function DeveloperPage() {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => void updateAccessRequestStatus(request.id, 'dismissed', 'Tinanggal mula sa active queue ng superadmin.')}
+                        onClick={() => void updateAccessRequestStatus(request.id, 'dismissed', 'Tinanggal mula sa aktibong pila ng developer.')}
                       >
                         Dismiss
                       </Button>
@@ -595,9 +593,9 @@ export default function DeveloperPage() {
 
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader>
-          <CardTitle>Platform Superadmin Access</CardTitle>
+          <CardTitle>Developer Account</CardTitle>
           <CardDescription>
-            Hiwalay na pinamamahalaan ang privileged superadmin accounts mula sa barangay staff provisioning flow.
+            Ang developer ang may responsibilidad sa account recovery, system configuration, audit review, at technical support.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
@@ -608,20 +606,14 @@ export default function DeveloperPage() {
               </Badge>
             ))}
           </div>
-          <div className="rounded-xl border border-border/60 bg-background/70 p-4">
-            <p className="font-medium text-foreground">Provisioning status</p>
-            <p className="mt-1">
-              {capabilities.reasons.superadminProvisioning ??
-                'Puwedeng gumawa ng live superadmin accounts mula sa secure provisioning flow ng dashboard.'}
+          <div className="rounded-xl border border-border/70 bg-background p-4">
+            <p className="font-medium text-foreground">Mahalagang paalala sa seguridad</p>
+            <p className="mt-1 leading-6">
+              Hindi nakikita ng developer ang password ng ibang user. Kapag may nakalimot ng password, reset link ang ipinapadala sa nakarehistrong email. Gamitin ang Aking Account para palitan ang sariling password at security settings.
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Badge variant={capabilities.superadminProvisioningEnabled ? 'default' : 'secondary'}>
-                {capabilities.superadminProvisioningEnabled ? 'Live provisioning enabled' : 'Live provisioning locked'}
-              </Badge>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/dashboard/developer/add-superadmin">Secure Superadmin Provisioning</Link>
-              </Button>
-            </div>
+            <Button className="mt-3" variant="outline" size="sm" asChild>
+              <Link href="/dashboard/account">Buksan ang Aking Account</Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -654,13 +646,6 @@ export default function DeveloperPage() {
                       </Link>
                   </Button>
                 </HoverTooltip>
-              <HoverTooltip text="Buksan ang secure provisioning page para sa privileged superadmin accounts.">
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard/developer/add-superadmin">
-                    <UserRoundPlus /> Mag-provision ng Superadmin
-                  </Link>
-                </Button>
-              </HoverTooltip>
             </div>
         </CardHeader>
         <CardContent>

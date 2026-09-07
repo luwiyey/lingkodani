@@ -4,9 +4,11 @@ import { suggestKnowledgeBaseArticles } from "@/ai/flows/suggest-knowledge-base-
 import { isLiveMode } from "@/lib/config/app-mode";
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { filterVisibleInboundSmsMessages } from "@/lib/inbound-sms-screening";
 import { buildSuggestedArticlesLocally } from "@/lib/knowledge-search";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import { hasServerDemoPreviewAccess } from "@/lib/server/session-auth";
+import type { SmsMessage } from "@/lib/types";
 
 function normalizeStringArray(value: unknown) {
   if (!Array.isArray(value)) {
@@ -26,8 +28,10 @@ async function listRecentLiveSmsReports() {
     .limit(30)
     .get();
 
-  return snapshot.docs
-    .map((documentSnapshot) => documentSnapshot.data()?.message)
+  return filterVisibleInboundSmsMessages(
+    snapshot.docs.map((documentSnapshot) => documentSnapshot.data() as SmsMessage)
+  )
+    .map((messageRecord) => messageRecord.message)
     .filter((message): message is string => typeof message === "string")
     .map((message) => message.trim())
     .filter(Boolean);

@@ -746,7 +746,7 @@ export const registeredUsers = [
       name: 'Developer',
       role: 'developer' as const,
       title: 'Platform Developer',
-      barangay: 'Municipal Support',
+      barangay: 'System Administration',
       phone: '+639175555555',
       permissions: {
         manageBarangaySettings: true,

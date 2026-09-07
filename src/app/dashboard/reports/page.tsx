@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/use-analytics';
@@ -475,7 +476,7 @@ function ReportsPageContent() {
             <HelpDialog title="Mga Ulat at Pagsusuri" tooltipText="I-visualize ang data at makakuha ng mga insight.">
                 <p>Ang pahinang ito ay ang iyong sentro para sa pagsusuri ng data. Dito mo makikita ang mga visual na representasyon ng mga trend at pattern na nangyayari sa iyong komunidad ng magsasaka, na nagbibigay-daan sa iyo na gumawa ng mga desisyon na batay sa datos.</p>
                 <p><strong>Awtomatikong Buod:</strong> Isang mabilis na buod na binuo mula sa live metrics sa napiling reporting scope. Maaari kang magpalit ng preset scope o mag-apply ng custom date range upang makita ang mga insight para sa eksaktong panahon na gusto mo.</p>
-                <p><strong>Mga Tab:</strong> Ang mga ulat ay naka-grupo sa apat na pangunahing kategorya: "Pagsusuri ng SMS", "Performance ng AI", "Operasyon at Pakikilahok", at "Demograpiko ng Magsasaka".</p>
+                <p><strong>Mga Tab:</strong> Ang mga ulat ay naka-grupo sa apat na pangunahing kategorya: "Pagsusuri ng SMS", "Kalidad ng Pantulong na Pagsusuri", "Operasyon at Pakikilahok", at "Demograpiko ng Magsasaka".</p>
                 <p><strong>Mga Chart:</strong> Bawat card ay isang interactive na chart. Maaari mong i-click ang expand button (isang box icon) sa kanang itaas ng bawat card upang makita ang mas malaki at mas detalyadong view ng chart. Sa expanded view, makakakita ka ng mas malalim na pagsusuri at mga konkretong rekomendasyon batay sa data.</p>
             </HelpDialog>
           </div>
@@ -487,26 +488,26 @@ function ReportsPageContent() {
             <Button variant="outline" asChild>
               <Link href="#report-export-options">
                 <CalendarRange className="mr-2 h-4 w-4" />
-                Choose Dates &amp; Ranges
+                Pumili ng Petsa
               </Link>
             </Button>
           </HoverTooltip>
           <HoverTooltip text="I-download ang awtomatikong buod bilang CSV file.">
             <Button variant="outline" onClick={handleExportSummaryCsv}>
               <ArrowDownToLine className="mr-2 h-4 w-4" />
-              Download Summary CSV
+              I-download ang Buod (CSV)
             </Button>
           </HoverTooltip>
           <HoverTooltip text="I-download ang awtomatikong buod bilang PDF. Para sa exact-date records, gamitin ang Flexible Report Export section sa ibaba.">
             <Button onClick={handleExportSummaryPdf}>
               <ArrowDownToLine className="mr-2 h-4 w-4" />
-              Download Summary PDF
+              I-download ang Buod (PDF)
             </Button>
           </HoverTooltip>
           <HoverTooltip text="Buksan ang browser print view ng kasalukuyang report summary.">
             <Button variant="outline" onClick={openPrintSummary}>
               <ArrowDownToLine className="mr-2 h-4 w-4" />
-              Print Summary
+              I-print ang Buod
             </Button>
           </HoverTooltip>
         </div>
@@ -515,16 +516,16 @@ function ReportsPageContent() {
       <Card className="border-sky-200 bg-sky-50/70">
         <CardContent className="flex flex-col gap-3 px-6 py-5 text-sm text-sky-950 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <p className="font-semibold">Need an exact date or custom range?</p>
+            <p className="font-semibold">Kailangan ng eksaktong petsa?</p>
             <p className="text-sky-900/85">
-              Ang Lingguhan, Monthly, Quarterly, at Yearly selector ay para sa analytics summary at charts.
-              Para sa downloadable records by specific date or custom range, gamitin ang Flexible Report Export controls sa ibaba.
+              Ang arawan, lingguhan, buwanan, quarterly, at taunang pagpipilian ay para sa buod at mga chart.
+              Para sa ida-download na records, pumili ng isang petsa o saklaw ng petsa sa ibaba.
             </p>
           </div>
           <Button variant="outline" className="border-sky-300 bg-white text-sky-950 hover:bg-sky-100" asChild>
             <Link href="#report-export-options">
               <CalendarRange className="mr-2 h-4 w-4" />
-              Open Date Filters
+              Buksan ang Petsa
             </Link>
           </Button>
         </CardContent>
@@ -532,24 +533,24 @@ function ReportsPageContent() {
 
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base">Analytics Scope</CardTitle>
+          <CardTitle className="text-base">Saklaw ng Pagsusuri</CardTitle>
           <CardDescription>
             Ang charts, demographic snapshot, at awtomatikong buod sa pahinang ito ay kasalukuyang nakatali sa <strong>{activeLabel}</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-[1fr,1fr,auto] lg:items-end">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Custom Start Date</p>
-            <Input type="date" value={customRangeStart} onChange={(event) => setCustomRangeStart(event.target.value)} />
+            <Label htmlFor="analytics-start-date">Mula sa petsa</Label>
+            <Input id="analytics-start-date" type="date" value={customRangeStart} onChange={(event) => setCustomRangeStart(event.target.value)} />
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Custom End Date</p>
-            <Input type="date" value={customRangeEnd} onChange={(event) => setCustomRangeEnd(event.target.value)} />
+            <Label htmlFor="analytics-end-date">Hanggang sa petsa</Label>
+            <Input id="analytics-end-date" type="date" value={customRangeEnd} onChange={(event) => setCustomRangeEnd(event.target.value)} />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={applyCustomRange}>Apply Custom Range</Button>
+            <Button onClick={applyCustomRange}>Gamitin ang Petsa</Button>
             <Button variant="outline" onClick={clearCustomRange} disabled={!isCustomRangeActive}>
-              Back to Presets
+              Bumalik sa Mabilisang Pili
             </Button>
           </div>
           <div className="lg:col-span-3">
@@ -853,7 +854,7 @@ function ReportsPageContent() {
         <Tabs defaultValue="sms" className="w-full">
             <TabsList className="grid w-full grid-cols-4 rounded-none border-b bg-transparent p-0">
                 <TabsTrigger value="sms" className="relative h-auto min-h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Pagsusuri ng SMS</TabsTrigger>
-                <TabsTrigger value="ai" className="relative h-auto min-h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Performance ng AI</TabsTrigger>
+                <TabsTrigger value="ai" className="relative h-auto min-h-10 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Kalidad ng Pantulong na Pagsusuri</TabsTrigger>
                 <TabsTrigger value="operations" className="relative h-auto min-h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Operasyon at Pakikilahok</TabsTrigger>
                 <TabsTrigger value="demographics" className="relative h-auto min-h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none whitespace-normal">Demograpiko ng Magsasaka</TabsTrigger>
             </TabsList>

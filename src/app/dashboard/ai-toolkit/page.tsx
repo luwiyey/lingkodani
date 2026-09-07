@@ -159,9 +159,9 @@ export default function AiToolkitPage() {
     <div className="flex flex-col gap-8">
       <div className="space-y-1">
         <div className="flex items-center">
-            <h1 className="text-2xl font-bold tracking-tight">AI Toolkit</h1>
-            <HelpDialog title="AI Toolkit" tooltipText="Gumamit ng mga tool ng AI para sa pagsusuri.">
-              <p>Ito ay isang koleksyon ng mga espesyal na tool na pinapagana ng AI upang tulungan ka sa mga karaniwang kalkulasyon at pagsusuri sa agrikultura.</p>
+            <h1 className="text-2xl font-bold tracking-tight">Mga Kasangkapang Pagsusuri</h1>
+            <HelpDialog title="Mga Kasangkapang Pagsusuri" tooltipText="Gabay sa paggamit ng mga calculator at pantulong na pagsusuri.">
+              <p>Gamitin ang mga calculator at pantulong na pagsusuri para sa karaniwang pangangailangan sa sakahan. Ang anumang mungkahing ginawa sa tulong ng AI ay dapat pa ring suriin ng barangay staff o AEW bago ibigay sa magsasaka.</p>
               <p><strong>Plant-MD:</strong> Mag-upload ng larawan ng may sakit na halaman at ilarawan ang mga sintomas. Gagamitin ng AI ang impormasyong ito upang magbigay ng diagnosis at mga hakbang sa paggamot.</p>
               <p><strong>Mga Calculator:</strong> Mabilis na kalkulahin ang mga rekomendasyon para sa pataba, pestisidyo, at tantyahin ang potensyal na kita batay sa ani at presyo sa merkado.</p>
             </HelpDialog>

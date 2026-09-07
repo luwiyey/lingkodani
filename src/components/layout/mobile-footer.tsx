@@ -50,7 +50,7 @@ const detailedNavItems: FooterNavItem[] = [
       { title: 'Pagpaparehistro', href: '/dashboard/farmers/register' },
       { title: 'Follow-up Queue', href: '/dashboard/follow-up' },
       { title: 'Aktibong Sakahan', href: '/dashboard/active-farms' },
-      { title: 'Pangkalahatang-ideya', href: '/dashboard/oversight' },
+      { title: 'Barangay Analytics', href: '/dashboard/oversight' },
       { title: 'Price Watch', href: '/dashboard/price-watch' },
     ],
   },
@@ -87,12 +87,13 @@ const simpleNavItems: FooterNavItem[] = [
       { title: 'Mga Aktibong Isyu', href: '/dashboard/active-issues' },
       { title: 'Pamamahala ng Alerto', href: '/dashboard/alerts' },
       { title: 'Imbentaryo', href: '/dashboard/inventory' },
+      { title: 'Barangay Analytics', href: '/dashboard/oversight' },
     ],
   },
 ];
 
 const developerNavItems: FooterNavItem[] = [
-  { href: '/dashboard/developer', label: 'Superadmin', icon: Shield },
+  { href: '/dashboard/developer', label: 'Developer', icon: Shield },
   { href: '/dashboard/developer/add-user', label: 'Users', icon: Users },
   { href: '/dashboard/developer/training-data', label: 'Training', icon: FileJson },
   { href: '/dashboard/data-center', label: 'Data', icon: Database },
@@ -110,7 +111,7 @@ export function MobileFooter() {
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 block border-t border-border/80 bg-background/95 shadow-[0_-8px_24px_-18px_rgba(15,23,42,0.35)] backdrop-blur-sm md:hidden">
-      <nav className="flex h-16 items-center justify-around px-2">
+      <nav className="flex h-[4.5rem] items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = item.href
             ? item.href === '/dashboard'
@@ -129,7 +130,7 @@ export function MobileFooter() {
                     )}
                   >
                     <item.icon className="mb-1 h-5 w-5" />
-                    <span className="flex items-center text-center text-[10px] font-medium leading-tight">
+                    <span className="flex items-center text-center text-xs font-medium leading-tight">
                       {item.label}
                       <ChevronUp className="ml-0.5 h-3 w-3" />
                     </span>
@@ -172,7 +173,7 @@ export function MobileFooter() {
               )}
             >
               <item.icon className="mb-1 h-5 w-5" />
-              <span className="text-center text-[10px] font-medium leading-tight">
+              <span className="text-center text-xs font-medium leading-tight">
                 {item.label}
               </span>
             </Link>

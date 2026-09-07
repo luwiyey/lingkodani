@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { filterVisibleInboundSmsMessages } from "@/lib/inbound-sms-screening";
 import {
   getFarmerSyncVersion,
   getFieldVisitTaskSyncVersion,
   getSmsMessageSyncVersion,
 } from "@/lib/mobile-sync-integrity";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
+import { isPrivacyExcludedPhone } from "@/lib/sms-privacy";
 import type {
   Farmer,
   FarmerAssistanceRecord,
@@ -79,14 +81,18 @@ export async function GET(
   }
 
   const farmer = farmerSnapshot.data() as Farmer;
+  if (isPrivacyExcludedPhone(farmer.phone)) {
+    return NextResponse.json({ error: "Hindi makita ang farmer record." }, { status: 404 });
+  }
+
   const messages = byNewestDate(
-    smsSnapshot.docs.map((documentSnapshot) => {
+    filterVisibleInboundSmsMessages(smsSnapshot.docs.map((documentSnapshot) => {
       const message = documentSnapshot.data() as SmsMessage;
       return {
         ...message,
         id: message.id ?? documentSnapshot.id,
       };
-    }),
+    })),
     (message) => message.timestamp
   ).slice(0, 20);
 

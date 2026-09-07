@@ -825,8 +825,8 @@ function SmsFeedPageContent() {
 
             if (!idToken) {
                 toast({
-                    title: "Walang live superadmin session",
-                    description: "Mag-sign in muna sa live superadmin account bago gumamit ng safe SMS test mode.",
+                    title: "Walang live developer session",
+                    description: "Mag-sign in muna sa developer account bago gumamit ng ligtas na SMS test mode.",
                     variant: "destructive",
                 });
                 return;
@@ -1108,7 +1108,7 @@ function SmsFeedPageContent() {
           <CardHeader>
             <CardTitle className="text-base">Naka-lock ang live SMS test mode</CardTitle>
             <CardDescription>
-              Available ito para sa superadmin accounts, pero kailangan munang i-enable ang live test flag sa server bago lumabas ang safe preview tool.
+              Available ito para sa developer account, pero kailangan munang i-enable ang live test flag sa server bago lumabas ang ligtas na preview tool.
             </CardDescription>
           </CardHeader>
         </Card>

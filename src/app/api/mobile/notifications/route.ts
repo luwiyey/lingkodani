@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { filterVisibleInboundSmsMessages } from "@/lib/inbound-sms-screening";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
 import type { AlertHistoryEntry, SmsMessage } from "@/lib/types";
 
@@ -38,14 +39,14 @@ export async function GET(request: Request) {
     .sort((left, right) => byRecent(left.timestamp, right.timestamp))
     .slice(0, 12);
 
-  const urgentCases = smsSnapshot.docs
+  const urgentCases = filterVisibleInboundSmsMessages(smsSnapshot.docs
     .map((documentSnapshot) => {
       const message = documentSnapshot.data() as SmsMessage;
       return {
         ...message,
         id: message.id ?? documentSnapshot.id,
       };
-    })
+    }))
     .filter((message) => !message.closedAt && message.caseStatus !== "closed")
     .filter(
       (message) =>

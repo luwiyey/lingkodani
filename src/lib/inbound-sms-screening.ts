@@ -1,4 +1,5 @@
 import { isValidPhilippineMobileNumber, normalizePhone } from "@/lib/sms-simulator";
+import { isPrivacyExcludedPhone } from "@/lib/sms-privacy";
 
 const CARRIER_ALIASES = new Set([
   "smart",
@@ -72,7 +73,7 @@ function analyzeCarrierPromo(message: string) {
 
 export type InboundSmsScreeningResult = {
   ignored: boolean;
-  reason?: "invalid_sender" | "carrier_promo";
+  reason?: "invalid_sender" | "carrier_promo" | "privacy_excluded";
   normalizedPhone: string;
 };
 
@@ -84,6 +85,14 @@ export function screenInboundSms(input: {
   const senderAlias = normalizeSenderAlias(input.phone);
   const isValidMobile = isValidPhilippineMobileNumber(input.phone);
   const promoSignals = analyzeCarrierPromo(input.message);
+
+  if (isPrivacyExcludedPhone(input.phone)) {
+    return {
+      ignored: true,
+      reason: "privacy_excluded",
+      normalizedPhone,
+    };
+  }
 
   if (
     matchesCarrierAlias(senderAlias) ||

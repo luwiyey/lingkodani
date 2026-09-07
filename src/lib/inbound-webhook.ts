@@ -1,4 +1,5 @@
 import type { InboundSmsAnalysis } from "@/lib/sms-simulator";
+import { screenInboundSms, type InboundSmsScreeningResult } from "@/lib/inbound-sms-screening";
 import { analyzeInboundSmsWithFallback } from "@/lib/services/server-sms-analysis-service";
 import { isSmsgatePayload } from "@/lib/providers/sms/smsgate";
 import { isTextbeePayload } from "@/lib/providers/sms/textbee";
@@ -14,7 +15,8 @@ export type NormalizedInboundWebhook = {
   provider: "generic" | "twilio" | "semaphore" | "smsgate" | "textbee" | "unknown";
   externalId?: string;
   receivedAt: string;
-  analysis: InboundSmsAnalysis;
+  analysis?: InboundSmsAnalysis;
+  screening: InboundSmsScreeningResult;
 };
 
 function normalizeRawBody(body: WebhookPayloadRecord) {
@@ -80,12 +82,29 @@ export async function parseInboundWebhookRequest(webhookRequest: ParsedWebhookRe
     return null;
   }
 
+  const screening = screenInboundSms({
+    phone: normalized.phone,
+    message: normalized.message,
+  });
+
+  if (screening.ignored) {
+    return {
+      phone: normalized.phone,
+      message: normalized.message,
+      provider: normalized.provider,
+      externalId: normalized.externalId,
+      receivedAt: normalized.receivedAt ?? new Date().toISOString(),
+      screening,
+    };
+  }
+
   return {
     phone: normalized.phone,
     message: normalized.message,
     provider: normalized.provider,
     externalId: normalized.externalId,
     receivedAt: normalized.receivedAt ?? new Date().toISOString(),
+    screening,
     analysis: await analyzeInboundSmsWithFallback({
       message: normalized.message,
     }),

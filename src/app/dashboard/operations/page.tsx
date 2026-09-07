@@ -23,8 +23,17 @@ import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 import { buildAssignmentSuggestions, getNextBestAction, getSlaAgingMeta, type AssignmentSuggestion } from '@/lib/assignment-routing';
 import { getPreferredWorkspace } from '@/lib/user-workspace';
 import { isSmsAssignedToUser } from '@/lib/sms-assignment';
+import { isDemoRuntimeActive } from '@/lib/runtime-mode';
 
 const actionButtonClassName = 'h-auto min-h-12 w-full whitespace-normal break-words px-4 py-3 text-center leading-snug';
+
+function formatElapsedTime(ageHours: number) {
+  if (ageHours >= 24 * 30) return 'Mahigit 30 araw';
+  if (ageHours >= 48) return `${Math.floor(ageHours / 24)} araw`;
+  if (ageHours >= 24) return '1 araw';
+  if (ageHours >= 1) return `${ageHours < 10 ? ageHours.toFixed(1) : Math.round(ageHours)} oras`;
+  return `${Math.max(1, Math.round(ageHours * 60))} minuto`;
+}
 
 function getTriageLabel(value: SmsMessage['triageUncertainty']) {
   switch (value) {
@@ -108,6 +117,7 @@ function MessageTaskRow({
   exceptionFlags = [],
   assignmentSuggestion,
   isSimpleLanguage = false,
+  referenceNow,
 }: {
   message: SmsMessage;
   latestOutbound?: OutboundMessage;
@@ -118,14 +128,15 @@ function MessageTaskRow({
   exceptionFlags?: ReturnType<typeof getSmsCaseExceptionFlags>;
   assignmentSuggestion?: AssignmentSuggestion | null;
   isSimpleLanguage?: boolean;
+  referenceNow: number;
 }) {
   const router = useRouter();
   const awaitingConfirmation = isAwaitingFarmerConfirmation(message);
-  const slaMeta = getSlaAgingMeta(message);
+  const slaMeta = getSlaAgingMeta(message, referenceNow);
   const nextBestAction = getNextBestAction(message);
   const timingSummary = isSimpleLanguage
-    ? `${slaMeta.ageHours.toFixed(1)} oras na mula nang gumalaw ito${slaMeta.overdue ? " | Dapat nang silipin" : " | Nasa oras pa"}`
-    : `SLA age: ${slaMeta.ageHours.toFixed(1)}h${slaMeta.overdue ? " | overdue" : " | on track"}`;
+    ? `${formatElapsedTime(slaMeta.ageHours)} mula sa huling galaw${slaMeta.overdue ? " | Dapat nang silipin" : " | Nasa oras pa"}`
+    : `Tagal ng kaso: ${formatElapsedTime(slaMeta.ageHours)}${slaMeta.overdue ? " | overdue" : " | on track"}`;
 
   return (
     <div
@@ -295,10 +306,19 @@ function MessageTaskRow({
 
 export default function OperationsPage() {
   const router = useRouter();
-  const { currentUserProfile } = useAuth();
+  const { currentUser, currentUserProfile } = useAuth();
   const { smsMessages, outboundMessages, assignSmsMessage, updateSmsCaseOutcome, confirmSmsCaseResolution, retryOutboundMessage, farmers, assistanceRecords, fieldVisitTasks, users } = useData();
   const { toast, dismiss } = useToast();
   const isSimpleWorkspace = getPreferredWorkspace(currentUserProfile) === 'simple';
+  const usingDemoSandbox = isDemoRuntimeActive({ currentUser, currentUserProfile });
+  const referenceNow = React.useMemo(() => {
+    if (!usingDemoSandbox) return Date.now();
+    const latestMessageTime = smsMessages
+      .map((message) => new Date(message.timestamp).getTime())
+      .filter((value) => !Number.isNaN(value))
+      .sort((left, right) => right - left)[0];
+    return latestMessageTime ? latestMessageTime + 30 * 60 * 1000 : Date.now();
+  }, [smsMessages, usingDemoSandbox]);
   const {
     reportingReadyCases,
     farmerConfirmedResolutionCount,
@@ -348,7 +368,7 @@ export default function OperationsPage() {
     return map;
   }, [smsMessages]);
   const exceptionFlagsByMessage = React.useMemo(() => {
-    const now = new Date().toISOString();
+    const now = new Date(referenceNow).toISOString();
     const map = new Map<string, ReturnType<typeof getSmsCaseExceptionFlags>>();
 
     for (const message of smsMessages) {
@@ -365,7 +385,7 @@ export default function OperationsPage() {
     }
 
     return map;
-  }, [assistanceRecords, fieldVisitTasks, outboundMessages, smsMessages]);
+  }, [assistanceRecords, fieldVisitTasks, outboundMessages, referenceNow, smsMessages]);
   const assignmentSuggestions = React.useMemo(() => {
     const map = new Map<string, AssignmentSuggestion | null>();
 
@@ -399,10 +419,10 @@ export default function OperationsPage() {
   const overdueSlaCount = React.useMemo(
     () =>
       smsMessages.filter((message) => {
-        const slaMeta = getSlaAgingMeta(message);
+        const slaMeta = getSlaAgingMeta(message, referenceNow);
         return slaMeta.overdue;
       }).length,
-    [smsMessages]
+    [referenceNow, smsMessages]
   );
 
   const urgentQueue = React.useMemo(
@@ -657,7 +677,9 @@ export default function OperationsPage() {
                   : 'Wala pang malinaw na tumataas na pattern ng magkakaparehong ulat sa ngayon.'}
               </p>
               <p className="mt-2 leading-relaxed">
-                Huling basehan ng buod na ito: {liveContextUpdatedAt.slice(0, 19).replace('T', ' ')} UTC
+                Huling basehan ng buod na ito: {usingDemoSandbox
+                  ? 'kasalukuyang demo records'
+                  : new Date(liveContextUpdatedAt).toLocaleString('fil-PH')}
               </p>
               <p className="mt-2 leading-relaxed">
                 Kung gusto mong makita ang buong charts at mas detalyadong paliwanag, pindutin ang <strong>Buksan ang Buong Ulat</strong>.
@@ -685,14 +707,14 @@ export default function OperationsPage() {
               <Badge variant="outline">{supervisorReviewQueue.length} {isSimpleWorkspace ? 'ipa-check sa lead' : 'supervisor review'}</Badge>
             </div>
             {smsMessages
-              .filter((message) => getSlaAgingMeta(message).overdue)
+              .filter((message) => getSlaAgingMeta(message, referenceNow).overdue)
               .slice(0, 4)
               .map((message) => (
                 <div key={message.id} className="rounded-xl border p-3 text-sm">
                   <p className="font-medium">{message.farmerName}</p>
                   <p className="mt-1 text-muted-foreground">{getNextBestAction(message)}</p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {isSimpleWorkspace ? 'Tagal nang walang galaw' : 'Age'}: {getSlaAgingMeta(message).ageHours.toFixed(1)}h
+                    {isSimpleWorkspace ? 'Tagal nang walang galaw' : 'Tagal'}: {formatElapsedTime(getSlaAgingMeta(message, referenceNow).ageHours)}
                   </p>
                 </div>
               ))}
@@ -768,6 +790,7 @@ export default function OperationsPage() {
               exceptionFlags={exceptionFlagsByMessage.get(message.id)}
               assignmentSuggestion={assignmentSuggestions.get(message.id)}
               isSimpleLanguage={isSimpleWorkspace}
+              referenceNow={referenceNow}
             />
           )) : <p className="text-sm text-muted-foreground">{isSimpleWorkspace ? 'Wala pang dapat sagutin agad sa ngayon.' : 'Walang urgent na pending SMS sa ngayon.'}</p>}
         </CardContent>
@@ -802,6 +825,7 @@ export default function OperationsPage() {
                 exceptionFlags={exceptionFlagsByMessage.get(message.id)}
                 assignmentSuggestion={assignmentSuggestions.get(message.id)}
                 isSimpleLanguage={isSimpleWorkspace}
+                referenceNow={referenceNow}
               />
             ))}
             {registrationQueue.length + clarificationQueue.length === 0 ? (
@@ -852,6 +876,7 @@ export default function OperationsPage() {
                 exceptionFlags={exceptionFlagsByMessage.get(message.id)}
                 assignmentSuggestion={assignmentSuggestions.get(message.id)}
                 isSimpleLanguage={isSimpleWorkspace}
+                referenceNow={referenceNow}
               />
             ))}
             {failedSendQueue.length + followUpQueue.length === 0 ? (
@@ -889,6 +914,7 @@ export default function OperationsPage() {
               exceptionFlags={exceptionFlagsByMessage.get(message.id)}
               assignmentSuggestion={assignmentSuggestions.get(message.id)}
               isSimpleLanguage={isSimpleWorkspace}
+              referenceNow={referenceNow}
             />
           )) : (
             <p className="text-sm text-muted-foreground">

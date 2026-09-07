@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { filterVisibleInboundSmsMessages } from "@/lib/inbound-sms-screening";
 import { authenticateServerRequest } from "@/lib/server/request-auth";
+import { filterPrivacySafePhoneRecords } from "@/lib/sms-privacy";
 import { defaultSystemSettings, mergeSystemSettings, SYSTEM_SETTINGS_DOCUMENT_ID } from "@/lib/system-settings";
 import type {
   AlertHistoryEntry,
@@ -79,13 +81,21 @@ export async function GET(request: Request) {
         ),
         resources: resourcesSnapshot.docs.map((documentSnapshot) => withDocumentId<Resource>(documentSnapshot)),
         marketPrices: marketPricesSnapshot.docs.map((documentSnapshot) => withDocumentId<MarketPriceEntry>(documentSnapshot)),
-        farmers: farmersSnapshot.docs.map((documentSnapshot) => withDocumentId<Farmer>(documentSnapshot)),
-        smsMessages: smsMessagesSnapshot.docs.map((documentSnapshot) => withDocumentId<SmsMessage>(documentSnapshot)),
+        farmers: filterPrivacySafePhoneRecords(
+          farmersSnapshot.docs.map((documentSnapshot) => withDocumentId<Farmer>(documentSnapshot)),
+          (farmer) => farmer.phone
+        ),
+        smsMessages: filterVisibleInboundSmsMessages(
+          smsMessagesSnapshot.docs.map((documentSnapshot) => withDocumentId<SmsMessage>(documentSnapshot))
+        ),
         vouchers: vouchersSnapshot.docs.map((documentSnapshot) => withDocumentId<Voucher>(documentSnapshot)),
         assistanceRecords: assistanceSnapshot.docs.map((documentSnapshot) => withDocumentId<FarmerAssistanceRecord>(documentSnapshot)),
         fieldVisitTasks: fieldVisitsSnapshot.docs.map((documentSnapshot) => withDocumentId<FieldVisitTask>(documentSnapshot)),
         alertHistory: alertHistorySnapshot.docs.map((documentSnapshot) => withDocumentId<AlertHistoryEntry>(documentSnapshot)),
-        outboundMessages: outboundMessagesSnapshot.docs.map((documentSnapshot) => withDocumentId<OutboundMessage>(documentSnapshot)),
+        outboundMessages: filterPrivacySafePhoneRecords(
+          outboundMessagesSnapshot.docs.map((documentSnapshot) => withDocumentId<OutboundMessage>(documentSnapshot)),
+          (message) => message.recipientPhone
+        ),
         users,
       },
       fetchedAt: new Date().toISOString(),

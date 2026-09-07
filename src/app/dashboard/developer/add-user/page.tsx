@@ -78,7 +78,7 @@ export default function AddUserPage() {
         const idToken = await getClientAuth().currentUser?.getIdToken();
 
         if (!idToken) {
-          throw new Error('Walang authenticated superadmin session.');
+          throw new Error('Walang aktibong developer session.');
         }
 
         const response = await fetch('/api/developer/users', {
@@ -142,7 +142,7 @@ export default function AddUserPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <HoverTooltip text="Bumalik sa Superadmin Dashboard">
+        <HoverTooltip text="Bumalik sa Developer Dashboard">
             <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard/developer">
                 <ArrowLeft />
@@ -231,7 +231,7 @@ export default function AddUserPage() {
               <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">Barangay Staff Access</p>
                 <p className="mt-1">
-                  Ang accounts na ginagawa sa form na ito ay para sa barangay operations lamang. Ang superadmin access ay pinamamahalaan sa hiwalay na secure provisioning flow.
+                  Ang form na ito ay para sa barangay staff accounts. Ang developer account ay hindi ginagawa o pinapalitan mula sa ordinaryong user form.
                 </p>
               </div>
               <div className="grid gap-6 md:grid-cols-2">

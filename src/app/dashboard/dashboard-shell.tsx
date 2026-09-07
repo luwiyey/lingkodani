@@ -24,6 +24,7 @@ const developerAllowedPrefixes = [
   "/dashboard/archive-management",
   "/dashboard/data-center",
   "/dashboard/reports",
+  "/dashboard/oversight",
   "/dashboard/audit-log",
   "/dashboard/account",
   "/dashboard/settings",
@@ -90,13 +91,19 @@ export function DashboardShell({
   if (!authLoading && shouldRedirectDeveloperHome) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Binubuksan ang superadmin dashboard...
+        Binubuksan ang developer dashboard...
       </div>
     );
   }
 
   return (
     <SidebarProvider>
+      <a
+        href="#main-content"
+        className="sr-only fixed left-4 top-4 z-[100] rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground shadow-lg focus:not-sr-only"
+      >
+        Lumaktaw sa pangunahing nilalaman
+      </a>
       {!isDisasterPath && <AppSidebar />}
       <SidebarInset>
         <LiveAutomationRunner />
@@ -137,8 +144,12 @@ export function DashboardShell({
             </div>
           </div>
         ) : null}
-        <div className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 lg:p-8 md:pb-8">
-          {children}
+        <div
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto p-4 pb-24 outline-none sm:p-6 md:pb-8 lg:p-8"
+        >
+          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
         </div>
         <footer className="hidden px-8 pb-8 pt-0 text-center text-xs text-muted-foreground md:block">
           <span>Lingkod-Ani v1.0</span> | <span>Barangay Agricultural Advisory System</span> | <Link href={buildLegalPageHref("/terms-of-service", "dashboard")} className="hover:underline">Terms of Service</Link> | <Link href={buildLegalPageHref("/privacy-policy", "dashboard")} className="hover:underline">Privacy Policy</Link>

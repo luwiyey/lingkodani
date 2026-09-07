@@ -3,8 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 const previewUser = {
   id: 'preview-dev-e2e',
   email: 'dev@demo.lingkodani.local',
-  name: 'Superadmin Preview',
-  title: 'Municipal Support / Superadmin',
+  name: 'Developer Preview',
+  title: 'System Developer',
   phone: '09171234567',
   role: 'developer',
   preferredWorkspace: 'detailed',
@@ -14,7 +14,7 @@ const previewUser = {
   updatedAt: '2026-05-26T08:00:00.000Z',
 } as const;
 
-async function enableSuperadminPreview(page: Page) {
+async function enableDeveloperPreview(page: Page) {
   await page.context().addCookies([
     {
       name: 'lingkod_ani_demo_preview',
@@ -27,37 +27,60 @@ async function enableSuperadminPreview(page: Page) {
       url: 'http://localhost:3000',
     },
   ]);
-}
-
-async function hydrateSuperadminPreview(page: Page) {
-  await page.evaluate((user) => {
+  await page.addInitScript((user) => {
     window.localStorage.setItem('lingkodAniDemoPreviewUser', JSON.stringify(user));
-    window.dispatchEvent(new Event('lingkod-ani-demo-preview-change'));
   }, previewUser);
 }
 
+async function expectAccessiblePageBasics(page: Page) {
+  await expect(page.locator('h1').first()).toBeVisible({ timeout: 30_000 });
+
+  const duplicateIds = await page.locator('[id]').evaluateAll((elements) => {
+    const ids = elements.map((element) => element.id).filter(Boolean);
+    return ids.filter((id, index) => ids.indexOf(id) !== index);
+  });
+  expect(duplicateIds).toEqual([]);
+
+  const unlabeledFields = await page.locator('input:not([type="hidden"]), textarea, select').evaluateAll((fields) => (
+    fields
+      .filter((field) => {
+        const id = field.getAttribute('id');
+        return !field.getAttribute('aria-label')
+          && !field.getAttribute('aria-labelledby')
+          && !field.getAttribute('title')
+          && !field.closest('label')
+          && !(id && document.querySelector(`label[for="${CSS.escape(id)}"]`));
+      })
+      .map((field) => field.outerHTML.slice(0, 180))
+  ));
+  expect(unlabeledFields).toEqual([]);
+
+  const imagesWithoutAlt = await page.locator('img:not([alt])').count();
+  expect(imagesWithoutAlt).toBe(0);
+}
+
 test.describe('Lingkod-Ani critical flows', () => {
+  test.describe.configure({ mode: 'serial', timeout: 60_000 });
+
   test.beforeEach(async ({ page }) => {
-    await enableSuperadminPreview(page);
+    await enableDeveloperPreview(page);
   });
 
-  test('superadmin preview can open the privileged dashboard', async ({ page }) => {
-    await page.goto('/dashboard/developer');
-    await hydrateSuperadminPreview(page);
+  test('developer preview can open the account management dashboard', async ({ page }) => {
+    await page.goto('/dashboard/developer', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByRole('heading', { name: 'Superadmin User Management' })).toBeVisible();
-    await expect(page.getByText('Platform Superadmin Access')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Secure Superadmin Provisioning' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pamamahala ng User at Access' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Developer Account', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Buksan ang Aking Account' })).toBeVisible();
   });
 
   test('reports page exposes custom ranges and farmer demographics', async ({ page }) => {
-    await page.goto('/dashboard/reports');
-    await hydrateSuperadminPreview(page);
+    await page.goto('/dashboard/reports', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByRole('heading', { name: 'Mga Ulat at Pagsusuri' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mga Ulat at Pagsusuri' })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('input[type="date"]').first()).toBeVisible();
     await expect(page.locator('input[type="date"]').nth(1)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Apply Custom Range' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Gamitin ang Petsa' }).first()).toBeVisible();
 
     await page.getByRole('tab', { name: 'Demograpiko ng Magsasaka' }).click();
     await expect(page.getByText('Farmers in Scope')).toBeVisible();
@@ -66,32 +89,54 @@ test.describe('Lingkod-Ani critical flows', () => {
     await expect(page.getByText('Top Crop Profiles')).toBeVisible();
   });
 
-  test('export center downloads filtered CSV and PDF exports', async ({ page }) => {
-    await page.goto('/dashboard/export-center');
-    await hydrateSuperadminPreview(page);
+  test('barangay analytics explains priorities from a chosen date range', async ({ page }) => {
+    await page.goto('/dashboard/oversight', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByText('Flexible Report Export')).toBeVisible();
-    await page.getByRole('button', { name: 'Custom Range' }).click();
+    await expect(page.getByRole('heading', { name: 'Pagsusuri ng Agrikultura sa Barangay' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Demo data', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Mula')).toBeVisible();
+    await expect(page.getByLabel('Hanggang')).toBeVisible();
+    await expect(page.getByText('Dapat tutukan ngayon')).toBeVisible();
+    await expect(page.getByText('Kalagayan bawat sitio o zone')).toBeVisible();
+    await expect(page.getByText('Profile ng mga magsasaka')).toBeVisible();
+  });
+
+  test('key government-facing pages meet basic accessibility structure', async ({ page }) => {
+    for (const path of [
+      '/dashboard/developer',
+      '/dashboard/oversight',
+      '/dashboard/reports',
+      '/dashboard/export-center',
+    ]) {
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await expectAccessiblePageBasics(page);
+    }
+  });
+
+  test('export center downloads filtered CSV and PDF exports', async ({ page }) => {
+    await page.goto('/dashboard/export-center', { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByText('Pag-download ng Ulat ayon sa Petsa')).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Sariling Saklaw' }).click();
     await page.locator('input[type="date"]').nth(1).fill('2026-05-01');
     await page.locator('input[type="date"]').nth(2).fill('2026-05-26');
-    await page.getByRole('button', { name: 'Apply Range' }).click();
+    await page.getByRole('button', { name: 'Gamitin ang Saklaw' }).click();
 
     const csvDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download CSV' }).first().click();
+    await page.getByRole('button', { name: 'I-download ang CSV' }).first().click();
     const csv = await csvDownload;
     expect(csv.suggestedFilename()).toContain('.csv');
 
     const pdfDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download PDF' }).first().click();
+    await page.getByRole('button', { name: 'I-download ang PDF' }).first().click();
     const pdf = await pdfDownload;
     expect(pdf.suggestedFilename()).toContain('.pdf');
   });
 
   test('archive management downloads archive history exports', async ({ page }) => {
-    await page.goto('/dashboard/archive-management');
-    await hydrateSuperadminPreview(page);
+    await page.goto('/dashboard/archive-management', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByRole('heading', { name: 'Archive Management' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Archive Management' })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('Archive Controls')).toBeVisible();
 
     const csvDownload = page.waitForEvent('download');

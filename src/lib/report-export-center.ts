@@ -94,7 +94,7 @@ function startOfWeek(date: Date) {
 }
 
 function toDisplayDate(date: Date) {
-  return date.toLocaleDateString("en-PH", {
+  return date.toLocaleDateString("fil-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -124,23 +124,23 @@ function escapeCsvCell(value: string) {
 function formatIntentLabel(value?: SmsMessage["parsedIntent"]) {
   switch (value) {
     case "PEST_DISEASE":
-      return "Pest / Disease";
+      return "Peste / Sakit";
     case "REQUEST":
-      return "Request";
+      return "Kahilingan";
     case "EMERGENCY":
-      return "Emergency";
+      return "Agarang Panganib";
     case "PRICE_CHECK":
-      return "Price Check";
+      return "Presyo";
     case "REGISTER":
-      return "Registration";
+      return "Pagpaparehistro";
     case "WEATHER_HELP":
-      return "Weather / Water";
+      return "Panahon / Tubig";
     case "HARVEST":
-      return "Harvest";
+      return "Ani";
     case "CROP_UPDATE":
-      return "Crop Update";
+      return "Kalagayan ng Pananim";
     default:
-      return "Unknown";
+      return "Hindi Natukoy";
   }
 }
 
@@ -179,7 +179,7 @@ export function resolveReportExportWindow(
     return {
       start,
       end,
-      label: `Specific Date: ${toDisplayDate(start)}`,
+      label: `Petsa: ${toDisplayDate(start)}`,
       fileLabel: fileSafeDate(start),
     };
   }
@@ -192,7 +192,7 @@ export function resolveReportExportWindow(
     return {
       start,
       end,
-      label: `From ${toDisplayDate(start)} to ${toDisplayDate(end)}`,
+      label: `Mula ${toDisplayDate(start)} hanggang ${toDisplayDate(end)}`,
       fileLabel: `${fileSafeDate(start)}_to_${fileSafeDate(end)}`,
     };
   }
@@ -202,7 +202,7 @@ export function resolveReportExportWindow(
     return {
       start,
       end: today,
-      label: `This Week (${toDisplayDate(start)} to ${toDisplayDate(today)})`,
+      label: `Linggong Ito (${toDisplayDate(start)} hanggang ${toDisplayDate(today)})`,
       fileLabel: `${fileSafeDate(start)}_to_${fileSafeDate(today)}`,
     };
   }
@@ -213,7 +213,7 @@ export function resolveReportExportWindow(
     return {
       start,
       end: today,
-      label: `This Month (${now.toLocaleDateString("en-PH", {
+      label: `Buwang Ito (${now.toLocaleDateString("fil-PH", {
         month: "long",
         year: "numeric",
       })})`,
@@ -226,7 +226,7 @@ export function resolveReportExportWindow(
   return {
     start,
     end: today,
-    label: `Today (${toDisplayDate(start)})`,
+    label: `Ngayong Araw (${toDisplayDate(start)})`,
     fileLabel: fileSafeDate(start),
   };
 }
@@ -260,20 +260,20 @@ export function serializeExportTableToCsv(table: ExportTable) {
 
 export function buildSmsCasesExportTable(messages: SmsMessage[]) {
   return {
-    title: "SMS Cases",
-    description: "Inbound SMS cases filtered by the selected report date window.",
+    title: "Mga Concern sa SMS",
+    description: "Mga natanggap na SMS na sakop ng napiling petsa.",
     columns: [
       "Case ID",
-      "Timestamp",
-      "Farmer",
-      "Phone",
-      "Concern Category",
-      "Urgency",
-      "Safety",
-      "Case Status",
-      "Assigned To",
-      "Resolution Status",
-      "Message",
+      "Petsa at Oras",
+      "Magsasaka",
+      "Telepono",
+      "Uri ng Concern",
+      "Prayoridad",
+      "Kaligtasan",
+      "Kalagayan ng Kaso",
+      "Nakatalagang Staff",
+      "Kalagayan ng Resolusyon",
+      "Mensahe",
     ],
     rows: messages.map((message) => [
       message.caseId ?? message.id,
@@ -284,7 +284,7 @@ export function buildSmsCasesExportTable(messages: SmsMessage[]) {
       message.urgency ?? "N/A",
       message.safetyFlag ?? "N/A",
       message.caseStatus ?? message.status ?? "open",
-      message.assignedTo ?? "Unassigned",
+      message.assignedTo ?? "Hindi pa nakatalaga",
       getEffectiveSmsCaseOutcome(message) ?? "pending",
       message.message,
     ]),
@@ -293,18 +293,18 @@ export function buildSmsCasesExportTable(messages: SmsMessage[]) {
 
 export function buildFarmerRegistrationsExportTable(farmers: Farmer[]) {
   return {
-    title: "Farmer Registrations",
-    description: "Farmer records filtered by registration date.",
+    title: "Mga Rehistrasyon ng Magsasaka",
+    description: "Farmer records na sakop ng napiling petsa ng pagpaparehistro.",
     columns: [
       "Farmer ID",
-      "Registration Date",
-      "Name",
-      "Phone",
+      "Petsa ng Rehistrasyon",
+      "Pangalan",
+      "Telepono",
       "Barangay",
       "Sitio",
-      "Primary Crops",
-      "Farm Size",
-      "Status",
+      "Mga Pangunahing Pananim",
+      "Laki ng Sakahan",
+      "Kalagayan",
     ],
     rows: farmers.map((farmer) => [
       farmer.id,
@@ -322,22 +322,22 @@ export function buildFarmerRegistrationsExportTable(farmers: Farmer[]) {
 
 export function buildFarmerDemographicsExportTable(farmers: Farmer[]) {
   return {
-    title: "Farmer Demographics",
-    description: "Farmer demographic records filtered by the selected report date window.",
+    title: "Demograpiko ng mga Magsasaka",
+    description: "Demographic records ng mga magsasakang sakop ng napiling petsa.",
     columns: [
       "Farmer ID",
-      "Registration Date",
-      "Name",
-      "Age",
-      "Gender",
-      "Phone",
+      "Petsa ng Rehistrasyon",
+      "Pangalan",
+      "Edad",
+      "Kasarian",
+      "Telepono",
       "Barangay",
       "Sitio",
-      "Farm Size (ha)",
-      "Primary Crops",
-      "Last SMS Activity",
-      "Profile Source",
-      "Status",
+      "Laki ng Sakahan (ha)",
+      "Mga Pangunahing Pananim",
+      "Huling Aktibidad sa SMS",
+      "Pinagmulan ng Profile",
+      "Kalagayan",
     ],
     rows: farmers.map((farmer) => [
       farmer.id,
@@ -366,18 +366,18 @@ export function buildVoucherTransactionsExportTable(
   const resourceMap = new Map(resources.map((resource) => [resource.id, resource]));
 
   return {
-    title: "Voucher Transactions",
-    description: "Voucher issuance and redemption records filtered by issue date.",
+    title: "Mga Transaksyon ng Voucher",
+    description: "Pag-isyu at pag-redeem ng voucher na sakop ng napiling petsa.",
     columns: [
       "Voucher ID",
-      "Issued At",
-      "Redeemed At",
-      "Farmer",
-      "Phone",
-      "Resource",
-      "Quantity",
+      "Petsa ng Pag-isyu",
+      "Petsa ng Pag-redeem",
+      "Magsasaka",
+      "Telepono",
+      "Rekurso",
+      "Dami",
       "Code",
-      "Status",
+      "Kalagayan",
     ],
     rows: vouchers.map((voucher) => {
       const farmer = farmerMap.get(voucher.farmerId);
@@ -385,7 +385,7 @@ export function buildVoucherTransactionsExportTable(
       return [
         voucher.id,
         voucher.issueDate,
-        voucher.redemptionDate ?? "Pending",
+        voucher.redemptionDate ?? "Hindi pa nagagamit",
         farmer?.name ?? voucher.farmerId,
         farmer?.phone ?? "N/A",
         resource?.name ?? voucher.resourceId,
@@ -399,17 +399,17 @@ export function buildVoucherTransactionsExportTable(
 
 export function buildInventoryUpdatesExportTable(resources: Resource[]) {
   return {
-    title: "Inventory Updates",
-    description: "Current inventory records using each resource's last updated timestamp.",
+    title: "Mga Update sa Imbentaryo",
+    description: "Kasalukuyang imbentaryo ayon sa huling petsa ng bawat rekurso.",
     columns: [
       "Resource ID",
-      "Last Updated",
-      "Resource Name",
-      "Category",
-      "Group",
-      "Stock",
-      "Unit",
-      "Intended Use",
+      "Huling Update",
+      "Pangalan ng Rekurso",
+      "Kategorya",
+      "Grupo",
+      "Natitirang Stock",
+      "Yunit",
+      "Nakalaang Gamit",
     ],
     rows: resources.map((resource) => [
       resource.id,
@@ -426,16 +426,16 @@ export function buildInventoryUpdatesExportTable(resources: Resource[]) {
 
 export function buildPriceWatchExportTable(entries: MarketPriceEntry[]) {
   return {
-    title: "Price Watch Updates",
-    description: "Price watch records filtered by the selected report date window.",
+    title: "Mga Update sa Presyo",
+    description: "Mga tala ng presyo na sakop ng napiling petsa.",
     columns: [
-      "Entry ID",
-      "Updated At",
-      "Crop",
-      "Price",
-      "Unit",
-      "Trend",
-      "Source",
+      "Tala ID",
+      "Petsa ng Update",
+      "Pananim",
+      "Presyo",
+      "Yunit",
+      "Galaw ng Presyo",
+      "Pinagmulan",
     ],
     rows: entries.map((entry) => [
       entry.id,
@@ -477,42 +477,42 @@ export function buildAiAnalyticsExportTable(messages: SmsMessage[]) {
     .join(", ");
 
   const rows: string[][] = [
-    ["Total filtered SMS cases", String(messages.length), "All inbound SMS records within the selected window."],
+    ["Kabuuang SMS concern", String(messages.length), "Lahat ng natanggap na SMS sa napiling petsa."],
     [
-      "High-priority cases",
+      "Mataas na prayoridad",
       String(messages.filter((message) => message.urgency === "high" || message.safetyFlag === "High").length),
-      "Messages tagged as high urgency or high safety concern.",
+      "Mga mensaheng mataas ang urgency o may seryosong usaping pangkaligtasan.",
     ],
     [
-      "Awaiting farmer confirmation",
+      "Naghihintay ng kumpirmasyon ng magsasaka",
       String(messages.filter((message) => message.resolutionConfirmationStatus === "awaiting_farmer").length),
-      "Closed cases still waiting for farmer confirmation.",
+      "Mga kasong naghihintay pa ng kumpirmasyon bago tuluyang isara.",
     ],
     [
-      "Top keywords",
+      "Madalas na salita",
       topKeywords || "N/A",
-      "Most repeated normalized keywords from the filtered SMS text.",
+      "Mga salitang pinakamadalas lumabas sa napiling SMS.",
     ],
   ];
 
   [...intentCounts.entries()]
     .sort((left, right) => right[1] - left[1])
     .forEach(([intent, count]) => {
-      rows.push([`Concern category: ${intent}`, String(count), "Count of filtered messages under this concern category."]);
+      rows.push([`Uri ng concern: ${intent}`, String(count), "Bilang ng mensahe sa uring ito."]);
     });
 
   [...urgencyCounts.entries()].forEach(([urgency, count]) => {
-    rows.push([`Urgency: ${urgency}`, String(count), "Filtered message count by urgency level."]);
+    rows.push([`Prayoridad: ${urgency}`, String(count), "Bilang ng mensahe ayon sa antas ng prayoridad."]);
   });
 
   [...safetyCounts.entries()].forEach(([safety, count]) => {
-    rows.push([`Safety flag: ${safety}`, String(count), "Filtered message count by safety flag."]);
+    rows.push([`Kaligtasan: ${safety}`, String(count), "Bilang ng mensahe ayon sa antas ng kaligtasan."]);
   });
 
   return {
-    title: "AI Analytics Summary",
-    description: "Concern categories, urgency patterns, and keyword summaries generated from filtered SMS cases.",
-    columns: ["Metric", "Value", "Notes"],
+    title: "Buod ng Pagsusuri sa SMS",
+    description: "Buod ng uri ng concern, prayoridad, at madalas na salita mula sa napiling SMS.",
+    columns: ["Sukatan", "Bilang o Halaga", "Paliwanag"],
     rows,
   } satisfies ExportTable;
 }

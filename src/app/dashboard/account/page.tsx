@@ -630,9 +630,9 @@ export default function AccountSettingsPage() {
                     <div className="space-y-3 md:col-span-2">
                       <Label>Workspace sa Dashboard</Label>
                       <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
-                        <p className="font-medium text-foreground">Superadmin Console</p>
+                        <p className="font-medium text-foreground">Developer Console</p>
                         <p className="mt-1">
-                          Ang superadmin accounts ay laging binubuksan sa superadmin console para sa user management,
+                          Ang developer account ay laging binubuksan sa developer console para sa user management,
                           data oversight, at platform administration.
                         </p>
                       </div>

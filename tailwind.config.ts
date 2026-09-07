@@ -11,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['var(--font-inter)', 'Inter', 'sans-serif'],
-        headline: ['var(--font-inter)', 'Inter', 'sans-serif'],
+        body: ['Aptos', 'Segoe UI Variable', 'Trebuchet MS', 'sans-serif'],
+        headline: ['Aptos Display', 'Segoe UI Variable Display', 'Trebuchet MS', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

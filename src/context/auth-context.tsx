@@ -256,7 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (inviteLifecycle.status === "revoked") {
           await syncServerSession(null);
           setCurrentUserProfile(null);
-          setAuthError("Naka-hold muna ang setup invite na ito. Makipag-ugnayan sa superadmin o barangay admin para sa panibagong invite.");
+          setAuthError("Naka-hold muna ang setup invite na ito. Makipag-ugnayan sa developer o barangay admin para sa panibagong invite.");
           await signOut(auth);
           setAuthLoading(false);
           return;

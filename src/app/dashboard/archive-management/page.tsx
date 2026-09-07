@@ -189,7 +189,7 @@ export default function ArchiveManagementPage() {
           <h1 className="text-2xl font-bold tracking-tight">Archive Management</h1>
           <HelpDialog title="Archive Management" tooltipText="Manage archived farmer records and retention activity.">
             <p>
-              Ang archive workspace na ito ay para sa superadmin oversight ng long-term records. Hindi permanent deletion
+              Ang archive workspace na ito ay para sa developer review ng mga lumang record. Hindi permanent deletion
               ang gamit dito. Sa halip, ang archived records ay inaalis lang sa default active views habang nananatiling
               searchable, exportable, at restorable kung kinakailangan.
             </p>
@@ -200,7 +200,7 @@ export default function ArchiveManagementPage() {
           </HelpDialog>
         </div>
         <p className="text-muted-foreground">
-          Superadmin workspace para sa archived farmer records, retention activity, restore actions, at archive-related
+          Developer workspace para sa archived farmer records, retention activity, restore actions, at archive-related
           exports.
         </p>
       </div>

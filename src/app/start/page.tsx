@@ -71,7 +71,7 @@ const workspaceOptions = [
   {
     id: "detailed",
     title: "Detalyado",
-    description: "Mas maraming controls, analysis tools, at mas kumpletong view para sa Gen Z AEW at officials.",
+    description: "Mas maraming controls, analysis tools, at mas kumpletong view para sa mga sanay sa digital systems.",
   },
 ] as const;
 
@@ -100,12 +100,12 @@ function getWorkspaceRecommendation(age: string, yearsInService: string): {
     return null;
   }
 
-  if (ageValue >= 36) {
+  if (ageValue >= 50) {
     return {
       preferredWorkspace: "simple",
       title: "Simple ang inirerekomenda para sa iyo.",
       description:
-        "Kung 36 pataas ang edad, mas malinaw munang gamitin ang workspace na mas diretso ang actions at mas kaunti ang sabay-sabay na controls sa screen.",
+        "Kung 50 pataas ang edad, mas malinaw munang gamitin ang workspace na mas diretso ang actions at mas kaunti ang sabay-sabay na controls sa screen.",
     };
   }
 
@@ -118,7 +118,7 @@ function getWorkspaceRecommendation(age: string, yearsInService: string): {
     };
   }
 
-  if (ageValue >= 18 && ageValue <= 35 && yearsValue >= 2) {
+  if (ageValue >= 18 && ageValue <= 49 && yearsValue >= 2) {
     return {
       preferredWorkspace: "detailed",
       title: "Detalyado ang inirerekomenda para sa iyo.",
@@ -481,7 +481,7 @@ export default function StartPage() {
                   <option value="Agricultural Extension Worker (AEW)" />
                   <option value="Barangay Kagawad" />
                   <option value="Municipal Agriculture Staff" />
-                  <option value="Municipal Support / Superadmin" />
+                  <option value="System Developer" />
                 </datalist>
                 <p className="text-xs leading-5 text-slate-500">
                   Pumili mula sa mga karaniwang role sa dropdown o mag-type ng sarili mong posisyon.
@@ -560,7 +560,7 @@ export default function StartPage() {
                   >
                     <div className="space-y-1">
                       <Label className="block text-base font-semibold">
-                        5. Ano ang mas gusto mong workspace?
+                        7. Ano ang mas gusto mong ayos ng dashboard?
                       </Label>
                       <p className="text-sm text-slate-600">
                         Step 3 - Piliin kung simple ang gusto mong galaw o detalyadong operational view ang mas bagay sa iyo.

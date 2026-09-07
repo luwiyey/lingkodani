@@ -16,13 +16,13 @@
     --secondary: 131 33% 53%;
     --secondary-foreground: 0 0% 100%;
     --muted: 120 13% 95%;
-    --muted-foreground: 220 9% 46%;
+    --muted-foreground: 220 10% 39%;
     --accent: 41 77% 60%;
     --accent-foreground: 221 39% 11%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 220 13% 86%;
+    --input: 220 13% 82%;
     --ring: 132 40% 31%;
     --radius: 0.625rem;
 
@@ -95,6 +95,7 @@
     @apply min-h-screen bg-background text-foreground;
     background-image: none;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    line-height: 1.6;
     text-rendering: optimizeLegibility;
   }
 
@@ -113,6 +114,24 @@
 
   ::selection {
     background: rgba(47, 111, 62, 0.16);
+  }
+
+  :focus-visible {
+    scroll-margin: 1rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 

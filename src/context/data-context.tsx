@@ -69,6 +69,12 @@ import { createSmsTrainingExample } from '@/lib/services/sms-training-service';
 import { applySmsStatusUpdate, processInboundSms } from '@/lib/services/sms-workflow-service';
 import { processOfficialReminderMessage } from '@/lib/services/staff-sms-service';
 import { filterVisibleInboundSmsMessages, screenInboundSms } from '@/lib/inbound-sms-screening';
+import {
+  filterPrivacySafeContentRecords,
+  filterPrivacySafePhoneRecords,
+  filterPrivacySafeRelatedRecords,
+  getPrivacyExcludedRecordIds,
+} from '@/lib/sms-privacy';
 import { getSmsCaseResolutionReadiness } from '@/lib/sms-case-quality';
 import { getCaseStatusForOutcome, getSmsCaseOutcomeMeta } from '@/lib/sms-case-outcomes';
 import { applyDataRetentionSweep } from '@/lib/data-retention';
@@ -474,26 +480,42 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const liveBootstrapRef = React.useRef<Set<LiveBootstrapKey>>(new Set());
   const liveBootstrapApiLoaded = React.useRef(false);
   const liveSmsApiFallbackLoaded = React.useRef(false);
+  const privacyExcludedFarmerIdsRef = React.useRef(
+    getPrivacyExcludedRecordIds(getRuntimeInitialItems(initialFarmers), (farmer) => farmer.phone)
+  );
   const [hydrated, setHydrated] = useState(false);
   const [liveDataReady, setLiveDataReady] = useState(!isLiveMode);
   
-  const [farmers, setFarmers] = useState<Farmer[]>(() => getRuntimeInitialItems(initialFarmers));
+  const [farmers, setFarmers] = useState<Farmer[]>(() => filterPrivacySafePhoneRecords(
+    getRuntimeInitialItems(initialFarmers),
+    (farmer) => farmer.phone
+  ));
   const [smsMessages, setSmsMessages] = useState<SmsMessage[]>(() => (
     isLiveMode ? [] : sortVisibleSmsMessages(initialSmsMessages)
   ));
   const [resources, setResources] = useState<Resource[]>(() => getRuntimeInitialItems(initialResources));
   const [marketPrices, setMarketPrices] = useState<MarketPriceEntry[]>(() => getRuntimeInitialItems(initialMarketPrices));
   const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>(() => getRuntimeInitialItems(initialKnowledgeArticles));
-  const [logbook, setLogbook] = useState<LogbookEntry[]>(() => getRuntimeInitialItems(initialLogbookEntries));
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => getRuntimeInitialItems(initialAuditLogs));
+  const [logbook, setLogbook] = useState<LogbookEntry[]>(() => filterPrivacySafeRelatedRecords(
+    getRuntimeInitialItems(initialLogbookEntries),
+    privacyExcludedFarmerIdsRef.current,
+    (entry) => entry.farmerId
+  ));
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => filterPrivacySafeContentRecords(getRuntimeInitialItems(initialAuditLogs)));
   const [alertHistory, setAlertHistory] = useState<AlertHistoryEntry[]>(() => getRuntimeInitialItems(initialAlertHistory));
   const [assistanceRecords, setAssistanceRecords] = useState<FarmerAssistanceRecord[]>(() => getRuntimeInitialItems(initialAssistanceRecords));
   const [fieldVisitTasks, setFieldVisitTasks] = useState<FieldVisitTask[]>(() => getRuntimeInitialItems(initialFieldVisitTasks));
-  const [smsTrainingExamples, setSmsTrainingExamples] = useState<SmsTrainingExample[]>(() => getRuntimeInitialItems(initialSmsTrainingExamples));
+  const [smsTrainingExamples, setSmsTrainingExamples] = useState<SmsTrainingExample[]>(() => filterPrivacySafePhoneRecords(
+    getRuntimeInitialItems(initialSmsTrainingExamples),
+    (example) => example.phone
+  ));
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(defaultSystemSettings);
   const [users, setUsers] = useState<User[]>(() => getRuntimeInitialItems(initialUsers));
   const [vouchers, setVouchers] = useState<Voucher[]>(() => getRuntimeInitialItems(initialVouchers));
-  const [outboundMessages, setOutboundMessages] = useState<OutboundMessage[]>(() => getRuntimeInitialItems(initialOutboundMessages));
+  const [outboundMessages, setOutboundMessages] = useState<OutboundMessage[]>(() => filterPrivacySafePhoneRecords(
+    getRuntimeInitialItems(initialOutboundMessages),
+    (message) => message.recipientPhone
+  ));
   const [webhookBridgeStatus, setWebhookBridgeStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [offlineMode, setOfflineMode] = useState(false);
   const [offlineSyncing, setOfflineSyncing] = useState(false);
@@ -687,7 +709,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const storedFarmers = localStorage.getItem('farmers');
-      setFarmers(storedFarmers ? JSON.parse(storedFarmers) : initialFarmers);
+      const loadedFarmers = storedFarmers ? JSON.parse(storedFarmers) as Farmer[] : initialFarmers;
+      privacyExcludedFarmerIdsRef.current = getPrivacyExcludedRecordIds(loadedFarmers, (farmer) => farmer.phone);
+      setFarmers(filterPrivacySafePhoneRecords(loadedFarmers, (farmer) => farmer.phone));
 
       const storedSms = localStorage.getItem('smsMessages');
       setSmsMessages(storedSms ? sortVisibleSmsMessages(JSON.parse(storedSms) as SmsMessage[]) : sortVisibleSmsMessages(initialSmsMessages));
@@ -702,10 +726,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setKnowledgeArticles(storedKnowledge ? JSON.parse(storedKnowledge) : initialKnowledgeArticles);
 
       const storedLogbook = localStorage.getItem('logbook');
-      setLogbook(storedLogbook ? JSON.parse(storedLogbook) : initialLogbookEntries);
+      setLogbook(filterPrivacySafeRelatedRecords(
+        storedLogbook ? JSON.parse(storedLogbook) as LogbookEntry[] : initialLogbookEntries,
+        privacyExcludedFarmerIdsRef.current,
+        (entry) => entry.farmerId
+      ));
 
       const storedAudit = localStorage.getItem('auditLogs');
-      setAuditLogs(storedAudit ? JSON.parse(storedAudit) : initialAuditLogs);
+      setAuditLogs(filterPrivacySafeContentRecords(
+        storedAudit ? JSON.parse(storedAudit) as AuditLog[] : initialAuditLogs
+      ));
 
       const storedAlertHistory = localStorage.getItem('alertHistory');
       setAlertHistory(storedAlertHistory ? JSON.parse(storedAlertHistory) : initialAlertHistory);
@@ -717,7 +747,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setFieldVisitTasks(storedFieldVisitTasks ? JSON.parse(storedFieldVisitTasks) : initialFieldVisitTasks);
 
       const storedTrainingExamples = localStorage.getItem('smsTrainingExamples');
-      setSmsTrainingExamples(storedTrainingExamples ? JSON.parse(storedTrainingExamples) : initialSmsTrainingExamples);
+      setSmsTrainingExamples(filterPrivacySafePhoneRecords(
+        storedTrainingExamples ? JSON.parse(storedTrainingExamples) as SmsTrainingExample[] : initialSmsTrainingExamples,
+        (example) => example.phone
+      ));
 
       const storedSystemSettings = localStorage.getItem('systemSettings');
       setSystemSettings(storedSystemSettings ? mergeSystemSettings(JSON.parse(storedSystemSettings)) : defaultSystemSettings);
@@ -729,24 +762,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setVouchers(storedVouchers ? JSON.parse(storedVouchers) : initialVouchers);
 
       const storedOutbound = localStorage.getItem('outboundMessages');
-      setOutboundMessages(storedOutbound ? JSON.parse(storedOutbound) : initialOutboundMessages);
+      setOutboundMessages(filterPrivacySafePhoneRecords(
+        storedOutbound ? JSON.parse(storedOutbound) as OutboundMessage[] : initialOutboundMessages,
+        (message) => message.recipientPhone
+      ));
     } catch (error) {
       console.error("Error loading data from localStorage", error);
-      setFarmers(initialFarmers);
+      setFarmers(filterPrivacySafePhoneRecords(initialFarmers, (farmer) => farmer.phone));
       setSmsMessages(sortVisibleSmsMessages(initialSmsMessages));
       setResources(initialResources);
       setMarketPrices(initialMarketPrices);
       setKnowledgeArticles(initialKnowledgeArticles);
-      setLogbook(initialLogbookEntries);
-      setAuditLogs(initialAuditLogs);
+      setLogbook(filterPrivacySafeRelatedRecords(
+        initialLogbookEntries,
+        privacyExcludedFarmerIdsRef.current,
+        (entry) => entry.farmerId
+      ));
+      setAuditLogs(filterPrivacySafeContentRecords(initialAuditLogs));
       setAlertHistory(initialAlertHistory);
       setAssistanceRecords(initialAssistanceRecords);
       setFieldVisitTasks(initialFieldVisitTasks);
-      setSmsTrainingExamples(initialSmsTrainingExamples);
+      setSmsTrainingExamples(filterPrivacySafePhoneRecords(initialSmsTrainingExamples, (example) => example.phone));
       setSystemSettings(defaultSystemSettings);
       setUsers(initialUsers);
       setVouchers(initialVouchers);
-      setOutboundMessages(initialOutboundMessages);
+      setOutboundMessages(filterPrivacySafePhoneRecords(initialOutboundMessages, (message) => message.recipientPhone));
     }
 
     setHydrated(true);
@@ -844,7 +884,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           setVouchers(snapshot.docs.map((item) => withFirestoreDocId<Voucher>(item)));
         }),
         onSnapshot(query(collection(db, firebaseCollections.farmers), orderBy('registrationDate', 'desc')), (snapshot) => {
-          setFarmers(snapshot.docs.map((item) => withFirestoreDocId<Farmer>(item)));
+          const farmerRecords = snapshot.docs.map((item) => withFirestoreDocId<Farmer>(item));
+          privacyExcludedFarmerIdsRef.current = getPrivacyExcludedRecordIds(farmerRecords, (farmer) => farmer.phone);
+          setFarmers(filterPrivacySafePhoneRecords(farmerRecords, (farmer) => farmer.phone));
+          setLogbook((entries) => filterPrivacySafeRelatedRecords(
+            entries,
+            privacyExcludedFarmerIdsRef.current,
+            (entry) => entry.farmerId
+          ));
           markLiveBootstrapReady('farmers');
         }),
         onSnapshot(query(collection(db, firebaseCollections.smsMessages), orderBy('timestamp', 'desc')), (snapshot) => {
@@ -852,16 +899,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           markLiveBootstrapReady('smsMessages');
         }),
         onSnapshot(query(collection(db, firebaseCollections.auditLogs), orderBy('timestamp', 'desc')), (snapshot) => {
-          setAuditLogs(snapshot.docs.map((item) => withFirestoreDocId<AuditLog>(item)));
+          setAuditLogs(filterPrivacySafeContentRecords(
+            snapshot.docs.map((item) => withFirestoreDocId<AuditLog>(item))
+          ));
         }),
         onSnapshot(query(collection(db, firebaseCollections.outboundMessages), orderBy('createdAt', 'desc')), (snapshot) => {
-          setOutboundMessages(snapshot.docs.map((item) => withFirestoreDocId<OutboundMessage>(item)));
+          setOutboundMessages(filterPrivacySafePhoneRecords(
+            snapshot.docs.map((item) => withFirestoreDocId<OutboundMessage>(item)),
+            (message) => message.recipientPhone
+          ));
         }),
         onSnapshot(query(collection(db, firebaseCollections.logbookEntries), orderBy('timestamp', 'desc')), (snapshot) => {
-          setLogbook(snapshot.docs.map((item) => withFirestoreDocId<LogbookEntry>(item)));
+          setLogbook(filterPrivacySafeRelatedRecords(
+            snapshot.docs.map((item) => withFirestoreDocId<LogbookEntry>(item)),
+            privacyExcludedFarmerIdsRef.current,
+            (entry) => entry.farmerId
+          ));
         }),
         onSnapshot(query(collection(db, firebaseCollections.smsTrainingExamples), orderBy('finalReview.reviewedAt', 'desc')), (snapshot) => {
-          setSmsTrainingExamples(snapshot.docs.map((item) => withFirestoreDocId<SmsTrainingExample>(item)));
+          setSmsTrainingExamples(filterPrivacySafePhoneRecords(
+            snapshot.docs.map((item) => withFirestoreDocId<SmsTrainingExample>(item)),
+            (example) => example.phone
+          ));
         }),
       ];
 
@@ -938,14 +997,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setSystemSettings((current) => mergeSystemSettings(bootstrap.systemSettings ?? current));
       setResources((current) => current.length > 0 ? current : (bootstrap.resources ?? []));
       setMarketPrices((current) => current.length > 0 ? current : (bootstrap.marketPrices ?? []));
-      setFarmers((current) => current.length > 0 ? current : (bootstrap.farmers ?? []));
+      setFarmers((current) => current.length > 0 ? current : filterPrivacySafePhoneRecords(
+        bootstrap.farmers ?? [],
+        (farmer) => farmer.phone
+      ));
       setSmsMessages((current) => current.length > 0 ? current : sortVisibleSmsMessages(bootstrap.smsMessages ?? []));
       setUsers((current) => current.length > 0 ? current : (bootstrap.users ?? []));
       setVouchers((current) => current.length > 0 ? current : (bootstrap.vouchers ?? []));
       setAssistanceRecords((current) => current.length > 0 ? current : (bootstrap.assistanceRecords ?? []));
       setFieldVisitTasks((current) => current.length > 0 ? current : (bootstrap.fieldVisitTasks ?? []));
       setAlertHistory((current) => current.length > 0 ? current : (bootstrap.alertHistory ?? []));
-      setOutboundMessages((current) => current.length > 0 ? current : (bootstrap.outboundMessages ?? []));
+      setOutboundMessages((current) => current.length > 0 ? current : filterPrivacySafePhoneRecords(
+        bootstrap.outboundMessages ?? [],
+        (message) => message.recipientPhone
+      ));
 
       markLiveBootstrapReady('systemSettings');
       markLiveBootstrapReady('resources');
@@ -1637,54 +1702,86 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const importPortableBackup = async (backup: PortableAppBackup) => {
+    const excludedBackupFarmerIds = getPrivacyExcludedRecordIds(backup.data.farmers, (farmer) => farmer.phone);
+    const importableFarmers = filterPrivacySafePhoneRecords(backup.data.farmers, (farmer) => farmer.phone);
     const importableSmsMessages = filterVisibleInboundSmsMessages(backup.data.smsMessages);
-    const mergedFarmers = mergeById(farmers, backup.data.farmers);
+    const importableOutboundMessages = filterPrivacySafePhoneRecords(
+      backup.data.outboundMessages,
+      (message) => message.recipientPhone
+    );
+    const importableLogbookEntries = filterPrivacySafeRelatedRecords(
+      backup.data.logbookEntries,
+      excludedBackupFarmerIds,
+      (entry) => entry.farmerId
+    );
+    const importableAuditLogs = filterPrivacySafeContentRecords(backup.data.auditLogs);
+    const importableAssistanceRecords = filterPrivacySafeRelatedRecords(
+      backup.data.assistanceRecords,
+      excludedBackupFarmerIds,
+      (record) => record.farmerId
+    );
+    const importableFieldVisitTasks = filterPrivacySafeRelatedRecords(
+      backup.data.fieldVisitTasks,
+      excludedBackupFarmerIds,
+      (task) => task.farmerId
+    );
+    const importableTrainingExamples = filterPrivacySafeRelatedRecords(
+      filterPrivacySafePhoneRecords(backup.data.smsTrainingExamples, (example) => example.phone),
+      excludedBackupFarmerIds,
+      (example) => example.farmerId
+    );
+    const importableVouchers = filterPrivacySafeRelatedRecords(
+      backup.data.vouchers,
+      excludedBackupFarmerIds,
+      (voucher) => voucher.farmerId
+    );
+    const mergedFarmers = mergeById(farmers, importableFarmers);
     const mergedSmsMessages = mergeById(smsMessages, importableSmsMessages);
-    const mergedOutboundMessages = mergeById(outboundMessages, backup.data.outboundMessages);
+    const mergedOutboundMessages = mergeById(outboundMessages, importableOutboundMessages);
     const mergedResources = mergeById(resources, backup.data.resources);
     const mergedMarketPrices = mergeById(marketPrices, backup.data.marketPrices);
     const mergedKnowledgeArticles = mergeById(knowledgeArticles, backup.data.knowledgeArticles);
-    const mergedLogbook = mergeById(logbook, backup.data.logbookEntries);
-    const mergedAuditLogs = mergeById(auditLogs, backup.data.auditLogs);
+    const mergedLogbook = mergeById(logbook, importableLogbookEntries);
+    const mergedAuditLogs = mergeById(auditLogs, importableAuditLogs);
     const mergedAlertHistory = mergeById(alertHistory, backup.data.alertHistory);
-    const mergedAssistanceRecords = mergeById(assistanceRecords, backup.data.assistanceRecords);
-    const mergedFieldVisitTasks = mergeById(fieldVisitTasks, backup.data.fieldVisitTasks);
-    const mergedTrainingExamples = mergeById(smsTrainingExamples, backup.data.smsTrainingExamples);
-    const mergedVouchers = mergeById(vouchers, backup.data.vouchers);
+    const mergedAssistanceRecords = mergeById(assistanceRecords, importableAssistanceRecords);
+    const mergedFieldVisitTasks = mergeById(fieldVisitTasks, importableFieldVisitTasks);
+    const mergedTrainingExamples = mergeById(smsTrainingExamples, importableTrainingExamples);
+    const mergedVouchers = mergeById(vouchers, importableVouchers);
     const nextSystemSettings = mergeSystemSettings(backup.data.systemSettings);
     const actorName = currentUserProfile?.name ?? 'Brgy. Admin';
     const importedCollections = Object.entries({
-      farmers: backup.data.farmers.length,
+      farmers: importableFarmers.length,
       smsMessages: importableSmsMessages.length,
-      outboundMessages: backup.data.outboundMessages.length,
+      outboundMessages: importableOutboundMessages.length,
       resources: backup.data.resources.length,
       marketPrices: backup.data.marketPrices.length,
       knowledgeArticles: backup.data.knowledgeArticles.length,
-      logbookEntries: backup.data.logbookEntries.length,
-      auditLogs: backup.data.auditLogs.length,
+      logbookEntries: importableLogbookEntries.length,
+      auditLogs: importableAuditLogs.length,
       alertHistory: backup.data.alertHistory.length,
-      assistanceRecords: backup.data.assistanceRecords.length,
-      fieldVisitTasks: backup.data.fieldVisitTasks.length,
-      smsTrainingExamples: backup.data.smsTrainingExamples.length,
-      vouchers: backup.data.vouchers.length,
+      assistanceRecords: importableAssistanceRecords.length,
+      fieldVisitTasks: importableFieldVisitTasks.length,
+      smsTrainingExamples: importableTrainingExamples.length,
+      vouchers: importableVouchers.length,
       systemSettings: 1,
     })
       .filter(([, count]) => count > 0)
       .map(([collectionName]) => collectionName);
     const importedRecords =
-      backup.data.farmers.length +
+      importableFarmers.length +
       importableSmsMessages.length +
-      backup.data.outboundMessages.length +
+      importableOutboundMessages.length +
       backup.data.resources.length +
       backup.data.marketPrices.length +
       backup.data.knowledgeArticles.length +
-      backup.data.logbookEntries.length +
-      backup.data.auditLogs.length +
+      importableLogbookEntries.length +
+      importableAuditLogs.length +
       backup.data.alertHistory.length +
-      backup.data.assistanceRecords.length +
-      backup.data.fieldVisitTasks.length +
-      backup.data.smsTrainingExamples.length +
-      backup.data.vouchers.length;
+      importableAssistanceRecords.length +
+      importableFieldVisitTasks.length +
+      importableTrainingExamples.length +
+      importableVouchers.length;
     const importAuditLog: AuditLog = {
       id: createEntityId('AUD'),
       timestamp: new Date().toISOString(),
@@ -1693,9 +1790,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       details: `Nag-import ng backup para sa ${importedCollections.join(', ') || 'walang collection'} (${importedRecords} records).`,
     };
 
-    setFarmers(sortByDateDescending(mergedFarmers.items, (item) => item.registrationDate));
+    setFarmers(sortByDateDescending(
+      filterPrivacySafePhoneRecords(mergedFarmers.items, (farmer) => farmer.phone),
+      (item) => item.registrationDate
+    ));
     setSmsMessages(sortVisibleSmsMessages(mergedSmsMessages.items));
-    setOutboundMessages(sortByDateDescending(mergedOutboundMessages.items, (item) => item.createdAt));
+    setOutboundMessages(sortByDateDescending(
+      filterPrivacySafePhoneRecords(mergedOutboundMessages.items, (message) => message.recipientPhone),
+      (item) => item.createdAt
+    ));
     setResources(sortByDateDescending(mergedResources.items, (item) => item.lastUpdated));
     setMarketPrices(sortByDateDescending(mergedMarketPrices.items, (item) => item.updatedAt));
     setKnowledgeArticles(sortByDateDescending(mergedKnowledgeArticles.items, (item) => item.lastUpdated));
@@ -1710,18 +1813,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     if (usingLiveData) {
       await Promise.all([
-        ...backup.data.farmers.map((item) => farmerRepository.createFarmer(item)),
+        ...importableFarmers.map((item) => farmerRepository.createFarmer(item)),
         ...importableSmsMessages.map((item) => smsRepository.createInboundMessage(item)),
-        ...backup.data.outboundMessages.map((item) => outboundMessageRepository.createOutboundMessage(item)),
+        ...importableOutboundMessages.map((item) => outboundMessageRepository.createOutboundMessage(item)),
         ...backup.data.resources.map((item) => resourceRepository.createResource(item)),
         ...backup.data.marketPrices.map((item) => marketPriceRepository.createMarketPriceEntry(item)),
-        ...backup.data.logbookEntries.map((item) => logbookRepository.createEntry(item)),
-        ...backup.data.auditLogs.map((item) => auditRepository.createAuditLog(item)),
+        ...importableLogbookEntries.map((item) => logbookRepository.createEntry(item)),
+        ...importableAuditLogs.map((item) => auditRepository.createAuditLog(item)),
         ...backup.data.alertHistory.map((item) => alertHistoryRepository.createAlertHistoryEntry(item)),
-        ...backup.data.assistanceRecords.map((item) => assistanceRepository.createAssistanceRecord(item)),
-        ...backup.data.fieldVisitTasks.map((item) => fieldVisitRepository.createFieldVisitTask(item)),
-        ...backup.data.smsTrainingExamples.map((item) => smsTrainingRepository.createTrainingExample(item)),
-        ...backup.data.vouchers.map((item) => voucherRepository.createVoucher(item)),
+        ...importableAssistanceRecords.map((item) => assistanceRepository.createAssistanceRecord(item)),
+        ...importableFieldVisitTasks.map((item) => fieldVisitRepository.createFieldVisitTask(item)),
+        ...importableTrainingExamples.map((item) => smsTrainingRepository.createTrainingExample(item)),
+        ...importableVouchers.map((item) => voucherRepository.createVoucher(item)),
         knowledgeRepository.updateKnowledgeArticles(mergedKnowledgeArticles.items),
         systemSettingsRepository.saveSettings(nextSystemSettings),
         auditRepository.createAuditLog(importAuditLog),

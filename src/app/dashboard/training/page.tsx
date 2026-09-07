@@ -24,7 +24,7 @@ export default function TrainingPage() {
         e.preventDefault();
         toast({
             title: 'Salamat sa iyong Feedback!',
-            description: 'Natanggap na namin ang iyong isinumite. Gagamitin ito para mapabuti ang performance ng AI sa hinaharap.'
+            description: 'Natanggap na namin ang iyong isinumite. Gagamitin ito para mapabuti ang kalidad ng pagsusuri sa mga susunod na mensahe.'
         });
         (e.target as HTMLFormElement).reset();
     };

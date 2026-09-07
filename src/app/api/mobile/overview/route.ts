@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 import { firebaseCollections } from "@/lib/firebase/collections";
 import { getServerFirestore } from "@/lib/firebase/server";
+import { filterVisibleInboundSmsMessages } from "@/lib/inbound-sms-screening";
 import { authenticateInteractiveRequest } from "@/lib/server/interactive-auth";
+import { filterPrivacySafePhoneRecords } from "@/lib/sms-privacy";
 import type { Farmer, SmsMessage } from "@/lib/types";
 
 function byRecentDate(left?: string, right?: string) {
@@ -22,20 +24,20 @@ export async function GET(request: Request) {
     db.collection(firebaseCollections.smsMessages).limit(300).get(),
   ]);
 
-  const farmers = farmersSnapshot.docs.map((documentSnapshot) => {
+  const farmers = filterPrivacySafePhoneRecords(farmersSnapshot.docs.map((documentSnapshot) => {
     const farmer = documentSnapshot.data() as Farmer;
     return {
       ...farmer,
       id: farmer.id ?? documentSnapshot.id,
     };
-  });
-  const messages = messagesSnapshot.docs.map((documentSnapshot) => {
+  }), (farmer) => farmer.phone);
+  const messages = filterVisibleInboundSmsMessages(messagesSnapshot.docs.map((documentSnapshot) => {
     const message = documentSnapshot.data() as SmsMessage;
     return {
       ...message,
       id: message.id ?? documentSnapshot.id,
     };
-  });
+  }));
 
   const recentMessages = [...messages]
     .sort((left, right) => byRecentDate(left.timestamp, right.timestamp))

@@ -192,6 +192,7 @@ export function AppSidebar() {
   
   const detailedBarangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { title: "Barangay Analytics", href: "/dashboard/oversight", icon: BarChart },
       { title: "Operations Center", href: "/dashboard/operations", icon: ClipboardList },
       { title: "SMS Feed", href: "/dashboard/sms-feed", icon: MessageSquare },
       {
@@ -213,7 +214,6 @@ export function AppSidebar() {
           { title: "Database", href: "/dashboard/farmers" },
           { title: "Follow-up Queue", href: "/dashboard/follow-up" },
           { title: "Aktibong Sakahan", href: "/dashboard/active-farms" },
-          { title: "Pangkalahatang-ideya", href: "/dashboard/oversight" },
         ],
       },
       {
@@ -232,7 +232,7 @@ export function AppSidebar() {
         icon: Book,
         subItems: [
           { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base" },
-          { title: "AI Toolkit", href: "/dashboard/ai-toolkit" },
+          { title: "Mga Kasangkapang Pagsusuri", href: "/dashboard/ai-toolkit" },
           { title: "Pagsasanay ng AEW", href: "/dashboard/training" },
         ],
       },
@@ -243,6 +243,7 @@ export function AppSidebar() {
 
   const simpleBarangayNavItems: NavItem[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { title: "Barangay Analytics", href: "/dashboard/oversight", icon: BarChart },
       { title: "Operations Center", href: "/dashboard/operations", icon: ClipboardList },
       {
         title: "Magsasaka",
@@ -288,23 +289,23 @@ export function AppSidebar() {
     ? barangayNavItems
     : barangayNavItems.filter((item) => !barangayWorkspaceOnlyRoutes.has(item.href));
   const developerNavItems: NavItem[] = [
-      { title: "Superadmin Home", href: "/dashboard/developer", icon: Shield },
+      { title: "Developer Home", href: "/dashboard/developer", icon: Shield },
       { title: "User Management", href: "/dashboard/developer#user-management", icon: Users },
       { title: "Access Requests", href: "/dashboard/developer#access-requests", icon: Users },
-      { title: "AI Analytics", href: "/dashboard/reports", icon: BarChart },
-      { title: "Export Center", href: "/dashboard/export-center", icon: FileJson },
-      { title: "Archive Management", href: "/dashboard/archive-management", icon: Archive },
-      { title: "Audit Logs", href: "/dashboard/audit-log", icon: History },
+      { title: "Barangay Analytics", href: "/dashboard/oversight", icon: BarChart },
+      { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart },
+      { title: "Download Center", href: "/dashboard/export-center", icon: FileJson },
+      { title: "Archive ng Records", href: "/dashboard/archive-management", icon: Archive },
+      { title: "Tala ng mga Aksyon", href: "/dashboard/audit-log", icon: History },
       { title: "System Settings", href: "/dashboard/settings", icon: Settings },
       { title: "Magdagdag ng User", href: "/dashboard/developer/add-user", icon: Users },
-      { title: "Mag-provision ng Superadmin", href: "/dashboard/developer/add-superadmin", icon: Shield },
       { title: "Training Data", href: "/dashboard/developer/training-data", icon: FileJson },
       { title: "Data Center", href: "/dashboard/data-center", icon: Database },
       { title: "Aking Account", href: "/dashboard/account", icon: Settings },
     ];
   const navItems = isDeveloper ? developerNavItems : filteredBarangayNavItems;
-  const sidebarTitle = isDeveloper ? "Superadmin Console" : "Kaagapay ng Magsasaka";
-  const menuLabel = isDeveloper ? "Menu ng Superadmin" : "Menu ng Barangay";
+  const sidebarTitle = isDeveloper ? "Developer Console" : "Kaagapay ng Magsasaka";
+  const menuLabel = isDeveloper ? "Menu ng Developer" : "Menu ng Barangay";
 
   return (
     <Sidebar collapsible="icon">

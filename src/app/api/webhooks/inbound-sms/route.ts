@@ -7,6 +7,7 @@ import { verifyTextbeeWebhookSignature } from "@/lib/providers/sms/textbee";
 import { verifySmsgateWebhookSignature } from "@/lib/providers/sms/smsgate";
 import { enqueueInboundWebhook, peekInboundWebhookCount } from "@/lib/server/inbound-sms-queue";
 import { persistLiveInboundSms } from "@/lib/services/server-live-inbound-sms-service";
+import { redactSmsSender } from "@/lib/sms-privacy";
 import { readWebhookRequest } from "@/lib/webhook-request";
 
 function isAuthorized(
@@ -92,6 +93,17 @@ export async function POST(request: Request) {
     );
   }
 
+  if (inbound.screening.ignored) {
+    return NextResponse.json({
+      accepted: true,
+      persisted: false,
+      queued: false,
+      ignored: true,
+      ignoreReason: inbound.screening.reason,
+      provider: inbound.provider,
+    });
+  }
+
   if (isLiveMode) {
     try {
       const result = await persistLiveInboundSms({
@@ -116,7 +128,7 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("Live inbound SMS webhook failed.", {
         provider: inbound.provider,
-        phone: inbound.phone,
+        phone: redactSmsSender(inbound.phone),
         externalId: inbound.externalId,
         error,
       });
