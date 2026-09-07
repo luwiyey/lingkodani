@@ -45,7 +45,7 @@ jobs:
         if: always()
 
       - name: Run unit tests
-        run: npm test -- --coverage --verbose
+        run: npm test -- --runInBand --coverage
         if: always()
 
       - name: Install Chromium for browser checks
