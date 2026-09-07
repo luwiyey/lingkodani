@@ -1,6 +1,8 @@
 import type { Farmer, SmsMessage, User } from "@/lib/types";
 import { isSmsAssignedToUser } from "@/lib/sms-assignment";
 
+const BARANGAY_TIME_ZONE = "Asia/Manila";
+
 export type AssignmentSuggestion = {
   userId: string;
   name: string;
@@ -77,6 +79,19 @@ function parseMinutes(value?: string) {
   return hours * 60 + minutes;
 }
 
+function getBarangayMinutes(now: number) {
+  const parts = new Intl.DateTimeFormat("en-PH", {
+    timeZone: BARANGAY_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(now));
+  const hours = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minutes = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+
+  return hours * 60 + minutes;
+}
+
 function isWithinShiftWindow(user: User, now = Date.now()) {
   const startMinutes = parseMinutes(user.shiftStartTime);
   const endMinutes = parseMinutes(user.shiftEndTime);
@@ -85,8 +100,7 @@ function isWithinShiftWindow(user: User, now = Date.now()) {
     return null;
   }
 
-  const currentDate = new Date(now);
-  const currentMinutes = currentDate.getHours() * 60 + currentDate.getMinutes();
+  const currentMinutes = getBarangayMinutes(now);
 
   if (startMinutes < endMinutes) {
     return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
