@@ -117,6 +117,7 @@ jobs:
         with:
           name: next-build
           path: .next/
+          include-hidden-files: true
           retention-days: 7
 
   deploy-preview:
@@ -130,20 +131,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: next-build
-          path: .next/
+          node-version: "22"
 
-      - name: Deploy to Vercel Preview
+      - name: Install Vercel CLI
+        run: npm install --global vercel@58.9.0
+
+      - name: Deploy Vercel preview
         id: deploy
-        uses: vercel/action@v6
-        with:
-          token: ${{ secrets.VERCEL_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-comment: true
+        run: |
+          deployment_url=$(vercel deploy --yes --token "$VERCEL_TOKEN")
+          echo "preview_url=$deployment_url" >> "$GITHUB_OUTPUT"
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
@@ -158,19 +160,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: next-build
-          path: .next/
+          node-version: "22"
 
-      - name: Deploy to Vercel Staging
-        uses: vercel/action@v6
-        with:
-          token: ${{ secrets.VERCEL_TOKEN }}
-          environment: staging
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Vercel CLI
+        run: npm install --global vercel@58.9.0
+
+      - name: Deploy to Vercel staging
+        run: vercel deploy --yes --target=staging --token "$VERCEL_TOKEN"
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
@@ -185,19 +186,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: next-build
-          path: .next/
+          node-version: "22"
 
-      - name: Deploy to Vercel Production
-        uses: vercel/action@v6
-        with:
-          token: ${{ secrets.VERCEL_TOKEN }}
-          environment: production
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Vercel CLI
+        run: npm install --global vercel@58.9.0
+
+      - name: Deploy to Vercel production
+        run: vercel deploy --prod --yes --token "$VERCEL_TOKEN"
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
