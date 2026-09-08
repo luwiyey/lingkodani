@@ -32,6 +32,7 @@ const app = getApps().length > 0
 
 const db = getFirestore(app);
 const auth = getAuth(app);
+const seedUserPassword = process.env.SEED_USER_PASSWORD;
 
 const farmers = [
   {
@@ -442,9 +443,15 @@ for (const user of users) {
       throw error;
     }
 
+    if (!seedUserPassword) {
+      throw new Error(
+        `Cannot create ${user.email}: set SEED_USER_PASSWORD to a temporary strong password first.`,
+      );
+    }
+
     firebaseUser = await auth.createUser({
       email: user.email,
-      password: "Lingkod!Seed01",
+      password: seedUserPassword,
       displayName: user.name,
     });
   }

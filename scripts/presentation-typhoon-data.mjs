@@ -113,6 +113,137 @@ const FARM_SCENARIOS = [
   },
 ];
 
+const REGULAR_SCENARIOS = [
+  {
+    intent: "CROP_UPDATE",
+    urgency: "low",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `Kailan po pinakamainam mag-abono sa ${farmer.crop}? Nasa vegetative stage na ang tanim sa ${farmer.sitio}.`,
+    advice: "I-check muna ang crop stage, lagay ng lupa, at huling application. Ipa-validate ang tamang timing at dami bago magdagdag ng pataba.",
+  },
+  {
+    intent: "REQUEST",
+    urgency: "medium",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `May available po bang binhi o punla para sa susunod na taniman ng ${farmer.crop}?`,
+    advice: "I-check ang barangay inventory at eligibility record, saka ibigay ang release schedule kung may available na binhi o punla.",
+  },
+  {
+    intent: "PEST_DISEASE",
+    urgency: "medium",
+    safetyFlag: "Medium",
+    tone: "Nag-aalala",
+    message: (farmer) => `May maliliit na butas at kulubot na dahon sa ${farmer.crop}. Kaunti pa pero dumarami sa isang bahagi.`,
+    advice: "Kunan ng malinaw na larawan, bilangin ang apektadong halaman, at ipa-validate ang peste bago gumamit ng anumang pesticide.",
+  },
+  {
+    intent: "PRICE_CHECK",
+    urgency: "low",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `Magkano po ang huling verified na presyo ng ${farmer.crop} sa bagsakan?`,
+    advice: "Ibigay ang pinakahuling verified Price Watch entry at ipaalala na kumpirmahin ang presyo at buying schedule bago bumiyahe.",
+  },
+  {
+    intent: "HARVEST",
+    urgency: "medium",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `Malapit na po anihin ang ${farmer.crop}. Maaari bang magpa-schedule ng drying o storage support?`,
+    advice: "I-record ang tinatayang harvest date at volume, saka i-coordinate ang available drying, hauling, o temporary storage support.",
+  },
+  {
+    intent: "REQUEST",
+    urgency: "medium",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `Pwede po bang makahiram ng sprayer o hand tools para sa ${farmer.crop} dito sa ${farmer.sitio}?`,
+    advice: "I-check ang inventory, kondisyon ng kagamitan, at schedule ng release bago gumawa ng assistance o voucher record.",
+  },
+  {
+    intent: "CROP_UPDATE",
+    urgency: "medium",
+    safetyFlag: "Medium",
+    tone: "Nag-aalala",
+    message: (farmer) => `Hindi pantay ang tubo ng ${farmer.crop}; mahina ang nasa mababang bahagi ng lupa.`,
+    advice: "Suriin ang drainage, moisture, at lawak ng mahinang tubo. Iwasang magdagdag agad ng input nang walang field validation.",
+  },
+  {
+    intent: "PEST_DISEASE",
+    urgency: "high",
+    safetyFlag: "High",
+    tone: "Kritikal",
+    message: (farmer) => `May daga at kuhol na sumisira sa ${farmer.crop} tuwing gabi. Malaki na ang apektadong bahagi.`,
+    advice: "Ipa-validate ang lawak ng damage at gumamit muna ng ligtas na traps o manual collection bago chemical control.",
+  },
+  {
+    intent: "WEATHER_HELP",
+    urgency: "medium",
+    safetyFlag: "Medium",
+    tone: "Nag-aalala",
+    message: (farmer) => `Masyadong mainit at mabilis matuyo ang lupa ng ${farmer.crop}. Anong oras po ligtas magdilig?`,
+    advice: "Mas mainam ang maagang umaga o hapon. I-check ang soil moisture at iwasan ang sobrang pagdidilig o field work sa matinding init.",
+  },
+  {
+    intent: "CROP_UPDATE",
+    urgency: "low",
+    safetyFlag: "Low",
+    tone: "Positibo",
+    message: (farmer) => `Maayos na po ulit ang ${farmer.crop} pagkatapos ng huling payo. Kaunti na lang ang nakikitang sintomas.`,
+    advice: "I-record ang improvement, ipagpatuloy ang monitoring, at mag-follow up kung bumalik o lumawak ang sintomas.",
+  },
+  {
+    intent: "REQUEST",
+    urgency: "medium",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `Maaari po bang magpa-ocular visit para sa ${farmer.crop}? Hindi namin matukoy ang sanhi ng problema.`,
+    advice: "Gumawa ng field visit request na may location, crop stage, sintomas, at available schedule ng magsasaka.",
+  },
+  {
+    intent: "PEST_DISEASE",
+    urgency: "medium",
+    safetyFlag: "Medium",
+    tone: "Nag-aalala",
+    message: (farmer) => `May puti at parang pulbos sa ilang dahon ng ${farmer.crop}. Ano po kaya ito?`,
+    advice: "Iwasang magbigay agad ng diagnosis. Kumuha ng larawan, tingnan ang panahon at lawak ng sintomas, at ipa-review sa AEW.",
+  },
+  {
+    intent: "REQUEST",
+    urgency: "low",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `Paano po mag-update ng lawak ng taniman at bagong crop sa farmer record ko sa ${farmer.sitio}?`,
+    advice: "Ipa-confirm ang farmer identity at bagong farm details, pagkatapos ay ipa-review sa barangay bago baguhin ang profile.",
+  },
+  {
+    intent: "CROP_UPDATE",
+    urgency: "medium",
+    safetyFlag: "Medium",
+    tone: "Nag-aalala",
+    message: (farmer) => `Naninilaw ang ${farmer.crop} kahit regular ang dilig. Wala naman pong nakikitang insekto.`,
+    advice: "I-check ang drainage, ugat, soil condition, at fertilization history bago magrekomenda ng correction.",
+  },
+  {
+    intent: "PRICE_CHECK",
+    urgency: "low",
+    safetyFlag: "Low",
+    tone: "Neutral",
+    message: (farmer) => `Bukas po ba ang buying station para sa ${farmer.crop} at may biyahe ba mula ${farmer.sitio}?`,
+    advice: "Kumpirmahin ang buying station schedule, transport condition, at pinakahuling presyo bago bumiyahe ang magsasaka.",
+  },
+  {
+    intent: "HARVEST",
+    urgency: "medium",
+    safetyFlag: "Low",
+    tone: "Nag-aalala",
+    message: (farmer) => `May ilang bahagi ng ${farmer.crop} na hinog na pero hindi pa pantay ang buong plot. Ano po ang practical na gawin?`,
+    advice: "Ipa-assess ang maturity at maaaring unahin ang selective harvest kung ligtas at makatutulong itong bawasan ang posibleng pagkawala.",
+  },
+];
+
 function addMinutes(timestamp, minutes) {
   return new Date(new Date(timestamp).getTime() + minutes * 60_000).toISOString();
 }
@@ -126,6 +257,19 @@ function listSeasonDays() {
     ...Array.from({ length: 31 }, (_, index) => `2026-08-${String(index + 1).padStart(2, "0")}`),
     ...Array.from({ length: 8 }, (_, index) => `2026-09-${String(index + 1).padStart(2, "0")}`),
   ];
+}
+
+function listRegularSeasonDays() {
+  const days = [];
+  const current = new Date("2026-02-01T00:00:00Z");
+  const last = new Date("2026-07-31T00:00:00Z");
+
+  while (current <= last) {
+    days.push(current.toISOString().slice(0, 10));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return days;
 }
 
 function buildFlowFields(index, timestamp, urgency) {
@@ -184,19 +328,64 @@ function buildFlowFields(index, timestamp, urgency) {
   };
 }
 
-export const typhoonSeasonSmsMessages = listSeasonDays().flatMap((date, dayIndex) => (
-  [0, 1].map((slot) => {
+export const regularSeasonSmsMessages = listRegularSeasonDays().flatMap((date, dayIndex) => {
+  const slots = [];
+
+  if (dayIndex % 2 === 0) {
+    slots.push(0);
+  }
+
+  if (dayIndex % 7 === 0) {
+    slots.push(1);
+  }
+
+  return slots.map((slot) => {
     const index = dayIndex * 2 + slot;
-    const farmer = FARMERS[(dayIndex * 3 + slot * 5) % FARMERS.length];
-    const scenarios = slot === 0 ? WEATHER_SCENARIOS : FARM_SCENARIOS;
-    const scenario = scenarios[(dayIndex + slot) % scenarios.length];
-    const hour = slot === 0 ? 0 + (dayIndex % 5) : 5 + (dayIndex % 4);
-    const minute = (17 + index * 7) % 60;
+    const farmer = FARMERS[(dayIndex * 3 + slot * 4) % FARMERS.length];
+    const scenario = REGULAR_SCENARIOS[(dayIndex + slot * 5) % REGULAR_SCENARIOS.length];
+    const hour = 1 + ((dayIndex + slot * 4) % 10);
+    const minute = (11 + index * 9) % 60;
     const timestamp = `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00Z`;
     const compactDate = date.replaceAll("-", "");
 
     return {
-      id: `SMS${compactDate}${slot === 0 ? "B" : "C"}`,
+      id: `SMSREG${compactDate}${slot === 0 ? "A" : "B"}`,
+      farmerId: farmer.id,
+      farmerName: farmer.name,
+      phone: farmer.phone,
+      message: scenario.message(farmer),
+      timestamp,
+      parsedIntent: scenario.intent,
+      urgency: scenario.urgency,
+      aiAdvice: scenario.advice,
+      aiConfidence: Number((0.82 + (index % 15) / 100).toFixed(2)),
+      safetyFlag: scenario.safetyFlag,
+      tone: scenario.tone,
+      analysisSource: index % 6 === 0 ? "ai_fallback" : "ai",
+      detectedLanguage: index % 5 === 0 ? "Taglish" : "Filipino",
+      caseId: `CASE-REGULAR-${compactDate}-${slot + 1}`,
+      cropStage: ["seedling", "vegetative", "flowering", "fruiting", "pre_harvest"][index % 5],
+      sentiment: scenario.urgency === "high" ? "concerned" : "neutral",
+      sourceProvider: "generic",
+      ...buildFlowFields(index, timestamp, scenario.urgency),
+    };
+  });
+});
+
+export const typhoonSeasonSmsMessages = listSeasonDays().flatMap((date, dayIndex) => (
+  [0, 1, 2, 3, 4].map((slot) => {
+    const index = dayIndex * 5 + slot;
+    const farmer = FARMERS[(dayIndex * 3 + slot * 2) % FARMERS.length];
+    const scenarios = slot % 2 === 0 ? WEATHER_SCENARIOS : FARM_SCENARIOS;
+    const scenario = scenarios[(dayIndex + slot) % scenarios.length];
+    const hour = [0, 3, 5, 8, 11][slot] + (dayIndex % 2);
+    const minute = (17 + index * 7) % 60;
+    const timestamp = `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00Z`;
+    const compactDate = date.replaceAll("-", "");
+    const suffix = ["B", "C", "D", "E", "F"][slot];
+
+    return {
+      id: `SMS${compactDate}${suffix}`,
       farmerId: farmer.id,
       farmerName: farmer.name,
       phone: farmer.phone,
@@ -218,6 +407,24 @@ export const typhoonSeasonSmsMessages = listSeasonDays().flatMap((date, dayIndex
     };
   })
 ));
+
+export const regularSeasonOutboundMessages = regularSeasonSmsMessages
+  .filter((message) => message.respondedAt)
+  .map((message) => ({
+    id: `OUT${message.id.slice(3)}`,
+    smsMessageId: message.id,
+    recipientPhone: message.phone,
+    audience: "farmer",
+    purpose: "manual_reply",
+    body: message.aiAdvice,
+    status: "delivered",
+    provider: "smsgate",
+    createdAt: addMinutes(message.timestamp, 8),
+    sentAt: addMinutes(message.timestamp, 10),
+    lastStatusAt: message.respondedAt,
+    deliveryReceivedAt: message.respondedAt,
+    attempts: 1,
+  }));
 
 export const typhoonSeasonOutboundMessages = typhoonSeasonSmsMessages
   .filter((message) => message.respondedAt)
@@ -247,11 +454,30 @@ export const typhoonSeasonAuditLogs = typhoonSeasonSmsMessages.map((message, ind
   severity: message.urgency === "high" ? "warning" : "info",
 }));
 
+export const regularSeasonAuditLogs = regularSeasonSmsMessages.map((message, index) => ({
+  id: `AUD-REGULAR-${String(index + 1).padStart(3, "0")}`,
+  timestamp: message.respondedAt ?? addMinutes(message.timestamp, 3),
+  user: message.assignedTo ?? "Lingkod-Ani Intake",
+  action: message.caseStatus === "open" ? "QUEUE_SMS_CASE" : message.caseStatus === "closed" ? "CLOSE_SMS_CASE" : "UPDATE_SMS_CASE",
+  details: `${message.farmerName}: ${message.parsedIntent} concern recorded as ${message.caseStatus}.`,
+  category: "operations",
+  severity: message.urgency === "high" ? "warning" : "info",
+}));
+
 export const typhoonSeasonLogbookEntries = typhoonSeasonSmsMessages.map((message, index) => ({
   id: `LOG-TYPHOON-${String(index + 1).padStart(3, "0")}`,
   farmerId: message.farmerId,
   timestamp: message.timestamp,
   type: message.parsedIntent === "WEATHER_HELP" || message.parsedIntent === "EMERGENCY" ? "Insidente" : "SMS",
   title: message.parsedIntent === "WEATHER_HELP" || message.parsedIntent === "EMERGENCY" ? "Ulat sa panahon" : "Ulat mula sa magsasaka",
+  description: message.message,
+}));
+
+export const regularSeasonLogbookEntries = regularSeasonSmsMessages.map((message, index) => ({
+  id: `LOG-REGULAR-${String(index + 1).padStart(3, "0")}`,
+  farmerId: message.farmerId,
+  timestamp: message.timestamp,
+  type: message.parsedIntent === "WEATHER_HELP" || message.parsedIntent === "EMERGENCY" ? "Insidente" : "SMS",
+  title: message.parsedIntent === "WEATHER_HELP" || message.parsedIntent === "EMERGENCY" ? "Ulat sa panahon" : "Regular na ulat mula sa magsasaka",
   description: message.message,
 }));

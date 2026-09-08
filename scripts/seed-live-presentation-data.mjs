@@ -1,19 +1,20 @@
 import dotenv from "dotenv";
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getFirestore, writeBatch } from "firebase/firestore";
 import {
-  doc,
-  getFirestore,
-  writeBatch,
-} from "firebase/firestore";
-import {
+  regularSeasonAuditLogs,
+  regularSeasonLogbookEntries,
+  regularSeasonOutboundMessages,
+  regularSeasonSmsMessages,
   typhoonSeasonAuditLogs,
   typhoonSeasonLogbookEntries,
   typhoonSeasonOutboundMessages,
   typhoonSeasonSmsMessages,
 } from "./presentation-typhoon-data.mjs";
 
-dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env.local", override: true });
+dotenv.config();
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -1539,7 +1540,7 @@ const smsMessages = [
   },
 ];
 
-smsMessages.push(...typhoonSeasonSmsMessages);
+smsMessages.push(...regularSeasonSmsMessages, ...typhoonSeasonSmsMessages);
 
 for (const farmer of farmers) {
   const latestTimestamp = smsMessages
@@ -2051,7 +2052,7 @@ const outboundMessages = [
   },
 ];
 
-outboundMessages.push(...typhoonSeasonOutboundMessages);
+outboundMessages.push(...regularSeasonOutboundMessages, ...typhoonSeasonOutboundMessages);
 
 const resources = [
   { id: "RES201", name: "Urea 46-0-0", category: "Pataba", inventoryGroup: "Para sa Pananim", subcategory: "Nitrogen fertilizer", intendedUse: "Pagpapalago at Pagpapataba", stock: 18, unit: "sako", lastUpdated: "2026-05-06T08:00:00Z" },
@@ -2657,7 +2658,7 @@ const auditLogs = [
   { id: "AUD216", timestamp: "2026-09-07T02:28:00Z", user: "Brgy. Admin", action: "CREATE_FIELD_VISIT", details: "Nag-schedule ng urgent rice bug validation para kay Danilo Catbagan.", category: "operations", severity: "critical" },
 ];
 
-auditLogs.push(...typhoonSeasonAuditLogs);
+auditLogs.push(...regularSeasonAuditLogs, ...typhoonSeasonAuditLogs);
 
 const logbookEntries = [
   { id: "LOG201", farmerId: "FARM101", timestamp: "2026-02-08T06:20:00Z", type: "SMS", title: "Brown hopper report", description: "Nag-ulat si Ernesto Guiang ng tumitinding brown hopper sa palay." },
@@ -2676,7 +2677,7 @@ const logbookEntries = [
   { id: "LOG214", farmerId: "FARM109", timestamp: "2026-09-07T02:28:00Z", type: "SMS", title: "Urgent rice bug report", description: "Naka-open ang high-priority rice bug concern at may scheduled validation sa susunod na field route." },
 ];
 
-logbookEntries.push(...typhoonSeasonLogbookEntries);
+logbookEntries.push(...regularSeasonLogbookEntries, ...typhoonSeasonLogbookEntries);
 
 const knowledgeArticles = [
   {
@@ -2848,8 +2849,12 @@ async function upsertCollection(collectionName, docs) {
 }
 
 async function run() {
-  const email = process.env.LIVE_QA_EMAIL ?? "dev@lingkodani.gov.ph";
-  const password = process.env.LIVE_QA_PASSWORD ?? "Lingkod!Seed01";
+  const email = process.env.LIVE_QA_EMAIL;
+  const password = process.env.LIVE_QA_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error("Missing LIVE_QA_EMAIL or LIVE_QA_PASSWORD environment variables.");
+  }
 
   await signInWithEmailAndPassword(auth, email, password);
 

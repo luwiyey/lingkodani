@@ -22,7 +22,7 @@ export const DEMO_COLLECTION_STORAGE_KEYS = [
 ] as const;
 
 const DEMO_DATASET_VERSION_STORAGE_KEY = "lingkodAniDemoDatasetVersion";
-export const DEMO_DATASET_VERSION = "2026-09-07-full-scenario-v1";
+export const DEMO_DATASET_VERSION = "2026-09-08-ten-sample-scenario-v2";
 
 type DemoCollectionStoreOptions<T> = {
   storageKey: string;
