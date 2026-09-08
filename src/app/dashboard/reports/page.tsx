@@ -1,6 +1,7 @@
 ﻿
 'use client';
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { Bot, Calendar as CalendarIcon, CalendarRange, ArrowDownToLine, AlertTriangle } from 'lucide-react';
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 import { Button } from '@/components/ui/button';
@@ -12,11 +13,13 @@ import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/auth-context';
+import { useData } from '@/context/data-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { ReportsTimeframeProvider, useReportsTimeframe } from '@/context/reports-timeframe-context';
 import { ExportCenterPanel } from '@/components/reports/export-center-panel';
 import { buildSummaryMetricsCsv } from '@/lib/report-export-center';
+import { isDemoRuntimeActive } from '@/lib/runtime-mode';
 
 // Chart Imports
 import { IssueTrendsChart } from '@/components/reports/issue-trends-chart';
@@ -555,7 +558,7 @@ function ReportsPageContent() {
           </div>
           <div className="lg:col-span-3">
             <p className="text-xs text-muted-foreground">
-              Ang custom analytics range ay naka-apply mula {resolvedWindow.start.toLocaleDateString('en-PH')} hanggang {resolvedWindow.end.toLocaleDateString('en-PH')}.
+              Ang aktibong analytics ay mula {resolvedWindow.start.toLocaleDateString('en-PH')} hanggang {resolvedWindow.end.toLocaleDateString('en-PH')}.
             </p>
           </div>
         </CardContent>
@@ -978,8 +981,56 @@ function ReportsPageContent() {
 }
 
 export default function ReportsPage() {
+    const { currentUser, currentUserProfile } = useAuth();
+    const {
+      smsMessages,
+      farmers,
+      marketPrices,
+      alertHistory,
+      assistanceRecords,
+      fieldVisitTasks,
+    } = useData();
+    const usingDemoSandbox = isDemoRuntimeActive({ currentUser, currentUserProfile });
+    const reportTimeline = useMemo(() => {
+      if (!usingDemoSandbox) {
+        return { start: undefined, end: new Date() };
+      }
+
+      const smsTimestamps = smsMessages
+        .map((message) => new Date(message.timestamp).getTime())
+        .filter((value) => !Number.isNaN(value));
+      const allTimestamps = [
+        ...smsMessages.map((message) => message.timestamp),
+        ...farmers.map((farmer) => farmer.lastSmsActivity || farmer.registrationDate),
+        ...marketPrices.map((entry) => entry.updatedAt),
+        ...alertHistory.map((entry) => entry.timestamp),
+        ...assistanceRecords.map((entry) => entry.updatedAt),
+        ...fieldVisitTasks.map((entry) => entry.updatedAt),
+      ]
+        .map((value) => new Date(value).getTime())
+        .filter((value) => !Number.isNaN(value));
+
+      return {
+        start: smsTimestamps.length > 0 ? new Date(Math.min(...smsTimestamps)) : undefined,
+        end: allTimestamps.length > 0 ? new Date(Math.max(...allTimestamps)) : new Date(),
+      };
+    }, [
+      alertHistory,
+      assistanceRecords,
+      farmers,
+      fieldVisitTasks,
+      marketPrices,
+      smsMessages,
+      usingDemoSandbox,
+    ]);
+    const reportTimelineKey = `${reportTimeline.start?.toISOString() ?? 'current'}:${reportTimeline.end.toISOString()}`;
+
     return (
-      <ReportsTimeframeProvider>
+      <ReportsTimeframeProvider
+        key={reportTimelineKey}
+        anchorDate={reportTimeline.end}
+        initialStartDate={reportTimeline.start}
+      >
         <ReportsPageContent />
       </ReportsTimeframeProvider>
     );

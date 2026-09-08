@@ -97,33 +97,70 @@ function buildPresetWindow(timeframe: ReportsTimeframePreset, now = new Date()):
   };
 }
 
-export function ReportsTimeframeProvider({ children }: { children: React.ReactNode }) {
-  const today = useMemo(() => formatDateInput(new Date()), []);
-  const [timeframe, setTimeframeState] = useState<ReportsTimeframe>("Lingguhan");
-  const [customRangeStart, setCustomRangeStart] = useState(today);
-  const [customRangeEnd, setCustomRangeEnd] = useState(today);
+export function ReportsTimeframeProvider({
+  children,
+  anchorDate,
+  initialStartDate,
+}: {
+  children: React.ReactNode;
+  anchorDate?: Date;
+  initialStartDate?: Date;
+}) {
+  const anchorDay = useMemo(
+    () => formatDateInput(anchorDate && !Number.isNaN(anchorDate.getTime()) ? anchorDate : new Date()),
+    [anchorDate]
+  );
+  const initialWindow = useMemo(
+    () => {
+      const end = parseDate(anchorDay, true) ?? new Date();
+      const start = initialStartDate && !Number.isNaN(initialStartDate.getTime())
+        ? parseDate(formatDateInput(initialStartDate))
+        : null;
+
+      if (start && start.getTime() <= end.getTime()) {
+        return {
+          start,
+          end,
+          label: `Custom Range: ${formatDisplayDate(start)} to ${formatDisplayDate(end)}`,
+          fileLabel: `${formatDateInput(start)}_to_${formatDateInput(end)}`,
+        };
+      }
+
+      return buildPresetWindow("Monthly", end);
+    },
+    [anchorDay, initialStartDate]
+  );
+  const [timeframe, setTimeframeState] = useState<ReportsTimeframe>(
+    initialStartDate ? "Custom Range" : "Monthly"
+  );
+  const [customRangeStart, setCustomRangeStart] = useState(() => formatDateInput(initialWindow.start));
+  const [customRangeEnd, setCustomRangeEnd] = useState(() => formatDateInput(initialWindow.end));
 
   const setTimeframe = useCallback((value: ReportsTimeframePreset) => {
+    const nextWindow = buildPresetWindow(value, parseDate(anchorDay, true) ?? new Date());
+    setCustomRangeStart(formatDateInput(nextWindow.start));
+    setCustomRangeEnd(formatDateInput(nextWindow.end));
     setTimeframeState(value);
-  }, []);
+  }, [anchorDay]);
 
   const applyCustomRange = useCallback(() => {
     setTimeframeState("Custom Range");
   }, []);
 
   const clearCustomRange = useCallback(() => {
-    setCustomRangeStart(today);
-    setCustomRangeEnd(today);
-    setTimeframeState("Lingguhan");
-  }, [today]);
+    const nextWindow = buildPresetWindow("Monthly", parseDate(anchorDay, true) ?? new Date());
+    setCustomRangeStart(formatDateInput(nextWindow.start));
+    setCustomRangeEnd(formatDateInput(nextWindow.end));
+    setTimeframeState("Monthly");
+  }, [anchorDay]);
 
   const resolvedWindow = useMemo<ReportsResolvedWindow>(() => {
     if (timeframe !== "Custom Range") {
-      return buildPresetWindow(timeframe);
+      return buildPresetWindow(timeframe, parseDate(anchorDay, true) ?? new Date());
     }
 
-    const parsedStart = parseDate(customRangeStart) ?? parseDate(today) ?? new Date();
-    const parsedEnd = parseDate(customRangeEnd, true) ?? parseDate(today, true) ?? new Date();
+    const parsedStart = parseDate(customRangeStart) ?? parseDate(anchorDay) ?? new Date();
+    const parsedEnd = parseDate(customRangeEnd, true) ?? parseDate(anchorDay, true) ?? new Date();
     const start = parsedStart.getTime() <= parsedEnd.getTime() ? parsedStart : parsedEnd;
     const end = parsedEnd.getTime() >= parsedStart.getTime() ? parsedEnd : parsedStart;
 
@@ -133,7 +170,7 @@ export function ReportsTimeframeProvider({ children }: { children: React.ReactNo
       label: `Custom Range: ${formatDisplayDate(start)} to ${formatDisplayDate(end)}`,
       fileLabel: `${formatDateInput(start)}_to_${formatDateInput(end)}`,
     };
-  }, [customRangeEnd, customRangeStart, timeframe, today]);
+  }, [anchorDay, customRangeEnd, customRangeStart, timeframe]);
 
   const value = useMemo<ReportsTimeframeContextType>(
     () => ({

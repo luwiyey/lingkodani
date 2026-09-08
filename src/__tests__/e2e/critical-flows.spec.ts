@@ -78,9 +78,10 @@ test.describe('Lingkod-Ani critical flows', () => {
     await page.goto('/dashboard/reports', { waitUntil: 'domcontentloaded' });
 
     await expect(page.getByRole('heading', { name: 'Mga Ulat at Pagsusuri' })).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('input[type="date"]').first()).toBeVisible();
-    await expect(page.locator('input[type="date"]').nth(1)).toBeVisible();
+    await expect(page.getByLabel('Mula sa petsa')).toHaveValue('2026-03-08');
+    await expect(page.getByLabel('Hanggang sa petsa')).toHaveValue('2026-03-15');
     await expect(page.getByRole('button', { name: 'Gamitin ang Petsa' }).first()).toBeVisible();
+    await expect(page.getByText('8 SMS', { exact: true })).toBeVisible();
 
     await page.getByRole('tab', { name: 'Demograpiko ng Magsasaka' }).click();
     await expect(page.getByText('Farmers in Scope')).toBeVisible();

@@ -1,4 +1,5 @@
 import { filterVisibleInboundSmsMessages, screenInboundSms } from "@/lib/inbound-sms-screening";
+import { smsMessages as seededSmsMessages } from "@/lib/data";
 import {
   filterPrivacySafeContentRecords,
   filterPrivacySafeRelatedRecords,
@@ -110,6 +111,15 @@ describe("inbound-sms-screening", () => {
     expect(visibleMessages).toEqual([
       { phone: "+639171234567", message: "May uod sa palay.", id: "operational" },
     ]);
+  });
+
+  it("keeps every seeded demo message and workflow visible", () => {
+    const visibleMessages = filterVisibleInboundSmsMessages(seededSmsMessages);
+
+    expect(visibleMessages).toHaveLength(seededSmsMessages.length);
+    expect(visibleMessages.map((message) => message.id)).toEqual(
+      seededSmsMessages.map((message) => message.id)
+    );
   });
 
   it("removes derivative audit and related records for a protected sender", () => {

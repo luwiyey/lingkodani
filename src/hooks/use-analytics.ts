@@ -486,7 +486,6 @@ export function useAnalytics() {
     outboundMessages,
     farmers,
     resources,
-    vouchers,
     auditLogs,
     fieldVisitTasks,
     assistanceRecords,
@@ -496,28 +495,9 @@ export function useAnalytics() {
   const { timeframe, resolvedWindow } = useReportsTimeframe();
 
   return useMemo(() => {
-    const allTimes: number[] = [
-      ...smsMessages.map((m) => asDate(m.timestamp).getTime()),
-      ...farmers.map((f) => asDate(f.lastSmsActivity).getTime()),
-      ...farmers.map((f) => asDate(f.registrationDate).getTime()),
-      ...resources.map((r) => asDate(r.lastUpdated).getTime()),
-      ...vouchers.map((v) => asDate(v.issueDate).getTime()),
-      ...vouchers.filter((v) => !!v.redemptionDate).map((v) => asDate(v.redemptionDate as string).getTime()),
-      ...auditLogs.map((l) => asDate(l.timestamp).getTime()),
-      ...outboundMessages
-        .filter((message) => message.audience !== 'official')
-        .map((o) => asDate(o.createdAt).getTime()),
-      ...fieldVisitTasks.map((task) => asDate(task.scheduledFor).getTime()),
-      ...fieldVisitTasks.map((task) => asDate(task.updatedAt).getTime()),
-      ...assistanceRecords.map((record) => asDate(record.updatedAt).getTime()),
-      ...alertHistory.map((entry) => asDate(entry.timestamp).getTime()),
-      ...marketPrices.map((entry) => asDate(entry.updatedAt).getTime()),
-    ].filter((value) => !Number.isNaN(value));
     const isCustomRange = timeframe === 'Custom Range';
     const presetTimeframe = isCustomRange ? 'Lingguhan' : timeframe;
-    const anchorDate = isCustomRange
-      ? new Date(resolvedWindow.end)
-      : new Date(Math.max(...allTimes, Date.now()));
+    const anchorDate = new Date(resolvedWindow.end);
 
     const filterItems = <T,>(items: T[], getTimestamp: (item: T) => string) =>
       isCustomRange
@@ -1154,5 +1134,5 @@ export function useAnalytics() {
       messageToneData,
       responseTimeData,
     };
-  }, [alertHistory, assistanceRecords, auditLogs, farmers, fieldVisitTasks, marketPrices, outboundMessages, resolvedWindow, resources, smsMessages, timeframe, vouchers]);
+  }, [alertHistory, assistanceRecords, auditLogs, farmers, fieldVisitTasks, marketPrices, outboundMessages, resolvedWindow, resources, smsMessages, timeframe]);
 }

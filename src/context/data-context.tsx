@@ -56,7 +56,7 @@ import { firebaseCollections } from '@/lib/firebase/collections';
 import { withFirestoreDocId } from '@/lib/firebase/with-firestore-doc-id';
 import { smsProvider } from '@/lib/providers/sms';
 import { alertHistoryRepository, assistanceRepository, auditRepository, farmerRepository, fieldVisitRepository, knowledgeRepository, logbookRepository, marketPriceRepository, outboundMessageRepository, resourceRepository, smsRepository, smsTrainingRepository, systemSettingsRepository, userRepository, voucherRepository } from '@/lib/repositories';
-import { clearDemoStoreData } from '@/lib/repositories/demo-store';
+import { clearDemoStoreData, ensureCurrentDemoDataset } from '@/lib/repositories/demo-store';
 import { DEMO_PREVIEW_EVENT } from '@/lib/onboarding';
 import type { PortableAppBackup, PortableAppDataBundle } from '@/lib/data-portability';
 import { isAutoReplyOverdue } from '@/lib/services/auto-reply-service';
@@ -708,6 +708,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      ensureCurrentDemoDataset();
       const storedFarmers = localStorage.getItem('farmers');
       const loadedFarmers = storedFarmers ? JSON.parse(storedFarmers) as Farmer[] : initialFarmers;
       privacyExcludedFarmerIdsRef.current = getPrivacyExcludedRecordIds(loadedFarmers, (farmer) => farmer.phone);

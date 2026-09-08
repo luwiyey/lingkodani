@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useData } from "@/context/data-context";
 import { useToast } from "@/hooks/use-toast";
+import { isDemoRuntimeActive } from "@/lib/runtime-mode";
 import {
   buildAiAnalyticsExportTable,
   buildFarmerDemographicsExportTable,
@@ -42,11 +43,32 @@ export function ExportCenterPanel({
   showOpenPageLink = false,
   sectionId,
 }: ExportCenterPanelProps) {
-  const { currentUser } = useAuth();
+  const { currentUser, currentUserProfile } = useAuth();
   const { toast } = useToast();
   const { smsMessages, farmers, vouchers, resources, marketPrices } = useData();
   const [filter, setFilter] = React.useState<ReportExportFilter>(() => createDefaultReportExportFilter());
   const [exportingKey, setExportingKey] = React.useState<string | null>(null);
+  const demoDateInitialized = React.useRef(false);
+  const usingDemoSandbox = isDemoRuntimeActive({ currentUser, currentUserProfile });
+
+  React.useEffect(() => {
+    if (!usingDemoSandbox || demoDateInitialized.current || smsMessages.length === 0) {
+      return;
+    }
+
+    const latestSmsTimestamp = smsMessages
+      .map((message) => new Date(message.timestamp).getTime())
+      .filter((value) => !Number.isNaN(value))
+      .sort((left, right) => right - left)[0];
+
+    if (latestSmsTimestamp) {
+      setFilter({
+        ...createDefaultReportExportFilter(new Date(latestSmsTimestamp)),
+        mode: "specific_date",
+      });
+      demoDateInitialized.current = true;
+    }
+  }, [smsMessages, usingDemoSandbox]);
 
   const windowInfo = React.useMemo(() => resolveReportExportWindow(filter), [filter]);
   const filteredSms = React.useMemo(

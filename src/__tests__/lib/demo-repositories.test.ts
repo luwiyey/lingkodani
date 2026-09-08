@@ -1,7 +1,11 @@
 import { farmers as initialFarmers } from "@/lib/data";
 import { demoFarmerRepository } from "@/lib/repositories/farmers/demo-farmer-repository";
 import { demoSystemSettingsRepository } from "@/lib/repositories/system-settings/demo-system-settings-repository";
-import { clearDemoStoreCaches } from "@/lib/repositories/demo-store";
+import {
+  DEMO_DATASET_VERSION,
+  clearDemoStoreCaches,
+  ensureCurrentDemoDataset,
+} from "@/lib/repositories/demo-store";
 
 describe("demo repositories", () => {
   beforeEach(() => {
@@ -58,5 +62,19 @@ describe("demo repositories", () => {
 
     const reloadedSettings = await demoSystemSettingsRepository.getSettings();
     expect(reloadedSettings.autoReplyEnabled).toBe(false);
+  });
+
+  it("refreshes an older empty demo cache once without repeatedly clearing the scenario", () => {
+    window.localStorage.setItem("farmers", "[]");
+    window.localStorage.setItem("smsMessages", "[]");
+
+    expect(ensureCurrentDemoDataset()).toBe(true);
+    expect(window.localStorage.getItem("farmers")).toBeNull();
+    expect(window.localStorage.getItem("smsMessages")).toBeNull();
+    expect(window.localStorage.getItem("lingkodAniDemoDatasetVersion")).toBe(DEMO_DATASET_VERSION);
+
+    window.localStorage.setItem("smsMessages", "[]");
+    expect(ensureCurrentDemoDataset()).toBe(false);
+    expect(window.localStorage.getItem("smsMessages")).toBe("[]");
   });
 });

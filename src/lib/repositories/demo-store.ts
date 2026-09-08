@@ -21,6 +21,9 @@ export const DEMO_COLLECTION_STORAGE_KEYS = [
   "outboundMessages",
 ] as const;
 
+const DEMO_DATASET_VERSION_STORAGE_KEY = "lingkodAniDemoDatasetVersion";
+export const DEMO_DATASET_VERSION = "2026-09-07-full-scenario-v1";
+
 type DemoCollectionStoreOptions<T> = {
   storageKey: string;
   initialData: T[];
@@ -164,6 +167,24 @@ export function clearDemoStoreData(
   }
 
   clearDemoStoreCaches([...storageKeys]);
+}
+
+export function ensureCurrentDemoDataset() {
+  const storage = getBrowserStorage();
+
+  if (!storage || storage.getItem(DEMO_DATASET_VERSION_STORAGE_KEY) === DEMO_DATASET_VERSION) {
+    return false;
+  }
+
+  for (const storageKey of DEMO_COLLECTION_STORAGE_KEYS) {
+    storage.removeItem(storageKey);
+  }
+
+  storage.setItem(DEMO_DATASET_VERSION_STORAGE_KEY, DEMO_DATASET_VERSION);
+  const registry = getRegistry();
+  registry.__lingkodAniDemoCollections = {};
+  registry.__lingkodAniDemoSingletons = {};
+  return true;
 }
 
 export function createDemoCollectionStore<T>(
