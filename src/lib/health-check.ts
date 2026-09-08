@@ -5,6 +5,11 @@
 export interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
   checks: Record<string, HealthCheck>;
+  deployment: {
+    commit: string;
+    branch: string;
+    environment: string;
+  };
   timestamp: Date;
 }
 
@@ -97,6 +102,17 @@ export async function getHealthStatus(): Promise<HealthStatus> {
   return {
     status,
     checks,
+    deployment: {
+      commit:
+        process.env.VERCEL_GIT_COMMIT_SHA ??
+        process.env.GITHUB_SHA ??
+        'local',
+      branch:
+        process.env.VERCEL_GIT_COMMIT_REF ??
+        process.env.GITHUB_REF_NAME ??
+        'local',
+      environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'local',
+    },
     timestamp: new Date(),
   };
 }
