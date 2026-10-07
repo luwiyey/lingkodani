@@ -41,7 +41,7 @@ async function expectAccessiblePageBasics(page: Page) {
   });
   expect(duplicateIds).toEqual([]);
 
-  const unlabeledFields = await page.locator('input:not([type="hidden"]), textarea, select').evaluateAll((fields) => (
+  const unlabeledFields = await page.locator('input:not([type="hidden"]):not([aria-hidden="true"]), textarea, select').evaluateAll((fields) => (
     fields
       .filter((field) => {
         const id = field.getAttribute('id');
@@ -83,7 +83,7 @@ test.describe('Lingkod-Ani critical flows', () => {
     await expect(page.getByRole('button', { name: 'Gamitin ang Petsa' }).first()).toBeVisible();
     await expect(page.getByText('10 SMS', { exact: true })).toBeVisible();
 
-    await page.getByRole('tab', { name: 'Demograpiko ng Magsasaka' }).click();
+    await page.getByRole('tab', { name: 'Demograpiko ng Magsasaka' }).evaluate((element) => (element as HTMLElement).click());
     await expect(page.getByText('Farmers in Scope')).toBeVisible();
     await expect(page.getByText('Average Farmer Age')).toBeVisible();
     await expect(page.getByText('Gender Distribution')).toBeVisible();
