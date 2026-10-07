@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ShieldAlert,
   ClipboardList,
+  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
@@ -234,6 +235,7 @@ export function AppSidebar() {
           { title: "Base ng Kaalaman", href: "/dashboard/knowledge-base" },
           { title: "Mga Kasangkapang Pagsusuri", href: "/dashboard/ai-toolkit" },
           { title: "Pagsasanay ng AEW", href: "/dashboard/training" },
+          { title: "Innovation at Trust Center", href: "/dashboard/innovation-center" },
         ],
       },
       { title: "Mga Ulat", href: "/dashboard/reports", icon: BarChart },
@@ -300,6 +302,7 @@ export function AppSidebar() {
       { title: "System Settings", href: "/dashboard/settings", icon: Settings },
       { title: "Magdagdag ng User", href: "/dashboard/developer/add-user", icon: Users },
       { title: "Training Data", href: "/dashboard/developer/training-data", icon: FileJson },
+      { title: "Innovation at Trust Center", href: "/dashboard/innovation-center", icon: Sparkles },
       { title: "Data Center", href: "/dashboard/data-center", icon: Database },
       { title: "Aking Account", href: "/dashboard/account", icon: Settings },
     ];
